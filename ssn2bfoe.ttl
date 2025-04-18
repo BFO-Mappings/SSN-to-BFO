@@ -28,6 +28,10 @@
 <http://purl.obolibrary.org/obo/BFO_0000020> rdf:type owl:Class .
 
 
+###  http://www.semanticweb.org/alecsculley/ontologies/2025/3/untitled-ontology-122/System
+<http://www.semanticweb.org/alecsculley/ontologies/2025/3/untitled-ontology-122/System> rdf:type owl:Class .
+
+
 ###  http://www.w3.org/ns/sosa/Actuation
 <http://www.w3.org/ns/sosa/Actuation> rdf:type owl:Class ;
                                       rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000228> .
@@ -90,7 +94,8 @@
 
 ###  http://www.w3.org/ns/ssn/System
 <http://www.w3.org/ns/ssn/System> rdf:type owl:Class ;
-                                  rdfs:subClassOf <http://purl.obolibrary.org/obo/BFO_0000002> .
+                                  rdfs:subClassOf <http://www.semanticweb.org/alecsculley/ontologies/2025/3/untitled-ontology-122/System> ;
+                                  rdfs:label "ssn:System" .
 
 
 ###  https://www.commoncoreontologies.org/ont00000037
