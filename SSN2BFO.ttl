@@ -6,16 +6,171 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @base <http://www.sks.ai/SSN2BFO//> .
 
-<http://www.sks.ai/SSN2BFO/> rdf:type owl:Ontology ;
-                              owl:imports <http://www.w3.org/ns/ssn/> ,
-                                          <https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged> .
+<http://www.sks.ai/SSN2BFO/> rdf:type owl:Ontology .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://purl.obolibrary.org/obo/BFO_0000054
+<http://purl.obolibrary.org/obo/BFO_0000054> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000055
+<http://purl.obolibrary.org/obo/BFO_0000055> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000056
+<http://purl.obolibrary.org/obo/BFO_0000056> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000057
+<http://purl.obolibrary.org/obo/BFO_0000057> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000117
+<http://purl.obolibrary.org/obo/BFO_0000117> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000132
+<http://purl.obolibrary.org/obo/BFO_0000132> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000196
+<http://purl.obolibrary.org/obo/BFO_0000196> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000197
+<http://purl.obolibrary.org/obo/BFO_0000197> rdf:type owl:ObjectProperty .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000199
+<http://purl.obolibrary.org/obo/BFO_0000199> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/sosa/actsOnProperty
+<http://www.w3.org/ns/sosa/actsOnProperty> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/sosa/hosts
+<http://www.w3.org/ns/sosa/hosts> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/sosa/isFeatureOfInterestOf
+<http://www.w3.org/ns/sosa/isFeatureOfInterestOf> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/ssn/deployedOnPlatform
+<http://www.w3.org/ns/ssn/deployedOnPlatform> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/ssn/deployedSystem
+<http://www.w3.org/ns/ssn/deployedSystem> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/ssn/hasOutput
+<http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/ssn/implements
+<http://www.w3.org/ns/ssn/implements> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001777
+<https://www.commoncoreontologies.org/ont00001777> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001787
+<https://www.commoncoreontologies.org/ont00001787> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001801
+<https://www.commoncoreontologies.org/ont00001801> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001803
+<https://www.commoncoreontologies.org/ont00001803> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001816
+<https://www.commoncoreontologies.org/ont00001816> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001819
+<https://www.commoncoreontologies.org/ont00001819> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001834
+<https://www.commoncoreontologies.org/ont00001834> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001884
+<https://www.commoncoreontologies.org/ont00001884> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001886
+<https://www.commoncoreontologies.org/ont00001886> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001904
+<https://www.commoncoreontologies.org/ont00001904> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001920
+<https://www.commoncoreontologies.org/ont00001920> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001936
+<https://www.commoncoreontologies.org/ont00001936> rdf:type owl:ObjectProperty .
+
+
+###  https://www.commoncoreontologies.org/ont00001942
+<https://www.commoncoreontologies.org/ont00001942> rdf:type owl:ObjectProperty .
+
 
 #################################################################
 #    Classes
 #################################################################
 
+###  http://purl.obolibrary.org/obo/BFO_0000002
+<http://purl.obolibrary.org/obo/BFO_0000002> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000008
+<http://purl.obolibrary.org/obo/BFO_0000008> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000015
+<http://purl.obolibrary.org/obo/BFO_0000015> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000016
+<http://purl.obolibrary.org/obo/BFO_0000016> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000017
+<http://purl.obolibrary.org/obo/BFO_0000017> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000020
+<http://purl.obolibrary.org/obo/BFO_0000020> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000034
+<http://purl.obolibrary.org/obo/BFO_0000034> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000040
+<http://purl.obolibrary.org/obo/BFO_0000040> rdf:type owl:Class .
+
+
+###  http://purl.obolibrary.org/obo/BFO_0000144
+<http://purl.obolibrary.org/obo/BFO_0000144> rdf:type owl:Class .
+
+
 ###  http://www.w3.org/ns/sosa/ActuatableProperty
-<http://www.w3.org/ns/sosa/ActuatableProperty> rdfs:subClassOf [ rdf:type owl:Class ;
+<http://www.w3.org/ns/sosa/ActuatableProperty> rdf:type owl:Class ;
+                                               rdfs:subClassOf [ rdf:type owl:Class ;
                                                                  owl:unionOf ( [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
                                                                                                       [ rdf:type owl:Restriction ;
                                                                                                         owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000197> ;
@@ -37,7 +192,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Actuation
-<http://www.w3.org/ns/sosa/Actuation> owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+<http://www.w3.org/ns/sosa/Actuation> rdf:type owl:Class ;
+                                      owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
                                                                                  [ rdf:type owl:Restriction ;
                                                                                    owl:onProperty <http://www.w3.org/ns/sosa/actsOnProperty> ;
                                                                                    owl:someValuesFrom <http://www.w3.org/ns/sosa/ActuatableProperty>
@@ -48,7 +204,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Actuator
-<http://www.w3.org/ns/sosa/Actuator> rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+<http://www.w3.org/ns/sosa/Actuator> rdf:type owl:Class ;
+                                     rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                             [ rdf:type owl:Restriction ;
                                                                               owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000196> ;
                                                                               owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000017>
@@ -70,7 +227,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/FeatureOfInterest
-<http://www.w3.org/ns/sosa/FeatureOfInterest> owl:equivalentClass [ rdf:type owl:Class ;
+<http://www.w3.org/ns/sosa/FeatureOfInterest> rdf:type owl:Class ;
+                                              owl:equivalentClass [ rdf:type owl:Class ;
                                                                     owl:unionOf ( [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
                                                                                                          [ rdf:type owl:Restriction ;
                                                                                                            owl:onProperty <http://www.w3.org/ns/sosa/isFeatureOfInterestOf> ;
@@ -102,7 +260,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/ObservableProperty
-<http://www.w3.org/ns/sosa/ObservableProperty> rdfs:subClassOf [ rdf:type owl:Class ;
+<http://www.w3.org/ns/sosa/ObservableProperty> rdf:type owl:Class ;
+                                               rdfs:subClassOf [ rdf:type owl:Class ;
                                                                  owl:unionOf ( [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
                                                                                                       [ rdf:type owl:Restriction ;
                                                                                                         owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000197> ;
@@ -124,7 +283,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Observation
-<http://www.w3.org/ns/sosa/Observation> rdfs:subClassOf [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+<http://www.w3.org/ns/sosa/Observation> rdf:type owl:Class ;
+                                        rdfs:subClassOf [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
                                                                                [ rdf:type owl:Restriction ;
                                                                                  owl:onProperty <https://www.commoncoreontologies.org/ont00001777> ;
                                                                                  owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000037>
@@ -139,7 +299,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Platform
-<http://www.w3.org/ns/sosa/Platform> owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+<http://www.w3.org/ns/sosa/Platform> rdf:type owl:Class ;
+                                     owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                                 [ rdf:type owl:Restriction ;
                                                                                   owl:onProperty <http://www.w3.org/ns/sosa/hosts> ;
                                                                                   owl:someValuesFrom <http://www.w3.org/ns/ssn/System>
@@ -150,7 +311,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Procedure
-<http://www.w3.org/ns/sosa/Procedure> rdfs:subClassOf [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000965>
+<http://www.w3.org/ns/sosa/Procedure> rdf:type owl:Class ;
+                                      rdfs:subClassOf [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000965>
                                                                              [ rdf:type owl:Restriction ;
                                                                                owl:onProperty <https://www.commoncoreontologies.org/ont00001942> ;
                                                                                owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000015>
@@ -161,7 +323,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Result
-<http://www.w3.org/ns/sosa/Result> owl:equivalentClass [ owl:intersectionOf ( [ rdf:type owl:Class ;
+<http://www.w3.org/ns/sosa/Result> rdf:type owl:Class ;
+                                   owl:equivalentClass [ owl:intersectionOf ( [ rdf:type owl:Class ;
                                                                                 owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                                               <https://www.commoncoreontologies.org/ont00000958>
                                                                                             )
@@ -181,7 +344,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Sample
-<http://www.w3.org/ns/sosa/Sample> owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+<http://www.w3.org/ns/sosa/Sample> rdf:type owl:Class ;
+                                   owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                               [ rdf:type owl:Restriction ;
                                                                                 owl:onProperty <https://www.commoncoreontologies.org/ont00001936> ;
                                                                                 owl:someValuesFrom <http://www.w3.org/ns/sosa/Sampling>
@@ -192,7 +356,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Sampler
-<http://www.w3.org/ns/sosa/Sampler> rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+<http://www.w3.org/ns/sosa/Sampler> rdf:type owl:Class ;
+                                    rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                            [ rdf:type owl:Restriction ;
                                                                              owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000196> ;
                                                                              owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000017>
@@ -214,7 +379,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Sampling
-<http://www.w3.org/ns/sosa/Sampling> owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+<http://www.w3.org/ns/sosa/Sampling> rdf:type owl:Class ;
+                                     owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
                                                                                 [ rdf:type owl:Restriction ;
                                                                                   owl:onProperty <http://www.w3.org/ns/ssn/hasOutput> ;
                                                                                   owl:someValuesFrom <http://www.w3.org/ns/sosa/Sample>
@@ -229,7 +395,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/Sensor
-<http://www.w3.org/ns/sosa/Sensor> rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+<http://www.w3.org/ns/sosa/Sensor> rdf:type owl:Class ;
+                                   rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                           [ rdf:type owl:Restriction ;
                                                                             owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000196> ;
                                                                             owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000017>
@@ -251,7 +418,8 @@
 
 
 ###  http://www.w3.org/ns/ssn/Deployment
-<http://www.w3.org/ns/ssn/Deployment> owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+<http://www.w3.org/ns/ssn/Deployment> rdf:type owl:Class ;
+                                      owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
                                                                                  [ rdf:type owl:Restriction ;
                                                                                    owl:onProperty <http://www.w3.org/ns/ssn/deployedOnPlatform> ;
                                                                                    owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000040>
@@ -266,15 +434,18 @@
 
 
 ###  http://www.w3.org/ns/ssn/Input
-<http://www.w3.org/ns/ssn/Input> rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000958> .
+<http://www.w3.org/ns/ssn/Input> rdf:type owl:Class ;
+                                 rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000958> .
 
 
 ###  http://www.w3.org/ns/ssn/Output
-<http://www.w3.org/ns/ssn/Output> rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000958> .
+<http://www.w3.org/ns/ssn/Output> rdf:type owl:Class ;
+                                  rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000958> .
 
 
 ###  http://www.w3.org/ns/ssn/Property
-<http://www.w3.org/ns/ssn/Property> owl:equivalentClass [ rdf:type owl:Class ;
+<http://www.w3.org/ns/ssn/Property> rdf:type owl:Class ;
+                                    owl:equivalentClass [ rdf:type owl:Class ;
                                                           owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
                                                                         <http://purl.obolibrary.org/obo/BFO_0000144>
                                                                       )
@@ -282,7 +453,8 @@
 
 
 ###  http://www.w3.org/ns/ssn/Stimulus
-<http://www.w3.org/ns/ssn/Stimulus> owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000978>
+<http://www.w3.org/ns/ssn/Stimulus> rdf:type owl:Class ;
+                                    owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000978>
                                                                                [ rdf:type owl:Restriction ;
                                                                                  owl:onProperty <https://www.commoncoreontologies.org/ont00001803> ;
                                                                                  owl:someValuesFrom <http://www.w3.org/ns/sosa/Observation>
@@ -293,7 +465,8 @@
 
 
 ###  http://www.w3.org/ns/ssn/System
-<http://www.w3.org/ns/ssn/System> owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+<http://www.w3.org/ns/ssn/System> rdf:type owl:Class ;
+                                  owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                              [ rdf:type owl:Restriction ;
                                                                                owl:onProperty <http://www.w3.org/ns/ssn/implements> ;
                                                                                owl:someValuesFrom <http://www.w3.org/ns/sosa/Procedure>
@@ -301,6 +474,743 @@
                                                                            ) ;
                                                         rdf:type owl:Class
                                                       ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Accuracy
+<http://www.w3.org/ns/ssn/systems/Accuracy> rdf:type owl:Class ;
+                                            rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                   [ rdf:type owl:Restriction ;
+                                                                                     owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                     owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                               [ rdf:type owl:Restriction ;
+                                                                                                                                 owl:onProperty <https://www.commoncoreontologies.org/ont00001801> ;
+                                                                                                                                 owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000853>
+                                                                                                                                                                           [ rdf:type owl:Restriction ;
+                                                                                                                                                                             owl:onProperty <https://www.commoncoreontologies.org/ont00001904> ;
+                                                                                                                                                                             owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000592>
+                                                                                                                                                                                                                       [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                         owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                         owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                                                                       ]
+                                                                                                                                                                                                                     ) ;
+                                                                                                                                                                                                  rdf:type owl:Class
+                                                                                                                                                                                                ]
+                                                                                                                                                                           ]
+                                                                                                                                                                         ) ;
+                                                                                                                                                      rdf:type owl:Class
+                                                                                                                                                    ]
+                                                                                                                               ]
+                                                                                                                             ) ;
+                                                                                                          rdf:type owl:Class
+                                                                                                        ]
+                                                                                   ]
+                                                                                 ) ;
+                                                              rdf:type owl:Class
+                                                            ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/ActuationRange
+<http://www.w3.org/ns/ssn/systems/ActuationRange> rdf:type owl:Class ;
+                                                  rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                           owl:someValuesFrom [ owl:intersectionOf ( <http://www.w3.org/ns/sosa/Actuation>
+                                                                                                                                     [ owl:intersectionOf ( [ rdf:type owl:Class ;
+                                                                                                                                                              owl:unionOf ( [ rdf:type owl:Restriction ;
+                                                                                                                                                                              owl:onProperty <http://www.w3.org/ns/ssn/hasOutput> ;
+                                                                                                                                                                              owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                                                                                            ]
+                                                                                                                                                                            [ rdf:type owl:Restriction ;
+                                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001834> ;
+                                                                                                                                                                              owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000144>
+                                                                                                                                                                            ]
+                                                                                                                                                                          )
+                                                                                                                                                            ]
+                                                                                                                                                            [ rdf:type owl:Restriction ;
+                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                              owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                            ]
+                                                                                                                                                          ) ;
+                                                                                                                                       rdf:type owl:Class
+                                                                                                                                     ]
+                                                                                                                                   ) ;
+                                                                                                                rdf:type owl:Class
+                                                                                                              ]
+                                                                                         ]
+                                                                                       ) ;
+                                                                    rdf:type owl:Class
+                                                                  ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/BatteryLifetime
+<http://www.w3.org/ns/ssn/systems/BatteryLifetime> rdf:type owl:Class ;
+                                                   rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                          [ owl:intersectionOf ( [ rdf:type owl:Restriction ;
+                                                                                                                   owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                                                   owl:someValuesFrom <https://www.commoncoreontologies.org/ont00001213>
+                                                                                                                 ]
+                                                                                                                 [ rdf:type owl:Restriction ;
+                                                                                                                   owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000117> ;
+                                                                                                                   owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000503>
+                                                                                                                 ]
+                                                                                                                 [ rdf:type owl:Restriction ;
+                                                                                                                   owl:onProperty <https://www.commoncoreontologies.org/ont00001819> ;
+                                                                                                                   owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                                             [ rdf:type owl:Restriction ;
+                                                                                                                                                               owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000055> ;
+                                                                                                                                                               owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000177>
+                                                                                                                                                                                                         [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                           owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                                                                                                                                         ]
+                                                                                                                                                                                                       ) ;
+                                                                                                                                                                                    rdf:type owl:Class
+                                                                                                                                                                                  ]
+                                                                                                                                                             ]
+                                                                                                                                                           ) ;
+                                                                                                                                        rdf:type owl:Class
+                                                                                                                                      ]
+                                                                                                                 ]
+                                                                                                               ) ;
+                                                                                            rdf:type owl:Class
+                                                                                          ]
+                                                                                        ) ;
+                                                                     rdf:type owl:Class
+                                                                   ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Condition
+<http://www.w3.org/ns/ssn/systems/Condition> rdf:type owl:Class ;
+                                             rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Class ;
+                                                                                      owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                    <http://purl.obolibrary.org/obo/BFO_0000144>
+                                                                                                  )
+                                                                                    ]
+                                                                                    [ rdf:type owl:Restriction ;
+                                                                                      owl:onProperty <https://www.commoncoreontologies.org/ont00001884> ;
+                                                                                      owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000127>
+                                                                                    ]
+                                                                                  ) ;
+                                                               rdf:type owl:Class
+                                                             ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/DetectionLimit
+<http://www.w3.org/ns/ssn/systems/DetectionLimit> rdf:type owl:Class ;
+                                                  rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                           owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                     [ rdf:type owl:Restriction ;
+                                                                                                                                       owl:onProperty <https://www.commoncoreontologies.org/ont00001801> ;
+                                                                                                                                       owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000853>
+                                                                                                                                                                                 [ rdf:type owl:Restriction ;
+                                                                                                                                                                                   owl:onProperty <https://www.commoncoreontologies.org/ont00001904> ;
+                                                                                                                                                                                   owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000592>
+                                                                                                                                                                                                                             [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                               owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                               owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                                                                             ]
+                                                                                                                                                                                                                           ) ;
+                                                                                                                                                                                                        rdf:type owl:Class
+                                                                                                                                                                                                      ]
+                                                                                                                                                                                 ]
+                                                                                                                                                                               ) ;
+                                                                                                                                                            rdf:type owl:Class
+                                                                                                                                                          ]
+                                                                                                                                     ]
+                                                                                                                                   ) ;
+                                                                                                                rdf:type owl:Class
+                                                                                                              ]
+                                                                                         ]
+                                                                                       ) ;
+                                                                    rdf:type owl:Class
+                                                                  ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Drift
+<http://www.w3.org/ns/ssn/systems/Drift> rdf:type owl:Class ;
+                                         rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                [ rdf:type owl:Restriction ;
+                                                                                  owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                  owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                            [ rdf:type owl:Restriction ;
+                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001801> ;
+                                                                                                                              owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000853>
+                                                                                                                                                                        [ rdf:type owl:Restriction ;
+                                                                                                                                                                          owl:onProperty <https://www.commoncoreontologies.org/ont00001904> ;
+                                                                                                                                                                          owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000731>
+                                                                                                                                                                                                                    [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                      owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                      owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                                                                    ]
+                                                                                                                                                                                                                  ) ;
+                                                                                                                                                                                               rdf:type owl:Class
+                                                                                                                                                                                             ]
+                                                                                                                                                                        ]
+                                                                                                                                                                      ) ;
+                                                                                                                                                   rdf:type owl:Class
+                                                                                                                                                 ]
+                                                                                                                            ]
+                                                                                                                          ) ;
+                                                                                                       rdf:type owl:Class
+                                                                                                     ]
+                                                                                ]
+                                                                              ) ;
+                                                           rdf:type owl:Class
+                                                         ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Frequency
+<http://www.w3.org/ns/ssn/systems/Frequency> rdf:type owl:Class ;
+                                             rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                    [ rdf:type owl:Restriction ;
+                                                                                      owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                      owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+                                                                                                                                [ rdf:type owl:Restriction ;
+                                                                                                                                  owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000117> ;
+                                                                                                                                  owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00001047>
+                                                                                                                                                                            [ rdf:type owl:Restriction ;
+                                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                              owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                            ]
+                                                                                                                                                                          ) ;
+                                                                                                                                                       rdf:type owl:Class
+                                                                                                                                                     ]
+                                                                                                                                ]
+                                                                                                                              ) ;
+                                                                                                           rdf:type owl:Class
+                                                                                                         ]
+                                                                                    ]
+                                                                                  ) ;
+                                                               rdf:type owl:Class
+                                                             ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Latency
+<http://www.w3.org/ns/ssn/systems/Latency> rdf:type owl:Class ;
+                                           rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                  [ rdf:type owl:Restriction ;
+                                                                                    owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                    owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+                                                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                                                owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000199> ;
+                                                                                                                                owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000008>
+                                                                                                                                                                          [ rdf:type owl:Restriction ;
+                                                                                                                                                                            owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                            owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                          ]
+                                                                                                                                                                        ) ;
+                                                                                                                                                     rdf:type owl:Class
+                                                                                                                                                   ]
+                                                                                                                              ]
+                                                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                                                owl:onProperty <https://www.commoncoreontologies.org/ont00001777> ;
+                                                                                                                                owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000660>
+                                                                                                                              ]
+                                                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                                                owl:onProperty <https://www.commoncoreontologies.org/ont00001777> ;
+                                                                                                                                owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000978>
+                                                                                                                              ]
+                                                                                                                            ) ;
+                                                                                                         rdf:type owl:Class
+                                                                                                       ]
+                                                                                  ]
+                                                                                ) ;
+                                                             rdf:type owl:Class
+                                                           ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/MaintenanceSchedule
+<http://www.w3.org/ns/ssn/systems/MaintenanceSchedule> rdf:type owl:Class ;
+                                                       rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000016>
+                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                                owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000004>
+                                                                                                                                          [ rdf:type owl:Restriction ;
+                                                                                                                                            owl:onProperty <https://www.commoncoreontologies.org/ont00001834> ;
+                                                                                                                                            owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                                                                                                      [ rdf:type owl:Restriction ;
+                                                                                                                                                                                        owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000056> ;
+                                                                                                                                                                                        owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000950>
+                                                                                                                                                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                                    owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000117> ;
+                                                                                                                                                                                                                                    owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00001047>
+                                                                                                                                                                                                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                                                                                owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                                                                                owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                                                                                                                                                                                                              ]
+                                                                                                                                                                                                                                                                            ) ;
+                                                                                                                                                                                                                                                         rdf:type owl:Class
+                                                                                                                                                                                                                                                       ]
+                                                                                                                                                                                                                                  ]
+                                                                                                                                                                                                                                ) ;
+                                                                                                                                                                                                             rdf:type owl:Class
+                                                                                                                                                                                                           ]
+                                                                                                                                                                                      ]
+                                                                                                                                                                                    ) ;
+                                                                                                                                                                 rdf:type owl:Class
+                                                                                                                                                               ]
+                                                                                                                                          ]
+                                                                                                                                        ) ;
+                                                                                                                     rdf:type owl:Class
+                                                                                                                   ]
+                                                                                              ]
+                                                                                            ) ;
+                                                                         rdf:type owl:Class
+                                                                       ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/MeasurementRange
+<http://www.w3.org/ns/ssn/systems/MeasurementRange> rdf:type owl:Class ;
+                                                    rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                             owl:someValuesFrom [ owl:intersectionOf ( <http://www.w3.org/ns/sosa/Observation>
+                                                                                                                                       [ rdf:type owl:Restriction ;
+                                                                                                                                         owl:onProperty <https://www.commoncoreontologies.org/ont00001886> ;
+                                                                                                                                         owl:someValuesFrom [ owl:intersectionOf ( <http://www.w3.org/ns/ssn/Stimulus>
+                                                                                                                                                                                   [ rdf:type owl:Restriction ;
+                                                                                                                                                                                     owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                     owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                                   ]
+                                                                                                                                                                                 ) ;
+                                                                                                                                                              rdf:type owl:Class
+                                                                                                                                                            ]
+                                                                                                                                       ]
+                                                                                                                                     ) ;
+                                                                                                                  rdf:type owl:Class
+                                                                                                                ]
+                                                                                           ]
+                                                                                         ) ;
+                                                                      rdf:type owl:Class
+                                                                    ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/OperatingPowerRange
+<http://www.w3.org/ns/ssn/systems/OperatingPowerRange> rdf:type owl:Class ;
+                                                       rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                                owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                          [ rdf:type owl:Restriction ;
+                                                                                                                                            owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000117> ;
+                                                                                                                                            owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000503>
+                                                                                                                                                                                      [ rdf:type owl:Restriction ;
+                                                                                                                                                                                        owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                        owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                                                                                                                      ]
+                                                                                                                                                                                    ) ;
+                                                                                                                                                                 rdf:type owl:Class
+                                                                                                                                                               ]
+                                                                                                                                          ]
+                                                                                                                                        ) ;
+                                                                                                                     rdf:type owl:Class
+                                                                                                                   ]
+                                                                                              ]
+                                                                                            ) ;
+                                                                         rdf:type owl:Class
+                                                                       ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/OperatingProperty
+<http://www.w3.org/ns/ssn/systems/OperatingProperty> rdf:type owl:Class ;
+                                                     rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Class ;
+                                                                                              owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                            <http://purl.obolibrary.org/obo/BFO_0000144>
+                                                                                                          )
+                                                                                            ]
+                                                                                            [ rdf:type owl:Restriction ;
+                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                              owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                            ]
+                                                                                          ) ;
+                                                                       rdf:type owl:Class
+                                                                     ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/OperatingRange
+<http://www.w3.org/ns/ssn/systems/OperatingRange> rdf:type owl:Class ;
+                                                  rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Class ;
+                                                                                           owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                         <http://purl.obolibrary.org/obo/BFO_0000144>
+                                                                                                       )
+                                                                                         ]
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                         ]
+                                                                                       ) ;
+                                                                    rdf:type owl:Class
+                                                                  ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Precision
+<http://www.w3.org/ns/ssn/systems/Precision> rdf:type owl:Class ;
+                                             rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                    [ rdf:type owl:Restriction ;
+                                                                                      owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                      owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                [ rdf:type owl:Restriction ;
+                                                                                                                                  owl:onProperty <https://www.commoncoreontologies.org/ont00001801> ;
+                                                                                                                                  owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000853>
+                                                                                                                                                                            [ rdf:type owl:Restriction ;
+                                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001904> ;
+                                                                                                                                                                              owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00001256>
+                                                                                                                                                                                                                        [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                          owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                          owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                                                                        ]
+                                                                                                                                                                                                                      ) ;
+                                                                                                                                                                                                   rdf:type owl:Class
+                                                                                                                                                                                                 ]
+                                                                                                                                                                            ]
+                                                                                                                                                                          ) ;
+                                                                                                                                                       rdf:type owl:Class
+                                                                                                                                                     ]
+                                                                                                                                ]
+                                                                                                                              ) ;
+                                                                                                           rdf:type owl:Class
+                                                                                                         ]
+                                                                                    ]
+                                                                                  ) ;
+                                                               rdf:type owl:Class
+                                                             ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Resolution
+<http://www.w3.org/ns/ssn/systems/Resolution> rdf:type owl:Class ;
+                                              rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                     [ rdf:type owl:Restriction ;
+                                                                                       owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                       owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                 [ rdf:type owl:Restriction ;
+                                                                                                                                   owl:onProperty <https://www.commoncoreontologies.org/ont00001801> ;
+                                                                                                                                   owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000853>
+                                                                                                                                                                             [ rdf:type owl:Restriction ;
+                                                                                                                                                                               owl:onProperty <https://www.commoncoreontologies.org/ont00001904> ;
+                                                                                                                                                                               owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000731>
+                                                                                                                                                                                                                         [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                           owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                                                                         ]
+                                                                                                                                                                                                                       ) ;
+                                                                                                                                                                                                    rdf:type owl:Class
+                                                                                                                                                                                                  ]
+                                                                                                                                                                             ]
+                                                                                                                                                                           ) ;
+                                                                                                                                                        rdf:type owl:Class
+                                                                                                                                                      ]
+                                                                                                                                 ]
+                                                                                                                               ) ;
+                                                                                                            rdf:type owl:Class
+                                                                                                          ]
+                                                                                     ]
+                                                                                   ) ;
+                                                                rdf:type owl:Class
+                                                              ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/ResponseTime
+<http://www.w3.org/ns/ssn/systems/ResponseTime> rdf:type owl:Class ;
+                                                rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                       [ rdf:type owl:Restriction ;
+                                                                                         owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                         owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+                                                                                                                                   [ rdf:type owl:Restriction ;
+                                                                                                                                     owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000199> ;
+                                                                                                                                     owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000008>
+                                                                                                                                                                               [ rdf:type owl:Restriction ;
+                                                                                                                                                                                 owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                 owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                               ]
+                                                                                                                                                                             ) ;
+                                                                                                                                                          rdf:type owl:Class
+                                                                                                                                                        ]
+                                                                                                                                   ]
+                                                                                                                                   [ rdf:type owl:Restriction ;
+                                                                                                                                     owl:onProperty <https://www.commoncoreontologies.org/ont00001777> ;
+                                                                                                                                     owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000660>
+                                                                                                                                   ]
+                                                                                                                                   [ rdf:type owl:Restriction ;
+                                                                                                                                     owl:onProperty <https://www.commoncoreontologies.org/ont00001777> ;
+                                                                                                                                     owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000978>
+                                                                                                                                   ]
+                                                                                                                                 ) ;
+                                                                                                              rdf:type owl:Class
+                                                                                                            ]
+                                                                                       ]
+                                                                                     ) ;
+                                                                  rdf:type owl:Class
+                                                                ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Selectivity
+<http://www.w3.org/ns/ssn/systems/Selectivity> rdf:type owl:Class ;
+                                               rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                      [ rdf:type owl:Restriction ;
+                                                                                        owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                        owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
+                                                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                                                    owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000057> ;
+                                                                                                                                    owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000002>
+                                                                                                                                                                              [ rdf:type owl:Restriction ;
+                                                                                                                                                                                owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                                                              ]
+                                                                                                                                                                            ) ;
+                                                                                                                                                         rdf:type owl:Class
+                                                                                                                                                       ]
+                                                                                                                                  ]
+                                                                                                                                ) ;
+                                                                                                             rdf:type owl:Class
+                                                                                                           ]
+                                                                                      ]
+                                                                                    ) ;
+                                                                 rdf:type owl:Class
+                                                               ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/Sensitivity
+<http://www.w3.org/ns/ssn/systems/Sensitivity> rdf:type owl:Class ;
+                                               rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                      [ rdf:type owl:Restriction ;
+                                                                                        owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                        owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                                                    owl:onProperty <https://www.commoncoreontologies.org/ont00001801> ;
+                                                                                                                                    owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000853>
+                                                                                                                                  ]
+                                                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                                                    owl:onProperty <https://www.commoncoreontologies.org/ont00001904> ;
+                                                                                                                                    owl:someValuesFrom <https://www.commoncoreontologies.org/ont00001022>
+                                                                                                                                  ]
+                                                                                                                                  [ rdf:type owl:Restriction ;
+                                                                                                                                    owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                    owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                                                                  ]
+                                                                                                                                ) ;
+                                                                                                             rdf:type owl:Class
+                                                                                                           ]
+                                                                                      ]
+                                                                                    ) ;
+                                                                 rdf:type owl:Class
+                                                               ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/SurvivalProperty
+<http://www.w3.org/ns/ssn/systems/SurvivalProperty> rdf:type owl:Class ;
+                                                    rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                             owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                       [ rdf:type owl:Restriction ;
+                                                                                                                                         owl:onProperty <https://www.commoncoreontologies.org/ont00001819> ;
+                                                                                                                                         owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                                                                   [ rdf:type owl:Restriction ;
+                                                                                                                                                                                     owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000055> ;
+                                                                                                                                                                                     owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000177>
+                                                                                                                                                                                                                               [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                                 owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                                 owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                                                                                                                                                               ]
+                                                                                                                                                                                                                             ) ;
+                                                                                                                                                                                                          rdf:type owl:Class
+                                                                                                                                                                                                        ]
+                                                                                                                                                                                   ]
+                                                                                                                                                                                 ) ;
+                                                                                                                                                              rdf:type owl:Class
+                                                                                                                                                            ]
+                                                                                                                                       ]
+                                                                                                                                     ) ;
+                                                                                                                  rdf:type owl:Class
+                                                                                                                ]
+                                                                                           ]
+                                                                                         ) ;
+                                                                      rdf:type owl:Class
+                                                                    ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/SurvivalRange
+<http://www.w3.org/ns/ssn/systems/SurvivalRange> rdf:type owl:Class ;
+                                                 rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                        [ rdf:type owl:Restriction ;
+                                                                                          owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                          owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                    [ rdf:type owl:Restriction ;
+                                                                                                                                      owl:onProperty <https://www.commoncoreontologies.org/ont00001819> ;
+                                                                                                                                      owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                                                                [ rdf:type owl:Restriction ;
+                                                                                                                                                                                  owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000055> ;
+                                                                                                                                                                                  owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000177>
+                                                                                                                                                                                                                            [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                              owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                          ) ;
+                                                                                                                                                                                                       rdf:type owl:Class
+                                                                                                                                                                                                     ]
+                                                                                                                                                                                ]
+                                                                                                                                                                              ) ;
+                                                                                                                                                           rdf:type owl:Class
+                                                                                                                                                         ]
+                                                                                                                                    ]
+                                                                                                                                  ) ;
+                                                                                                               rdf:type owl:Class
+                                                                                                             ]
+                                                                                        ]
+                                                                                      ) ;
+                                                                   rdf:type owl:Class
+                                                                 ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/SystemCapability
+<http://www.w3.org/ns/ssn/systems/SystemCapability> rdf:type owl:Class ;
+                                                    rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Class ;
+                                                                                             owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                           <http://purl.obolibrary.org/obo/BFO_0000144>
+                                                                                                         )
+                                                                                           ]
+                                                                                           [ rdf:type owl:Restriction ;
+                                                                                             owl:onProperty <https://www.commoncoreontologies.org/ont00001884> ;
+                                                                                             owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000127>
+                                                                                           ]
+                                                                                         ) ;
+                                                                      rdf:type owl:Class
+                                                                    ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/SystemLifetime
+<http://www.w3.org/ns/ssn/systems/SystemLifetime> rdf:type owl:Class ;
+                                                  rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
+                                                                                           owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00001213>
+                                                                                                                                     [ rdf:type owl:Restriction ;
+                                                                                                                                       owl:onProperty <https://www.commoncoreontologies.org/ont00001819> ;
+                                                                                                                                       owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
+                                                                                                                                                                                 [ rdf:type owl:Restriction ;
+                                                                                                                                                                                   owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000055> ;
+                                                                                                                                                                                   owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000177>
+                                                                                                                                                                                                                             [ rdf:type owl:Restriction ;
+                                                                                                                                                                                                                               owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                                                                                                                                                               owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
+                                                                                                                                                                                                                             ]
+                                                                                                                                                                                                                           ) ;
+                                                                                                                                                                                                        rdf:type owl:Class
+                                                                                                                                                                                                      ]
+                                                                                                                                                                                 ]
+                                                                                                                                                                               ) ;
+                                                                                                                                                            rdf:type owl:Class
+                                                                                                                                                          ]
+                                                                                                                                     ]
+                                                                                                                                   ) ;
+                                                                                                                rdf:type owl:Class
+                                                                                                              ]
+                                                                                         ]
+                                                                                       ) ;
+                                                                    rdf:type owl:Class
+                                                                  ] .
+
+
+###  http://www.w3.org/ns/ssn/systems/SystemProperty
+<http://www.w3.org/ns/ssn/systems/SystemProperty> rdf:type owl:Class ;
+                                                  rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Class ;
+                                                                                           owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
+                                                                                                         <http://purl.obolibrary.org/obo/BFO_0000144>
+                                                                                                       )
+                                                                                         ]
+                                                                                         [ rdf:type owl:Restriction ;
+                                                                                           owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
+                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                         ]
+                                                                                       ) ;
+                                                                    rdf:type owl:Class
+                                                                  ] .
+
+
+###  https://www.commoncoreontologies.org/ont00000004
+<https://www.commoncoreontologies.org/ont00000004> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000037
+<https://www.commoncoreontologies.org/ont00000037> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000118
+<https://www.commoncoreontologies.org/ont00000118> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000127
+<https://www.commoncoreontologies.org/ont00000127> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000177
+<https://www.commoncoreontologies.org/ont00000177> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000228
+<https://www.commoncoreontologies.org/ont00000228> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000319
+<https://www.commoncoreontologies.org/ont00000319> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000345
+<https://www.commoncoreontologies.org/ont00000345> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000503
+<https://www.commoncoreontologies.org/ont00000503> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000592
+<https://www.commoncoreontologies.org/ont00000592> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000660
+<https://www.commoncoreontologies.org/ont00000660> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000731
+<https://www.commoncoreontologies.org/ont00000731> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000853
+<https://www.commoncoreontologies.org/ont00000853> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000950
+<https://www.commoncoreontologies.org/ont00000950> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000958
+<https://www.commoncoreontologies.org/ont00000958> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000965
+<https://www.commoncoreontologies.org/ont00000965> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00000978
+<https://www.commoncoreontologies.org/ont00000978> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00001022
+<https://www.commoncoreontologies.org/ont00001022> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00001047
+<https://www.commoncoreontologies.org/ont00001047> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00001213
+<https://www.commoncoreontologies.org/ont00001213> rdf:type owl:Class .
+
+
+###  https://www.commoncoreontologies.org/ont00001256
+<https://www.commoncoreontologies.org/ont00001256> rdf:type owl:Class .
 
 
 ###  Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi
