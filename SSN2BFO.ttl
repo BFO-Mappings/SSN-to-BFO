@@ -6,7 +6,10 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @base <http://www.sks.ai/SSN2BFO//> .
 
-<http://www.sks.ai/SSN2BFO/> rdf:type owl:Ontology .
+<http://www.sks.ai/SSN2BFO/> rdf:type owl:Ontology ;
+                              owl:imports <http://www.w3.org/ns/ssn/> ,
+                                          <http://www.w3.org/ns/ssn/systems/> ,
+                                          <https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged> .
 
 #################################################################
 #    Object Properties
@@ -49,31 +52,148 @@
 
 
 ###  http://www.w3.org/ns/sosa/actsOnProperty
-<http://www.w3.org/ns/sosa/actsOnProperty> rdf:type owl:ObjectProperty .
+<http://www.w3.org/ns/sosa/actsOnProperty> rdf:type owl:ObjectProperty ;
+                                           rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001834> .
+
+
+###  http://www.w3.org/ns/sosa/hasFeatureOfInterest
+<http://www.w3.org/ns/sosa/hasFeatureOfInterest> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
+
+
+###  http://www.w3.org/ns/sosa/hasResult
+<http://www.w3.org/ns/sosa/hasResult> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
+
+
+###  http://www.w3.org/ns/sosa/hasSample
+<http://www.w3.org/ns/sosa/hasSample> owl:propertyChainAxiom ( <https://www.commoncoreontologies.org/ont00001873>
+                                                               <http://purl.obolibrary.org/obo/BFO_0000084>
+                                                             ) .
 
 
 ###  http://www.w3.org/ns/sosa/hosts
 <http://www.w3.org/ns/sosa/hosts> rdf:type owl:ObjectProperty .
 
 
+###  http://www.w3.org/ns/sosa/isActedOnBy
+<http://www.w3.org/ns/sosa/isActedOnBy> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001886> .
+
+
 ###  http://www.w3.org/ns/sosa/isFeatureOfInterestOf
-<http://www.w3.org/ns/sosa/isFeatureOfInterestOf> rdf:type owl:ObjectProperty .
+<http://www.w3.org/ns/sosa/isFeatureOfInterestOf> rdf:type owl:ObjectProperty ;
+                                                  rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001841> .
+
+
+###  http://www.w3.org/ns/sosa/isResultOf
+<http://www.w3.org/ns/sosa/isResultOf> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001816> .
+
+
+###  http://www.w3.org/ns/sosa/isSampleOf
+<http://www.w3.org/ns/sosa/isSampleOf> owl:propertyChainAxiom ( <http://purl.obolibrary.org/obo/BFO_0000101>
+                                                                <https://www.commoncoreontologies.org/ont00001938>
+                                                              ) .
+
+
+###  http://www.w3.org/ns/sosa/madeActuation
+<http://www.w3.org/ns/sosa/madeActuation> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
+
+
+###  http://www.w3.org/ns/sosa/madeByActuator
+<http://www.w3.org/ns/sosa/madeByActuator> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
+
+
+###  http://www.w3.org/ns/sosa/madeBySampler
+<http://www.w3.org/ns/sosa/madeBySampler> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
+
+
+###  http://www.w3.org/ns/sosa/madeBySensor
+<http://www.w3.org/ns/sosa/madeBySensor> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
+
+
+###  http://www.w3.org/ns/sosa/madeObservation
+<http://www.w3.org/ns/sosa/madeObservation> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
+
+
+###  http://www.w3.org/ns/sosa/madeSampling
+<http://www.w3.org/ns/sosa/madeSampling> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
+
+
+###  http://www.w3.org/ns/sosa/observedProperty
+<http://www.w3.org/ns/sosa/observedProperty> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
 
 
 ###  http://www.w3.org/ns/ssn/deployedOnPlatform
-<http://www.w3.org/ns/ssn/deployedOnPlatform> rdf:type owl:ObjectProperty .
+<http://www.w3.org/ns/ssn/deployedOnPlatform> rdf:type owl:ObjectProperty ;
+                                              rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000057> .
 
 
 ###  http://www.w3.org/ns/ssn/deployedSystem
-<http://www.w3.org/ns/ssn/deployedSystem> rdf:type owl:ObjectProperty .
+<http://www.w3.org/ns/ssn/deployedSystem> rdf:type owl:ObjectProperty ;
+                                          rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000057> .
+
+
+###  http://www.w3.org/ns/ssn/detects
+<http://www.w3.org/ns/ssn/detects> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001886> .
+
+
+###  http://www.w3.org/ns/ssn/hasDeployment
+<http://www.w3.org/ns/ssn/hasDeployment> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
+
+
+###  http://www.w3.org/ns/ssn/hasInput
+<http://www.w3.org/ns/ssn/hasInput> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
 
 
 ###  http://www.w3.org/ns/ssn/hasOutput
-<http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty .
+<http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty ;
+                                     rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
 
 
 ###  http://www.w3.org/ns/ssn/implements
 <http://www.w3.org/ns/ssn/implements> rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/ssn/inDeployment
+<http://www.w3.org/ns/ssn/inDeployment> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
+
+
+###  http://www.w3.org/ns/ssn/wasOriginatedBy
+<http://www.w3.org/ns/ssn/wasOriginatedBy> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001962> .
+
+
+###  http://www.w3.org/ns/ssn/systems/hasOperatingProperty
+<http://www.w3.org/ns/ssn/systems/hasOperatingProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000195> .
+
+
+###  http://www.w3.org/ns/ssn/systems/hasOperatingRange
+<http://www.w3.org/ns/ssn/systems/hasOperatingRange> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> .
+
+
+###  http://www.w3.org/ns/ssn/systems/hasSurvivalProperty
+<http://www.w3.org/ns/ssn/systems/hasSurvivalProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000195> .
+
+
+###  http://www.w3.org/ns/ssn/systems/hasSurvivalRange
+<http://www.w3.org/ns/ssn/systems/hasSurvivalRange> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> .
+
+
+###  http://www.w3.org/ns/ssn/systems/hasSystemCapability
+<http://www.w3.org/ns/ssn/systems/hasSystemCapability> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> .
+
+
+###  http://www.w3.org/ns/ssn/systems/hasSystemProperty
+<http://www.w3.org/ns/ssn/systems/hasSystemProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000195> .
+
+
+###  http://www.w3.org/ns/ssn/systems/inCondition
+<http://www.w3.org/ns/ssn/systems/inCondition> owl:propertyChainAxiom ( <http://purl.obolibrary.org/obo/BFO_0000196>
+                                                                        <http://purl.obolibrary.org/obo/BFO_0000054>
+                                                                        <https://www.commoncoreontologies.org/ont00001819>
+                                                                        <http://purl.obolibrary.org/obo/BFO_0000055>
+                                                                      ) .
+
+
+###  http://www.w3.org/ns/ssn/systems/qualityOfObservation
+<http://www.w3.org/ns/ssn/systems/qualityOfObservation> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
 
 
 ###  https://www.commoncoreontologies.org/ont00001777
