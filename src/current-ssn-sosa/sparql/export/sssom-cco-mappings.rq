@@ -1,0 +1,26 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?subject_id ?subject_label ?predicate_id ?object_id ?object_label ?mapping_justification ?target_ontology WHERE {
+  ?subject_id ?predicate_id ?object_id .
+
+  VALUES ?predicate_id {
+    rdfs:subClassOf
+    rdfs:subPropertyOf
+    owl:equivalentClass
+    owl:equivalentProperty
+  }
+
+  BIND(STR(?object_id) AS ?object_text)
+  BIND("CCO" AS ?target_ontology)
+
+  FILTER(STRSTARTS(?object_text, "https://www.commoncoreontologies.org/") || STRSTARTS(?object_text, "http://www.ontologyrepository.com/CommonCoreOntologies/") || STRSTARTS(?object_text, "https://www.ontologyrepository.com/CommonCoreOntologies/"))
+
+  VALUES (?mapping_justification) {
+    ("https://w3id.org/semapv/vocab/ManualMappingCuration")
+  }
+
+  OPTIONAL { ?subject_id rdfs:label ?subject_label . }
+  OPTIONAL { ?object_id rdfs:label ?object_label . }
+}
+ORDER BY ?subject_id ?predicate_id ?object_id

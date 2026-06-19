@@ -40,3 +40,27 @@ make -C src all
 
 BFO projection from CCO mappings is not implemented in this migration. Spreadsheet-to-TTL conversion is also not implemented in this migration.
 
+## Workflow artifacts and reports
+
+The `all` targets remain the basic validation workflow for each track. They run reasoning over the editor ontology and the existing hygiene SPARQL checks. They do not generate release mappings and they do not evaluate mapping correctness.
+
+Additional generated artifacts can be produced with:
+
+```bash
+make -C src reports
+make -C src sssom
+make -C src entailed-mappings
+make -C src unmapped
+make -C src artifacts
+```
+
+`reports` runs ROBOT report generation for both editor ontologies and writes TSV reports under each track's `build/artifacts/` directory.
+
+`sssom` runs generic SSSOM-style CSV exports over authored TTL mappings for each track's BFO and CCO target deliverables. These exports are generated report artifacts, not release files.
+
+`entailed-mappings` materializes derived TTL artifacts under each track's `build/artifacts/` directory. These generated files are not release mappings and should not be treated as authored mapping content.
+
+`unmapped` is scaffolded but disabled by default. It exits successfully with a message until real source imports and final source namespace configuration are added.
+
+Generated report and artifact files are ignored by Git. Spreadsheet-to-TTL conversion is not implemented. BFO projection from CCO mappings is not implemented. The existing `SSN2BFO.ttl`, root spreadsheets, and root `imports/` directory remain preserved.
+

@@ -1,8 +1,11 @@
-#### Track dispatcher for SSN/SOSA -> BFO/CCO mapping validation
+#### Track dispatcher for SSN/SOSA -> BFO/CCO mapping validation and artifacts
 
 TRACKS := current-ssn-sosa sosa-next
 
 .PHONY: all $(TRACKS) reason-current-ssn-sosa test-current-ssn-sosa hygiene-current-ssn-sosa reason-sosa-next test-sosa-next hygiene-sosa-next clean
+.PHONY: reports reports-current-ssn-sosa reports-sosa-next sssom sssom-current-ssn-sosa sssom-sosa-next
+.PHONY: entailed-mappings entailed-current-ssn-sosa entailed-sosa-next unmapped unmapped-current-ssn-sosa unmapped-sosa-next
+.PHONY: artifacts artifacts-current-ssn-sosa artifacts-sosa-next
 
 all: $(TRACKS)
 
@@ -29,6 +32,46 @@ test-sosa-next:
 
 hygiene-sosa-next:
 	$(MAKE) -C sosa-next hygiene
+
+reports: reports-current-ssn-sosa reports-sosa-next
+
+reports-current-ssn-sosa:
+	$(MAKE) -C current-ssn-sosa report-edit
+
+reports-sosa-next:
+	$(MAKE) -C sosa-next report-edit
+
+sssom: sssom-current-ssn-sosa sssom-sosa-next
+
+sssom-current-ssn-sosa:
+	$(MAKE) -C current-ssn-sosa sssom
+
+sssom-sosa-next:
+	$(MAKE) -C sosa-next sssom
+
+entailed-mappings: entailed-current-ssn-sosa entailed-sosa-next
+
+entailed-current-ssn-sosa:
+	$(MAKE) -C current-ssn-sosa entailed-mappings
+
+entailed-sosa-next:
+	$(MAKE) -C sosa-next entailed-mappings
+
+unmapped: unmapped-current-ssn-sosa unmapped-sosa-next
+
+unmapped-current-ssn-sosa:
+	$(MAKE) -C current-ssn-sosa unmapped
+
+unmapped-sosa-next:
+	$(MAKE) -C sosa-next unmapped
+
+artifacts: artifacts-current-ssn-sosa artifacts-sosa-next
+
+artifacts-current-ssn-sosa:
+	$(MAKE) -C current-ssn-sosa artifacts
+
+artifacts-sosa-next:
+	$(MAKE) -C sosa-next artifacts
 
 clean:
 	$(MAKE) -C current-ssn-sosa clean

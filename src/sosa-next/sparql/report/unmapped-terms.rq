@@ -1,0 +1,14 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Framework query only.
+# The Makefile keeps unmapped reports disabled until source namespaces and
+# source imports are explicitly configured for the track.
+SELECT DISTINCT ?source_term ?label ?term_type WHERE {
+  VALUES ?term_type { owl:Class owl:ObjectProperty }
+  ?source_term a ?term_type .
+  OPTIONAL { ?source_term rdfs:label ?label . }
+
+  FILTER(false)
+}
+ORDER BY ?term_type ?source_term
