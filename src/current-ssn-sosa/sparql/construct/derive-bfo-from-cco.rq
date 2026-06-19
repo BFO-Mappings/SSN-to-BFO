@@ -32,6 +32,13 @@ WHERE {
     ?cco_target rdfs:subClassOf+ ?bfo_target .
     FILTER(isIRI(?bfo_target))
     FILTER(STRSTARTS(STR(?bfo_target), "http://purl.obolibrary.org/obo/BFO_"))
+    FILTER NOT EXISTS {
+      ?cco_target rdfs:subClassOf+ ?more_specific_bfo .
+      ?more_specific_bfo rdfs:subClassOf+ ?bfo_target .
+      FILTER(isIRI(?more_specific_bfo))
+      FILTER(STRSTARTS(STR(?more_specific_bfo), "http://purl.obolibrary.org/obo/BFO_"))
+      FILTER(?more_specific_bfo != ?bfo_target)
+    }
     BIND(rdfs:subClassOf AS ?projected_predicate)
   }
   UNION
@@ -42,6 +49,13 @@ WHERE {
     ?cco_target rdfs:subClassOf+ ?bfo_target .
     FILTER(isIRI(?bfo_target))
     FILTER(STRSTARTS(STR(?bfo_target), "http://purl.obolibrary.org/obo/BFO_"))
+    FILTER NOT EXISTS {
+      ?cco_target rdfs:subClassOf+ ?more_specific_bfo .
+      ?more_specific_bfo rdfs:subClassOf+ ?bfo_target .
+      FILTER(isIRI(?more_specific_bfo))
+      FILTER(STRSTARTS(STR(?more_specific_bfo), "http://purl.obolibrary.org/obo/BFO_"))
+      FILTER(?more_specific_bfo != ?bfo_target)
+    }
     BIND(rdfs:subClassOf AS ?projected_predicate)
   }
   UNION
@@ -52,6 +66,13 @@ WHERE {
     ?cco_target rdfs:subPropertyOf+ ?bfo_target .
     FILTER(isIRI(?bfo_target))
     FILTER(STRSTARTS(STR(?bfo_target), "http://purl.obolibrary.org/obo/BFO_"))
+    FILTER NOT EXISTS {
+      ?cco_target rdfs:subPropertyOf+ ?more_specific_bfo .
+      ?more_specific_bfo rdfs:subPropertyOf+ ?bfo_target .
+      FILTER(isIRI(?more_specific_bfo))
+      FILTER(STRSTARTS(STR(?more_specific_bfo), "http://purl.obolibrary.org/obo/BFO_"))
+      FILTER(?more_specific_bfo != ?bfo_target)
+    }
     BIND(rdfs:subPropertyOf AS ?projected_predicate)
   }
 }
