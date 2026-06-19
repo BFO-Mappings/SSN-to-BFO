@@ -10,11 +10,14 @@ config.REPORTS_DIR        := $(config.TEMP_DIR)
 config.QUERIES_DIR        := sparql
 config.EXPORT_QUERIES_DIR := $(config.QUERIES_DIR)/export
 config.REPORT_QUERIES_DIR := $(config.QUERIES_DIR)/report
+config.CONSTRUCT_QUERIES_DIR := $(config.QUERIES_DIR)/construct
 config.LIBRARY_DIR        := ../../build/lib
 
 config.FAIL_ON_TEST_FAILURES := false
 config.REPORT_FAIL_ON        := none
 config.ENABLE_UNMAPPED_REPORTS := false
+config.AUTHORED_CCO_MAPPING_FILE := ../../SSN2BFO.ttl
+config.CCO_IMPORT_FILE := ../../imports/cco.ttl
 
 TODAY     := $(shell date +%Y-%m-%d)
 TIMESTAMP := $(shell date +'%Y-%m-%d %H:%M')
@@ -27,8 +30,14 @@ BFO_SSSOM_FILE     := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-bfo-mappin
 CCO_SSSOM_FILE     := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-cco-mappings.sssom.csv
 ENTAILED_MAPPINGS_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-entailed-mappings.ttl
 UNMAPPED_TERMS_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-unmapped-terms.csv
+BFO_ONLY_GENERATED_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-bfo-only-generated.ttl
+BFO_ONLY_SKIPPED_CCO_TARGETS_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-bfo-only-skipped-cco-targets.csv
+PROJECTION_CATALOG_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-projection-catalog.xml
 
-REQUIRED_DIRS      := $(sort $(config.TEMP_DIR) $(config.LIBRARY_DIR) $(config.QUERIES_DIR) $(config.EXPORT_QUERIES_DIR) $(config.REPORT_QUERIES_DIR) $(config.REPORTS_DIR))
+REQUIRED_DIRS      := $(sort $(config.TEMP_DIR) $(config.LIBRARY_DIR) $(config.QUERIES_DIR) $(config.EXPORT_QUERIES_DIR) $(config.REPORT_QUERIES_DIR) $(config.CONSTRUCT_QUERIES_DIR) $(config.REPORTS_DIR))
+
+ROBOT_FILE := $(config.LIBRARY_DIR)/robot.jar
+ROBOT := java -jar $(ROBOT_FILE)
 
 .PHONY: all hygiene
 all: reason-edit hygiene
@@ -43,7 +52,7 @@ test-edit: verify
 report-edit: report
 explain-edit: explain
 
-.PHONY: sssom-bfo sssom-cco sssom entailed-mappings unmapped artifacts
+.PHONY: sssom-bfo sssom-cco sssom entailed-mappings unmapped artifacts derive-bfo-from-cco
 sssom: sssom-bfo sssom-cco
 artifacts: report-edit sssom entailed-mappings unmapped
 
@@ -65,6 +74,12 @@ ifeq ($(config.ENABLE_UNMAPPED_REPORTS),true)
 else
 	@echo "Unmapped-term reports are disabled for $(config.ONTOLOGY_PREFIX). Enable config.ENABLE_UNMAPPED_REPORTS only after real source imports and final source namespace configuration are added."
 endif
+
+derive-bfo-from-cco: $(config.AUTHORED_CCO_MAPPING_FILE) $(config.CCO_IMPORT_FILE) $(PROJECTION_CATALOG_FILE) $(config.CONSTRUCT_QUERIES_DIR)/derive-bfo-from-cco.rq $(config.REPORT_QUERIES_DIR)/unprojectable-cco-targets.rq | $(config.TEMP_DIR) $(ROBOT_FILE)
+	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORED_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
+	query --query $(config.CONSTRUCT_QUERIES_DIR)/derive-bfo-from-cco.rq $(BFO_ONLY_GENERATED_FILE)
+	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORED_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
+	query --query $(config.REPORT_QUERIES_DIR)/unprojectable-cco-targets.rq $(BFO_ONLY_SKIPPED_CCO_TARGETS_FILE) --format csv
 
 .PHONY: output-release-filepaths
 output-release-filepaths:
@@ -88,6 +103,9 @@ $(REQUIRED_DIRS):
 ROBOT_FILE := $(config.LIBRARY_DIR)/robot.jar
 $(ROBOT_FILE): | $(config.LIBRARY_DIR)
 	curl -L -o $@ https://github.com/ontodev/robot/releases/download/v1.9.5/robot.jar
+
+$(PROJECTION_CATALOG_FILE): | $(config.TEMP_DIR)
+	printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">' '  <uri name="https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged" uri="$(abspath ../../imports/cco.ttl)"/>' '  <uri name="https://www.commoncoreontologies.org/CommonCoreOntologiesMerged" uri="$(abspath ../../imports/cco.ttl)"/>' '  <uri name="http://www.w3.org/ns/ssn/" uri="$(abspath ../../imports/ssn.ttl)"/>' '  <uri name="http://www.w3.org/ns/ssn/systems/" uri="$(abspath ../../imports/ssn-systems.ttl)"/>' '</catalog>' > $@
 
 ROBOT := java -jar $(ROBOT_FILE)
 

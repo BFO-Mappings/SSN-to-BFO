@@ -1,0 +1,44 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?source ?predicate ?cco_target ?reason WHERE {
+  VALUES ?predicate {
+    rdfs:subClassOf
+    rdfs:subPropertyOf
+    owl:equivalentClass
+  }
+
+  ?source ?predicate ?cco_target .
+
+  FILTER(isIRI(?source))
+  FILTER(isIRI(?cco_target))
+  FILTER(
+    STRSTARTS(STR(?source), "http://www.w3.org/ns/sosa/")
+    || STRSTARTS(STR(?source), "http://www.w3.org/ns/ssn/")
+  )
+  FILTER(STRSTARTS(STR(?cco_target), "https://www.commoncoreontologies.org/ont"))
+
+  FILTER NOT EXISTS {
+    {
+      FILTER(?predicate IN (rdfs:subClassOf, owl:equivalentClass))
+      ?cco_target rdfs:subClassOf+ ?bfo_target .
+      FILTER(isIRI(?bfo_target))
+      FILTER(STRSTARTS(STR(?bfo_target), "http://purl.obolibrary.org/obo/BFO_"))
+    }
+    UNION
+    {
+      FILTER(?predicate = rdfs:subPropertyOf)
+      ?cco_target rdfs:subPropertyOf+ ?bfo_target .
+      FILTER(isIRI(?bfo_target))
+      FILTER(STRSTARTS(STR(?bfo_target), "http://purl.obolibrary.org/obo/BFO_"))
+    }
+  }
+
+  BIND(
+    IF(?predicate = rdfs:subPropertyOf,
+      "No explicit BFO superproperty path for named CCO target.",
+      "No explicit BFO superclass path for named CCO target."
+    ) AS ?reason
+  )
+}
+ORDER BY ?predicate ?source ?cco_target
