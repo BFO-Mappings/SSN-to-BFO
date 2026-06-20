@@ -12,6 +12,7 @@ config.EXPORT_QUERIES_DIR := $(config.QUERIES_DIR)/export
 config.REPORT_QUERIES_DIR := $(config.QUERIES_DIR)/report
 config.CONSTRUCT_QUERIES_DIR := $(config.QUERIES_DIR)/construct
 config.LIBRARY_DIR        := ../../build/lib
+config.EXAMPLES_DIR       := examples
 
 config.FAIL_ON_TEST_FAILURES := false
 config.REPORT_FAIL_ON        := none
@@ -33,8 +34,9 @@ UNMAPPED_TERMS_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-unmapped-
 BFO_ONLY_GENERATED_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-bfo-only-generated.ttl
 BFO_ONLY_SKIPPED_CCO_TARGETS_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-bfo-only-skipped-cco-targets.csv
 PROJECTION_CATALOG_FILE := $(config.REPORTS_DIR)/$(config.ONTOLOGY_PREFIX)-projection-catalog.xml
+EXAMPLE_VALIDATION_DIR := $(config.TEMP_DIR)/example-validation
 
-REQUIRED_DIRS      := $(sort $(config.TEMP_DIR) $(config.LIBRARY_DIR) $(config.QUERIES_DIR) $(config.EXPORT_QUERIES_DIR) $(config.REPORT_QUERIES_DIR) $(config.CONSTRUCT_QUERIES_DIR) $(config.REPORTS_DIR))
+REQUIRED_DIRS      := $(sort $(config.TEMP_DIR) $(config.LIBRARY_DIR) $(config.QUERIES_DIR) $(config.EXPORT_QUERIES_DIR) $(config.REPORT_QUERIES_DIR) $(config.CONSTRUCT_QUERIES_DIR) $(config.REPORTS_DIR) $(EXAMPLE_VALIDATION_DIR))
 
 ROBOT_FILE := $(config.LIBRARY_DIR)/robot.jar
 ROBOT := java -jar $(ROBOT_FILE)
@@ -52,7 +54,7 @@ test-edit: verify
 report-edit: report
 explain-edit: explain
 
-.PHONY: sssom-bfo sssom-cco sssom entailed-mappings unmapped artifacts derive-bfo-from-cco
+.PHONY: sssom-bfo sssom-cco sssom entailed-mappings unmapped artifacts derive-bfo-from-cco validate-examples
 sssom: sssom-bfo sssom-cco
 artifacts: report-edit sssom entailed-mappings unmapped
 
@@ -80,6 +82,18 @@ derive-bfo-from-cco: $(config.AUTHORED_CCO_MAPPING_FILE) $(config.CCO_IMPORT_FIL
 	query --query $(config.CONSTRUCT_QUERIES_DIR)/derive-bfo-from-cco.rq $(BFO_ONLY_GENERATED_FILE)
 	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORED_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
 	query --query $(config.REPORT_QUERIES_DIR)/unprojectable-cco-targets.rq $(BFO_ONLY_SKIPPED_CCO_TARGETS_FILE) --format csv
+
+validate-examples: | $(EXAMPLE_VALIDATION_DIR) $(ROBOT_FILE)
+	@files="$$(find $(config.EXAMPLES_DIR) -type f -name '*.ttl' | sort)"; \
+	if [ -z "$$files" ]; then \
+		echo "No Turtle example files found under $(config.EXAMPLES_DIR)."; \
+	else \
+		for file in $$files; do \
+			out="$(EXAMPLE_VALIDATION_DIR)/$$(printf '%s' "$$file" | sed 's#[/.]#_#g').ttl"; \
+			echo "Parse-checking $$file"; \
+			$(ROBOT) convert --input "$$file" --format ttl --output "$$out"; \
+		done; \
+	fi
 
 .PHONY: output-release-filepaths
 output-release-filepaths:
