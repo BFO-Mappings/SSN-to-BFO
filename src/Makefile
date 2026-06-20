@@ -6,6 +6,7 @@ TRACKS := current-ssn-sosa sosa-next
 .PHONY: reports reports-current-ssn-sosa reports-sosa-next sssom sssom-current-ssn-sosa sssom-sosa-next
 .PHONY: entailed-mappings entailed-current-ssn-sosa entailed-sosa-next unmapped unmapped-current-ssn-sosa unmapped-sosa-next
 .PHONY: artifacts artifacts-current-ssn-sosa artifacts-sosa-next derive-bfo-from-cco derive-bfo-from-cco-current-ssn-sosa
+.PHONY: validate-examples validate-examples-current-ssn-sosa
 
 all: $(TRACKS)
 
@@ -77,6 +78,11 @@ derive-bfo-from-cco: derive-bfo-from-cco-current-ssn-sosa
 
 derive-bfo-from-cco-current-ssn-sosa:
 	$(MAKE) -C current-ssn-sosa derive-bfo-from-cco
+
+validate-examples: validate-examples-current-ssn-sosa
+
+validate-examples-current-ssn-sosa:
+	$(MAKE) -C current-ssn-sosa validate-examples
 
 clean:
 	$(MAKE) -C current-ssn-sosa clean

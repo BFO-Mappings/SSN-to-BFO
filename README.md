@@ -83,3 +83,20 @@ The skipped-target report is written to `src/current-ssn-sosa/build/artifacts/cu
 
 This generated artifact is not a release file. The BFO release placeholder is not populated by this workflow. Complex blank-node expressions, restrictions, intersections, unions, property chains, labels, comments, definitions, natural-language notes, and mapping justifications are skipped. Spreadsheet-to-TTL conversion is not implemented, and no `sosa-next` projection is implemented yet.
 
+## Example validation
+
+Current SSN/SOSA example instance data lives under `src/current-ssn-sosa/examples/sosa-instance-data/`. These files are example data, not ontology imports, and they are not currently imported into the editor ontology.
+
+Run the current-track parse check with:
+
+```bash
+make -C src/current-ssn-sosa validate-examples
+```
+
+Or through the root dispatcher:
+
+```bash
+make -C src validate-examples
+```
+
+This target uses ROBOT `convert` to parse-check every `.ttl` file under `src/current-ssn-sosa/examples/` and writes temporary generated output under `src/current-ssn-sosa/build/artifacts/`. It is not part of `all`.
