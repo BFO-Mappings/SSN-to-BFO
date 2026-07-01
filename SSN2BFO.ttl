@@ -637,7 +637,7 @@
                                                                                            owl:someValuesFrom [ owl:intersectionOf ( <http://www.w3.org/ns/sosa/Actuation>
                                                                                                                                      [ owl:intersectionOf ( [ rdf:type owl:Class ;
                                                                                                                                                               owl:unionOf ( [ rdf:type owl:Restriction ;
-                                                                                                                                                                              owl:onProperty <http://www.w3.org/ns/ssn/hasOutput> ;
+                                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001986> ;
                                                                                                                                                                               owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000020>
                                                                                                                                                                             ]
                                                                                                                                                                             [ rdf:type owl:Restriction ;
@@ -958,7 +958,7 @@
                                                                                          ]
                                                                                          [ rdf:type owl:Restriction ;
                                                                                            owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
-                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
+                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
                                                                                          ]
                                                                                        ) ;
                                                                     rdf:type owl:Class
