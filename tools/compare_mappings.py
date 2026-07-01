@@ -45,6 +45,8 @@ PREFIXES = {
     "schema": SCHEMA,
     "skos": str(SKOS),
     "sosa": "http://www.w3.org/ns/sosa/",
+    "sampling": "http://www.w3.org/ns/sosa/sampling/",
+    "sosa-rel": "http://www.w3.org/ns/sosa/sampling/",
     "ssn": "http://www.w3.org/ns/ssn/",
     "ssn-system": "http://www.w3.org/ns/ssn/systems/",
     "time": "http://www.w3.org/2006/time#",
@@ -1083,13 +1085,13 @@ def write_markdown(
         "- Add explicit status/review columns if maintainers want rejected, deferred, or provisional mappings to be machine-checkable."
     )
     lines.append(
-        "- Define the `sampling:` prefix in repository documentation or the workbook if Sample Relationship rows are meant to be executable mappings."
+        "- `sampling:` is accepted by this audit as an alias for the SOSA sample-relationship namespace; `sosa-rel:` is the preferred repo-facing alias."
     )
     lines.append("")
     lines.append("## Assumptions")
     lines.append("- The `OWL Axiom` column is the authoritative machine-comparison source for spreadsheet-governed mappings.")
     lines.append("- The workbook has no explicit status or review column in the inspected schema.")
-    lines.append("- `sampling:` is not defined in repository TTL prefixes or imports, so those rows are reported as prefix/IRI issues.")
+    lines.append("- `sampling:` is accepted by this audit as an alias for the SOSA sample-relationship namespace; `sosa-rel:` is the preferred repo-facing alias for the same namespace.")
     lines.append("- Label-style `bfo:` and `cco:` spreadsheet tokens are resolved only when they map uniquely to imported labels.")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
