@@ -184,14 +184,6 @@
 <http://www.w3.org/ns/ssn/systems/hasSystemProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000195> .
 
 
-###  http://www.w3.org/ns/ssn/systems/inCondition
-<http://www.w3.org/ns/ssn/systems/inCondition> owl:propertyChainAxiom ( <http://purl.obolibrary.org/obo/BFO_0000196>
-                                                                        <http://purl.obolibrary.org/obo/BFO_0000054>
-                                                                        <https://www.commoncoreontologies.org/ont00001819>
-                                                                        <http://purl.obolibrary.org/obo/BFO_0000055>
-                                                                      ) .
-
-
 ###  http://www.w3.org/ns/ssn/systems/qualityOfObservation
 <http://www.w3.org/ns/ssn/systems/qualityOfObservation> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
 
