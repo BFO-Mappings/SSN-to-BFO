@@ -171,11 +171,11 @@ Human decision fields:
 - Rationale: The intended BFO relation is BFO_0000054, not BFO_0000055.
 - Follow-up issue/PR: Update the spreadsheet OWL Axiom for sosa:Actuator to use bfo:BFO_0000054.
 
-## ISSUE-0058: sosa:Sampling
+## ISSUE-0057: sosa:Sampling
 
 Metadata:
 
-- Issue ID: `ISSUE-0058`
+- Issue ID: `ISSUE-0057`
 - Sheet: `Common Classes`
 - Spreadsheet row: `17`
 - Source term: `sosa:Sampling`
@@ -227,18 +227,19 @@ Review questions:
 Possible resolution location:
 
 - [ ] spreadsheet only
-- [ ] TTL only
+- [x] TTL only
 - [ ] both
 - [ ] audit parser limitation
 - [ ] needs ontology review
 
 Human decision fields:
 
-- Decision:
+- Decision: Spreadsheet is correct.
+- Selected resolution: TTL only.
 - Reviewer:
 - Date:
-- Rationale:
-- Follow-up issue/PR:
+- Rationale: The intended relation is cco:ont00001986, not ssn:hasOutput.
+- Follow-up issue/PR: Update the sosa:Sampling mapping in SSN2BFO.ttl to use cco:ont00001986 where the mismatching expression currently uses ssn:hasOutput.
 
 ## ISSUE-0064: ssn-system:OperatingRange
 
