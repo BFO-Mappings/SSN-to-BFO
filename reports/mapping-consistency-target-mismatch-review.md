@@ -156,7 +156,7 @@ Review questions:
 
 Possible resolution location:
 
-- [ ] spreadsheet only
+- [x] spreadsheet only
 - [ ] TTL only
 - [ ] both
 - [ ] audit parser limitation
@@ -164,11 +164,12 @@ Possible resolution location:
 
 Human decision fields:
 
-- Decision:
+- Decision: TTL is correct.
+- Selected resolution: spreadsheet only.
 - Reviewer:
 - Date:
-- Rationale:
-- Follow-up issue/PR:
+- Rationale: The intended BFO relation is BFO_0000054, not BFO_0000055.
+- Follow-up issue/PR: Update the spreadsheet OWL Axiom for sosa:Actuator to use bfo:BFO_0000054.
 
 ## ISSUE-0058: sosa:Sampling
 
