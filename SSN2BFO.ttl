@@ -502,7 +502,7 @@
 <http://www.w3.org/ns/sosa/Sampling> rdf:type owl:Class ;
                                      owl:equivalentClass [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000228>
                                                                                 [ rdf:type owl:Restriction ;
-                                                                                  owl:onProperty <http://www.w3.org/ns/ssn/hasOutput> ;
+                                                                                  owl:onProperty <https://www.commoncoreontologies.org/ont00001986> ;
                                                                                   owl:someValuesFrom <http://www.w3.org/ns/sosa/Sample>
                                                                                 ]
                                                                                 [ rdf:type owl:Restriction ;
