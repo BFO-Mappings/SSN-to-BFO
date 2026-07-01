@@ -73,18 +73,19 @@ Review questions:
 Possible resolution location:
 
 - [ ] spreadsheet only
-- [ ] TTL only
+- [x] TTL only
 - [ ] both
 - [ ] audit parser limitation
 - [ ] needs ontology review
 
 Human decision fields:
 
-- Decision:
+- Decision: Spreadsheet is correct.
+- Selected resolution: TTL only.
 - Reviewer:
 - Date:
-- Rationale:
-- Follow-up issue/PR:
+- Rationale: The intended relation is cco:ont00001986, not ssn:hasOutput.
+- Follow-up issue/PR: Update the ssn-system:ActuationRange mapping in SSN2BFO.ttl to use cco:ont00001986 where the mismatching expression currently uses ssn:hasOutput.
 
 ## ISSUE-0029: sosa:Actuator
 
@@ -241,11 +242,11 @@ Human decision fields:
 - Rationale: The intended relation is cco:ont00001986, not ssn:hasOutput.
 - Follow-up issue/PR: Update the sosa:Sampling mapping in SSN2BFO.ttl to use cco:ont00001986 where the mismatching expression currently uses ssn:hasOutput.
 
-## ISSUE-0064: ssn-system:OperatingRange
+## ISSUE-0062: ssn-system:OperatingRange
 
 Metadata:
 
-- Issue ID: `ISSUE-0064`
+- Issue ID: `ISSUE-0062`
 - Sheet: `System Capability`
 - Spreadsheet row: `21`
 - Source term: `ssn-system:OperatingRange`
@@ -297,18 +298,19 @@ Review questions:
 Possible resolution location:
 
 - [ ] spreadsheet only
-- [ ] TTL only
+- [x] TTL only
 - [ ] both
 - [ ] audit parser limitation
 - [ ] needs ontology review
 
 Human decision fields:
 
-- Decision:
+- Decision: Spreadsheet is correct.
+- Selected resolution: TTL only.
 - Reviewer:
 - Date:
-- Rationale:
-- Follow-up issue/PR:
+- Rationale: The intended target is cco:ont00000319, not cco:ont00000118.
+- Follow-up issue/PR: Update the ssn-system:OperatingRange mapping in SSN2BFO.ttl to use cco:ont00000319 where the mismatching expression currently uses cco:ont00000118.
 
 ## Explicit Non-Actions
 
