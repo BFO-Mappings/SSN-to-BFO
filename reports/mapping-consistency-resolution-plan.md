@@ -73,9 +73,22 @@ Notes:
 - The property-chain axiom using `cco:described_by` followed by `cco:is_about` is also wrong.
 - The spreadsheet should be updated separately by clearing or removing the OWL Axiom cell for `ssn:forProperty`.
 
+## 5. Extra TTL Assertion Review
+
+| Status | Issue ID | Source term | Sheet / row | TTL predicate | Problem | Proposed resolution type | Fix belongs in |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [ ] | `ISSUE-0012` | `ssn-system:inCondition` | `System Capability` / 15 | `owl:propertyChainAxiom` | TTL includes an extra property-chain axiom for `ssn-system:inCondition` that is not governed by a parsed spreadsheet assertion. | Human review determined the spreadsheet is correct and the TTL property-chain axiom is wrong. Remove the `owl:propertyChainAxiom` for `ssn-system:inCondition` from `SSN2BFO.ttl` in a separate PR. | TTL |
+
+Notes:
+
+- Do not add a replacement spreadsheet axiom.
+- Do not add a replacement TTL axiom.
+- Do not edit the spreadsheet for this issue.
+- This checklist records the decision only; the TTL change belongs in a separate PR.
+
 ## Explicit Non-Actions
 
-- No ontology mapping edits are made or recommended by this checklist.
+- No ontology mapping edits are made by this checklist.
 - No spreadsheet edits are made by this checklist.
 - No import, release, `src`, or `sosa-next` files are changed by this checklist.
-- `missing_in_ttl` and `missing_in_spreadsheet` audit findings remain outside this high-priority review pass.
+- Other `missing_in_ttl` and `missing_in_spreadsheet` audit findings remain outside this review pass.
