@@ -63,12 +63,15 @@ Notes:
 
 | Status | Issue ID | Source term | Sheet / row | Problem | Proposed resolution type | Fix belongs in |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | `ISSUE-0038` | `ssn:forProperty` | `Common OPs` / 6 | Spreadsheet OWL axiom could not be parsed into a supported comparison assertion. | Review and normalize the spreadsheet OWL Axiom cell format if this row should be machine-comparable. | Manual review / spreadsheet |
+| [ ] | `ISSUE-0035` | `ssn:forProperty` | `Common OPs` / 6 | Spreadsheet OWL Axiom cell currently asserts `rdfs:range`, `rdfs:domain`, and a property-chain `subPropertyOf` axiom that could not be parsed into a supported comparison assertion. | Human review determined the spreadsheet OWL Axiom cell is wrong and should be cleared or removed separately. Do not carry forward the shown domain axiom, range axiom, or property-chain axiom using `cco:described_by` followed by `cco:is_about`. | Spreadsheet |
 
 Notes:
 
-- Do not edit TTL mechanically from this issue.
-- The first decision is whether the spreadsheet axiom should be made machine-comparable in a future spreadsheet-focused change.
+- Do not edit `SSN2BFO.ttl` for this issue.
+- `ssn:forProperty` should not have the domain axiom shown in the spreadsheet.
+- `ssn:forProperty` should not have the range axiom shown in the spreadsheet.
+- The property-chain axiom using `cco:described_by` followed by `cco:is_about` is also wrong.
+- The spreadsheet should be updated separately by clearing or removing the OWL Axiom cell for `ssn:forProperty`.
 
 ## Explicit Non-Actions
 
