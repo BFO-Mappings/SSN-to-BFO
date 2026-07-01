@@ -35,11 +35,13 @@ Notes:
 
 | Status | Issue ID | Source term | Sheet / row | Problem | Proposed resolution type | Fix belongs in |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | `ISSUE-0044` | `sosa:Procedure` | `Common Classes` / 12 | Spreadsheet target includes unresolved label alias `cco:PrescriptiveInformationContentEntity`; the audit could not resolve it to a unique CCO IRI or CURIE. | Replace or supplement the label-style target with a resolvable CCO IRI or CURIE before mechanical comparison. | Spreadsheet / manual review |
+| [ ] | `ISSUE-0044` | `sosa:Procedure` | `Common Classes` / 12 | Spreadsheet target includes unresolved label alias `cco:PrescriptiveInformationContentEntity`; the audit could not resolve it to a unique CCO IRI or CURIE. The local CCO import does not contain that label/token. | Review `cco:ont00000965` as a candidate spreadsheet replacement token, pending human confirmation. Replace or supplement the label-style target with a resolvable CCO IRI or CURIE before mechanical comparison only after confirmation. | Spreadsheet / manual review |
 
 Notes:
 
 - This is the only remaining `prefix_or_iri_issue` in the current audit.
+- The local CCO import contains `cco:ont00000965` with label `"Directive Information Content Entity"`, alt label `"Directive ICE"`, and definition `"An Information Content Entity that consists of a set of propositions or images (as in the case of a blueprint) that prescribe some Entity."`
+- `cco:ont00000965` is a candidate replacement for the spreadsheet token, pending human confirmation; it is not automatically correct.
 - Do not edit TTL mechanically from this issue.
 
 ## 3. Target Mismatch Review
