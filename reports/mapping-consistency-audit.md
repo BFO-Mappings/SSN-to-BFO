@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `review/missing-in-spreadsheet-ttl-assertions`
-- Current commit: `c073b80cb0e28b367681fa296fedccca52de615f`
+- Current branch: `fix/ttl-remove-incondition-chain`
+- Current commit: `5c0a5a0c1676e88e580a699786efce41b07fc056`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
