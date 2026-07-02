@@ -56,10 +56,6 @@
                                            rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001834> .
 
 
-###  http://www.w3.org/ns/sosa/hasFeatureOfInterest
-<http://www.w3.org/ns/sosa/hasFeatureOfInterest> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
-
-
 ###  http://www.w3.org/ns/sosa/hasResult
 <http://www.w3.org/ns/sosa/hasResult> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
 
@@ -79,8 +75,7 @@
 
 
 ###  http://www.w3.org/ns/sosa/isFeatureOfInterestOf
-<http://www.w3.org/ns/sosa/isFeatureOfInterestOf> rdf:type owl:ObjectProperty ;
-                                                  rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001841> .
+<http://www.w3.org/ns/sosa/isFeatureOfInterestOf> rdf:type owl:ObjectProperty .
 
 
 ###  http://www.w3.org/ns/sosa/isResultOf
