@@ -464,7 +464,7 @@
 
 ###  http://www.w3.org/ns/sosa/Sampler
 <http://www.w3.org/ns/sosa/Sampler> rdf:type owl:Class ;
-                                    rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
+                                    owl:equivalentClass [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000040>
                                                                            [ rdf:type owl:Restriction ;
                                                                              owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000196> ;
                                                                              owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000017>
