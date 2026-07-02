@@ -1,210 +1,51 @@
 # Missing-in-Spreadsheet Mapping Assertions Review
 
-This note reviews TTL mapping assertions present in `SSN2BFO.ttl` that are not currently documented in `Current_SOSA-SSN to BFO-CCO.xlsx`.
+This note reviews the remaining `missing_in_spreadsheet` audit category after PR #43.
 
-No TTL or spreadsheet changes are made by this review note.
+No TTL or spreadsheet changes are made by this note.
 
-## Review policy
+## Current audit status
 
-For each issue, decide whether:
+After the latest cleanup, the audit reports:
 
-- **Document in spreadsheet**: the TTL assertion is correct and should be represented in the spreadsheet.
-- **Remove from TTL**: the spreadsheet omission is intentional or the TTL assertion is wrong.
-- **Defer**: the assertion requires modeling discussion before either file is changed.
+- `missing_in_ttl`: 61
+- `missing_in_spreadsheet`: 13
+- `target_mismatch`: 0
+- `prefix_or_iri_issue`: 0
+- `needs_human_review`: 0
 
-## Issues
+The remaining `missing_in_spreadsheet` items are TTL assertions that the current audit does not find in the spreadsheet.
 
-### ISSUE-0001: `sosa:Sampler`
+## Audit interpretation policy
 
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subClassOf`
-- TTL target: `bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Sampling; cco:ont00001787`
-- TTL line: `470`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
+These issues should not yet be treated as modeling decisions.
 
-Decision: **TBD**
+For reconciliation purposes, the spreadsheet should be read narrowly. A spreadsheet mapping assertion should be extracted only from explicit assertion-bearing fields, namely:
 
-Rationale:
+- source term;
+- mapping predicate / relation;
+- mapping target.
 
-- TBD
+Other spreadsheet fields should be treated as possible documentation only, including notes, explanations, labels, examples, comments, modeling rationale, background OWL text, or other descriptive columns.
 
-### ISSUE-0002: `sosa:Sensor`
+Accordingly, the audit tool should not infer expected mapping assertions merely from contextual or explanatory spreadsheet content unless the relevant spreadsheet column is explicitly intended to encode a mapping assertion.
 
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subClassOf`
-- TTL target: `bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787`
-- TTL line: `509`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
+## Consequence for the 13 `missing_in_spreadsheet` issues
 
-Decision: **TBD**
+The 13 remaining `missing_in_spreadsheet` items should be treated as requiring audit-method review before ontology or spreadsheet edits are made.
 
-Rationale:
+For each item, the next question is not immediately:
 
-- TBD
+- "Is the TTL assertion correct?"
 
-### ISSUE-0003: `sosa:hasFeatureOfInterest`
+The prior question is:
 
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001921`
-- TTL line: `59`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
+- "Is the spreadsheet expected to contain this assertion under the strict source-term / predicate / target reading?"
 
-Decision: **TBD**
+Only after that question is answered should a modeling decision be made.
 
-Rationale:
+## Recommended next step
 
-- TBD
+Before applying TTL or spreadsheet changes, update or review `tools/compare_mappings.py` so that spreadsheet-derived expected assertions are generated only from explicit source-term, predicate/relation, and target fields.
 
-### ISSUE-0004: `sosa:hasSample`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `owl:propertyChainAxiom`
-- TTL target: `bfo:BFO_0000084; cco:ont00001873`
-- TTL line: `67`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0005: `sosa:isActedOnBy`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001886`
-- TTL line: `77`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0006: `sosa:isFeatureOfInterestOf`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001841`
-- TTL line: `81`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0007: `sosa:isResultOf`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001816`
-- TTL line: `86`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0008: `sosa:isSampleOf`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `owl:propertyChainAxiom`
-- TTL target: `bfo:BFO_0000101; cco:ont00001938`
-- TTL line: `90`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0009: `sosa:madeByActuator`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001833`
-- TTL line: `100`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0010: `sosa:madeObservation`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001787`
-- TTL line: `112`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0011: `sosa:madeSampling`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `cco:ont00001787`
-- TTL line: `116`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0012: `ssn:hasDeployment`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `bfo:BFO_0000056`
-- TTL line: `138`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
-
-### ISSUE-0013: `ssn:inDeployment`
-
-- Category: `missing_in_spreadsheet`
-- TTL predicate: `rdfs:subPropertyOf`
-- TTL target: `bfo:BFO_0000056`
-- TTL line: `155`
-- Spreadsheet sheet: ``
-- Spreadsheet row: ``
-
-Decision: **TBD**
-
-Rationale:
-
-- TBD
+After the audit extraction policy is confirmed, rerun the audit command and reassess the remaining `missing_in_spreadsheet` and `missing_in_ttl` categories.
