@@ -58,6 +58,23 @@ Recommended follow-up:
 
 Review the local imported CCO definition of `cco:Sensor` before changing the TTL. If `cco:Sensor` is accepted as extensionally equivalent to `sosa:Sensor`, then replace the old TTL subclass expression with the spreadsheet equivalent-class mapping. If not, retain a more specific SOSA restriction or document why the spreadsheet equivalence is too strong.
 
+## Local CCO evidence checked
+
+After this review note was opened, local `imports/cco.ttl` was inspected.
+
+For the Sampler issue, the local import confirms that:
+
+- `BFO_0000054` is inverse of `BFO_0000055`;
+- `BFO_0000054` has the alternate label `realized in`;
+- `BFO_0000055` is labeled `realizes`;
+- `BFO_0000055` has process-to-realizable-entity direction.
+
+This supports the concern that the spreadsheet Sampler `OWL Axiom` uses the wrong relation direction when it says a `bfo:RealizableEntity` `bfo:realizes` some `sosa:Sampling`.
+
+For the Sensor issue, the local import shows `cco:ont00000569` as `Sensor`, subclassed under `cco:ont00000736`, with a definition of a transducer designed to convert incoming energy into an output signal corresponding to changes in that energy. The inspected local import did not show `cco:Sensor` as an explicit equivalent class expression to a material entity bearing a `Sensor Function` or `Sensor Role`.
+
+This makes the spreadsheet Sensor equivalence claim stronger than what is directly visible in the local CCO import. Do not replace the TTL `sosa:Sensor` subclass expression with `equivalentTo cco:Sensor` until the intended CCO semantics are confirmed from the governing CCO source or an explicit project decision is recorded.
+
 ## Recommended implementation sequence
 
 1. Create a spreadsheet-review or spreadsheet-fix PR for the apparent Sampler relation-direction issue, if confirmed.
