@@ -31,36 +31,30 @@ The TTL currently includes the following direct mappings on inverse-side SOSA/SS
 - `ssn:hasDeployment rdfs:subPropertyOf bfo:participates_in`
 - `ssn:inDeployment rdfs:subPropertyOf bfo:participates_in`
 
-These appear to be inverse-side consequences of canonical forward-side mappings plus inverse-property relationships.
+## Spreadsheet basis
 
-## Policy question
+Inspection of the spreadsheet rows confirmed that all seven TTL-only assertions are inverse-derived from mappings already represented in the spreadsheet:
 
-Should `SSN2BFO.ttl` include materialized inverse-side direct mappings that are not explicitly asserted in the spreadsheet `OWL Axiom` cells?
-
-## Review finding
-
-These assertions should not be treated as accidental stale TTL content merely because they are absent from the spreadsheet.
-
-They are plausible materialized inverse-side mappings. However, because they are actual BFO/CCO source-to-target mapping assertions, they should not remain undocumented if the spreadsheet is the governing mapping source.
+- `sosa:isActedOnBy` is inverse-derived from `sosa:actsOnProperty rdfs:subPropertyOf cco:affects`.
+- `sosa:isResultOf` is inverse-derived from `sosa:hasResult rdfs:subPropertyOf cco:has_output`.
+- `sosa:madeByActuator` is inverse-derived from `sosa:madeActuation rdfs:subPropertyOf cco:agent_in`.
+- `sosa:madeObservation` is inverse-derived from `sosa:madeBySensor rdfs:subPropertyOf cco:has_agent`.
+- `sosa:madeSampling` is inverse-derived from `sosa:madeBySampler rdfs:subPropertyOf cco:has_agent`.
+- `ssn:hasDeployment` is inverse-derived from `ssn:deployedSystem rdfs:subPropertyOf bfo:has_participant`.
+- `ssn:inDeployment` is inverse-derived from `ssn:deployedOnPlatform rdfs:subPropertyOf bfo:has_participant`.
 
 ## Decision
 
-Defer mechanical TTL removal.
+Keep the seven inverse-side direct mappings in `SSN2BFO.ttl`.
 
-The repository should make an explicit policy choice:
+These assertions are not arbitrary stale TTL content. They are materialized inverse-side consequences of spreadsheet mappings plus inverse-property relationships.
 
-1. **Document materialized inverse-side mappings**  
-   Keep these TTL assertions and add them to the spreadsheet `OWL Axiom` cells, making clear that the TTL intentionally materializes inverse-side direct mappings.
-
-2. **Canonical-only TTL policy**  
-   Remove these TTL assertions and keep only the spreadsheet-canonical forward-side mappings and inverse/property metadata.
+Because they are actual BFO/CCO source-to-target mapping assertions, they should be documented in the spreadsheet `OWL Axiom` cells rather than left as undocumented TTL-only assertions.
 
 ## Recommended follow-up
 
-Recommended next step: choose whether the repository wants a materialized inverse-side mapping policy.
+Create spreadsheet-only PRs documenting the seven materialized inverse-side direct mappings.
 
-If yes, create spreadsheet-only PRs documenting the seven TTL assertions.
-
-If no, create TTL-removal PRs removing the seven inverse-side direct mappings.
+Do not edit `SSN2BFO.ttl` for this issue.
 
 Do not mix this policy decision with the deferred `sosa:Sensor` upcoming-CCO issue.
