@@ -116,6 +116,11 @@
 <http://www.w3.org/ns/sosa/observedProperty> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
 
 
+
+
+###  http://www.w3.org/ns/sosa/usedProcedure
+<http://www.w3.org/ns/sosa/usedProcedure> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001920> .
+
 ###  http://www.w3.org/ns/ssn/deployedOnPlatform
 <http://www.w3.org/ns/ssn/deployedOnPlatform> rdf:type owl:ObjectProperty ;
                                               rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000057> .
@@ -141,6 +146,10 @@
 ###  http://www.w3.org/ns/ssn/hasOutput
 <http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty ;
                                      rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
+
+
+###  http://www.w3.org/ns/ssn/hasSubSystem
+<http://www.w3.org/ns/ssn/hasSubSystem> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000178> .
 
 
 ###  http://www.w3.org/ns/ssn/implements
