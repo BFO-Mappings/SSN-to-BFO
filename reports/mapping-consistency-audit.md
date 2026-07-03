@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/document-inverse-side-direct-mappings`
-- Current commit: `a8281281df169d9e1627884ec899c732970e8642`
+- Current branch: `fix/add-simple-op-mappings`
+- Current commit: `325eca6d1f427dd96f686e84d655c5d139f42dba`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -48,13 +48,13 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 ## Summary
 - Total spreadsheet mapping rows: 93
 - Total spreadsheet expected assertions parsed: 84
-- Total TTL candidate mapping assertions: 70
-- Exact spreadsheet row matches: 69
-- Exact assertion matches: 69
-- Total issues: 16
+- Total TTL candidate mapping assertions: 72
+- Exact spreadsheet row matches: 71
+- Exact assertion matches: 71
+- Total issues: 14
 
 ## Issues by Category
-- `missing_in_ttl`: 15
+- `missing_in_ttl`: 13
 - `missing_in_spreadsheet`: 1
 - `target_mismatch`: 0
 - `relation_mismatch`: 0
@@ -92,7 +92,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 ## Detailed Issues
 | Issue ID | Category | Sheet | Row | Source | Source IRI | TTL Predicate | Spreadsheet Relation | TTL Target | Spreadsheet Target | TTL Line | Recommended Action |
 | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | --- |
-| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 504 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
+| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 513 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
 | ISSUE-0002 | missing_in_ttl | Common DPs | 2 | sosa:hasSimpleResult | http://www.w3.org/ns/sosa/hasSimpleResult |  | rdfs:subPropertyOf |  | owl:topDataProperty |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 | ISSUE-0003 | missing_in_ttl | Common DPs | 3 | sosa:resultTime | http://www.w3.org/ns/sosa/resultTime |  | rdfs:subPropertyOf |  | owl:topDataProperty |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 | ISSUE-0004 | missing_in_ttl | Sample Relationship | 5 | sampling:RelationshipNature | http://www.w3.org/ns/sosa/sampling/RelationshipNature |  | rdfs:subClassOf |  | cco:ont00000958 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
@@ -101,13 +101,11 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | ISSUE-0007 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | owl:Restriction; owl:onProperty; owl:someValuesFrom; sampling:RelationshipNature; sampling:natureOfRelationship |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 | ISSUE-0008 | missing_in_ttl | Common OPs | 11 | ssn:hasProperty | http://www.w3.org/ns/ssn/hasProperty |  | rdfs:subPropertyOf |  | bfo:BFO_0000196 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 | ISSUE-0009 | missing_in_ttl | Common OPs | 11 | ssn:hasProperty | http://www.w3.org/ns/ssn/hasProperty |  | rdfs:subPropertyOf |  | bfo:BFO_0000117 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0010 | missing_in_ttl | Common OPs | 14 | ssn:hasSubSystem | http://www.w3.org/ns/ssn/hasSubSystem |  | rdfs:subPropertyOf |  | bfo:BFO_0000178 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0011 | missing_in_ttl | Common OPs | 15 | sosa:hosts | http://www.w3.org/ns/sosa/hosts |  | rdfs:subPropertyOf |  | bfo:BFO_0000054; bfo:BFO_0000057; bfo:BFO_0000196; owl:ObjectProperty; owl:propertyChainAxiom |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0012 | missing_in_ttl | Common OPs | 15 | sosa:hosts | http://www.w3.org/ns/sosa/hosts |  | rdfs:subPropertyOf |  | bfo:BFO_0000054; bfo:BFO_0000057; bfo:BFO_0000196; owl:ObjectProperty; owl:inverseOf; owl:propertyChainAxiom |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0013 | missing_in_ttl | Common OPs | 16 | ssn:implementedBy | http://www.w3.org/ns/ssn/implementedBy |  | rdfs:subPropertyOf |  | owl:inverseOf; owl:propertyChainAxiom; cco:ont00001787; cco:ont00001920 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0014 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0015 | missing_in_ttl | Common OPs | 34 | sosa:observes | http://www.w3.org/ns/sosa/observes |  | rdfs:subPropertyOf |  | bfo:BFO_0000057 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0016 | missing_in_ttl | Common OPs | 36 | sosa:usedProcedure | http://www.w3.org/ns/sosa/usedProcedure |  | rdfs:subPropertyOf |  | cco:ont00001920 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0010 | missing_in_ttl | Common OPs | 15 | sosa:hosts | http://www.w3.org/ns/sosa/hosts |  | rdfs:subPropertyOf |  | bfo:BFO_0000054; bfo:BFO_0000057; bfo:BFO_0000196; owl:ObjectProperty; owl:propertyChainAxiom |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0011 | missing_in_ttl | Common OPs | 15 | sosa:hosts | http://www.w3.org/ns/sosa/hosts |  | rdfs:subPropertyOf |  | bfo:BFO_0000054; bfo:BFO_0000057; bfo:BFO_0000196; owl:ObjectProperty; owl:inverseOf; owl:propertyChainAxiom |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0012 | missing_in_ttl | Common OPs | 16 | ssn:implementedBy | http://www.w3.org/ns/ssn/implementedBy |  | rdfs:subPropertyOf |  | owl:inverseOf; owl:propertyChainAxiom; cco:ont00001787; cco:ont00001920 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0013 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0014 | missing_in_ttl | Common OPs | 34 | sosa:observes | http://www.w3.org/ns/sosa/observes |  | rdfs:subPropertyOf |  | bfo:BFO_0000057 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 
 ## Proposed Minimal Correction Plan
 
