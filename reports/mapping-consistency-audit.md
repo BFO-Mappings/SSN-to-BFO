@@ -7,11 +7,9 @@
 
 ## Git Context
 - Current branch: `fix/correct-hosts-implementedby-property-chains`
-- Current commit: `b8fde97dfc5c074cddb598835e700085b116d95f`
+- Current commit: `b464cea20bae6d6c542ec1db459cc76b6b978beb`
 - Working tree had untracked audit files at report generation time: no
-- Audit file status entries at report generation time:
-  - `M reports/mapping-consistency-audit.csv`
-  - ` M reports/mapping-consistency-audit.md`
+- Audit file status entries at report generation time: none
 
 ## Detected Spreadsheet Schema
 | Sheet | Header Row | Source/IRI Column | OWL Axiom Column | Comment/Notes Columns | Status/Review Columns | Candidate Mapping Rows |
