@@ -148,6 +148,11 @@
                                      rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
 
 
+###  http://www.w3.org/ns/ssn/hasProperty
+<http://www.w3.org/ns/ssn/hasProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> ,
+                                                           <http://purl.obolibrary.org/obo/BFO_0000117> .
+
+
 ###  http://www.w3.org/ns/ssn/hasSubSystem
 <http://www.w3.org/ns/ssn/hasSubSystem> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000178> .
 
