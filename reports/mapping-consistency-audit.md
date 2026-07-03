@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/correct-hosts-implementedby-property-chains`
-- Current commit: `b464cea20bae6d6c542ec1db459cc76b6b978beb`
+- Current branch: `fix/clear-terminal-datatype-placeholders`
+- Current commit: `2f66560318f2f03bf4e4acd9fce12096f8e42171`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -47,14 +47,14 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 
 ## Summary
 - Total spreadsheet mapping rows: 93
-- Total spreadsheet expected assertions parsed: 84
+- Total spreadsheet expected assertions parsed: 82
 - Total TTL candidate mapping assertions: 78
 - Exact spreadsheet row matches: 76
 - Exact assertion matches: 77
-- Total issues: 8
+- Total issues: 6
 
 ## Issues by Category
-- `missing_in_ttl`: 7
+- `missing_in_ttl`: 5
 - `missing_in_spreadsheet`: 1
 - `target_mismatch`: 0
 - `relation_mismatch`: 0
@@ -83,6 +83,8 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | Common OPs | 23 | ssn:isPropertyOf | no parsed expected assertions |
 | Common OPs | 24 | ssn:isProxyFor | no parsed expected assertions |
 | Common OPs | 35 | sosa:phenomenonTime | no parsed expected assertions |
+| Common DPs | 2 | sosa:hasSimpleResult | no parsed expected assertions |
+| Common DPs | 3 | sosa:resultTime | no parsed expected assertions |
 | System Capability | 15 | ssn-system:inCondition | no parsed expected assertions |
 | Sample Relationship | 2 | sampling:hasSampleRelationship | no parsed expected assertions |
 | Sample Relationship | 3 | sampling:natureOfRelationship | no parsed expected assertions |
@@ -92,13 +94,11 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | Issue ID | Category | Sheet | Row | Source | Source IRI | TTL Predicate | Spreadsheet Relation | TTL Target | Spreadsheet Target | TTL Line | Recommended Action |
 | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | --- |
 | ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 535 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
-| ISSUE-0002 | missing_in_ttl | Common DPs | 2 | sosa:hasSimpleResult | http://www.w3.org/ns/sosa/hasSimpleResult |  | rdfs:subPropertyOf |  | owl:topDataProperty |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0003 | missing_in_ttl | Common DPs | 3 | sosa:resultTime | http://www.w3.org/ns/sosa/resultTime |  | rdfs:subPropertyOf |  | owl:topDataProperty |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0004 | missing_in_ttl | Sample Relationship | 5 | sampling:RelationshipNature | http://www.w3.org/ns/sosa/sampling/RelationshipNature |  | rdfs:subClassOf |  | cco:ont00000958 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0005 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | cco:ont00000958 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0006 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | owl:Restriction; owl:onProperty; owl:someValuesFrom; sosa:Sample; sampling:relatedSample |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0007 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | owl:Restriction; owl:onProperty; owl:someValuesFrom; sampling:RelationshipNature; sampling:natureOfRelationship |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
-| ISSUE-0008 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0002 | missing_in_ttl | Sample Relationship | 5 | sampling:RelationshipNature | http://www.w3.org/ns/sosa/sampling/RelationshipNature |  | rdfs:subClassOf |  | cco:ont00000958 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0003 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | cco:ont00000958 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0004 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | owl:Restriction; owl:onProperty; owl:someValuesFrom; sosa:Sample; sampling:relatedSample |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0005 | missing_in_ttl | Sample Relationship | 6 | sampling:SampleRelationship | http://www.w3.org/ns/sosa/sampling/SampleRelationship |  | rdfs:subClassOf |  | owl:Restriction; owl:onProperty; owl:someValuesFrom; sampling:RelationshipNature; sampling:natureOfRelationship |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
+| ISSUE-0006 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 
 ## Proposed Minimal Correction Plan
 
