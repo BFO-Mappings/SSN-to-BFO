@@ -7,10 +7,9 @@
 
 ## Git Context
 - Current branch: `fix/ignore-domain-range-inverse-in-audit`
-- Current commit: `3ee4bd2455eb0297137f5df5121064eafb68970e`
+- Current commit: `bd9e3c7c6b80ee0735c18730815b0987622ac8cc`
 - Working tree had untracked audit files at report generation time: no
-- Audit file status entries at report generation time:
-  - `M tools/compare_mappings.py`
+- Audit file status entries at report generation time: none
 
 ## Detected Spreadsheet Schema
 | Sheet | Header Row | Source/IRI Column | OWL Axiom Column | Comment/Notes Columns | Status/Review Columns | Candidate Mapping Rows |
