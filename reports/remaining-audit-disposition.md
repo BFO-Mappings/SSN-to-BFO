@@ -1,20 +1,28 @@
 # Remaining Mapping Audit Disposition
 
-This note records the disposition of the remaining mapping audit issues after the reviewed direct mappings and spreadsheet/TTL corrections.
-
-No TTL, spreadsheet, tool, or generated audit files are changed by this note.
+This note records the disposition of the remaining mapping audit issues after the reviewed direct mappings, spreadsheet/TTL corrections, and property-chain corrections.
 
 ## Current audit state
 
 The current audit state is:
 
-- total issues: 11
+- total issues: 8
 - `missing_in_spreadsheet`: 1
-- `missing_in_ttl`: 10
+- `missing_in_ttl`: 7
 - `target_mismatch`: 0
 - `relation_mismatch`: 0
 
 The remaining issues are not ordinary mechanical cleanup candidates.
+
+## Resolved since prior disposition
+
+The prior complex property-chain rows for the following terms have been resolved and no longer appear as audit issues:
+
+- `sosa:hosts`
+- `sosa:isHostedBy`
+- `ssn:implementedBy`
+
+These were resolved by correcting the spreadsheet rows to direct `owl:propertyChainAxiom` mappings and adding matching TTL property-chain axioms.
 
 ## No-action rows
 
@@ -31,51 +39,25 @@ These are datatype-property placeholder rows, not substantive BFO/CCO object-pro
 
 The remaining `Sample Relationship` rows are not treated as required TTL mapping omissions in the current reconciliation pass.
 
-They are retained as non-mechanical / out-of-scope for this audit cleanup.
-
-## Complex reviewed rows
-
-### `sosa:hosts`
-
-The remaining `sosa:hosts` issues come from property-chain material in the spreadsheet row.
-
-This was reviewed in `reports/hosts-implementedby-complex-mapping-review.md`.
-
-Disposition:
-
-- do not implement mechanically as a TTL-only subproperty patch;
-- do not treat the current audit issue as an accidental omission;
-- revisit only through a separate modeling decision about the intended property-chain pattern.
-
-### `ssn:implementedBy`
-
-The remaining `ssn:implementedBy` issue also comes from property-chain material in the spreadsheet row.
-
-This was reviewed in `reports/hosts-implementedby-complex-mapping-review.md`.
-
-Disposition:
-
-- do not implement mechanically as a TTL-only subproperty patch;
-- do not treat the current audit issue as an accidental omission;
-- revisit only through a separate modeling decision about the intended process-mediated implementation pattern.
+They are retained as non-mechanical / out-of-scope for this audit cleanup unless the project decides that the Sample Relationship sheet is governed by `SSN2BFO.ttl`.
 
 ## Deferred version issue
 
 ### `sosa:Sensor`
 
-The remaining `sosa:Sensor` issue is a known version/alignment issue involving the current TTL and the spreadsheet's intended CCO target.
+The remaining `sosa:Sensor` issues are known version/alignment issues involving the current TTL and the spreadsheet's intended CCO target.
 
 Disposition:
 
 - do not mechanically revise the TTL in this cleanup pass;
-- preserve as a deferred issue pending the relevant CCO-version alignment decision.
+- preserve as deferred pending the relevant CCO-version alignment decision.
 
 ## Summary
 
 The remaining audit issues are intentionally retained as classified issues:
 
-1. no-action placeholder / out-of-scope rows;
-2. complex property-chain modeling rows requiring separate decisions;
-3. deferred `sosa:Sensor` version-alignment issue.
+1. no-action datatype-property placeholder rows;
+2. Sample Relationship rows that are out of scope for this reconciliation pass unless separately accepted;
+3. deferred `sosa:Sensor` version-alignment issues.
 
 They should not be interpreted as unresolved accidental omissions from the direct spreadsheet/TTL reconciliation cleanup.
