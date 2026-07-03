@@ -51,8 +51,14 @@ The remaining `sosa:Sensor` issues are known version/alignment issues involving 
 
 Disposition:
 
-- do not mechanically revise the TTL in this cleanup pass;
-- preserve as deferred pending the relevant CCO-version alignment decision.
+- do not mechanically revise the root `SSN2BFO.ttl` in this cleanup pass;
+- do not create separate current-CCO and next-CCO `sosa:Sensor` mapping files yet;
+- defer the versioned mapping split until the next relevant CCO version is released;
+- preserve the audit rows as deferred version/alignment issues.
+
+See:
+
+- `reports/sensor-next-cco-deferral.md`
 
 ## Summary
 
