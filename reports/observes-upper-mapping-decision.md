@@ -1,12 +1,12 @@
-# `sosa:observes` Conservative Upper Mapping Decision
+# `sosa:observes` Mapping Decision
 
 This note records the decision for the remaining `sosa:observes` mapping candidate.
 
 No TTL or spreadsheet changes are made by this note.
 
-## Spreadsheet mapping
+## Spreadsheet mapping under review
 
-The spreadsheet contains:
+The spreadsheet currently contains:
 
 - `sosa:observes rdfs:domain sosa:Sensor`
 - `sosa:observes rdfs:range ssn:Property`
@@ -16,18 +16,30 @@ The spreadsheet reasoning describes `sosa:observes` as a capability-level relati
 
 ## Review
 
-This mapping should not be implemented mechanically.
+The `bfo:has_participant` mapping should not be accepted.
 
-`sosa:observes` relates a sensor to a property it is capable of observing. `bfo:has_participant` is process-oriented. A direct subproperty assertion would therefore require accepting an indirect interpretation: the sensor and observed property participate in observation processes associated with the observing capability.
+`sosa:observes` relates a sensor to the property it is capable of observing. It is therefore closer to the SSN/SOSA property-directed relation pattern than to a BFO process-participation relation.
+
+`bfo:has_participant` is process-oriented. Treating `sosa:observes` as a direct subproperty of `bfo:has_participant` would overstate the mapping by treating a capability/property relation as if it were directly a process/participant relation.
 
 ## Decision
 
-Defer TTL implementation of:
+Do not implement:
 
 - `sosa:observes rdfs:subPropertyOf bfo:has_participant`
 
-until the project explicitly accepts the conservative-upper-mapping rationale.
+Instead, preserve the SSN/SOSA-level relation:
 
-## Audit treatment
+- `sosa:observes rdfs:subPropertyOf ssn:forProperty`
 
-The remaining `missing_in_ttl` issue for `sosa:observes` is retained as a known deferred modeling issue, not a mechanical omission.
+## Implementation guidance
+
+Implement this in a separate correction PR.
+
+That correction should update the spreadsheet row for `sosa:observes` so the OWL axiom uses:
+
+- `sosa:observes rdfs:subPropertyOf ssn:forProperty`
+
+Then the TTL should be aligned with the corrected spreadsheet mapping.
+
+Do not add the `bfo:has_participant` mapping.
