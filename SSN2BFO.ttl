@@ -67,8 +67,10 @@
 
 
 ###  http://www.w3.org/ns/sosa/hosts
-<http://www.w3.org/ns/sosa/hosts> rdf:type owl:ObjectProperty .
-
+<http://www.w3.org/ns/sosa/hosts> rdf:type owl:ObjectProperty ;
+                                  owl:propertyChainAxiom ( <http://purl.obolibrary.org/obo/BFO_0000196>
+                                                           <http://purl.obolibrary.org/obo/BFO_0000054>
+                                                           <http://purl.obolibrary.org/obo/BFO_0000057> ) .
 
 ###  http://www.w3.org/ns/sosa/isActedOnBy
 <http://www.w3.org/ns/sosa/isActedOnBy> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001886> .
@@ -87,6 +89,12 @@
                                                                 <https://www.commoncoreontologies.org/ont00001938>
                                                               ) .
 
+
+###  http://www.w3.org/ns/sosa/isHostedBy
+<http://www.w3.org/ns/sosa/isHostedBy> rdf:type owl:ObjectProperty ;
+                                       owl:propertyChainAxiom ( <http://purl.obolibrary.org/obo/BFO_0000056>
+                                                                <http://purl.obolibrary.org/obo/BFO_0000055>
+                                                                <http://purl.obolibrary.org/obo/BFO_0000197> ) .
 
 ###  http://www.w3.org/ns/sosa/madeActuation
 <http://www.w3.org/ns/sosa/madeActuation> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
@@ -160,6 +168,11 @@
 ###  http://www.w3.org/ns/ssn/hasSubSystem
 <http://www.w3.org/ns/ssn/hasSubSystem> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000178> .
 
+
+###  http://www.w3.org/ns/ssn/implementedBy
+<http://www.w3.org/ns/ssn/implementedBy> rdf:type owl:ObjectProperty ;
+                                         owl:propertyChainAxiom ( <https://www.commoncoreontologies.org/ont00001942>
+                                                                  <https://www.commoncoreontologies.org/ont00001833> ) .
 
 ###  http://www.w3.org/ns/ssn/implements
 <http://www.w3.org/ns/ssn/implements> rdf:type owl:ObjectProperty .
