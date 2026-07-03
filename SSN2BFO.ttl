@@ -112,6 +112,10 @@
 <http://www.w3.org/ns/sosa/madeSampling> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
 
 
+###  http://www.w3.org/ns/sosa/observes
+<http://www.w3.org/ns/sosa/observes> rdfs:subPropertyOf <http://www.w3.org/ns/ssn/forProperty> .
+
+
 ###  http://www.w3.org/ns/sosa/observedProperty
 <http://www.w3.org/ns/sosa/observedProperty> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
 
