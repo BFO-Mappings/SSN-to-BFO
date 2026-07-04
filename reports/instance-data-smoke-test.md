@@ -15,22 +15,22 @@ This is a lightweight parse/RDFS-closure smoke test, not a full OWL DL or SHACL 
 
 | File | Status | Triples | Observations | Sensors | Samples | SampleRelationships | RelationshipNatures | Directly mapped properties | Property-chain mapped properties | Unmapped source properties |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | PASS | 15755 | 6 | 0 | 2 | 0 | 0 | 3 | 1 | 5 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | PASS | 15634 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | PASS | 15635 | 2 | 2 | 0 | 0 | 0 | 8 | 0 | 7 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | PASS | 15663 | 0 | 0 | 3 | 0 | 0 | 0 | 3 | 5 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | PASS | 15823 | 16 | 2 | 0 | 0 | 0 | 4 | 1 | 10 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | PASS | 15690 | 2 | 1 | 1 | 0 | 0 | 4 | 1 | 9 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/iphone_barometer-sosa.ttl` | PASS | 15625 | 2 | 1 | 0 | 0 | 0 | 4 | 1 | 2 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/seismograph.ttl` | PASS | 15621 | 1 | 1 | 1 | 0 | 0 | 4 | 1 | 2 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/spinning-cups.ttl` | PASS | 15629 | 2 | 1 | 0 | 0 | 0 | 5 | 1 | 4 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | PASS | 15609 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 4 |
-| `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | PASS | 15610 | 1 | 1 | 0 | 0 | 0 | 3 | 0 | 2 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | PASS | 15683 | 6 | 0 | 2 | 0 | 0 | 3 | 1 | 5 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | PASS | 15562 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | PASS | 15563 | 2 | 2 | 0 | 0 | 0 | 8 | 0 | 7 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | PASS | 15591 | 0 | 0 | 3 | 0 | 0 | 0 | 3 | 5 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | PASS | 15751 | 16 | 2 | 0 | 0 | 0 | 4 | 1 | 10 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | PASS | 15618 | 2 | 1 | 1 | 0 | 0 | 4 | 1 | 9 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/iphone_barometer-sosa.ttl` | PASS | 15553 | 2 | 1 | 0 | 0 | 0 | 4 | 1 | 2 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/seismograph.ttl` | PASS | 15549 | 1 | 1 | 1 | 0 | 0 | 4 | 1 | 2 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/spinning-cups.ttl` | PASS | 15557 | 2 | 1 | 0 | 0 | 0 | 5 | 1 | 4 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | PASS | 15537 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 4 |
+| `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | PASS | 15538 | 1 | 1 | 0 | 0 | 0 | 3 | 0 | 2 |
 
 ## Provisional Sample Relationship Fixture
 
 - Status: PASS
-- Triples: 15602
+- Triples: 15530
 - SampleRelationship instances: 1
 - RelationshipNature instances: 1
 
