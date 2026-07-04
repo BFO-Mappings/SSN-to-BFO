@@ -31,13 +31,11 @@ The prior complex property-chain rows for the following terms have also been res
 
 These were resolved by correcting the spreadsheet rows to direct `owl:propertyChainAxiom` mappings and adding matching TTL property-chain axioms.
 
-## Deferred Sample Relationship mappings
+## Provisional Sample Relationship mappings
 
-The remaining `Sample Relationship` rows are deferred substantive mappings.
+The prior `Sample Relationship` audit rows have been implemented to support instance-data testing.
 
-They are not no-action rows and should not be treated as ordinary TTL omissions. The sample relationship material appears to model relation-like content through classes and class restrictions, which makes the BFO/CCO alignment non-mechanical.
-
-These rows require a separate modeling pass to determine how SOSA's sample relationship pattern should be represented in BFO/CCO.
+They remain provisional and require close review before being treated as release-quality or authoritative BFO/CCO mappings. The sample relationship material appears to model relation-like content through classes and class restrictions, which makes the BFO/CCO alignment non-mechanical.
 
 See:
 
@@ -64,7 +62,7 @@ See:
 
 The remaining audit issues are intentionally retained as classified issues:
 
-1. deferred `Sample Relationship` substantive mapping issues;
+1. provisional `Sample Relationship` mappings requiring close review;
 2. deferred `sosa:Sensor` version-alignment issues.
 
 They should not be interpreted as unresolved accidental omissions from the direct spreadsheet/TTL reconciliation cleanup.

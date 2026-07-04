@@ -306,6 +306,22 @@
 <http://purl.obolibrary.org/obo/BFO_0000144> rdf:type owl:Class .
 
 
+###  http://www.w3.org/ns/sosa/sampling/RelationshipNature
+<http://www.w3.org/ns/sosa/sampling/RelationshipNature> rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000958> .
+
+
+###  http://www.w3.org/ns/sosa/sampling/SampleRelationship
+<http://www.w3.org/ns/sosa/sampling/SampleRelationship> rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000958> ,
+                                                      [ rdf:type owl:Restriction ;
+                                                        owl:onProperty <http://www.w3.org/ns/sosa/sampling/relatedSample> ;
+                                                        owl:someValuesFrom <http://www.w3.org/ns/sosa/Sample>
+                                                      ] ,
+                                                      [ rdf:type owl:Restriction ;
+                                                        owl:onProperty <http://www.w3.org/ns/sosa/sampling/natureOfRelationship> ;
+                                                        owl:someValuesFrom <http://www.w3.org/ns/sosa/sampling/RelationshipNature>
+                                                      ] .
+
+
 ###  http://www.w3.org/ns/sosa/ActuatableProperty
 <http://www.w3.org/ns/sosa/ActuatableProperty> rdf:type owl:Class ;
                                                rdfs:subClassOf [ rdf:type owl:Class ;
