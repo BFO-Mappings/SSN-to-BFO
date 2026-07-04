@@ -41,6 +41,22 @@ See:
 
 - `reports/sample-relationship-deferral.md`
 
+## Deferred reasoner-unsafe mappings
+
+The following mappings were deferred after ELK reasoner diagnostics showed they made the ontology unsatisfiable:
+
+- `ssn:hasProperty`
+- `ssn-system:BatteryLifetime`
+- `ssn-system:MeasurementRange`
+
+The corresponding spreadsheet `OWL Axiom` cells were cleared, and the TTL mapping blocks were removed from the current reasoner-testable mapping file.
+
+These mappings require separate reasoner-safe modeling review before reintroduction.
+
+See:
+
+- `reports/reasoner-unsafe-system-mapping-deferral.md`
+
 ## Deferred version issue
 
 ### `sosa:Sensor`

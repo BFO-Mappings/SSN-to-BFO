@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/add-provisional-sample-relationship-mappings`
-- Current commit: `cedee99bbe7e58fbb1c1fa099c7cfd491f8af01a`
+- Current branch: `fix/defer-reasoner-unsafe-system-mappings`
+- Current commit: `c515e1003394821a9e0b5d3568bdc2a1545f6933`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -47,10 +47,10 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 
 ## Summary
 - Total spreadsheet mapping rows: 93
-- Total spreadsheet expected assertions parsed: 82
-- Total TTL candidate mapping assertions: 82
-- Exact spreadsheet row matches: 78
-- Exact assertion matches: 81
+- Total spreadsheet expected assertions parsed: 78
+- Total TTL candidate mapping assertions: 78
+- Exact spreadsheet row matches: 75
+- Exact assertion matches: 77
 - Total issues: 2
 
 ## Issues by Category
@@ -68,8 +68,8 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 Note: not all supported issue categories necessarily appear in this run; zero-count categories are still supported by the audit taxonomy.
 
 ## Ignored TTL Triples
-- `blank_subject`: 1008
-- `declaration`: 104
+- `blank_subject`: 940
+- `declaration`: 102
 - `non_mapping_predicate`: 3
 
 ## Skipped or Partially Parsed Rows
@@ -77,6 +77,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | --- | ---: | --- | --- |
 | Common OPs | 6 | ssn:forProperty | no parsed expected assertions |
 | Common OPs | 8 | sosa:hasFeatureOfInterest | no parsed expected assertions |
+| Common OPs | 11 | ssn:hasProperty | no parsed expected assertions |
 | Common OPs | 17 | ssn:implements | no parsed expected assertions |
 | Common OPs | 20 | sosa:isFeatureOfInterestOf | no parsed expected assertions |
 | Common OPs | 22 | sosa:isObservedBy | no parsed expected assertions |
@@ -85,7 +86,9 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | Common OPs | 35 | sosa:phenomenonTime | no parsed expected assertions |
 | Common DPs | 2 | sosa:hasSimpleResult | no parsed expected assertions |
 | Common DPs | 3 | sosa:resultTime | no parsed expected assertions |
+| System Capability | 4 | ssn-system:BatteryLifetime | no parsed expected assertions |
 | System Capability | 15 | ssn-system:inCondition | no parsed expected assertions |
+| System Capability | 18 | ssn-system:MeasurementRange | no parsed expected assertions |
 | Sample Relationship | 2 | sampling:hasSampleRelationship | no parsed expected assertions |
 | Sample Relationship | 3 | sampling:natureOfRelationship | no parsed expected assertions |
 | Sample Relationship | 4 | sampling:relatedSample | no parsed expected assertions |
@@ -93,7 +96,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 ## Detailed Issues
 | Issue ID | Category | Sheet | Row | Source | Source IRI | TTL Predicate | Spreadsheet Relation | TTL Target | Spreadsheet Target | TTL Line | Recommended Action |
 | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | --- |
-| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 551 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
+| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 545 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
 | ISSUE-0002 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 
 ## Proposed Minimal Correction Plan
