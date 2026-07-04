@@ -7,12 +7,9 @@
 
 ## Git Context
 - Current branch: `fix/add-provisional-sample-relationship-mappings`
-- Current commit: `e2a0d854fd5509a3519481ca47bf9796cec2b99f`
+- Current commit: `cedee99bbe7e58fbb1c1fa099c7cfd491f8af01a`
 - Working tree had untracked audit files at report generation time: no
-- Audit file status entries at report generation time:
-  - `M reports/mapping-consistency-audit.csv`
-  - ` M reports/mapping-consistency-audit.md`
-  - ` M tools/compare_mappings.py`
+- Audit file status entries at report generation time: none
 
 ## Detected Spreadsheet Schema
 | Sheet | Header Row | Source/IRI Column | OWL Axiom Column | Comment/Notes Columns | Status/Review Columns | Candidate Mapping Rows |
