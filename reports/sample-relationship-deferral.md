@@ -1,34 +1,32 @@
-# Sample Relationship Mapping Deferral
+# Sample Relationship Provisional Mapping Note
 
-This note records the disposition of the remaining `Sample Relationship` mapping rows.
+This note records the provisional implementation of the `Sample Relationship` mappings.
 
-No TTL, spreadsheet, tool, or generated audit files are changed by this note.
+## Status
 
-## Current audit rows
+The `Sample Relationship` mappings have been implemented to support instance-data testing.
 
-The remaining `Sample Relationship` audit rows involve:
+They remain provisional and require close review before being treated as release-quality or authoritative BFO/CCO mappings.
+
+## Implemented rows
+
+The implemented material covers:
 
 - `sampling:RelationshipNature`
 - `sampling:SampleRelationship`
-- restrictions involving `sampling:relatedSample`
-- restrictions involving `sampling:natureOfRelationship`
+- the `sampling:relatedSample` restriction
+- the `sampling:natureOfRelationship` restriction
 
-## Review
+## Modeling rationale
 
-These rows should not be treated as ordinary missing TTL mappings.
+The SOSA sample-relationship pattern appears to represent relation-like content through classes and class restrictions.
 
-The sample relationship material appears to represent relation-like content through classes and class restrictions. In other words, the model seems to treat sample-to-sample relationship information as class-modeled structures rather than as ordinary object-property mappings.
+For testing, `sampling:SampleRelationship` is treated as a reified descriptive/information-content structure about a relationship involving samples, and `sampling:RelationshipNature` is treated as descriptive/information content identifying the nature of that relationship.
 
-That makes the BFO/CCO alignment non-mechanical. A direct patch to `SSN2BFO.ttl` could easily overcommit to an incorrect treatment of these entities as either relations, relational qualities, information artifacts, processes, or some other BFO/CCO category.
+The class restrictions are retained as SOSA structural constraints needed for instance-data testing.
 
-## Decision
+## Close-review warning
 
-Defer the `Sample Relationship` mappings.
+This implementation should receive close modeling review.
 
-These mappings still need to be completed, but they require a separate modeling pass focused on how SOSA's sample relationship pattern should be represented in BFO/CCO.
-
-## Audit treatment
-
-The remaining `Sample Relationship` audit rows are retained as known deferred substantive mapping issues.
-
-They should not be interpreted as accidental omissions from the direct spreadsheet/TTL reconciliation cleanup.
+A later BFO/CCO treatment may need to revise these mappings if the sample-relationship pattern is better analyzed as a relation, relational quality, information artifact, process-mediated structure, or some other BFO/CCO pattern.

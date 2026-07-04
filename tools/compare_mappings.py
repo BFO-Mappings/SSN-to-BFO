@@ -127,6 +127,25 @@ TRIPLE_RE = re.compile(
     r"(?P<o>.+?)\s*\.?$"
 )
 
+# Vocabulary used to construct OWL expressions, not domain mapping targets.
+# This lets spreadsheet and TTL restriction expressions compare on their
+# domain-relevant target IRIs, e.g. the property and filler in an OWL restriction.
+STRUCTURAL_TARGET_IRIS = {
+    str(RDF.type),
+    str(OWL.Restriction),
+    str(OWL.Class),
+    str(OWL.ObjectProperty),
+    str(OWL.onProperty),
+    str(OWL.someValuesFrom),
+    str(OWL.allValuesFrom),
+    str(OWL.hasValue),
+    str(OWL.propertyChainAxiom),
+}
+
+
+def comparable_target_iris(iris: Iterable[str]) -> tuple[str, ...]:
+    return tuple(sorted(set(iri for iri in iris if iri not in STRUCTURAL_TARGET_IRIS)))
+
 
 @dataclass(frozen=True)
 class ResolvedToken:
@@ -508,7 +527,8 @@ def parse_expected_assertions(row: SpreadsheetRow, resolver: Resolver) -> list[E
         for token in extract_target_tokens(target_text, row.source_token):
             resolved = resolver.resolve(token)
             if resolved.iri:
-                target_iris.append(resolved.iri)
+                if resolved.iri not in STRUCTURAL_TARGET_IRIS:
+                    target_iris.append(resolved.iri)
             else:
                 unresolved.append(f"{token} ({resolved.issue})")
         expected.append(
@@ -632,7 +652,7 @@ def extract_ttl_assertions(path: Path, spreadsheet_sources: set[str]) -> tuple[l
         if not is_source:
             ignored["non_source_subject"] += 1
             continue
-        target_iris = collect_uri_refs(graph, obj)
+        target_iris = comparable_target_iris(collect_uri_refs(graph, obj))
         assertions.append(
             TtlAssertion(
                 source_iri=subject_iri,
