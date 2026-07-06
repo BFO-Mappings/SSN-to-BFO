@@ -1,0 +1,36 @@
+@prefix ex: <https://example.org/ssn-systems-mapping-fixture/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+@prefix ssn-system: <http://www.w3.org/ns/ssn/systems/> .
+
+# Synthetic regression-test fixture for SSN Systems direct property mappings.
+# This is not source example data and is not an authoritative W3C example.
+# It exists only to exercise active SSN Systems mappings in
+# tools/test_elk_instance_mapping_entailments.py.
+
+ex:synthetic-system
+    rdf:type ssn:System ;
+    ssn-system:hasOperatingRange ex:synthetic-operating-range ;
+    ssn-system:hasSurvivalRange ex:synthetic-survival-range ;
+    ssn-system:hasSystemCapability ex:synthetic-system-capability .
+
+ex:synthetic-operating-range
+    rdf:type ssn-system:OperatingRange ;
+    ssn-system:hasOperatingProperty ex:synthetic-operating-property .
+
+ex:synthetic-operating-property
+    rdf:type ssn-system:OperatingProperty .
+
+ex:synthetic-survival-range
+    rdf:type ssn-system:SurvivalRange ;
+    ssn-system:hasSurvivalProperty ex:synthetic-survival-property .
+
+ex:synthetic-survival-property
+    rdf:type ssn-system:SurvivalProperty .
+
+ex:synthetic-system-capability
+    rdf:type ssn-system:SystemCapability ;
+    ssn-system:hasSystemProperty ex:synthetic-system-property .
+
+ex:synthetic-system-property
+    rdf:type ssn-system:SystemProperty .

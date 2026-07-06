@@ -13,7 +13,14 @@ The local materialization layer is used because an earlier version of this test 
 
 This is not full OWL DL reasoning and not HermiT.
 
-It mirrors the example discovery used by `tools/test_instance_data.py`: sorted `*.ttl` files under `src/current-ssn-sosa/examples/sosa-instance-data` by default.
+It preserves the source example discovery used by `tools/test_instance_data.py` and adds clearly labeled synthetic mapping fixtures by default.
+
+Default data directories:
+
+- `src/current-ssn-sosa/examples/sosa-instance-data`
+- `tests/fixtures/ssn-systems-mapping`
+
+Files under `src/current-ssn-sosa/examples/sosa-instance-data` are source examples. Files under `tests/fixtures` are synthetic regression-test fixtures, not source examples or authoritative W3C examples.
 
 For each example, the script builds a temporary no-imports merged graph from:
 
@@ -42,34 +49,37 @@ It does not attempt HermiT or full OWL DL testing.
 ## Summary
 
 - ROBOT executable: `/usr/local/bin/robot`
-- Example files tested: 11
-- ROBOT pass: 11
+- Example files tested: 12
+- Source example files tested: 11
+- Synthetic fixture files tested: 1
+- ROBOT pass: 12
 - ROBOT fail: 0
 - Examples with `owl:Nothing` entities: 0
 - Direct class mappings discovered: 4
 - Direct property mappings discovered: 29
 - Total class expectations checked: 0
-- Total property expectations checked: 95
+- Total property expectations checked: 101
 - Total expectation failures: 0
-- Expected ABox target assertions not observed in ROBOT output: 95
-- Active direct mappings not covered by instance data: 24
+- Expected ABox target assertions not observed in ROBOT output: 101
+- Active direct mappings not covered by instance data: 18
 - Overall status: PASS
 
 ## Per-example ELK Results
 
-| Example | Status | ROBOT status | `owl:Nothing` count | Class expectations | Property expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | PASS | 0 | 0 | 0 | 18 | 0 | 18 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | PASS | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | PASS | 0 | 0 | 0 | 15 | 0 | 15 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | PASS | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | PASS | 0 | 0 | 0 | 30 | 0 | 30 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | PASS | 0 | 0 | 0 | 8 | 0 | 8 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/iphone_barometer-sosa.ttl` | PASS | 0 | 0 | 0 | 7 | 0 | 7 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/seismograph.ttl` | PASS | 0 | 0 | 0 | 4 | 0 | 4 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/spinning-cups.ttl` | PASS | 0 | 0 | 0 | 9 | 0 | 9 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | PASS | 0 | 0 | 0 | 1 | 0 | 1 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | PASS | 0 | 0 | 0 | 3 | 0 | 3 | OWLAPI parser messages about error#Error entities |
+| Example | Kind | Status | ROBOT status | `owl:Nothing` count | Class expectations | Property expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | source example | PASS | 0 | 0 | 0 | 18 | 0 | 18 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | source example | PASS | 0 | 0 | 0 | 15 | 0 | 15 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | source example | PASS | 0 | 0 | 0 | 30 | 0 | 30 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | source example | PASS | 0 | 0 | 0 | 8 | 0 | 8 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/iphone_barometer-sosa.ttl` | source example | PASS | 0 | 0 | 0 | 7 | 0 | 7 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/seismograph.ttl` | source example | PASS | 0 | 0 | 0 | 4 | 0 | 4 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/spinning-cups.ttl` | source example | PASS | 0 | 0 | 0 | 9 | 0 | 9 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | source example | PASS | 0 | 0 | 0 | 1 | 0 | 1 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | source example | PASS | 0 | 0 | 0 | 3 | 0 | 3 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/ssn-systems-mapping/ssn-systems-property-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 6 | 0 | 6 | OWLAPI parser messages about error#Error entities |
 
 ## Mapping Expectations Checked
 
@@ -84,6 +94,12 @@ It does not attempt HermiT or full OWL DL testing.
 | property | `sosa:observedProperty` | `cco:ont00001921` | 33 |
 | property | `sosa:observes` | `ssn:forProperty` | 7 |
 | property | `sosa:usedProcedure` | `cco:ont00001920` | 1 |
+| property | `ssn-system:hasOperatingProperty` | `bfo:BFO_0000194` | 1 |
+| property | `ssn-system:hasOperatingRange` | `bfo:BFO_0000196` | 1 |
+| property | `ssn-system:hasSurvivalProperty` | `bfo:BFO_0000194` | 1 |
+| property | `ssn-system:hasSurvivalRange` | `bfo:BFO_0000196` | 1 |
+| property | `ssn-system:hasSystemCapability` | `bfo:BFO_0000196` | 1 |
+| property | `ssn-system:hasSystemProperty` | `bfo:BFO_0000194` | 1 |
 
 ## Failures
 
@@ -91,8 +107,8 @@ No failures were detected.
 
 ## ROBOT Materialization Note
 
-The local RDFS-style expectation check produced `95` expected ABox target assertions.
-Of those, `95` were not observed in ROBOT's reasoned output.
+The local RDFS-style expectation check produced `101` expected ABox target assertions.
+Of those, `101` were not observed in ROBOT's reasoned output.
 
 This is reported as a materialization limitation, not as a mapping failure, because the ELK gate succeeded and the local direct subclass/subproperty closure produced the expected target assertions.
 
@@ -118,12 +134,6 @@ These active direct mappings were discovered in `SSN2BFO.ttl`, but their source 
 | property | `ssn:hasOutput` | `cco:ont00001986` |
 | property | `ssn:hasSubSystem` | `bfo:BFO_0000178` |
 | property | `ssn:inDeployment` | `bfo:BFO_0000056` |
-| property | `ssn-system:hasOperatingProperty` | `bfo:BFO_0000194` |
-| property | `ssn-system:hasOperatingRange` | `bfo:BFO_0000196` |
-| property | `ssn-system:hasSurvivalProperty` | `bfo:BFO_0000194` |
-| property | `ssn-system:hasSurvivalRange` | `bfo:BFO_0000196` |
-| property | `ssn-system:hasSystemCapability` | `bfo:BFO_0000196` |
-| property | `ssn-system:hasSystemProperty` | `bfo:BFO_0000194` |
 | property | `ssn-system:qualityOfObservation` | `cco:ont00001986` |
 | property | `ssn:wasOriginatedBy` | `cco:ont00001962` |
 

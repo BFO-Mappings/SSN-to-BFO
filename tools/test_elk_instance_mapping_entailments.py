@@ -37,6 +37,11 @@ SOURCE_NAMESPACES = (
     str(SSN),
 )
 
+DEFAULT_DATA_DIRS = (
+    "src/current-ssn-sosa/examples/sosa-instance-data",
+    "tests/fixtures/ssn-systems-mapping",
+)
+
 PREFIXES: tuple[tuple[str, str], ...] = (
     ("rdf", str(RDF)),
     ("rdfs", str(RDFS)),
@@ -82,6 +87,7 @@ class Expectation:
 @dataclass
 class ExampleResult:
     path: Path
+    source_kind: str
     merged_path: Path
     reasoned_path: Path
     robot_status: int | None
@@ -125,7 +131,8 @@ def markdown_escape(text: str) -> str:
 
 
 def slug_for_path(path: Path) -> str:
-    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", path.stem)
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", path.as_posix())
+    stem = stem.strip("_").removesuffix("_ttl")
     return stem or "example"
 
 
@@ -144,6 +151,26 @@ def bind_prefixes(graph: Graph) -> None:
 
 def source_term(value: object) -> bool:
     return isinstance(value, URIRef) and str(value).startswith(SOURCE_NAMESPACES)
+
+
+def data_file_kind(path: Path) -> str:
+    text = path.as_posix()
+    if text.startswith("src/current-ssn-sosa/examples/sosa-instance-data/"):
+        return "source example"
+    if text.startswith("tests/fixtures/"):
+        return "synthetic fixture"
+    return "data file"
+
+
+def discover_data_files(data_dirs: list[Path]) -> list[Path]:
+    files: list[Path] = []
+    seen: set[Path] = set()
+    for data_dir in data_dirs:
+        for path in sorted(data_dir.glob("*.ttl")):
+            if path not in seen:
+                files.append(path)
+                seen.add(path)
+    return files
 
 
 def extract_direct_mappings(ttl_path: Path) -> tuple[list[DirectMapping], list[DirectMapping]]:
@@ -354,8 +381,10 @@ def write_report(
     uncovered: list[DirectMapping],
     robot_path: str | None,
     tmp_dir: Path,
+    data_dirs: list[Path],
 ) -> None:
     status_counts = Counter(result.status for result in example_results)
+    kind_counts = Counter(result.source_kind for result in example_results)
     robot_pass = sum(1 for result in example_results if result.robot_status == 0)
     robot_fail = len(example_results) - robot_pass
     class_checked = sum(1 for expectation in expectations if expectation.kind == "class")
@@ -382,7 +411,13 @@ def write_report(
         "",
         "This is not full OWL DL reasoning and not HermiT.",
         "",
-        "It mirrors the example discovery used by `tools/test_instance_data.py`: sorted `*.ttl` files under `src/current-ssn-sosa/examples/sosa-instance-data` by default.",
+        "It preserves the source example discovery used by `tools/test_instance_data.py` and adds clearly labeled synthetic mapping fixtures by default.",
+        "",
+        "Default data directories:",
+        "",
+        *[f"- `{path}`" for path in data_dirs],
+        "",
+        "Files under `src/current-ssn-sosa/examples/sosa-instance-data` are source examples. Files under `tests/fixtures` are synthetic regression-test fixtures, not source examples or authoritative W3C examples.",
         "",
         "For each example, the script builds a temporary no-imports merged graph from:",
         "",
@@ -412,6 +447,8 @@ def write_report(
         "",
         f"- ROBOT executable: `{robot_path or 'not found'}`",
         f"- Example files tested: {len(example_results)}",
+        f"- Source example files tested: {kind_counts.get('source example', 0)}",
+        f"- Synthetic fixture files tested: {kind_counts.get('synthetic fixture', 0)}",
         f"- ROBOT pass: {robot_pass}",
         f"- ROBOT fail: {robot_fail}",
         f"- Examples with `owl:Nothing` entities: {len(nothing_failures)}",
@@ -426,8 +463,8 @@ def write_report(
         "",
         "## Per-example ELK Results",
         "",
-        "| Example | Status | ROBOT status | `owl:Nothing` count | Class expectations | Property expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |",
-        "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| Example | Kind | Status | ROBOT status | `owl:Nothing` count | Class expectations | Property expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
 
     for result in example_results:
@@ -436,7 +473,7 @@ def write_report(
             notes = "; ".join(part for part in [notes, f"Parse error: {result.parse_error}"] if part)
         lines.append(
             "| "
-            f"`{result.path}` | {result.status} | "
+            f"`{result.path}` | {result.source_kind} | {result.status} | "
             f"{'' if result.robot_status is None else result.robot_status} | "
             f"{'' if result.nothing_count is None else result.nothing_count} | "
             f"{result.class_expectations_checked} | "
@@ -579,8 +616,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--data-dir",
-        default="src/current-ssn-sosa/examples/sosa-instance-data",
-        help="Directory containing example .ttl files.",
+        action="append",
+        default=None,
+        help=(
+            "Directory containing .ttl data files. Can be passed multiple times. "
+            f"Defaults to: {', '.join(DEFAULT_DATA_DIRS)}."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -601,14 +642,14 @@ def main() -> int:
 
     mapping_paths = [Path(p) for p in args.mapping]
     ttl_path = Path(args.ttl)
-    data_dir = Path(args.data_dir)
+    data_dirs = [Path(p) for p in (args.data_dir or DEFAULT_DATA_DIRS)]
     output_path = Path(args.output)
     tmp_dir = Path(args.tmp_dir)
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     robot_path = args.robot or shutil.which("robot")
     class_mappings, property_mappings = extract_direct_mappings(ttl_path)
-    data_files = sorted(data_dir.glob("*.ttl"))
+    data_files = discover_data_files(data_dirs)
 
     all_expectations: list[Expectation] = []
     example_results: list[ExampleResult] = []
@@ -624,6 +665,7 @@ def main() -> int:
             class_mappings + property_mappings,
             None,
             tmp_dir,
+            data_dirs,
         )
         print(f"Wrote {output_path}")
         print(f"Example files tested: {len(data_files)}")
@@ -660,6 +702,7 @@ def main() -> int:
         example_results.append(
             ExampleResult(
                 path=example_path,
+                source_kind=data_file_kind(example_path),
                 merged_path=merged_path,
                 reasoned_path=reasoned_path,
                 robot_status=robot_status,
@@ -686,6 +729,7 @@ def main() -> int:
         uncovered,
         robot_path,
         tmp_dir,
+        data_dirs,
     )
 
     robot_pass = sum(1 for result in example_results if result.robot_status == 0)
