@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/defer-survival-range-class-mapping`
-- Current commit: `8103b12832dde1a645322c2acc716b40909b3ec8`
+- Current branch: `fix/defer-input-output-property-mappings`
+- Current commit: `82a1a3a3fd3099acae69bc9eebad52138d643e1e`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time:
   - `M reports/mapping-consistency-audit.md`
@@ -48,10 +48,10 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 
 ## Summary
 - Total spreadsheet mapping rows: 93
-- Total spreadsheet expected assertions parsed: 74
-- Total TTL candidate mapping assertions: 74
-- Exact spreadsheet row matches: 71
-- Exact assertion matches: 73
+- Total spreadsheet expected assertions parsed: 72
+- Total TTL candidate mapping assertions: 72
+- Exact spreadsheet row matches: 69
+- Exact assertion matches: 71
 - Total issues: 2
 
 ## Issues by Category
@@ -78,6 +78,8 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | --- | ---: | --- | --- |
 | Common OPs | 6 | ssn:forProperty | no parsed expected assertions |
 | Common OPs | 8 | sosa:hasFeatureOfInterest | no parsed expected assertions |
+| Common OPs | 9 | ssn:hasInput | no parsed expected assertions |
+| Common OPs | 10 | ssn:hasOutput | no parsed expected assertions |
 | Common OPs | 11 | ssn:hasProperty | no parsed expected assertions |
 | Common OPs | 17 | ssn:implements | no parsed expected assertions |
 | Common OPs | 20 | sosa:isFeatureOfInterestOf | no parsed expected assertions |
