@@ -1,0 +1,37 @@
+@prefix ex: <https://example.org/ssn-core-mapping-fixture/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+
+# Synthetic regression-test fixture for core SSN direct mappings.
+# This is not source example data and is not an authoritative W3C example.
+# It exists only to exercise active core SSN mappings in
+# tools/test_elk_instance_mapping_entailments.py.
+
+ex:synthetic-procedure
+    ssn:hasInput ex:synthetic-input ;
+    ssn:hasOutput ex:synthetic-output .
+
+ex:synthetic-input
+    rdf:type ssn:Input .
+
+ex:synthetic-output
+    rdf:type ssn:Output .
+
+ex:synthetic-sensor
+    rdf:type sosa:Sensor ;
+    ssn:detects ex:synthetic-stimulus .
+
+ex:synthetic-observation
+    rdf:type sosa:Observation ;
+    ssn:wasOriginatedBy ex:synthetic-stimulus .
+
+ex:synthetic-stimulus
+    rdf:type ssn:Stimulus .
+
+ex:synthetic-system
+    rdf:type ssn:System ;
+    ssn:hasSubSystem ex:synthetic-subsystem .
+
+ex:synthetic-subsystem
+    rdf:type ssn:System .
