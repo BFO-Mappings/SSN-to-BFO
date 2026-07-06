@@ -12,6 +12,7 @@ This test has two layers.
 The local materialization layer is used because an earlier version of this test showed that ROBOT/ELK completed successfully but did not materialize expected ABox property assertions in its output file.
 
 This is not full OWL DL reasoning and not HermiT. Property-chain checks are local deterministic pattern matches over named-property chains, not general OWL DL property-chain reasoning.
+Restriction checks are explicit-filler validation over named `owl:someValuesFrom` restrictions, not complete OWL existential entailment or materialization tests.
 
 It preserves the source example discovery used by `tools/test_instance_data.py` and adds clearly labeled synthetic mapping fixtures by default.
 
@@ -22,6 +23,7 @@ Default data directories:
 - `tests/fixtures/ssn-core-mapping`
 - `tests/fixtures/remaining-direct-mapping`
 - `tests/fixtures/property-chain-mapping`
+- `tests/fixtures/restriction-mapping`
 
 Files under `src/current-ssn-sosa/examples/sosa-instance-data` are source examples. Files under `tests/fixtures` are synthetic regression-test fixtures, not source examples or authoritative W3C examples.
 
@@ -46,57 +48,62 @@ The local mapping-expectation layer checks active mappings in `SSN2BFO.ttl`:
 - `source_class rdfs:subClassOf target_class` where both sides are named IRIs, using direct/transitive `rdfs:subClassOf` propagation for `rdf:type` assertions;
 - `source_property rdfs:subPropertyOf target_property` where both sides are named IRIs, using direct/transitive `rdfs:subPropertyOf` propagation for property assertions.
 - `head_property owl:propertyChainAxiom ( p1 ... pn )` where the head and every chain member are named IRIs, using local ABox chain matching after direct/transitive `rdfs:subPropertyOf` propagation.
+- `source_class rdfs:subClassOf [ owl:onProperty p ; owl:someValuesFrom filler_class ]` where the source class, property, and filler are named IRIs, using explicit fixture/data fillers typed as the filler class or a subclass.
 
-It intentionally ignores blank-node restrictions, property chains with non-IRI members, inverse-property reasoning, cardinalities, disjunctions, annotation-only rows, deferred mappings, and mappings whose source term or chain body is not used in an example file.
+It intentionally ignores restriction forms other than named `owl:someValuesFrom`, property chains with non-IRI members, inverse-property reasoning, cardinalities, disjunctions, annotation-only rows, deferred mappings, and mappings whose source term, chain body, or explicit restriction filler pattern is not used in an example file.
 It does not attempt HermiT or full OWL DL testing.
 
 ## Summary
 
 - ROBOT executable: `/usr/local/bin/robot`
-- Example files tested: 15
+- Example files tested: 16
 - Source example files tested: 11
-- Synthetic fixture files tested: 4
-- ROBOT pass: 15
+- Synthetic fixture files tested: 5
+- ROBOT pass: 16
 - ROBOT fail: 0
 - Examples with `owl:Nothing` entities: 0
 - Direct class mappings discovered: 4
 - Direct property mappings discovered: 29
 - Property-chain mappings discovered: 5
-- Total direct class expectations checked: 4
+- Restriction mappings discovered: 2
+- Total direct class expectations checked: 6
 - Total direct property expectations checked: 115
 - Total property-chain expectations checked: 5
+- Total restriction expectations checked: 2
 - Total expectation failures: 0
-- Expected ABox target assertions not observed in ROBOT output: 124
+- Expected ABox target assertions not observed in ROBOT output: 126
 - Active direct mappings not covered by instance data: 0
 - Active property-chain mappings not covered by instance data: 0
+- Active restriction mappings not covered by instance data: 0
 - Overall status: PASS
 
 ## Per-example ELK Results
 
-| Example | Kind | Status | ROBOT status | `owl:Nothing` count | Direct class expectations | Direct property expectations | Property-chain expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | source example | PASS | 0 | 0 | 0 | 18 | 0 | 0 | 18 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | source example | PASS | 0 | 0 | 0 | 15 | 0 | 0 | 15 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | source example | PASS | 0 | 0 | 0 | 30 | 0 | 0 | 30 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | source example | PASS | 0 | 0 | 0 | 8 | 0 | 0 | 8 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/iphone_barometer-sosa.ttl` | source example | PASS | 0 | 0 | 0 | 7 | 0 | 0 | 7 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/seismograph.ttl` | source example | PASS | 0 | 0 | 0 | 4 | 0 | 0 | 4 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/spinning-cups.ttl` | source example | PASS | 0 | 0 | 0 | 9 | 0 | 0 | 9 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | source example | PASS | 0 | 0 | 0 | 1 | 0 | 0 | 1 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | source example | PASS | 0 | 0 | 0 | 3 | 0 | 0 | 3 | OWLAPI parser messages about error#Error entities |
-| `tests/fixtures/ssn-systems-mapping/ssn-systems-property-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 6 | 0 | 0 | 6 | OWLAPI parser messages about error#Error entities |
-| `tests/fixtures/ssn-core-mapping/ssn-core-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 5 | 0 | 0 | 7 | OWLAPI parser messages about error#Error entities |
-| `tests/fixtures/remaining-direct-mapping/remaining-direct-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 9 | 0 | 0 | 11 | OWLAPI parser messages about error#Error entities |
-| `tests/fixtures/property-chain-mapping/property-chain-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 0 | 5 | 0 | 5 | OWLAPI parser messages about error#Error entities |
+| Example | Kind | Status | ROBOT status | `owl:Nothing` count | Direct class expectations | Direct property expectations | Property-chain expectations | Restriction expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | source example | PASS | 0 | 0 | 0 | 18 | 0 | 0 | 0 | 18 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | source example | PASS | 0 | 0 | 0 | 15 | 0 | 0 | 0 | 15 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | source example | PASS | 0 | 0 | 0 | 30 | 0 | 0 | 0 | 30 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | source example | PASS | 0 | 0 | 0 | 8 | 0 | 0 | 0 | 8 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/iphone_barometer-sosa.ttl` | source example | PASS | 0 | 0 | 0 | 7 | 0 | 0 | 0 | 7 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/seismograph.ttl` | source example | PASS | 0 | 0 | 0 | 4 | 0 | 0 | 0 | 4 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/spinning-cups.ttl` | source example | PASS | 0 | 0 | 0 | 9 | 0 | 0 | 0 | 9 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | source example | PASS | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | source example | PASS | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 3 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/ssn-systems-mapping/ssn-systems-property-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 6 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/ssn-core-mapping/ssn-core-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 5 | 0 | 0 | 0 | 7 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/remaining-direct-mapping/remaining-direct-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 9 | 0 | 0 | 0 | 11 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/property-chain-mapping/property-chain-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 0 | 5 | 0 | 0 | 5 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/restriction-mapping/sample-relationship-restrictions.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 0 | 0 | 2 | 0 | 2 | OWLAPI parser messages about error#Error entities |
 
 ## Direct Mapping Expectations Checked
 
 | Mapping kind | Source | Target | Checked expectation count |
 | --- | --- | --- | ---: |
-| class | `sosa-rel:RelationshipNature` | `cco:ont00000958` | 1 |
-| class | `sosa-rel:SampleRelationship` | `cco:ont00000958` | 1 |
+| class | `sosa-rel:RelationshipNature` | `cco:ont00000958` | 2 |
+| class | `sosa-rel:SampleRelationship` | `cco:ont00000958` | 2 |
 | class | `ssn:Input` | `cco:ont00000958` | 1 |
 | class | `ssn:Output` | `cco:ont00000958` | 1 |
 | property | `sosa:actsOnProperty` | `cco:ont00001834` | 1 |
@@ -139,14 +146,22 @@ It does not attempt HermiT or full OWL DL testing.
 | `sosa:isSampleOf` | `bfo:BFO_0000101` -> `cco:ont00001938` | 1 |
 | `ssn:implementedBy` | `cco:ont00001942` -> `cco:ont00001833` | 1 |
 
+## Restriction Expectations Checked
+
+| Source class | On property | Filler class | Checked expectation count |
+| --- | --- | --- | ---: |
+| `sosa-rel:SampleRelationship` | `sosa-rel:natureOfRelationship` | `sosa-rel:RelationshipNature` | 1 |
+| `sosa-rel:SampleRelationship` | `sosa-rel:relatedSample` | `sosa:Sample` | 1 |
+
 ## Failures
 
 No failures were detected.
 
 ## ROBOT Materialization Note
 
-The local direct-mapping and property-chain expectation checks produced `124` expected ABox target assertions.
-Of those, `124` were not observed in ROBOT's reasoned output.
+The local direct-mapping and property-chain expectation checks produced `126` expected ABox target assertions.
+Of those, `126` were not observed in ROBOT's reasoned output.
+The restriction explicit-filler check produced `2` checks; these are not counted as expected ROBOT-materialized existential anonymous individuals.
 
 This is reported as a materialization limitation, not as a mapping failure, because the ELK gate succeeded and the local deterministic checks produced the expected target assertions.
 
@@ -162,6 +177,12 @@ These active named-property chains were discovered in `SSN2BFO.ttl`, but their c
 
 All active named-property-chain mappings discovered in `SSN2BFO.ttl` are covered by the current source examples or synthetic fixtures.
 
+## Active Restriction Mappings Not Covered By Instance Data
+
+These active named-source `owl:someValuesFrom` restrictions were discovered in `SSN2BFO.ttl`, but no current example file contains an explicit source-class individual with a matching property filler typed as the restriction filler class or a subclass.
+
+All active supported restriction mappings discovered in `SSN2BFO.ttl` are covered by the current source examples or synthetic fixtures.
+
 ## Deferred/out-of-scope Mappings
 
 | Mapping or pattern | Reason out of scope |
@@ -169,6 +190,6 @@ All active named-property-chain mappings discovered in `SSN2BFO.ttl` are covered
 | `ssn:hasProperty` | Deferred after ELK diagnostics; no active direct mapping is expected. |
 | `ssn-system:BatteryLifetime` | Deferred after ELK diagnostics; no active direct class mapping is expected. |
 | `ssn-system:MeasurementRange` | Deferred after ELK diagnostics; no active direct class mapping is expected. |
-| `blank-node class expressions` | Out of scope for this first instance entailment test. |
+| `blank-node class expressions other than named someValuesFrom restrictions` | Out of scope for this first restriction expectation check. |
 | `property chains with non-IRI members` | Out of scope for this first property-chain expectation check. |
 | `annotation-only rows` | Out of scope because they do not create direct entailments. |

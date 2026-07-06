@@ -6,9 +6,11 @@ This is intentionally scoped to active mappings in SSN2BFO.ttl:
 - named-class rdfs:subClassOf named-class;
 - named-property rdfs:subPropertyOf named-property.
 - named-property owl:propertyChainAxiom lists.
+- named-class rdfs:subClassOf named existential owl:Restriction forms.
 
 It does not test full OWL DL behavior, blank-node class expressions, property
-chains with non-IRI members, spreadsheet-only rows, or deferred mappings.
+chains with non-IRI members, restriction forms other than named someValuesFrom,
+spreadsheet-only rows, or deferred mappings.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
-from rdflib import Graph, Namespace, OWL, RDF, RDFS, URIRef
+from rdflib import BNode, Graph, Namespace, OWL, RDF, RDFS, URIRef
 from rdflib.collection import Collection
 from rdflib.term import Node
 
@@ -45,6 +47,7 @@ DEFAULT_DATA_DIRS = (
     "tests/fixtures/ssn-core-mapping",
     "tests/fixtures/remaining-direct-mapping",
     "tests/fixtures/property-chain-mapping",
+    "tests/fixtures/restriction-mapping",
 )
 
 PREFIXES: tuple[tuple[str, str], ...] = (
@@ -63,7 +66,10 @@ DEFERRED_OR_OUT_OF_SCOPE = (
     ("ssn:hasProperty", "Deferred after ELK diagnostics; no active direct mapping is expected."),
     ("ssn-system:BatteryLifetime", "Deferred after ELK diagnostics; no active direct class mapping is expected."),
     ("ssn-system:MeasurementRange", "Deferred after ELK diagnostics; no active direct class mapping is expected."),
-    ("blank-node class expressions", "Out of scope for this first instance entailment test."),
+    (
+        "blank-node class expressions other than named someValuesFrom restrictions",
+        "Out of scope for this first restriction expectation check.",
+    ),
     ("property chains with non-IRI members", "Out of scope for this first property-chain expectation check."),
     ("annotation-only rows", "Out of scope because they do not create direct entailments."),
 )
@@ -80,6 +86,13 @@ class DirectMapping:
 class PropertyChainMapping:
     head: URIRef
     chain: tuple[URIRef, ...]
+
+
+@dataclass(frozen=True, order=True)
+class RestrictionMapping:
+    source_class: URIRef
+    on_property: URIRef
+    filler_class: URIRef
 
 
 @dataclass
@@ -107,6 +120,16 @@ class PropertyChainExpectation:
 
 
 @dataclass
+class RestrictionExpectation:
+    example: Path
+    mapping: RestrictionMapping
+    subject: URIRef
+    filler: URIRef
+    passed: bool
+    note: str = ""
+
+
+@dataclass
 class ExampleResult:
     path: Path
     source_kind: str
@@ -119,8 +142,10 @@ class ExampleResult:
     class_expectations_checked: int = 0
     property_expectations_checked: int = 0
     property_chain_expectations_checked: int = 0
+    restriction_expectations_checked: int = 0
     expectation_failures: list[Expectation] = field(default_factory=list)
     property_chain_failures: list[PropertyChainExpectation] = field(default_factory=list)
+    restriction_failures: list[RestrictionExpectation] = field(default_factory=list)
     robot_materialization_missing: int = 0
     robot_note: str = ""
     parse_error: str = ""
@@ -135,7 +160,7 @@ class ExampleResult:
             return "PARSE_FAIL"
         if self.nothing_count and self.nothing_count > 0:
             return "OWL_NOTHING_FAIL"
-        if self.expectation_failures or self.property_chain_failures:
+        if self.expectation_failures or self.property_chain_failures or self.restriction_failures:
             return "EXPECTATION_FAIL"
         return "PASS"
 
@@ -156,6 +181,14 @@ def markdown_escape(text: str) -> str:
 
 def chain_label(chain: tuple[URIRef, ...]) -> str:
     return " -> ".join(f"`{compact_iri(predicate)}`" for predicate in chain)
+
+
+def restriction_label(mapping: RestrictionMapping) -> str:
+    return (
+        f"`{compact_iri(mapping.source_class)}` "
+        f"`{compact_iri(mapping.on_property)}` some "
+        f"`{compact_iri(mapping.filler_class)}`"
+    )
 
 
 def slug_for_path(path: Path) -> str:
@@ -203,11 +236,12 @@ def discover_data_files(data_dirs: list[Path]) -> list[Path]:
 
 def extract_direct_mappings(
     ttl_path: Path,
-) -> tuple[list[DirectMapping], list[DirectMapping], list[PropertyChainMapping]]:
+) -> tuple[list[DirectMapping], list[DirectMapping], list[PropertyChainMapping], list[RestrictionMapping]]:
     graph = load_graph([ttl_path])
     class_mappings: list[DirectMapping] = []
     property_mappings: list[DirectMapping] = []
     property_chain_mappings: list[PropertyChainMapping] = []
+    restriction_mappings: list[RestrictionMapping] = []
 
     for source, _, target in graph.triples((None, RDFS.subClassOf, None)):
         if source_term(source) and isinstance(target, URIRef):
@@ -227,7 +261,29 @@ def extract_direct_mappings(
         if chain and all(isinstance(member, URIRef) for member in chain):
             property_chain_mappings.append(PropertyChainMapping(head=head, chain=chain))
 
-    return sorted(class_mappings), sorted(property_mappings), sorted(set(property_chain_mappings))
+    for source, _, restriction in graph.triples((None, RDFS.subClassOf, None)):
+        if not source_term(source) or not isinstance(source, URIRef):
+            continue
+        if not isinstance(restriction, BNode) or (restriction, RDF.type, OWL.Restriction) not in graph:
+            continue
+        properties = [obj for obj in graph.objects(restriction, OWL.onProperty) if isinstance(obj, URIRef)]
+        fillers = [obj for obj in graph.objects(restriction, OWL.someValuesFrom) if isinstance(obj, URIRef)]
+        for on_property in properties:
+            for filler_class in fillers:
+                restriction_mappings.append(
+                    RestrictionMapping(
+                        source_class=source,
+                        on_property=on_property,
+                        filler_class=filler_class,
+                    )
+                )
+
+    return (
+        sorted(class_mappings),
+        sorted(property_mappings),
+        sorted(set(property_chain_mappings)),
+        sorted(set(restriction_mappings)),
+    )
 
 
 def remove_profile_blockers(graph: Graph) -> None:
@@ -357,6 +413,18 @@ def match_property_chain(
     return matches
 
 
+def typed_as_or_subclass(
+    graph: Graph,
+    subclass: dict[URIRef, set[URIRef]],
+    individual: URIRef,
+    target_class: URIRef,
+) -> bool:
+    for direct_type in graph.objects(individual, RDF.type):
+        if isinstance(direct_type, URIRef) and target_class in closure_values(subclass, direct_type):
+            return True
+    return False
+
+
 def build_expectations(
     example_path: Path,
     merged_path: Path,
@@ -364,7 +432,8 @@ def build_expectations(
     class_mappings: list[DirectMapping],
     property_mappings: list[DirectMapping],
     property_chain_mappings: list[PropertyChainMapping],
-) -> tuple[list[Expectation], list[PropertyChainExpectation], str]:
+    restriction_mappings: list[RestrictionMapping],
+) -> tuple[list[Expectation], list[PropertyChainExpectation], list[RestrictionExpectation], str]:
     try:
         example_graph = Graph()
         example_graph.parse(example_path, format="turtle")
@@ -373,11 +442,12 @@ def build_expectations(
         reasoned_graph = Graph()
         reasoned_graph.parse(reasoned_path, format="turtle")
     except Exception as exc:
-        return [], [], f"{type(exc).__name__}: {exc}"
+        return [], [], [], f"{type(exc).__name__}: {exc}"
 
     subclass, subproperty = build_rdfs_indexes(merged_graph)
     expectations: list[Expectation] = []
     property_chain_expectations: list[PropertyChainExpectation] = []
+    restriction_expectations: list[RestrictionExpectation] = []
 
     for individual, _, direct_type in sorted(
         set(example_graph.triples((None, RDF.type, None))),
@@ -450,7 +520,37 @@ def build_expectations(
                 )
             )
 
-    return expectations, property_chain_expectations, ""
+    for individual, _, direct_type in sorted(
+        set(example_graph.triples((None, RDF.type, None))),
+        key=lambda triple: (str(triple[0]), str(triple[2])),
+    ):
+        if not isinstance(individual, URIRef) or not isinstance(direct_type, URIRef):
+            continue
+        type_closure = closure_values(subclass, direct_type)
+        for mapping in restriction_mappings:
+            if mapping.source_class not in type_closure:
+                continue
+            fillers = sorted(
+                {
+                    filler
+                    for filler in example_graph.objects(individual, mapping.on_property)
+                    if isinstance(filler, URIRef)
+                    and typed_as_or_subclass(example_graph, subclass, filler, mapping.filler_class)
+                },
+                key=str,
+            )
+            for filler in fillers:
+                restriction_expectations.append(
+                    RestrictionExpectation(
+                        example=example_path,
+                        mapping=mapping,
+                        subject=individual,
+                        filler=filler,
+                        passed=True,
+                    )
+                )
+
+    return expectations, property_chain_expectations, restriction_expectations, ""
 
 
 def mapping_coverage(
@@ -483,18 +583,35 @@ def property_chain_coverage(
     return dict(covered_counts), sorted(uncovered)
 
 
+def restriction_coverage(
+    expectations: list[RestrictionExpectation],
+    restriction_mappings: list[RestrictionMapping],
+) -> tuple[dict[RestrictionMapping, int], list[RestrictionMapping]]:
+    covered_counts: dict[RestrictionMapping, int] = defaultdict(int)
+
+    for expectation in expectations:
+        covered_counts[expectation.mapping] += 1
+
+    uncovered = [mapping for mapping in restriction_mappings if covered_counts.get(mapping, 0) == 0]
+    return dict(covered_counts), sorted(uncovered)
+
+
 def write_report(
     output_path: Path,
     example_results: list[ExampleResult],
     expectations: list[Expectation],
     property_chain_expectations: list[PropertyChainExpectation],
+    restriction_expectations: list[RestrictionExpectation],
     class_mappings: list[DirectMapping],
     property_mappings: list[DirectMapping],
     property_chain_mappings: list[PropertyChainMapping],
+    restriction_mappings: list[RestrictionMapping],
     covered_counts: dict[DirectMapping, int],
     uncovered: list[DirectMapping],
     property_chain_covered_counts: dict[PropertyChainMapping, int],
     property_chain_uncovered: list[PropertyChainMapping],
+    restriction_covered_counts: dict[RestrictionMapping, int],
+    restriction_uncovered: list[RestrictionMapping],
     robot_path: str | None,
     tmp_dir: Path,
     data_dirs: list[Path],
@@ -506,8 +623,10 @@ def write_report(
     class_checked = sum(1 for expectation in expectations if expectation.kind == "class")
     property_checked = sum(1 for expectation in expectations if expectation.kind == "property")
     property_chain_checked = len(property_chain_expectations)
+    restriction_checked = len(restriction_expectations)
     failures = [expectation for expectation in expectations if not expectation.passed]
     property_chain_failures = [expectation for expectation in property_chain_expectations if not expectation.passed]
+    restriction_failures = [expectation for expectation in restriction_expectations if not expectation.passed]
     robot_materialization_missing = sum(1 for expectation in expectations if not expectation.robot_materialized)
     robot_materialization_missing += sum(1 for expectation in property_chain_expectations if not expectation.robot_materialized)
     nothing_failures = [result for result in example_results if result.nothing_count and result.nothing_count > 0]
@@ -529,6 +648,7 @@ def write_report(
         "The local materialization layer is used because an earlier version of this test showed that ROBOT/ELK completed successfully but did not materialize expected ABox property assertions in its output file.",
         "",
         "This is not full OWL DL reasoning and not HermiT. Property-chain checks are local deterministic pattern matches over named-property chains, not general OWL DL property-chain reasoning.",
+        "Restriction checks are explicit-filler validation over named `owl:someValuesFrom` restrictions, not complete OWL existential entailment or materialization tests.",
         "",
         "It preserves the source example discovery used by `tools/test_instance_data.py` and adds clearly labeled synthetic mapping fixtures by default.",
         "",
@@ -559,8 +679,9 @@ def write_report(
         "- `source_class rdfs:subClassOf target_class` where both sides are named IRIs, using direct/transitive `rdfs:subClassOf` propagation for `rdf:type` assertions;",
         "- `source_property rdfs:subPropertyOf target_property` where both sides are named IRIs, using direct/transitive `rdfs:subPropertyOf` propagation for property assertions.",
         "- `head_property owl:propertyChainAxiom ( p1 ... pn )` where the head and every chain member are named IRIs, using local ABox chain matching after direct/transitive `rdfs:subPropertyOf` propagation.",
+        "- `source_class rdfs:subClassOf [ owl:onProperty p ; owl:someValuesFrom filler_class ]` where the source class, property, and filler are named IRIs, using explicit fixture/data fillers typed as the filler class or a subclass.",
         "",
-        "It intentionally ignores blank-node restrictions, property chains with non-IRI members, inverse-property reasoning, cardinalities, disjunctions, annotation-only rows, deferred mappings, and mappings whose source term or chain body is not used in an example file.",
+        "It intentionally ignores restriction forms other than named `owl:someValuesFrom`, property chains with non-IRI members, inverse-property reasoning, cardinalities, disjunctions, annotation-only rows, deferred mappings, and mappings whose source term, chain body, or explicit restriction filler pattern is not used in an example file.",
         "It does not attempt HermiT or full OWL DL testing.",
         "",
         "## Summary",
@@ -575,19 +696,22 @@ def write_report(
         f"- Direct class mappings discovered: {len(class_mappings)}",
         f"- Direct property mappings discovered: {len(property_mappings)}",
         f"- Property-chain mappings discovered: {len(property_chain_mappings)}",
+        f"- Restriction mappings discovered: {len(restriction_mappings)}",
         f"- Total direct class expectations checked: {class_checked}",
         f"- Total direct property expectations checked: {property_checked}",
         f"- Total property-chain expectations checked: {property_chain_checked}",
-        f"- Total expectation failures: {len(failures) + len(property_chain_failures)}",
+        f"- Total restriction expectations checked: {restriction_checked}",
+        f"- Total expectation failures: {len(failures) + len(property_chain_failures) + len(restriction_failures)}",
         f"- Expected ABox target assertions not observed in ROBOT output: {robot_materialization_missing}",
         f"- Active direct mappings not covered by instance data: {len(uncovered)}",
         f"- Active property-chain mappings not covered by instance data: {len(property_chain_uncovered)}",
-        f"- Overall status: {'PASS' if not robot_failures and not missing_outputs and not nothing_failures and not failures and not property_chain_failures and robot_path else 'FAIL'}",
+        f"- Active restriction mappings not covered by instance data: {len(restriction_uncovered)}",
+        f"- Overall status: {'PASS' if not robot_failures and not missing_outputs and not nothing_failures and not failures and not property_chain_failures and not restriction_failures and robot_path else 'FAIL'}",
         "",
         "## Per-example ELK Results",
         "",
-        "| Example | Kind | Status | ROBOT status | `owl:Nothing` count | Direct class expectations | Direct property expectations | Property-chain expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| Example | Kind | Status | ROBOT status | `owl:Nothing` count | Direct class expectations | Direct property expectations | Property-chain expectations | Restriction expectations | Expectation failures | ROBOT output missing expected ABox assertions | Notes |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
 
     for result in example_results:
@@ -602,7 +726,8 @@ def write_report(
             f"{result.class_expectations_checked} | "
             f"{result.property_expectations_checked} | "
             f"{result.property_chain_expectations_checked} | "
-            f"{len(result.expectation_failures) + len(result.property_chain_failures)} | "
+            f"{result.restriction_expectations_checked} | "
+            f"{len(result.expectation_failures) + len(result.property_chain_failures) + len(result.restriction_failures)} | "
             f"{result.robot_materialization_missing} | "
             f"{markdown_escape(notes)} |"
         )
@@ -642,6 +767,28 @@ def write_report(
 
     if not property_chain_covered_counts:
         lines.append("|  |  | 0 |")
+
+    lines.extend(
+        [
+            "",
+            "## Restriction Expectations Checked",
+            "",
+            "| Source class | On property | Filler class | Checked expectation count |",
+            "| --- | --- | --- | ---: |",
+        ]
+    )
+
+    for mapping in sorted(restriction_covered_counts):
+        lines.append(
+            "| "
+            f"`{compact_iri(mapping.source_class)}` | "
+            f"`{compact_iri(mapping.on_property)}` | "
+            f"`{compact_iri(mapping.filler_class)}` | "
+            f"{restriction_covered_counts[mapping]} |"
+        )
+
+    if not restriction_covered_counts:
+        lines.append("|  |  |  | 0 |")
 
     lines.extend(
         [
@@ -702,7 +849,28 @@ def write_report(
             )
         lines.append("")
 
-    if not robot_failures and not missing_outputs and not nothing_failures and not failures and not property_chain_failures:
+    if restriction_failures:
+        lines.append("### Restriction Expectation Failures")
+        lines.append("")
+        lines.append("| Example | Restriction | Subject | Filler | Note |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for failure in restriction_failures:
+            lines.append(
+                "| "
+                f"`{failure.example}` | {restriction_label(failure.mapping)} | "
+                f"`{compact_iri(failure.subject)}` | `{compact_iri(failure.filler)}` | "
+                f"{markdown_escape(failure.note)} |"
+            )
+        lines.append("")
+
+    if (
+        not robot_failures
+        and not missing_outputs
+        and not nothing_failures
+        and not failures
+        and not property_chain_failures
+        and not restriction_failures
+    ):
         lines.append("No failures were detected.")
         lines.append("")
 
@@ -712,6 +880,7 @@ def write_report(
             "",
             f"The local direct-mapping and property-chain expectation checks produced `{class_checked + property_checked + property_chain_checked}` expected ABox target assertions.",
             f"Of those, `{robot_materialization_missing}` were not observed in ROBOT's reasoned output.",
+            f"The restriction explicit-filler check produced `{restriction_checked}` checks; these are not counted as expected ROBOT-materialized existential anonymous individuals.",
             "",
             "This is reported as a materialization limitation, not as a mapping failure, because the ELK gate succeeded and the local deterministic checks produced the expected target assertions.",
             "",
@@ -760,6 +929,33 @@ def write_report(
             lines.append(f"| `{compact_iri(mapping.head)}` | {chain_label(mapping.chain)} |")
     else:
         lines.append("All active named-property-chain mappings discovered in `SSN2BFO.ttl` are covered by the current source examples or synthetic fixtures.")
+
+    lines.extend(
+        [
+            "",
+            "## Active Restriction Mappings Not Covered By Instance Data",
+            "",
+            "These active named-source `owl:someValuesFrom` restrictions were discovered in `SSN2BFO.ttl`, but no current example file contains an explicit source-class individual with a matching property filler typed as the restriction filler class or a subclass.",
+            "",
+        ]
+    )
+
+    if restriction_uncovered:
+        lines.extend(
+            [
+                "| Source class | On property | Filler class |",
+                "| --- | --- | --- |",
+            ]
+        )
+        for mapping in restriction_uncovered:
+            lines.append(
+                "| "
+                f"`{compact_iri(mapping.source_class)}` | "
+                f"`{compact_iri(mapping.on_property)}` | "
+                f"`{compact_iri(mapping.filler_class)}` |"
+            )
+    else:
+        lines.append("All active supported restriction mappings discovered in `SSN2BFO.ttl` are covered by the current source examples or synthetic fixtures.")
 
     lines.extend(
         [
@@ -831,11 +1027,12 @@ def main() -> int:
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     robot_path = args.robot or shutil.which("robot")
-    class_mappings, property_mappings, property_chain_mappings = extract_direct_mappings(ttl_path)
+    class_mappings, property_mappings, property_chain_mappings, restriction_mappings = extract_direct_mappings(ttl_path)
     data_files = discover_data_files(data_dirs)
 
     all_expectations: list[Expectation] = []
     all_property_chain_expectations: list[PropertyChainExpectation] = []
+    all_restriction_expectations: list[RestrictionExpectation] = []
     example_results: list[ExampleResult] = []
 
     if robot_path is None:
@@ -844,13 +1041,17 @@ def main() -> int:
             example_results,
             all_expectations,
             all_property_chain_expectations,
+            all_restriction_expectations,
             class_mappings,
             property_mappings,
             property_chain_mappings,
+            restriction_mappings,
             {},
             class_mappings + property_mappings,
             {},
             property_chain_mappings,
+            {},
+            restriction_mappings,
             None,
             tmp_dir,
             data_dirs,
@@ -861,9 +1062,11 @@ def main() -> int:
         print("Total direct class expectations checked: 0")
         print("Total direct property expectations checked: 0")
         print("Total property-chain expectations checked: 0")
+        print("Total restriction expectations checked: 0")
         print("Total expectation failures: 0")
         print(f"Active direct mappings not covered by instance data: {len(class_mappings) + len(property_mappings)}")
         print(f"Active property-chain mappings not covered by instance data: {len(property_chain_mappings)}")
+        print(f"Active restriction mappings not covered by instance data: {len(restriction_mappings)}")
         print("Summary: FAIL (ROBOT unavailable)")
         return 1
 
@@ -876,22 +1079,26 @@ def main() -> int:
 
         expectations: list[Expectation] = []
         property_chain_expectations: list[PropertyChainExpectation] = []
+        restriction_expectations: list[RestrictionExpectation] = []
         expectation_parse_error = ""
         if robot_status == 0 and not parse_error and reasoned_output_produced:
-            expectations, property_chain_expectations, expectation_parse_error = build_expectations(
+            expectations, property_chain_expectations, restriction_expectations, expectation_parse_error = build_expectations(
                 example_path,
                 merged_path,
                 reasoned_path,
                 class_mappings,
                 property_mappings,
                 property_chain_mappings,
+                restriction_mappings,
             )
             all_expectations.extend(expectations)
             all_property_chain_expectations.extend(property_chain_expectations)
+            all_restriction_expectations.extend(restriction_expectations)
 
         combined_parse_error = "; ".join(part for part in [parse_error, expectation_parse_error] if part)
         failures = [expectation for expectation in expectations if not expectation.passed]
         property_chain_failures = [expectation for expectation in property_chain_expectations if not expectation.passed]
+        restriction_failures = [expectation for expectation in restriction_expectations if not expectation.passed]
         robot_materialization_missing = sum(1 for expectation in expectations if not expectation.robot_materialized)
         robot_materialization_missing += sum(
             1 for expectation in property_chain_expectations if not expectation.robot_materialized
@@ -909,8 +1116,10 @@ def main() -> int:
                 class_expectations_checked=sum(1 for expectation in expectations if expectation.kind == "class"),
                 property_expectations_checked=sum(1 for expectation in expectations if expectation.kind == "property"),
                 property_chain_expectations_checked=len(property_chain_expectations),
+                restriction_expectations_checked=len(restriction_expectations),
                 expectation_failures=failures,
                 property_chain_failures=property_chain_failures,
+                restriction_failures=restriction_failures,
                 robot_materialization_missing=robot_materialization_missing,
                 robot_note=robot_note,
                 parse_error=combined_parse_error,
@@ -922,18 +1131,26 @@ def main() -> int:
         all_property_chain_expectations,
         property_chain_mappings,
     )
+    restriction_covered_counts, restriction_uncovered = restriction_coverage(
+        all_restriction_expectations,
+        restriction_mappings,
+    )
     write_report(
         output_path,
         example_results,
         all_expectations,
         all_property_chain_expectations,
+        all_restriction_expectations,
         class_mappings,
         property_mappings,
         property_chain_mappings,
+        restriction_mappings,
         covered_counts,
         uncovered,
         property_chain_covered_counts,
         property_chain_uncovered,
+        restriction_covered_counts,
+        restriction_uncovered,
         robot_path,
         tmp_dir,
         data_dirs,
@@ -944,8 +1161,10 @@ def main() -> int:
     class_checked = sum(1 for expectation in all_expectations if expectation.kind == "class")
     property_checked = sum(1 for expectation in all_expectations if expectation.kind == "property")
     property_chain_checked = len(all_property_chain_expectations)
+    restriction_checked = len(all_restriction_expectations)
     expectation_failures = sum(1 for expectation in all_expectations if not expectation.passed)
     expectation_failures += sum(1 for expectation in all_property_chain_expectations if not expectation.passed)
+    expectation_failures += sum(1 for expectation in all_restriction_expectations if not expectation.passed)
     nothing_failures = sum(1 for result in example_results if result.nothing_count and result.nothing_count > 0)
     parse_failures = sum(1 for result in example_results if result.parse_error)
     missing_outputs = sum(1 for result in example_results if result.robot_status == 0 and not result.reasoned_output_produced)
@@ -956,9 +1175,11 @@ def main() -> int:
     print(f"Total direct class expectations checked: {class_checked}")
     print(f"Total direct property expectations checked: {property_checked}")
     print(f"Total property-chain expectations checked: {property_chain_checked}")
+    print(f"Total restriction expectations checked: {restriction_checked}")
     print(f"Total expectation failures: {expectation_failures}")
     print(f"Active direct mappings not covered by instance data: {len(uncovered)}")
     print(f"Active property-chain mappings not covered by instance data: {len(property_chain_uncovered)}")
+    print(f"Active restriction mappings not covered by instance data: {len(restriction_uncovered)}")
 
     failed = robot_fail > 0 or missing_outputs > 0 or nothing_failures > 0 or expectation_failures > 0 or parse_failures > 0
     print(f"Summary: {'FAIL' if failed else 'PASS'}")
