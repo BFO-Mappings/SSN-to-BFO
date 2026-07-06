@@ -1115,36 +1115,8 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/SurvivalRange
-<http://www.w3.org/ns/ssn/systems/SurvivalRange> rdf:type owl:Class ;
-                                                 rdfs:subClassOf [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000034>
-                                                                                        [ rdf:type owl:Restriction ;
-                                                                                          owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000054> ;
-                                                                                          owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
-                                                                                                                                    [ rdf:type owl:Restriction ;
-                                                                                                                                      owl:onProperty <https://www.commoncoreontologies.org/ont00001819> ;
-                                                                                                                                      owl:someValuesFrom [ owl:intersectionOf ( <http://purl.obolibrary.org/obo/BFO_0000015>
-                                                                                                                                                                                [ rdf:type owl:Restriction ;
-                                                                                                                                                                                  owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000055> ;
-                                                                                                                                                                                  owl:someValuesFrom [ owl:intersectionOf ( <https://www.commoncoreontologies.org/ont00000177>
-                                                                                                                                                                                                                            [ rdf:type owl:Restriction ;
-                                                                                                                                                                                                                              owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
-                                                                                                                                                                                                                              owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000319>
-                                                                                                                                                                                                                            ]
-                                                                                                                                                                                                                          ) ;
-                                                                                                                                                                                                       rdf:type owl:Class
-                                                                                                                                                                                                     ]
-                                                                                                                                                                                ]
-                                                                                                                                                                              ) ;
-                                                                                                                                                           rdf:type owl:Class
-                                                                                                                                                         ]
-                                                                                                                                    ]
-                                                                                                                                  ) ;
-                                                                                                               rdf:type owl:Class
-                                                                                                             ]
-                                                                                        ]
-                                                                                      ) ;
-                                                                   rdf:type owl:Class
-                                                                 ] .
+<http://www.w3.org/ns/ssn/systems/SurvivalRange> rdf:type owl:Class .
+# Direct OWL class mapping deferred pending HermiT-safe rule/COMS treatment.
 
 
 ###  http://www.w3.org/ns/ssn/systems/SystemCapability
