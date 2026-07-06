@@ -40,6 +40,7 @@ SOURCE_NAMESPACES = (
 DEFAULT_DATA_DIRS = (
     "src/current-ssn-sosa/examples/sosa-instance-data",
     "tests/fixtures/ssn-systems-mapping",
+    "tests/fixtures/ssn-core-mapping",
 )
 
 PREFIXES: tuple[tuple[str, str], ...] = (
