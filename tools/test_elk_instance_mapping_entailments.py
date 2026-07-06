@@ -41,6 +41,7 @@ DEFAULT_DATA_DIRS = (
     "src/current-ssn-sosa/examples/sosa-instance-data",
     "tests/fixtures/ssn-systems-mapping",
     "tests/fixtures/ssn-core-mapping",
+    "tests/fixtures/remaining-direct-mapping",
 )
 
 PREFIXES: tuple[tuple[str, str], ...] = (
@@ -568,16 +569,20 @@ def write_report(
             "",
             "These active direct mappings were discovered in `SSN2BFO.ttl`, but their source term was not used in the current example files in a way that creates a checkable ABox expectation.",
             "",
-            "| Mapping kind | Source | Target |",
-            "| --- | --- | --- |",
         ]
     )
 
     if uncovered:
+        lines.extend(
+            [
+                "| Mapping kind | Source | Target |",
+                "| --- | --- | --- |",
+            ]
+        )
         for mapping in uncovered:
             lines.append(f"| {mapping.kind} | `{compact_iri(mapping.source)}` | `{compact_iri(mapping.target)}` |")
     else:
-        lines.append("|  |  |  |")
+        lines.append("All active direct mappings discovered in `SSN2BFO.ttl` are covered by the current source examples or synthetic fixtures.")
 
     lines.extend(
         [
