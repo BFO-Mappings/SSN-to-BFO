@@ -181,7 +181,7 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasOperatingProperty
-<http://www.w3.org/ns/ssn/systems/hasOperatingProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000194> .
+# Direct OWL mapping deferred pending HermiT-safe rule/COMS treatment.
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasOperatingRange
@@ -189,7 +189,7 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSurvivalProperty
-<http://www.w3.org/ns/ssn/systems/hasSurvivalProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000194> .
+# Direct OWL mapping deferred pending HermiT-safe rule/COMS treatment.
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSurvivalRange
@@ -201,7 +201,7 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSystemProperty
-<http://www.w3.org/ns/ssn/systems/hasSystemProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000194> .
+# Direct OWL mapping deferred pending HermiT-safe rule/COMS treatment.
 
 
 ###  http://www.w3.org/ns/ssn/systems/qualityOfObservation
