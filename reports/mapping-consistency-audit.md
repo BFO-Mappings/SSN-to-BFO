@@ -6,10 +6,11 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/defer-reasoner-unsafe-system-mappings`
-- Current commit: `c515e1003394821a9e0b5d3568bdc2a1545f6933`
+- Current branch: `fix/defer-selected-ssn-systems-dependence-mappings`
+- Current commit: `dba499d704a27d58aff95a5dddf4eff780bded3b`
 - Working tree had untracked audit files at report generation time: no
-- Audit file status entries at report generation time: none
+- Audit file status entries at report generation time:
+  - `M reports/mapping-consistency-audit.md`
 
 ## Detected Spreadsheet Schema
 | Sheet | Header Row | Source/IRI Column | OWL Axiom Column | Comment/Notes Columns | Status/Review Columns | Candidate Mapping Rows |
@@ -47,10 +48,10 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 
 ## Summary
 - Total spreadsheet mapping rows: 93
-- Total spreadsheet expected assertions parsed: 78
-- Total TTL candidate mapping assertions: 78
-- Exact spreadsheet row matches: 75
-- Exact assertion matches: 77
+- Total spreadsheet expected assertions parsed: 75
+- Total TTL candidate mapping assertions: 75
+- Exact spreadsheet row matches: 72
+- Exact assertion matches: 74
 - Total issues: 2
 
 ## Issues by Category
@@ -87,6 +88,9 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | Common DPs | 2 | sosa:hasSimpleResult | no parsed expected assertions |
 | Common DPs | 3 | sosa:resultTime | no parsed expected assertions |
 | System Capability | 4 | ssn-system:BatteryLifetime | no parsed expected assertions |
+| System Capability | 9 | ssn-system:hasOperatingProperty | no parsed expected assertions |
+| System Capability | 11 | ssn-system:hasSurvivalProperty | no parsed expected assertions |
+| System Capability | 14 | ssn-system:hasSystemProperty | no parsed expected assertions |
 | System Capability | 15 | ssn-system:inCondition | no parsed expected assertions |
 | System Capability | 18 | ssn-system:MeasurementRange | no parsed expected assertions |
 | Sample Relationship | 2 | sampling:hasSampleRelationship | no parsed expected assertions |
