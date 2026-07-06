@@ -152,12 +152,12 @@
 
 
 ###  http://www.w3.org/ns/ssn/hasInput
-<http://www.w3.org/ns/ssn/hasInput> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
+# Direct OWL property mapping deferred pending HermiT-safe rule/COMS treatment.
 
 
 ###  http://www.w3.org/ns/ssn/hasOutput
-<http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty ;
-                                     rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
+<http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty .
+# Direct OWL property mapping deferred pending HermiT-safe rule/COMS treatment.
 
 ###  http://www.w3.org/ns/ssn/hasSubSystem
 <http://www.w3.org/ns/ssn/hasSubSystem> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000178> .

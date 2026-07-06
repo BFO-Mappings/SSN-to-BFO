@@ -63,15 +63,15 @@ It does not attempt HermiT or full OWL DL testing.
 - ROBOT fail: 0
 - Examples with `owl:Nothing` entities: 0
 - Direct class mappings discovered: 4
-- Direct property mappings discovered: 26
+- Direct property mappings discovered: 24
 - Property-chain mappings discovered: 5
 - Restriction mappings discovered: 2
 - Total direct class expectations checked: 6
-- Total direct property expectations checked: 112
+- Total direct property expectations checked: 110
 - Total property-chain expectations checked: 5
 - Total restriction expectations checked: 2
 - Total expectation failures: 0
-- Expected ABox target assertions not observed in ROBOT output: 123
+- Expected ABox target assertions not observed in ROBOT output: 121
 - Active direct mappings not covered by instance data: 0
 - Active property-chain mappings not covered by instance data: 0
 - Active restriction mappings not covered by instance data: 0
@@ -93,7 +93,7 @@ It does not attempt HermiT or full OWL DL testing.
 | `src/current-ssn-sosa/examples/sosa-instance-data/sunspots.ttl` | source example | PASS | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | OWLAPI parser messages about error#Error entities |
 | `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | source example | PASS | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 3 | OWLAPI parser messages about error#Error entities |
 | `tests/fixtures/ssn-systems-mapping/ssn-systems-property-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 3 | OWLAPI parser messages about error#Error entities |
-| `tests/fixtures/ssn-core-mapping/ssn-core-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 5 | 0 | 0 | 0 | 7 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/ssn-core-mapping/ssn-core-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 3 | 0 | 0 | 0 | 5 | OWLAPI parser messages about error#Error entities |
 | `tests/fixtures/remaining-direct-mapping/remaining-direct-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 9 | 0 | 0 | 0 | 11 | OWLAPI parser messages about error#Error entities |
 | `tests/fixtures/property-chain-mapping/property-chain-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 0 | 5 | 0 | 0 | 5 | OWLAPI parser messages about error#Error entities |
 | `tests/fixtures/restriction-mapping/sample-relationship-restrictions.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 0 | 0 | 2 | 0 | 2 | OWLAPI parser messages about error#Error entities |
@@ -123,8 +123,6 @@ It does not attempt HermiT or full OWL DL testing.
 | property | `ssn:deployedSystem` | `bfo:BFO_0000057` | 1 |
 | property | `ssn:detects` | `cco:ont00001886` | 1 |
 | property | `ssn:hasDeployment` | `bfo:BFO_0000056` | 1 |
-| property | `ssn:hasInput` | `cco:ont00001921` | 1 |
-| property | `ssn:hasOutput` | `cco:ont00001986` | 1 |
 | property | `ssn:hasSubSystem` | `bfo:BFO_0000178` | 1 |
 | property | `ssn:inDeployment` | `bfo:BFO_0000056` | 1 |
 | property | `ssn-system:hasOperatingRange` | `bfo:BFO_0000196` | 1 |
@@ -156,8 +154,8 @@ No failures were detected.
 
 ## ROBOT Materialization Note
 
-The local direct-mapping and property-chain expectation checks produced `123` expected ABox target assertions.
-Of those, `123` were not observed in ROBOT's reasoned output.
+The local direct-mapping and property-chain expectation checks produced `121` expected ABox target assertions.
+Of those, `121` were not observed in ROBOT's reasoned output.
 The restriction explicit-filler check produced `2` checks; these are not counted as expected ROBOT-materialized existential anonymous individuals.
 
 This is reported as a materialization limitation, not as a mapping failure, because the ELK gate succeeded and the local deterministic checks produced the expected target assertions.
