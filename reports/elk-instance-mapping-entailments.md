@@ -20,6 +20,7 @@ Default data directories:
 - `src/current-ssn-sosa/examples/sosa-instance-data`
 - `tests/fixtures/ssn-systems-mapping`
 - `tests/fixtures/ssn-core-mapping`
+- `tests/fixtures/remaining-direct-mapping`
 
 Files under `src/current-ssn-sosa/examples/sosa-instance-data` are source examples. Files under `tests/fixtures` are synthetic regression-test fixtures, not source examples or authoritative W3C examples.
 
@@ -50,19 +51,19 @@ It does not attempt HermiT or full OWL DL testing.
 ## Summary
 
 - ROBOT executable: `/usr/local/bin/robot`
-- Example files tested: 13
+- Example files tested: 14
 - Source example files tested: 11
-- Synthetic fixture files tested: 2
-- ROBOT pass: 13
+- Synthetic fixture files tested: 3
+- ROBOT pass: 14
 - ROBOT fail: 0
 - Examples with `owl:Nothing` entities: 0
 - Direct class mappings discovered: 4
 - Direct property mappings discovered: 29
-- Total class expectations checked: 2
-- Total property expectations checked: 106
+- Total class expectations checked: 4
+- Total property expectations checked: 115
 - Total expectation failures: 0
-- Expected ABox target assertions not observed in ROBOT output: 108
-- Active direct mappings not covered by instance data: 11
+- Expected ABox target assertions not observed in ROBOT output: 119
+- Active direct mappings not covered by instance data: 0
 - Overall status: PASS
 
 ## Per-example ELK Results
@@ -82,32 +83,44 @@ It does not attempt HermiT or full OWL DL testing.
 | `src/current-ssn-sosa/examples/sosa-instance-data/tree-height.ttl` | source example | PASS | 0 | 0 | 0 | 3 | 0 | 3 | OWLAPI parser messages about error#Error entities |
 | `tests/fixtures/ssn-systems-mapping/ssn-systems-property-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 0 | 6 | 0 | 6 | OWLAPI parser messages about error#Error entities |
 | `tests/fixtures/ssn-core-mapping/ssn-core-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 5 | 0 | 7 | OWLAPI parser messages about error#Error entities |
+| `tests/fixtures/remaining-direct-mapping/remaining-direct-property-class-mappings.ttl` | synthetic fixture | PASS | 0 | 0 | 2 | 9 | 0 | 11 | OWLAPI parser messages about error#Error entities |
 
 ## Mapping Expectations Checked
 
 | Mapping kind | Source | Target | Checked expectation count |
 | --- | --- | --- | ---: |
+| class | `sosa-rel:RelationshipNature` | `cco:ont00000958` | 1 |
+| class | `sosa-rel:SampleRelationship` | `cco:ont00000958` | 1 |
 | class | `ssn:Input` | `cco:ont00000958` | 1 |
 | class | `ssn:Output` | `cco:ont00000958` | 1 |
 | property | `sosa:actsOnProperty` | `cco:ont00001834` | 1 |
 | property | `sosa:hasResult` | `cco:ont00001986` | 26 |
+| property | `sosa:isActedOnBy` | `cco:ont00001886` | 1 |
+| property | `sosa:isResultOf` | `cco:ont00001816` | 1 |
 | property | `sosa:madeActuation` | `cco:ont00001787` | 1 |
 | property | `sosa:madeByActuator` | `cco:ont00001833` | 1 |
+| property | `sosa:madeBySampler` | `cco:ont00001833` | 1 |
 | property | `sosa:madeBySensor` | `cco:ont00001833` | 17 |
 | property | `sosa:madeObservation` | `cco:ont00001787` | 8 |
+| property | `sosa:madeSampling` | `cco:ont00001787` | 1 |
 | property | `sosa:observedProperty` | `cco:ont00001921` | 33 |
 | property | `sosa:observes` | `ssn:forProperty` | 7 |
 | property | `sosa:usedProcedure` | `cco:ont00001920` | 1 |
+| property | `ssn:deployedOnPlatform` | `bfo:BFO_0000057` | 1 |
+| property | `ssn:deployedSystem` | `bfo:BFO_0000057` | 1 |
 | property | `ssn:detects` | `cco:ont00001886` | 1 |
+| property | `ssn:hasDeployment` | `bfo:BFO_0000056` | 1 |
 | property | `ssn:hasInput` | `cco:ont00001921` | 1 |
 | property | `ssn:hasOutput` | `cco:ont00001986` | 1 |
 | property | `ssn:hasSubSystem` | `bfo:BFO_0000178` | 1 |
+| property | `ssn:inDeployment` | `bfo:BFO_0000056` | 1 |
 | property | `ssn-system:hasOperatingProperty` | `bfo:BFO_0000194` | 1 |
 | property | `ssn-system:hasOperatingRange` | `bfo:BFO_0000196` | 1 |
 | property | `ssn-system:hasSurvivalProperty` | `bfo:BFO_0000194` | 1 |
 | property | `ssn-system:hasSurvivalRange` | `bfo:BFO_0000196` | 1 |
 | property | `ssn-system:hasSystemCapability` | `bfo:BFO_0000196` | 1 |
 | property | `ssn-system:hasSystemProperty` | `bfo:BFO_0000194` | 1 |
+| property | `ssn-system:qualityOfObservation` | `cco:ont00001986` | 1 |
 | property | `ssn:wasOriginatedBy` | `cco:ont00001962` | 1 |
 
 ## Failures
@@ -116,8 +129,8 @@ No failures were detected.
 
 ## ROBOT Materialization Note
 
-The local RDFS-style expectation check produced `108` expected ABox target assertions.
-Of those, `108` were not observed in ROBOT's reasoned output.
+The local RDFS-style expectation check produced `119` expected ABox target assertions.
+Of those, `119` were not observed in ROBOT's reasoned output.
 
 This is reported as a materialization limitation, not as a mapping failure, because the ELK gate succeeded and the local direct subclass/subproperty closure produced the expected target assertions.
 
@@ -125,19 +138,7 @@ This is reported as a materialization limitation, not as a mapping failure, beca
 
 These active direct mappings were discovered in `SSN2BFO.ttl`, but their source term was not used in the current example files in a way that creates a checkable ABox expectation.
 
-| Mapping kind | Source | Target |
-| --- | --- | --- |
-| class | `sosa-rel:RelationshipNature` | `cco:ont00000958` |
-| class | `sosa-rel:SampleRelationship` | `cco:ont00000958` |
-| property | `sosa:isActedOnBy` | `cco:ont00001886` |
-| property | `sosa:isResultOf` | `cco:ont00001816` |
-| property | `sosa:madeBySampler` | `cco:ont00001833` |
-| property | `sosa:madeSampling` | `cco:ont00001787` |
-| property | `ssn:deployedOnPlatform` | `bfo:BFO_0000057` |
-| property | `ssn:deployedSystem` | `bfo:BFO_0000057` |
-| property | `ssn:hasDeployment` | `bfo:BFO_0000056` |
-| property | `ssn:inDeployment` | `bfo:BFO_0000056` |
-| property | `ssn-system:qualityOfObservation` | `cco:ont00001986` |
+All active direct mappings discovered in `SSN2BFO.ttl` are covered by the current source examples or synthetic fixtures.
 
 ## Deferred/out-of-scope Mappings
 
