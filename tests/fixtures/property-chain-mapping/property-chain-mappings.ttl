@@ -1,0 +1,54 @@
+@prefix bfo: <http://purl.obolibrary.org/obo/> .
+@prefix cco: <https://www.commoncoreontologies.org/> .
+@prefix ex: <https://example.org/property-chain-mapping-fixture/> .
+
+# Synthetic regression-test fixture for active property-chain mappings.
+# This is not source example data and is not an authoritative W3C example.
+# It exists only to exercise named-property chains discovered from SSN2BFO.ttl
+# in tools/test_elk_instance_mapping_entailments.py.
+
+# Expected local property-chain assertion:
+# ex:sample-source sosa:hasSample ex:sample .
+ex:sample-source
+    cco:ont00001873 ex:has-sample-step .
+
+ex:has-sample-step
+    bfo:BFO_0000084 ex:sample .
+
+# Expected local property-chain assertion:
+# ex:host-capability sosa:hosts ex:hosted-system .
+ex:host-capability
+    bfo:BFO_0000196 ex:hosts-step-1 .
+
+ex:hosts-step-1
+    bfo:BFO_0000054 ex:hosts-step-2 .
+
+ex:hosts-step-2
+    bfo:BFO_0000057 ex:hosted-system .
+
+# Expected local property-chain assertion:
+# ex:hosted-system sosa:isHostedBy ex:host-platform .
+ex:hosted-system
+    bfo:BFO_0000056 ex:is-hosted-by-step-1 .
+
+ex:is-hosted-by-step-1
+    bfo:BFO_0000055 ex:is-hosted-by-step-2 .
+
+ex:is-hosted-by-step-2
+    bfo:BFO_0000197 ex:host-platform .
+
+# Expected local property-chain assertion:
+# ex:sample sosa:isSampleOf ex:sampled-feature .
+ex:sample
+    bfo:BFO_0000101 ex:is-sample-of-step .
+
+ex:is-sample-of-step
+    cco:ont00001938 ex:sampled-feature .
+
+# Expected local property-chain assertion:
+# ex:procedure ssn:implementedBy ex:implementing-system .
+ex:procedure
+    cco:ont00001942 ex:implemented-by-step .
+
+ex:implemented-by-step
+    cco:ont00001833 ex:implementing-system .
