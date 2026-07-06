@@ -201,7 +201,7 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSystemProperty
-<http://www.w3.org/ns/ssn/systems/hasSystemProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000195> .
+<http://www.w3.org/ns/ssn/systems/hasSystemProperty> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000194> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/qualityOfObservation
