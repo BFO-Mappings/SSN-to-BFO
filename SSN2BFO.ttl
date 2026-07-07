@@ -125,7 +125,7 @@
 
 
 ###  http://www.w3.org/ns/sosa/observedProperty
-<http://www.w3.org/ns/sosa/observedProperty> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001921> .
+# Direct OWL property mapping deferred pending HermiT-safe rule/COMS treatment.
 
 
 
