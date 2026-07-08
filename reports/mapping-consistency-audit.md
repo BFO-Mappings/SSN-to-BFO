@@ -6,12 +6,10 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/operationalize-ssn-systems-domain-range`
-- Current commit: `9c9fd60ab5628ef2de7f08af1a31bbe11db7efb3`
+- Current branch: `fix/reject-input-output-cco-mapping-rationale`
+- Current commit: `3cf0cee0b53934897f4c14d899b9f744980b65ce`
 - Working tree had untracked audit files at report generation time: no
-- Audit file status entries at report generation time:
-  - `M reports/mapping-consistency-audit.csv`
-  - ` M reports/mapping-consistency-audit.md`
+- Audit file status entries at report generation time: none
 
 ## Detected Spreadsheet Schema
 | Sheet | Header Row | Source/IRI Column | OWL Axiom Column | Comment/Notes Columns | Status/Review Columns | Candidate Mapping Rows |
