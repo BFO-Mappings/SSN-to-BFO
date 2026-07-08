@@ -152,12 +152,12 @@
 
 
 ###  http://www.w3.org/ns/ssn/hasInput
-# Direct OWL property mapping deferred pending HermiT-safe rule/COMS treatment.
+# Prior direct CCO property mapping removed; no active CCO mapping is asserted.
 
 
 ###  http://www.w3.org/ns/ssn/hasOutput
 <http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty .
-# Direct OWL property mapping deferred pending HermiT-safe rule/COMS treatment.
+# Prior direct CCO property mapping removed; no active CCO mapping is asserted.
 
 ###  http://www.w3.org/ns/ssn/hasSubSystem
 <http://www.w3.org/ns/ssn/hasSubSystem> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000178> .
