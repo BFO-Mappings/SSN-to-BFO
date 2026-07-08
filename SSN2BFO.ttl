@@ -181,7 +181,10 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasOperatingProperty
-# Direct OWL mapping deferred pending HermiT-safe rule/COMS treatment.
+# BFO dependence subproperty mapping remains deferred; source-level typing is active.
+<http://www.w3.org/ns/ssn/systems/hasOperatingProperty>
+  rdfs:domain <http://www.w3.org/ns/ssn/systems/OperatingRange> ;
+  rdfs:range <http://www.w3.org/ns/ssn/systems/OperatingProperty> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasOperatingRange
@@ -189,7 +192,10 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSurvivalProperty
-# Direct OWL mapping deferred pending HermiT-safe rule/COMS treatment.
+# BFO dependence subproperty mapping remains deferred; source-level typing is active.
+<http://www.w3.org/ns/ssn/systems/hasSurvivalProperty>
+  rdfs:domain <http://www.w3.org/ns/ssn/systems/SurvivalRange> ;
+  rdfs:range <http://www.w3.org/ns/ssn/systems/SurvivalProperty> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSurvivalRange
@@ -201,7 +207,10 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSystemProperty
-# Direct OWL mapping deferred pending HermiT-safe rule/COMS treatment.
+# BFO dependence subproperty mapping remains deferred; source-level typing is active.
+<http://www.w3.org/ns/ssn/systems/hasSystemProperty>
+  rdfs:domain <http://www.w3.org/ns/ssn/systems/SystemCapability> ;
+  rdfs:range <http://www.w3.org/ns/ssn/systems/SystemProperty> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/qualityOfObservation

@@ -6,11 +6,12 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/defer-sosa-observedProperty-mapping`
-- Current commit: `80c55a203b5199e9292231c8c81fcf78e4fb3d03`
+- Current branch: `fix/operationalize-ssn-systems-domain-range`
+- Current commit: `9c9fd60ab5628ef2de7f08af1a31bbe11db7efb3`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time:
-  - `M reports/mapping-consistency-audit.md`
+  - `M reports/mapping-consistency-audit.csv`
+  - ` M reports/mapping-consistency-audit.md`
 
 ## Detected Spreadsheet Schema
 | Sheet | Header Row | Source/IRI Column | OWL Axiom Column | Comment/Notes Columns | Status/Review Columns | Candidate Mapping Rows |
@@ -71,7 +72,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 ## Ignored TTL Triples
 - `blank_subject`: 904
 - `declaration`: 102
-- `non_mapping_predicate`: 3
+- `non_mapping_predicate`: 9
 
 ## Skipped or Partially Parsed Rows
 | Sheet | Row | Source | Reason |
@@ -104,7 +105,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 ## Detailed Issues
 | Issue ID | Category | Sheet | Row | Source | Source IRI | TTL Predicate | Spreadsheet Relation | TTL Target | Spreadsheet Target | TTL Line | Recommended Action |
 | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | --- |
-| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 545 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
+| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 554 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
 | ISSUE-0002 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 
 ## Proposed Minimal Correction Plan
