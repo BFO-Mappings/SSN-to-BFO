@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/add-hermit-clean-source-domain-range-axioms`
-- Current commit: `fa74f4e6449b5f2b8a60aac28a09052a51fea326`
+- Current branch: `fix/simplify-actuation-range-mapping`
+- Current commit: `eddfab651fdd21a5d13c9afee9e73a7c40638756`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -68,7 +68,7 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 Note: not all supported issue categories necessarily appear in this run; zero-count categories are still supported by the audit taxonomy.
 
 ## Ignored TTL Triples
-- `blank_subject`: 904
+- `blank_subject`: 895
 - `declaration`: 102
 - `non_mapping_predicate`: 64
 
