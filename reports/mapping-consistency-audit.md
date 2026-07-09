@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/simplify-actuation-range-mapping`
-- Current commit: `eddfab651fdd21a5d13c9afee9e73a7c40638756`
+- Current branch: `fix/defer-system-property-direct-class-mapping`
+- Current commit: `2148a638df502afae809f6898c3d4f55ce23658a`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -47,10 +47,10 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 
 ## Summary
 - Total spreadsheet mapping rows: 93
-- Total spreadsheet expected assertions parsed: 71
-- Total TTL candidate mapping assertions: 71
-- Exact spreadsheet row matches: 68
-- Exact assertion matches: 70
+- Total spreadsheet expected assertions parsed: 70
+- Total TTL candidate mapping assertions: 70
+- Exact spreadsheet row matches: 67
+- Exact assertion matches: 69
 - Total issues: 2
 
 ## Issues by Category
@@ -68,7 +68,7 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 Note: not all supported issue categories necessarily appear in this run; zero-count categories are still supported by the audit taxonomy.
 
 ## Ignored TTL Triples
-- `blank_subject`: 895
+- `blank_subject`: 880
 - `declaration`: 102
 - `non_mapping_predicate`: 64
 
@@ -96,6 +96,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | System Capability | 15 | ssn-system:inCondition | no parsed expected assertions |
 | System Capability | 18 | ssn-system:MeasurementRange | no parsed expected assertions |
 | System Capability | 29 | ssn-system:SurvivalRange | no parsed expected assertions |
+| System Capability | 32 | ssn-system:SystemProperty | no parsed expected assertions |
 | Sample Relationship | 2 | sampling:hasSampleRelationship | no parsed expected assertions |
 | Sample Relationship | 3 | sampling:natureOfRelationship | no parsed expected assertions |
 | Sample Relationship | 4 | sampling:relatedSample | no parsed expected assertions |
