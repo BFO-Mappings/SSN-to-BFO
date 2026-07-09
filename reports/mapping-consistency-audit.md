@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/reject-input-output-cco-mapping-rationale`
-- Current commit: `3cf0cee0b53934897f4c14d899b9f744980b65ce`
+- Current branch: `fix/add-hermit-clean-source-domain-range-axioms`
+- Current commit: `fa74f4e6449b5f2b8a60aac28a09052a51fea326`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -70,7 +70,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 ## Ignored TTL Triples
 - `blank_subject`: 904
 - `declaration`: 102
-- `non_mapping_predicate`: 9
+- `non_mapping_predicate`: 64
 
 ## Skipped or Partially Parsed Rows
 | Sheet | Row | Source | Reason |
@@ -103,7 +103,7 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 ## Detailed Issues
 | Issue ID | Category | Sheet | Row | Source | Source IRI | TTL Predicate | Spreadsheet Relation | TTL Target | Spreadsheet Target | TTL Line | Recommended Action |
 | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | --- |
-| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 554 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
+| ISSUE-0001 | missing_in_spreadsheet |  |  | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor | rdfs:subClassOf |  | bfo:BFO_0000017; bfo:BFO_0000040; bfo:BFO_0000054; bfo:BFO_0000196; sosa:Observation; cco:ont00001787 |  | 614 | Reconcile this extra TTL mapping with the source spreadsheet row for the same term. |
 | ISSUE-0002 | missing_in_ttl | Common Classes | 18 | sosa:Sensor | http://www.w3.org/ns/sosa/Sensor |  | owl:equivalentClass |  | bfo:BFO_0000040; bfo:BFO_0000196; cco:ont00000569 |  | Add or revise the TTL mapping only after confirming the spreadsheet row is authoritative. |
 
 ## Proposed Minimal Correction Plan
