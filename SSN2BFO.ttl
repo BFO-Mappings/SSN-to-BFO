@@ -1231,19 +1231,8 @@
 
 
 ###  http://www.w3.org/ns/ssn/systems/SystemProperty
-<http://www.w3.org/ns/ssn/systems/SystemProperty> rdf:type owl:Class ;
-                                                  rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Class ;
-                                                                                           owl:unionOf ( <http://purl.obolibrary.org/obo/BFO_0000020>
-                                                                                                         <http://purl.obolibrary.org/obo/BFO_0000144>
-                                                                                                       )
-                                                                                         ]
-                                                                                         [ rdf:type owl:Restriction ;
-                                                                                           owl:onProperty <https://www.commoncoreontologies.org/ont00001920> ;
-                                                                                           owl:someValuesFrom <https://www.commoncoreontologies.org/ont00000118>
-                                                                                         ]
-                                                                                       ) ;
-                                                                    rdf:type owl:Class
-                                                                  ] .
+<http://www.w3.org/ns/ssn/systems/SystemProperty> rdf:type owl:Class .
+# Direct class-expression mapping deferred; broader typing is inherited via ssn:Property.
 
 
 ###  https://www.commoncoreontologies.org/ont00000004
