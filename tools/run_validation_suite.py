@@ -130,6 +130,7 @@ def compile_check() -> StepResult:
             "py_compile",
             "tools/run_validation_suite.py",
             "tools/test_elk_instance_mapping_entailments.py",
+            "tools/test_full_sosa_closure_hermit.py",
             "tools/test_instance_data.py",
             "tools/compare_mappings.py",
         ],
@@ -179,17 +180,20 @@ def main() -> int:
         audit_csv = REPO_ROOT / "reports/mapping-consistency-audit.csv"
         smoke_report = REPO_ROOT / "reports/instance-data-smoke-test.md"
         elk_report = REPO_ROOT / "reports/elk-instance-mapping-entailments.md"
+        full_sosa_hermit_report = REPO_ROOT / "reports/full-sosa-closure-hermit-check.md"
     else:
         audit_md = tmp_dir / "mapping-consistency-audit.md"
         audit_csv = tmp_dir / "mapping-consistency-audit.csv"
         smoke_report = tmp_dir / "instance-data-smoke-test.md"
         elk_report = tmp_dir / "elk-instance-mapping-entailments.md"
+        full_sosa_hermit_report = tmp_dir / "full-sosa-closure-hermit-check.md"
 
     report_paths = {
         "mapping audit markdown": audit_md,
         "mapping audit CSV": audit_csv,
         "instance smoke report": smoke_report,
         "ELK entailment report": elk_report,
+        "full SOSA closure HermiT report": full_sosa_hermit_report,
     }
 
     results: list[StepResult] = []
@@ -214,6 +218,18 @@ def main() -> int:
                     "tools/test_elk_instance_mapping_entailments.py",
                     "--output",
                     str(elk_report),
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Full local SOSA closure HermiT check",
+                [
+                    sys.executable,
+                    "tools/test_full_sosa_closure_hermit.py",
+                    "--output",
+                    str(full_sosa_hermit_report),
                 ],
             )
         )
