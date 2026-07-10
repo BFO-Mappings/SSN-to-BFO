@@ -32,7 +32,7 @@ robot reason --reasoner HermiT --input <temporary-full-closure.ttl> --output <te
 | ROBOT executable | `/usr/local/bin/robot` |
 | graph path | `/tmp/ssn-to-bfo-full-sosa-closure-hermit-check/full-sosa-closure-hermit.ttl` |
 | reasoned output path | `/tmp/ssn-to-bfo-full-sosa-closure-hermit-check/full-sosa-closure-hermit-reasoned.ttl` |
-| triple count before reasoning | 15768 |
+| triple count before reasoning | 15769 |
 | return code | 0 |
 | reasoned output produced | yes |
 | `owl:Nothing` count | 0 |
