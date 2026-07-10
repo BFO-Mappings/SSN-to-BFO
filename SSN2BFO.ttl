@@ -116,7 +116,8 @@
 
 
 ###  http://www.w3.org/ns/sosa/madeByActuator
-<http://www.w3.org/ns/sosa/madeByActuator> rdfs:domain <http://www.w3.org/ns/sosa/Actuation> .
+<http://www.w3.org/ns/sosa/madeByActuator> rdfs:domain <http://www.w3.org/ns/sosa/Actuation> ;
+                                          rdfs:range <http://www.w3.org/ns/sosa/Actuator> .
 # Direct CCO has-agent property mapping deferred with madeActuation pending HermiT-safe treatment.
 
 
