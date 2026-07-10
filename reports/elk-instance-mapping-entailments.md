@@ -63,15 +63,15 @@ It does not attempt HermiT or full OWL DL testing.
 - ROBOT fail: 0
 - Examples with `owl:Nothing` entities: 0
 - Direct class mappings discovered: 4
-- Direct property mappings discovered: 23
+- Direct property mappings discovered: 21
 - Property-chain mappings discovered: 5
 - Restriction mappings discovered: 2
 - Total direct class expectations checked: 6
-- Total direct property expectations checked: 77
+- Total direct property expectations checked: 75
 - Total property-chain expectations checked: 5
 - Total restriction expectations checked: 2
 - Total expectation failures: 0
-- Expected ABox target assertions not observed in ROBOT output: 88
+- Expected ABox target assertions not observed in ROBOT output: 86
 - Active direct mappings not covered by instance data: 0
 - Active property-chain mappings not covered by instance data: 0
 - Active restriction mappings not covered by instance data: 0
@@ -83,7 +83,7 @@ It does not attempt HermiT or full OWL DL testing.
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | `src/current-ssn-sosa/examples/sosa-instance-data/Beer-Full-IBS-TH2.ttl` | source example | PASS | 0 | 0 | 0 | 12 | 0 | 0 | 0 | 12 | OWLAPI parser messages about error#Error entities |
 | `src/current-ssn-sosa/examples/sosa-instance-data/IDEAS.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
-| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | source example | PASS | 0 | 0 | 0 | 14 | 0 | 0 | 0 | 14 | OWLAPI parser messages about error#Error entities |
+| `src/current-ssn-sosa/examples/sosa-instance-data/apartment-134.ttl` | source example | PASS | 0 | 0 | 0 | 12 | 0 | 0 | 0 | 12 | OWLAPI parser messages about error#Error entities |
 | `src/current-ssn-sosa/examples/sosa-instance-data/dht22-deployment.ttl` | source example | PASS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | OWLAPI parser messages about error#Error entities |
 | `src/current-ssn-sosa/examples/sosa-instance-data/dht22.ttl` | source example | PASS | 0 | 0 | 0 | 13 | 0 | 0 | 0 | 13 | OWLAPI parser messages about error#Error entities |
 | `src/current-ssn-sosa/examples/sosa-instance-data/ip68.ttl` | source example | PASS | 0 | 0 | 0 | 6 | 0 | 0 | 0 | 6 | OWLAPI parser messages about error#Error entities |
@@ -110,8 +110,6 @@ It does not attempt HermiT or full OWL DL testing.
 | property | `sosa:hasResult` | `cco:ont00001986` | 26 |
 | property | `sosa:isActedOnBy` | `cco:ont00001886` | 1 |
 | property | `sosa:isResultOf` | `cco:ont00001816` | 1 |
-| property | `sosa:madeActuation` | `cco:ont00001787` | 1 |
-| property | `sosa:madeByActuator` | `cco:ont00001833` | 1 |
 | property | `sosa:madeBySampler` | `cco:ont00001833` | 1 |
 | property | `sosa:madeBySensor` | `cco:ont00001833` | 17 |
 | property | `sosa:madeObservation` | `cco:ont00001787` | 8 |
@@ -153,8 +151,8 @@ No failures were detected.
 
 ## ROBOT Materialization Note
 
-The local direct-mapping and property-chain expectation checks produced `88` expected ABox target assertions.
-Of those, `88` were not observed in ROBOT's reasoned output.
+The local direct-mapping and property-chain expectation checks produced `86` expected ABox target assertions.
+Of those, `86` were not observed in ROBOT's reasoned output.
 The restriction explicit-filler check produced `2` checks; these are not counted as expected ROBOT-materialized existential anonymous individuals.
 
 This is reported as a materialization limitation, not as a mapping failure, because the ELK gate succeeded and the local deterministic checks produced the expected target assertions.
