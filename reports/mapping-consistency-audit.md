@@ -6,8 +6,8 @@
 - Sheets inspected: `Common Classes`, `Common OPs`, `Common DPs`, `System Capability`, `Sample Relationship`
 
 ## Git Context
-- Current branch: `fix/defer-system-property-direct-class-mapping`
-- Current commit: `2148a638df502afae809f6898c3d4f55ce23658a`
+- Current branch: `fix/defer-actuation-agent-property-mappings`
+- Current commit: `5f4bcbdbeece5f9006d2de63ca9dc027051d8b1d`
 - Working tree had untracked audit files at report generation time: no
 - Audit file status entries at report generation time: none
 
@@ -47,10 +47,10 @@ python tools/compare_mappings.py --ttl SSN2BFO.ttl --spreadsheet "Current_SOSA-S
 
 ## Summary
 - Total spreadsheet mapping rows: 93
-- Total spreadsheet expected assertions parsed: 70
-- Total TTL candidate mapping assertions: 70
-- Exact spreadsheet row matches: 67
-- Exact assertion matches: 69
+- Total spreadsheet expected assertions parsed: 68
+- Total TTL candidate mapping assertions: 68
+- Exact spreadsheet row matches: 65
+- Exact assertion matches: 67
 - Total issues: 2
 
 ## Issues by Category
@@ -85,6 +85,8 @@ Note: not all supported issue categories necessarily appear in this run; zero-co
 | Common OPs | 22 | sosa:isObservedBy | no parsed expected assertions |
 | Common OPs | 23 | ssn:isPropertyOf | no parsed expected assertions |
 | Common OPs | 24 | ssn:isProxyFor | no parsed expected assertions |
+| Common OPs | 27 | sosa:madeActuation | no parsed expected assertions |
+| Common OPs | 28 | sosa:madeByActuator | no parsed expected assertions |
 | Common OPs | 33 | sosa:observedProperty | no parsed expected assertions |
 | Common OPs | 35 | sosa:phenomenonTime | no parsed expected assertions |
 | Common DPs | 2 | sosa:hasSimpleResult | no parsed expected assertions |

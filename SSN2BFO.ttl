@@ -111,13 +111,13 @@
 
 ###  http://www.w3.org/ns/sosa/madeActuation
 <http://www.w3.org/ns/sosa/madeActuation> rdfs:domain <http://www.w3.org/ns/sosa/Actuator> ;
-                                          rdfs:range <http://www.w3.org/ns/sosa/Actuation> ;
-                                          rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
+                                          rdfs:range <http://www.w3.org/ns/sosa/Actuation> .
+# Direct CCO agent-in property mapping deferred with madeByActuator pending HermiT-safe treatment.
 
 
 ###  http://www.w3.org/ns/sosa/madeByActuator
-<http://www.w3.org/ns/sosa/madeByActuator> rdfs:domain <http://www.w3.org/ns/sosa/Actuation> ;
-                                           rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
+<http://www.w3.org/ns/sosa/madeByActuator> rdfs:domain <http://www.w3.org/ns/sosa/Actuation> .
+# Direct CCO has-agent property mapping deferred with madeActuation pending HermiT-safe treatment.
 
 
 ###  http://www.w3.org/ns/sosa/madeBySampler
