@@ -20,6 +20,7 @@ COMPILE_COMMAND = [
     "tools/run_validation_suite.py",
     "tools/test_elk_instance_mapping_entailments.py",
     "tools/test_full_sosa_closure_hermit.py",
+    "tools/test_object_property_typing_probes.py",
     "tools/test_instance_data.py",
     "tools/compare_mappings.py",
     "tools/workflow_check.py",
