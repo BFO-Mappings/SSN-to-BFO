@@ -53,8 +53,6 @@
 
 ###  http://www.w3.org/ns/sosa/actsOnProperty
 <http://www.w3.org/ns/sosa/actsOnProperty> rdf:type owl:ObjectProperty ;
-                                           rdfs:domain <http://www.w3.org/ns/sosa/Actuation> ;
-                                           rdfs:range <http://www.w3.org/ns/sosa/ActuatableProperty> ;
                                            rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001834> .
 
 
@@ -63,9 +61,7 @@
 
 
 ###  http://www.w3.org/ns/sosa/hasSample
-<http://www.w3.org/ns/sosa/hasSample> rdfs:domain <http://www.w3.org/ns/sosa/FeatureOfInterest> ;
-                                       rdfs:range <http://www.w3.org/ns/sosa/Sample> ;
-                                       owl:propertyChainAxiom ( <https://www.commoncoreontologies.org/ont00001873>
+<http://www.w3.org/ns/sosa/hasSample> owl:propertyChainAxiom ( <https://www.commoncoreontologies.org/ont00001873>
                                                                <http://purl.obolibrary.org/obo/BFO_0000084>
                                                              ) .
 
@@ -78,7 +74,6 @@
 
 ###  http://www.w3.org/ns/sosa/isActedOnBy
 <http://www.w3.org/ns/sosa/isActedOnBy> rdfs:domain <http://www.w3.org/ns/sosa/ActuatableProperty> ;
-                                        rdfs:range <http://www.w3.org/ns/sosa/Actuation> ;
                                         rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001886> .
 
 
@@ -91,13 +86,11 @@
 
 
 ###  http://www.w3.org/ns/sosa/isObservedBy
-<http://www.w3.org/ns/sosa/isObservedBy> rdfs:domain <http://www.w3.org/ns/sosa/ObservableProperty> ;
-                                         rdfs:range <http://www.w3.org/ns/sosa/Sensor> .
+<http://www.w3.org/ns/sosa/isObservedBy> rdfs:domain <http://www.w3.org/ns/sosa/ObservableProperty> .
 
 
 ###  http://www.w3.org/ns/sosa/isSampleOf
 <http://www.w3.org/ns/sosa/isSampleOf> rdfs:domain <http://www.w3.org/ns/sosa/Sample> ;
-                                       rdfs:range <http://www.w3.org/ns/sosa/FeatureOfInterest> ;
                                        owl:propertyChainAxiom ( <http://purl.obolibrary.org/obo/BFO_0000101>
                                                                 <https://www.commoncoreontologies.org/ont00001938>
                                                               ) .
@@ -110,168 +103,135 @@
                                                                 <http://purl.obolibrary.org/obo/BFO_0000197> ) .
 
 ###  http://www.w3.org/ns/sosa/madeActuation
-<http://www.w3.org/ns/sosa/madeActuation> rdfs:domain <http://www.w3.org/ns/sosa/Actuator> ;
-                                          rdfs:range <http://www.w3.org/ns/sosa/Actuation> .
 # Direct CCO agent-in property mapping deferred with madeByActuator pending HermiT-safe treatment.
 
 
 ###  http://www.w3.org/ns/sosa/madeByActuator
-<http://www.w3.org/ns/sosa/madeByActuator> rdfs:domain <http://www.w3.org/ns/sosa/Actuation> ;
-                                          rdfs:range <http://www.w3.org/ns/sosa/Actuator> .
+<http://www.w3.org/ns/sosa/madeByActuator> rdfs:domain <http://www.w3.org/ns/sosa/Actuation> .
 # Direct CCO has-agent property mapping deferred with madeActuation pending HermiT-safe treatment.
 
 
 ###  http://www.w3.org/ns/sosa/madeBySampler
-<http://www.w3.org/ns/sosa/madeBySampler> rdfs:domain <http://www.w3.org/ns/sosa/Sampling> ;
-                                          rdfs:range <http://www.w3.org/ns/sosa/Sampler> ;
-                                          rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
+<http://www.w3.org/ns/sosa/madeBySampler> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
 
 
 ###  http://www.w3.org/ns/sosa/madeBySensor
-<http://www.w3.org/ns/sosa/madeBySensor> rdfs:domain <http://www.w3.org/ns/sosa/Observation> ;
-                                         rdfs:range <http://www.w3.org/ns/sosa/Sensor> ;
-                                         rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
+<http://www.w3.org/ns/sosa/madeBySensor> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
 
 
 ###  http://www.w3.org/ns/sosa/madeObservation
 <http://www.w3.org/ns/sosa/madeObservation> rdfs:domain <http://www.w3.org/ns/sosa/Sensor> ;
-                                            rdfs:range <http://www.w3.org/ns/sosa/Observation> ;
                                             rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
 
 
 ###  http://www.w3.org/ns/sosa/madeSampling
 <http://www.w3.org/ns/sosa/madeSampling> rdfs:domain <http://www.w3.org/ns/sosa/Sampler> ;
-                                         rdfs:range <http://www.w3.org/ns/sosa/Sampling> ;
                                          rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001787> .
 
 
 ###  http://www.w3.org/ns/sosa/observes
-<http://www.w3.org/ns/sosa/observes> rdfs:domain <http://www.w3.org/ns/sosa/Sensor> ;
-                                     rdfs:range <http://www.w3.org/ns/sosa/ObservableProperty> ;
-                                     rdfs:subPropertyOf <http://www.w3.org/ns/ssn/forProperty> .
+<http://www.w3.org/ns/sosa/observes> rdfs:subPropertyOf <http://www.w3.org/ns/ssn/forProperty> .
 
 
 ###  http://www.w3.org/ns/sosa/observedProperty
-# Prior direct CCO property mapping remains removed; source-level typing is active.
+# Prior direct CCO property mapping remains removed; preferred cluster-minimal source-level typing representative is active.
 <http://www.w3.org/ns/sosa/observedProperty>
-  rdfs:domain <http://www.w3.org/ns/sosa/Observation> ;
-  rdfs:range <http://www.w3.org/ns/sosa/ObservableProperty> .
+  rdfs:domain <http://www.w3.org/ns/sosa/Observation> .
 
 ###  http://www.w3.org/ns/sosa/usedProcedure
 <http://www.w3.org/ns/sosa/usedProcedure> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001920> .
 
 ###  http://www.w3.org/ns/ssn/deployedOnPlatform
 <http://www.w3.org/ns/ssn/deployedOnPlatform> rdf:type owl:ObjectProperty ;
-                                              rdfs:domain <http://www.w3.org/ns/ssn/Deployment> ;
-                                              rdfs:range <http://www.w3.org/ns/sosa/Platform> ;
                                               rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000057> .
 
 
 ###  http://www.w3.org/ns/ssn/deployedSystem
 <http://www.w3.org/ns/ssn/deployedSystem> rdf:type owl:ObjectProperty ;
-                                          rdfs:domain <http://www.w3.org/ns/ssn/Deployment> ;
-                                          rdfs:range <http://www.w3.org/ns/ssn/System> ;
                                           rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000057> .
 
 
 ###  http://www.w3.org/ns/ssn/detects
 <http://www.w3.org/ns/ssn/detects> rdfs:domain <http://www.w3.org/ns/sosa/Sensor> ;
-                                   rdfs:range <http://www.w3.org/ns/ssn/Stimulus> ;
                                    rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001886> .
 
 
 ###  http://www.w3.org/ns/ssn/hasDeployment
 <http://www.w3.org/ns/ssn/hasDeployment> rdfs:domain <http://www.w3.org/ns/ssn/System> ;
-                                         rdfs:range <http://www.w3.org/ns/ssn/Deployment> ;
                                          rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
 
 
 ###  http://www.w3.org/ns/ssn/hasInput
-# Prior direct CCO property mapping removed; source-level typing is active.
+# Prior direct CCO property mapping removed; preferred cluster-minimal source-level typing representative is active.
 <http://www.w3.org/ns/ssn/hasInput>
-  rdfs:domain <http://www.w3.org/ns/sosa/Procedure> ;
-  rdfs:range <http://www.w3.org/ns/ssn/Input> .
+  rdfs:domain <http://www.w3.org/ns/sosa/Procedure> .
 
 
 ###  http://www.w3.org/ns/ssn/hasOutput
 <http://www.w3.org/ns/ssn/hasOutput> rdf:type owl:ObjectProperty ;
-                                     rdfs:domain <http://www.w3.org/ns/sosa/Procedure> ;
-                                     rdfs:range <http://www.w3.org/ns/ssn/Output> .
-# Prior direct CCO property mapping removed; source-level typing is active.
+                                     rdfs:domain <http://www.w3.org/ns/sosa/Procedure> .
+# Prior direct CCO property mapping removed; preferred cluster-minimal source-level typing representative is active.
 
 ###  http://www.w3.org/ns/ssn/hasSubSystem
 <http://www.w3.org/ns/ssn/hasSubSystem> rdfs:domain <http://www.w3.org/ns/ssn/System> ;
-                                        rdfs:range <http://www.w3.org/ns/ssn/System> ;
                                         rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000178> .
 
 
 ###  http://www.w3.org/ns/ssn/implementedBy
 <http://www.w3.org/ns/ssn/implementedBy> rdf:type owl:ObjectProperty ;
-                                         rdfs:domain <http://www.w3.org/ns/sosa/Procedure> ;
-                                         rdfs:range <http://www.w3.org/ns/ssn/System> ;
                                          owl:propertyChainAxiom ( <https://www.commoncoreontologies.org/ont00001942>
                                                                   <https://www.commoncoreontologies.org/ont00001833> ) .
 
 ###  http://www.w3.org/ns/ssn/implements
 <http://www.w3.org/ns/ssn/implements> rdf:type owl:ObjectProperty ;
-                                      rdfs:domain <http://www.w3.org/ns/ssn/System> ;
-                                      rdfs:range <http://www.w3.org/ns/sosa/Procedure> .
+                                      rdfs:domain <http://www.w3.org/ns/ssn/System> .
 
 
 ###  http://www.w3.org/ns/ssn/inDeployment
 <http://www.w3.org/ns/ssn/inDeployment> rdfs:domain <http://www.w3.org/ns/sosa/Platform> ;
-                                        rdfs:range <http://www.w3.org/ns/ssn/Deployment> ;
                                         rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
 
 
 ###  http://www.w3.org/ns/ssn/isProxyFor
-<http://www.w3.org/ns/ssn/isProxyFor> rdfs:domain <http://www.w3.org/ns/ssn/Stimulus> ;
-                                      rdfs:range <http://www.w3.org/ns/sosa/ObservableProperty> .
+<http://www.w3.org/ns/ssn/isProxyFor> rdfs:domain <http://www.w3.org/ns/ssn/Stimulus> .
 
 
 ###  http://www.w3.org/ns/ssn/wasOriginatedBy
 <http://www.w3.org/ns/ssn/wasOriginatedBy> rdfs:domain <http://www.w3.org/ns/sosa/Observation> ;
-                                           rdfs:range <http://www.w3.org/ns/ssn/Stimulus> ;
                                            rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001962> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasOperatingProperty
-# BFO dependence subproperty mapping remains deferred; source-level typing is active.
+# BFO dependence subproperty mapping remains deferred; preferred cluster-minimal source-level typing representative is active.
 <http://www.w3.org/ns/ssn/systems/hasOperatingProperty>
-  rdfs:domain <http://www.w3.org/ns/ssn/systems/OperatingRange> ;
-  rdfs:range <http://www.w3.org/ns/ssn/systems/OperatingProperty> .
+  rdfs:domain <http://www.w3.org/ns/ssn/systems/OperatingRange> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasOperatingRange
 <http://www.w3.org/ns/ssn/systems/hasOperatingRange> rdfs:domain <http://www.w3.org/ns/ssn/System> ;
-                                                     rdfs:range <http://www.w3.org/ns/ssn/systems/OperatingRange> ;
                                                      rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSurvivalProperty
-# BFO dependence subproperty mapping remains deferred; source-level typing is active.
+# BFO dependence subproperty mapping remains deferred; preferred cluster-minimal source-level typing representative is active.
 <http://www.w3.org/ns/ssn/systems/hasSurvivalProperty>
-  rdfs:domain <http://www.w3.org/ns/ssn/systems/SurvivalRange> ;
-  rdfs:range <http://www.w3.org/ns/ssn/systems/SurvivalProperty> .
+  rdfs:domain <http://www.w3.org/ns/ssn/systems/SurvivalRange> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSurvivalRange
 <http://www.w3.org/ns/ssn/systems/hasSurvivalRange> rdfs:domain <http://www.w3.org/ns/ssn/System> ;
-                                                    rdfs:range <http://www.w3.org/ns/ssn/systems/SurvivalRange> ;
                                                     rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSystemCapability
 <http://www.w3.org/ns/ssn/systems/hasSystemCapability> rdfs:domain <http://www.w3.org/ns/ssn/System> ;
-                                                       rdfs:range <http://www.w3.org/ns/ssn/systems/SystemCapability> ;
                                                        rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000196> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/hasSystemProperty
-# BFO dependence subproperty mapping remains deferred; source-level typing is active.
+# BFO dependence subproperty mapping remains deferred; preferred cluster-minimal source-level typing representative is active.
 <http://www.w3.org/ns/ssn/systems/hasSystemProperty>
-  rdfs:domain <http://www.w3.org/ns/ssn/systems/SystemCapability> ;
-  rdfs:range <http://www.w3.org/ns/ssn/systems/SystemProperty> .
+  rdfs:domain <http://www.w3.org/ns/ssn/systems/SystemCapability> .
 
 
 ###  http://www.w3.org/ns/ssn/systems/qualityOfObservation
