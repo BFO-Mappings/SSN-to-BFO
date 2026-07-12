@@ -10,6 +10,7 @@ The no-probe baseline and each probe load the full local SOSA closure:
 
 - `imports/cco.ttl`
 - `imports/sosa.ttl`
+- `imports/sosa-sampling.ttl`
 - `imports/ssn.ttl`
 - `imports/ssn-systems.ttl`
 - `SSN2BFO.ttl`
@@ -56,7 +57,7 @@ An intentionally unsatisfiable probe may make `robot reason` return nonzero. Thi
 |---|---|
 | ROBOT executable | `/usr/local/bin/robot` |
 | baseline graph path | `/tmp/ssn-to-bfo-object-property-typing-probes/baseline-full-sosa-closure.ttl` |
-| baseline triple count | 15729 |
+| baseline triple count | 15762 |
 | baseline return code | 0 |
 | baseline reasoned output | yes |
 | baseline `owl:Nothing` count | 0 |
@@ -72,7 +73,7 @@ An intentionally unsatisfiable probe may make `robot reason` return nonzero. Thi
 | satisfiable probes | 0 |
 | inconclusive probes | 0 |
 | unexpected ontology unsats | 0 |
-| runtime seconds | 120.63 |
+| runtime seconds | 120.01 |
 | overall status | PASS |
 
 ## Probe Results

@@ -31,6 +31,7 @@ PROBE = Namespace("http://example.org/ssn-to-bfo/object-property-typing-probe/")
 GRAPH_INPUTS = (
     Path("imports/cco.ttl"),
     Path("imports/sosa.ttl"),
+    Path("imports/sosa-sampling.ttl"),
     Path("imports/ssn.ttl"),
     Path("imports/ssn-systems.ttl"),
     Path("SSN2BFO.ttl"),
