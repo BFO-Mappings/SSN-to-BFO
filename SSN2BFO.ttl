@@ -8,6 +8,7 @@
 
 <http://www.sks.ai/SSN2BFO/> rdf:type owl:Ontology ;
                               owl:imports <http://www.w3.org/ns/ssn/> ,
+                                          <http://www.w3.org/ns/sosa/sampling/> ,
                                           <http://www.w3.org/ns/ssn/systems/> ,
                                           <https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged> .
 

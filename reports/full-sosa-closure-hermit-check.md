@@ -8,6 +8,7 @@ This check protects the full local SOSA closure HermiT baseline. It loads:
 
 - `imports/cco.ttl`
 - `imports/sosa.ttl`
+- `imports/sosa-sampling.ttl`
 - `imports/ssn.ttl`
 - `imports/ssn-systems.ttl`
 - `SSN2BFO.ttl`
@@ -32,7 +33,7 @@ robot reason --reasoner HermiT --input <temporary-full-closure.ttl> --output <te
 | ROBOT executable | `/usr/local/bin/robot` |
 | graph path | `/tmp/ssn-to-bfo-full-sosa-closure-hermit-check/full-sosa-closure-hermit.ttl` |
 | reasoned output path | `/tmp/ssn-to-bfo-full-sosa-closure-hermit-check/full-sosa-closure-hermit-reasoned.ttl` |
-| triple count before reasoning | 15729 |
+| triple count before reasoning | 15762 |
 | return code | 0 |
 | reasoned output produced | yes |
 | `owl:Nothing` count | 0 |
