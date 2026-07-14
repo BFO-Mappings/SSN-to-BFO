@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write compile check post-merge-check status diffstat
+.PHONY: validate validate-write audit-write compile check check-coms watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -19,7 +19,20 @@ compile:
 		tools/test_elk_instance_mapping_entailments.py \
 		tools/test_instance_data.py \
 		tools/compare_mappings.py \
+		tools/generate_mapping_from_coms.py \
+		tools/check_coms_mapping.py \
+		tools/watch_coms_mapping.py \
 		tools/workflow_check.py
+
+check-coms:
+	python tools/check_coms_mapping.py
+
+watch-coms:
+	@echo "Watching mappings/SSN2BFO-COMS.xlsx. Press Ctrl+C to stop."
+	python tools/watch_coms_mapping.py
+
+coms-status:
+	python tools/check_coms_mapping.py --status
 
 check: validate compile
 	git diff --check
