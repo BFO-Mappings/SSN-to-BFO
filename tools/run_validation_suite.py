@@ -137,6 +137,7 @@ def compile_check() -> StepResult:
             "tools/generate_mapping_from_coms.py",
             "tools/check_coms_mapping.py",
             "tools/watch_coms_mapping.py",
+            "tests/test_generate_mapping_from_coms.py",
         ],
     )
 
@@ -205,6 +206,22 @@ def main() -> int:
 
     results: list[StepResult] = []
     results.append(parse_ttl_check())
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "COMS generator focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_generate_mapping_from_coms.py",
+                ],
+            )
+        )
     if results[-1].passed:
         results.append(
             run_command(

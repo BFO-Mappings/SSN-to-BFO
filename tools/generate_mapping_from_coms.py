@@ -98,6 +98,8 @@ ALLOWED_PREDICATES = {
     "rdfs:subPropertyOf": RDFS.subPropertyOf,
     "owl:equivalentProperty": OWL.equivalentProperty,
     "owl:propertyChainAxiom": OWL.propertyChainAxiom,
+    "rdfs:domain": RDFS.domain,
+    "rdfs:range": RDFS.range,
 }
 
 CLASS_PREDICATES = {"rdfs:subClassOf", "owl:equivalentClass"}
@@ -106,6 +108,9 @@ OBJECT_PROPERTY_PREDICATES = {
     "owl:equivalentProperty",
     "owl:propertyChainAxiom",
 }
+DOMAIN_RANGE_PREDICATES = {"rdfs:domain", "rdfs:range"}
+OBJECT_PROPERTY_SUBJECT_PREDICATES = OBJECT_PROPERTY_PREDICATES | DOMAIN_RANGE_PREDICATES
+MAPPING_PREDICATES = CLASS_PREDICATES | OBJECT_PROPERTY_PREDICATES
 
 CLEANUP_TRIPLES = (
     (SOSA.isSampleOf, RDF.type, OWL.FunctionalProperty),
@@ -142,11 +147,6 @@ class WorkbookRow:
     @property
     def is_blank_mapping(self) -> bool:
         return bool(self.subject_text) and not self.predicate_text and not self.target_text
-
-    @property
-    def is_mapped(self) -> bool:
-        return bool(self.subject_text and self.predicate_text and self.target_text)
-
 
 @dataclass(frozen=True)
 class Resolution:
@@ -188,6 +188,17 @@ class ProcessedRow:
     property_chain: tuple[URIRef, ...] = ()
 
 
+@dataclass(frozen=True)
+class NormalizedRow:
+    row_id: str
+    subject: str
+    subject_kind: str
+    predicate: str
+    original_target: str
+    normalized_target: str
+    rdf_owl_form: str
+
+
 @dataclass
 class WorkbookStats:
     worksheets_read: list[str] = field(default_factory=list)
@@ -197,7 +208,13 @@ class WorkbookStats:
     blank_mapping_rows: int = 0
     class_mapping_rows: int = 0
     object_property_mapping_rows: int = 0
+    domain_rows: int = 0
+    range_rows: int = 0
     property_chain_rows: int = 0
+
+    @property
+    def active_axiom_rows(self) -> int:
+        return self.mapped_rows + self.domain_rows + self.range_rows
 
 
 @dataclass
@@ -227,6 +244,7 @@ class HermitResult:
 class CoverageResult:
     source_terms: dict[URIRef, str]
     mapped_terms: set[URIRef]
+    listed_terms: set[URIRef]
     explicit_blank_terms: set[URIRef]
     spreadsheet_missing_subjects: set[str]
     query_source_count: int
@@ -258,7 +276,11 @@ class CoverageResult:
 
     @property
     def absent_terms(self) -> set[URIRef]:
-        return set(self.source_terms) - self.mapped_terms - self.explicit_blank_terms
+        return set(self.source_terms) - self.listed_terms
+
+    @property
+    def listed_unmapped_terms(self) -> set[URIRef]:
+        return self.listed_terms - self.mapped_terms - self.explicit_blank_terms
 
 
 @dataclass
@@ -269,7 +291,26 @@ class ComparisonResult:
     class_expression_differences: list[str]
     object_property_differences: list[str]
     property_chain_differences: list[str]
-    current_domain_range_absent: set[tuple[str, str, str]]
+    domain_both: set[tuple[str, str]]
+    domain_generated_only: set[tuple[str, str]]
+    domain_current_only: set[tuple[str, str]]
+    domain_differences: list[str]
+    range_both: set[tuple[str, str]]
+    range_generated_only: set[tuple[str, str]]
+    range_current_only: set[tuple[str, str]]
+    range_differences: list[str]
+
+    @property
+    def current_domain_range_absent(self) -> set[tuple[str, str, str]]:
+        domains = {
+            (subject, str(RDFS.domain), target)
+            for subject, target in self.domain_current_only
+        }
+        ranges = {
+            (subject, str(RDFS.range), target)
+            for subject, target in self.range_current_only
+        }
+        return domains | ranges
 
 
 class GenerationError(Exception):
@@ -496,19 +537,20 @@ class Resolver:
             raise GenerationError(f"{row_id}: source subject {token!r} is not in a source ontology prefix")
         iri: URIRef | None = None
         source_kinds: set[str] = set()
-        class_error: GenerationError | None = None
         try:
             iri = self.resolve(token, "class", row_id).iri
             source_kinds = self.kinds(iri, self.source_graph)
-        except GenerationError as exc:
-            class_error = exc
+        except GenerationError:
+            pass
         if not source_kinds:
             try:
                 iri = self.resolve(token, "object_property", row_id).iri
                 source_kinds = self.kinds(iri, self.source_graph)
             except GenerationError:
-                if class_error is not None:
-                    raise class_error
+                raise GenerationError(
+                    f"{row_id}: source subject {token!r} cannot be resolved as a declared "
+                    "OWL class or object property in the local SOSA/SSN source ontologies"
+                ) from None
         if len(source_kinds) != 1:
             raise GenerationError(f"{row_id}: source subject {token!r} has ambiguous or missing type {source_kinds}")
         assert iri is not None
@@ -593,6 +635,7 @@ def read_workbook(path: Path) -> tuple[list[WorkbookRow], WorkbookStats]:
 def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats: WorkbookStats) -> list[ProcessedRow]:
     processed: list[ProcessedRow] = []
     mapping_by_key: dict[tuple[str, str], str] = {}
+    property_typing_row_by_key: dict[tuple[str, str], WorkbookRow] = {}
     for row in rows:
         if not row.subject_text:
             if row.predicate_text or row.target_text:
@@ -616,7 +659,7 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
 
         if not row.predicate_text or not row.target_text:
             raise GenerationError(
-                f"{row.row_id}: mapped rows must populate subject, predicate, and target; "
+                f"{row.row_id}: active axiom rows must populate subject, predicate, and target; "
                 "only subject-only rows are allowed as explicit blank mappings"
             )
         if row.predicate_text not in ALLOWED_PREDICATES:
@@ -624,21 +667,52 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
 
         if row.predicate_text in CLASS_PREDICATES and subject_kind != "class":
             raise GenerationError(f"{row.row_id}: class predicate used with {subject_kind} subject")
-        if row.predicate_text in OBJECT_PROPERTY_PREDICATES and subject_kind != "object_property":
-            raise GenerationError(f"{row.row_id}: object-property predicate used with {subject_kind} subject")
+        if row.predicate_text in OBJECT_PROPERTY_SUBJECT_PREDICATES and subject_kind != "object_property":
+            raise GenerationError(
+                f"{row.row_id}: {row.predicate_text} requires an object-property subject; "
+                f"{row.subject_text} resolves as {subject_kind}"
+            )
 
         key = (str(subject), row.predicate_text)
-        previous_target = mapping_by_key.get(key)
-        if previous_target is not None and previous_target != row.target_text:
-            raise GenerationError(
-                f"{row.row_id}: duplicate mapping for {row.subject_text} {row.predicate_text} "
-                f"has incompatible targets {previous_target!r} and {row.target_text!r}"
-            )
-        mapping_by_key[key] = row.target_text
+        if row.predicate_text in DOMAIN_RANGE_PREDICATES:
+            previous_row = property_typing_row_by_key.get(key)
+            if previous_row is not None:
+                axiom_name = "domain" if row.predicate_text == "rdfs:domain" else "range"
+                raise GenerationError(
+                    f"{row.row_id}: duplicate {row.predicate_text} row for {row.subject_text}; "
+                    f"the first {axiom_name} row is {previous_row.row_id}. Multiple OWL {axiom_name} "
+                    "axioms are conjunctive; write alternatives with Manchester 'or' in one target expression."
+                )
+            property_typing_row_by_key[key] = row
+        else:
+            previous_target = mapping_by_key.get(key)
+            if previous_target is not None and previous_target != row.target_text:
+                raise GenerationError(
+                    f"{row.row_id}: duplicate mapping for {row.subject_text} {row.predicate_text} "
+                    f"has incompatible targets {previous_target!r} and {row.target_text!r}"
+                )
+            mapping_by_key[key] = row.target_text
 
         if row.predicate_text in CLASS_PREDICATES:
             expr = ManchesterParser(row.target_text, resolver, row.row_id).parse()
             stats.class_mapping_rows += 1
+            stats.mapped_rows += 1
+            processed.append(
+                ProcessedRow(
+                    row=row,
+                    subject=subject,
+                    subject_kind=subject_kind,
+                    predicate=row.predicate_text,
+                    target=row.target_text,
+                    expr=expr,
+                )
+            )
+        elif row.predicate_text in DOMAIN_RANGE_PREDICATES:
+            expr = ManchesterParser(row.target_text, resolver, row.row_id).parse()
+            if row.predicate_text == "rdfs:domain":
+                stats.domain_rows += 1
+            else:
+                stats.range_rows += 1
             processed.append(
                 ProcessedRow(
                     row=row,
@@ -651,8 +725,8 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
             )
         elif row.predicate_text == "owl:propertyChainAxiom":
             chain = parse_property_chain(row.target_text, resolver, row.row_id)
-            stats.object_property_mapping_rows += 1
             stats.property_chain_rows += 1
+            stats.mapped_rows += 1
             processed.append(
                 ProcessedRow(
                     row=row,
@@ -666,6 +740,7 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
         else:
             target_property = resolver.resolve(row.target_text, "object_property", row.row_id).iri
             stats.object_property_mapping_rows += 1
+            stats.mapped_rows += 1
             processed.append(
                 ProcessedRow(
                     row=row,
@@ -676,7 +751,6 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
                     target_property=target_property,
                 )
             )
-        stats.mapped_rows += 1
     return processed
 
 
@@ -745,15 +819,17 @@ def generate_ontology(processed_rows: list[ProcessedRow], output_path: Path) -> 
     return graph
 
 
-def normalized_mapping_rows(processed_rows: list[ProcessedRow], graph: Graph) -> list[tuple[str, str, str, str, str]]:
-    rows: list[tuple[str, str, str, str, str]] = []
+def normalized_axiom_rows(processed_rows: list[ProcessedRow], graph: Graph) -> list[NormalizedRow]:
+    rows: list[NormalizedRow] = []
     for item in processed_rows:
         if not item.predicate:
             continue
         predicate_iri = ALLOWED_PREDICATES[item.predicate]
         if item.expr is not None:
-            objects = list(graph.objects(item.subject, predicate_iri))
-            normalized = " ; ".join(canonical_expr(graph, obj) for obj in objects)
+            objects = sorted(
+                (canonical_expr(graph, obj) for obj in graph.objects(item.subject, predicate_iri)),
+            )
+            normalized = " ; ".join(objects)
         elif item.target_property is not None:
             normalized = compact_iri(item.target_property)
         elif item.property_chain:
@@ -761,12 +837,14 @@ def normalized_mapping_rows(processed_rows: list[ProcessedRow], graph: Graph) ->
         else:
             normalized = ""
         rows.append(
-            (
-                item.row.row_id,
-                compact_iri(item.subject),
-                item.predicate,
-                item.target,
-                normalized,
+            NormalizedRow(
+                row_id=item.row.row_id,
+                subject=compact_iri(item.subject),
+                subject_kind=item.subject_kind,
+                predicate=item.predicate,
+                original_target=item.target,
+                normalized_target=normalized,
+                rdf_owl_form=f"{compact_iri(item.subject)} {item.predicate} {normalized} .",
             )
         )
     return rows
@@ -893,7 +971,8 @@ def build_coverage(
         for row in source_query_rows
     }
 
-    mapped_terms = {row.subject for row in processed_rows if row.predicate}
+    mapped_terms = {row.subject for row in processed_rows if row.predicate in MAPPING_PREDICATES}
+    listed_terms = {row.subject for row in processed_rows}
     explicit_blank_terms = {row.subject for row in processed_rows if not row.predicate}
     missing_subjects = set(source_subject_errors)
 
@@ -906,6 +985,8 @@ def build_coverage(
             status = "mapped"
         elif term in explicit_blank_terms:
             status = "explicitly_unmapped"
+        elif term in listed_terms:
+            status = "listed_unmapped"
         else:
             status = "absent_from_spreadsheet"
         coverage_graph.add((term, COMS_COVERAGE.coverageStatus, Literal(status)))
@@ -914,6 +995,7 @@ def build_coverage(
     result = CoverageResult(
         source_terms=source_terms,
         mapped_terms=mapped_terms,
+        listed_terms=listed_terms,
         explicit_blank_terms=explicit_blank_terms,
         spreadsheet_missing_subjects=missing_subjects,
         query_source_count=len(source_query_rows),
@@ -940,6 +1022,7 @@ def write_coverage_report(path: Path, coverage: CoverageResult) -> None:
         "",
         "The source term inventory is produced by `queries/source-classes-and-object-properties.rq`. "
         "Unmapped terms are selected from the generated coverage graph by `queries/unmapped-source-terms.rq`.",
+        "A domain or range row lists a property for local typing review but does not count it as relation-mapped; only subproperty, equivalent-property, or property-chain rows do so.",
         "",
         "## Summary",
         "",
@@ -951,6 +1034,7 @@ def write_coverage_report(path: Path, coverage: CoverageResult) -> None:
         f"| mapped object properties | {len(coverage.mapped_object_properties)} |",
         f"| unmapped object properties | {len(coverage.unmapped_object_properties)} |",
         f"| explicitly listed blank mappings | {len(coverage.explicit_blank_terms)} |",
+        f"| listed only in domain/range property-typing rows | {len(coverage.listed_unmapped_terms)} |",
         f"| source terms absent from spreadsheet | {len(coverage.absent_terms)} |",
         f"| spreadsheet subjects not found in source ontologies | {len(coverage.spreadsheet_missing_subjects)} |",
         f"| unmapped rows returned by SPARQL coverage query | {coverage.query_unmapped_count} |",
@@ -974,6 +1058,10 @@ def write_coverage_report(path: Path, coverage: CoverageResult) -> None:
         "## Explicitly Listed Blank Mappings",
         "",
         *format_term_list(coverage.explicit_blank_terms),
+        "",
+        "## Listed Only In Domain/Range Property-Typing Rows",
+        "",
+        *format_term_list(coverage.listed_unmapped_terms),
         "",
         "## Source Terms Absent From Spreadsheet",
         "",
@@ -1025,6 +1113,14 @@ def extract_mapping_axioms(graph: Graph) -> set[tuple[str, str, str, str]]:
     return mappings
 
 
+def extract_property_typing_axioms(graph: Graph, predicate: URIRef) -> set[tuple[str, str]]:
+    return {
+        (str(subject), canonical_expr(graph, obj))
+        for subject, _, obj in graph.triples((None, predicate, None))
+        if isinstance(subject, URIRef) and isinstance(obj, (URIRef, BNode))
+    }
+
+
 def compare_generated_to_current(generated_path: Path, report_path: Path, processed_rows: list[ProcessedRow]) -> ComparisonResult:
     generated = Graph()
     generated.parse(generated_path, format="turtle")
@@ -1041,19 +1137,10 @@ def compare_generated_to_current(generated_path: Path, report_path: Path, proces
     object_property_diffs = diff_by_subject_predicate(generated_mappings, current_mappings, "object_property")
     property_chain_diffs = diff_by_subject_predicate(generated_mappings, current_mappings, "property_chain")
 
-    current_domain_range = {
-        (str(subject), str(predicate), str(obj))
-        for predicate in (RDFS.domain, RDFS.range)
-        for subject, _, obj in current.triples((None, predicate, None))
-        if isinstance(subject, URIRef) and isinstance(obj, URIRef)
-    }
-    generated_domain_range = {
-        (str(subject), str(predicate), str(obj))
-        for predicate in (RDFS.domain, RDFS.range)
-        for subject, _, obj in generated.triples((None, predicate, None))
-        if isinstance(subject, URIRef) and isinstance(obj, URIRef)
-    }
-    current_domain_range_absent = current_domain_range - generated_domain_range
+    generated_domains = extract_property_typing_axioms(generated, RDFS.domain)
+    current_domains = extract_property_typing_axioms(current, RDFS.domain)
+    generated_ranges = extract_property_typing_axioms(generated, RDFS.range)
+    current_ranges = extract_property_typing_axioms(current, RDFS.range)
 
     result = ComparisonResult(
         both=both,
@@ -1062,7 +1149,14 @@ def compare_generated_to_current(generated_path: Path, report_path: Path, proces
         class_expression_differences=class_diffs,
         object_property_differences=object_property_diffs,
         property_chain_differences=property_chain_diffs,
-        current_domain_range_absent=current_domain_range_absent,
+        domain_both=generated_domains & current_domains,
+        domain_generated_only=generated_domains - current_domains,
+        domain_current_only=current_domains - generated_domains,
+        domain_differences=diff_axiom_targets(generated_domains, current_domains),
+        range_both=generated_ranges & current_ranges,
+        range_generated_only=generated_ranges - current_ranges,
+        range_current_only=current_ranges - generated_ranges,
+        range_differences=diff_axiom_targets(generated_ranges, current_ranges),
     )
     write_comparison_report(report_path, result, processed_rows)
     return result
@@ -1092,6 +1186,24 @@ def diff_by_subject_predicate(
     return diffs
 
 
+def diff_axiom_targets(
+    generated: set[tuple[str, str]],
+    current: set[tuple[str, str]],
+) -> list[str]:
+    gen_index: dict[str, set[str]] = defaultdict(set)
+    cur_index: dict[str, set[str]] = defaultdict(set)
+    for subject, target in generated:
+        gen_index[subject].add(target)
+    for subject, target in current:
+        cur_index[subject].add(target)
+    return [
+        f"`{compact_iri(subject)}`: generated={sorted(gen_index[subject])}; "
+        f"current={sorted(cur_index[subject])}"
+        for subject in sorted(set(gen_index) & set(cur_index))
+        if gen_index[subject] != cur_index[subject]
+    ]
+
+
 def format_mapping_rows(rows: Iterable[tuple[str, str, str, str]], limit: int | None = None) -> list[str]:
     formatted: list[str] = []
     sorted_rows = sorted(rows)
@@ -1104,21 +1216,26 @@ def format_mapping_rows(rows: Iterable[tuple[str, str, str, str]], limit: int | 
     return formatted or ["- none"]
 
 
+def format_property_typing_rows(rows: Iterable[tuple[str, str]], predicate: str) -> list[str]:
+    return [
+        f"- `{compact_iri(subject)}` `{predicate}` `{target}`"
+        for subject, target in sorted(rows)
+    ] or ["- none"]
+
+
 def write_comparison_report(path: Path, result: ComparisonResult, processed_rows: list[ProcessedRow]) -> None:
     blank_rows = [row for row in processed_rows if not row.predicate]
     class_difference_lines = [f"- {value}" for value in result.class_expression_differences] or ["- none"]
     object_property_difference_lines = [f"- {value}" for value in result.object_property_differences] or ["- none"]
     property_chain_difference_lines = [f"- {value}" for value in result.property_chain_differences] or ["- none"]
-    domain_range_lines = [
-        f"- `{compact_iri(subject)}` `{compact_iri(predicate)}` `{compact_iri(obj)}`"
-        for subject, predicate, obj in sorted(result.current_domain_range_absent)
-    ] or ["- none"]
+    domain_difference_lines = [f"- {value}" for value in result.domain_differences] or ["- none"]
+    range_difference_lines = [f"- {value}" for value in result.range_differences] or ["- none"]
     blank_row_lines = [f"- `{item.row.subject_text}` at `{item.row.row_id}`" for item in blank_rows] or ["- none"]
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         "# COMS Generated vs Current Mapping Diff",
         "",
-        "This report compares mapping-bearing axioms in `generated/SSN2BFO-from-COMS.ttl` against `SSN2BFO.ttl`. "
+        "This report compares mapping-bearing axioms and, separately, domain/range property-typing axioms in `generated/SSN2BFO-from-COMS.ttl` against `SSN2BFO.ttl`. "
         "The candidate is not loaded together with the current ontology.",
         "",
         "## Summary",
@@ -1131,6 +1248,14 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
         f"| class-expression differences | {len(result.class_expression_differences)} |",
         f"| object-property mapping differences | {len(result.object_property_differences)} |",
         f"| property-chain differences | {len(result.property_chain_differences)} |",
+        f"| domain axioms present in both | {len(result.domain_both)} |",
+        f"| domain axioms only in generated candidate | {len(result.domain_generated_only)} |",
+        f"| domain axioms only in current validated ontology | {len(result.domain_current_only)} |",
+        f"| domain target differences | {len(result.domain_differences)} |",
+        f"| range axioms present in both | {len(result.range_both)} |",
+        f"| range axioms only in generated candidate | {len(result.range_generated_only)} |",
+        f"| range axioms only in current validated ontology | {len(result.range_current_only)} |",
+        f"| range target differences | {len(result.range_differences)} |",
         f"| current local domain/range basis axioms absent from candidate | {len(result.current_domain_range_absent)} |",
         f"| spreadsheet rows intentionally producing no mapping | {len(blank_rows)} |",
         "",
@@ -1158,9 +1283,37 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
         "",
         *property_chain_difference_lines,
         "",
-        "## Current Local Domain/Range Basis Axioms Absent From Candidate",
+        "## Domain Axioms Present In Both",
         "",
-        *domain_range_lines,
+        *format_property_typing_rows(result.domain_both, "rdfs:domain"),
+        "",
+        "## Domain Axioms Only In Generated Candidate",
+        "",
+        *format_property_typing_rows(result.domain_generated_only, "rdfs:domain"),
+        "",
+        "## Domain Axioms Only In Current Validated Ontology",
+        "",
+        *format_property_typing_rows(result.domain_current_only, "rdfs:domain"),
+        "",
+        "## Domain Target Differences",
+        "",
+        *domain_difference_lines,
+        "",
+        "## Range Axioms Present In Both",
+        "",
+        *format_property_typing_rows(result.range_both, "rdfs:range"),
+        "",
+        "## Range Axioms Only In Generated Candidate",
+        "",
+        *format_property_typing_rows(result.range_generated_only, "rdfs:range"),
+        "",
+        "## Range Axioms Only In Current Validated Ontology",
+        "",
+        *format_property_typing_rows(result.range_current_only, "rdfs:range"),
+        "",
+        "## Range Target Differences",
+        "",
+        *range_difference_lines,
         "",
         "## Spreadsheet Rows Intentionally Producing No Mapping",
         "",
@@ -1168,7 +1321,7 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
         "",
         "## Terms Requiring Human Review",
         "",
-        "Human review should focus on generated-only mappings, current-only mappings, the absent local domain/range basis, and explicitly blank spreadsheet rows.",
+        "Human review should consider mapping differences separately from domain/range property-typing differences, plus explicitly blank spreadsheet rows.",
         "",
     ]
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -1185,7 +1338,7 @@ def write_generation_report(
     hermit: HermitResult | None,
     coverage: CoverageResult | None,
     comparison: ComparisonResult | None,
-    normalized_rows: list[tuple[str, str, str, str, str]],
+    normalized_rows: list[NormalizedRow],
     elapsed_seconds: float,
     workbook_sha256: str,
     generator_sha256: str,
@@ -1226,10 +1379,13 @@ def write_generation_report(
         "",
         "| Item | Count |",
         "|---|---:|",
+        f"| active axiom row count | {stats.active_axiom_rows} |",
         f"| mapped row count | {stats.mapped_rows} |",
         f"| blank mapping row count | {stats.blank_mapping_rows} |",
         f"| class mapping count | {stats.class_mapping_rows} |",
         f"| object-property mapping count | {stats.object_property_mapping_rows} |",
+        f"| domain row count | {stats.domain_rows} |",
+        f"| range row count | {stats.range_rows} |",
         f"| property-chain count | {stats.property_chain_rows} |",
         "",
         "## Prefixes Derived",
@@ -1270,12 +1426,13 @@ def write_generation_report(
             "## Duplicate-Row Checks",
             "",
             "- Duplicate subject/predicate rows with incompatible targets are fatal.",
+            "- At most one populated `rdfs:domain` and one populated `rdfs:range` row are allowed per subject; alternatives belong in one Manchester `or` expression because multiple OWL domain/range axioms are conjunctive.",
             "- No incompatible duplicate mappings were found." if not errors else "- Duplicate checks did not complete cleanly because generation errors were present.",
             "",
             "## Generated Ontology",
             "",
             f"- Path: `{output_path}`",
-            f"- Generated mapping triple count: {'n/a' if hermit is None else hermit.generated_triple_count}",
+            f"- Generated ontology triple count: {'n/a' if hermit is None else hermit.generated_triple_count}",
             "- `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.",
             "- `SSN2BFO.ttl` was not replaced or edited by this tool.",
             "",
@@ -1331,30 +1488,37 @@ def write_generation_report(
     lines.extend(
         [
             "",
-            "## Parsed/Normalized Mapping Expressions",
+            "## Parsed/Normalized Axiom Expressions",
             "",
-            "This section records the normalized form generated from each mapped spreadsheet row, making Manchester grouping and precedence visible during review.",
+            "This section records mapping and domain/range property-typing rows after parsing, making Manchester grouping, subject typing, and generated RDF/OWL form visible during review.",
             "",
         ]
     )
     if normalized_rows:
-        lines.extend(["| Row | Subject | Predicate | Original target | Normalized generated form |", "|---|---|---|---|---|"])
-        for row_id, subject, predicate, original, normalized in normalized_rows:
+        lines.extend(
+            [
+                "| Row | Subject | Predicate | Object-property subject? | Original target | Normalized target | Generated RDF/OWL form |",
+                "|---|---|---|---|---|---|---|",
+            ]
+        )
+        for row in normalized_rows:
             lines.append(
                 "| "
                 + " | ".join(
                     [
-                        f"`{row_id}`",
-                        f"`{subject}`",
-                        f"`{predicate}`",
-                        original.replace("|", "\\|"),
-                        normalized.replace("|", "\\|"),
+                        f"`{row.row_id}`",
+                        f"`{row.subject}`",
+                        f"`{row.predicate}`",
+                        "yes" if row.subject_kind == "object_property" else "no",
+                        row.original_target.replace("|", "\\|"),
+                        row.normalized_target.replace("|", "\\|"),
+                        "`" + row.rdf_owl_form.replace("|", "\\|") + "`",
                     ]
                 )
                 + " |"
             )
     else:
-        lines.append("No mapped rows were normalized.")
+        lines.append("No active axiom rows were normalized.")
 
     lines.extend(
         [
@@ -1382,6 +1546,7 @@ def write_generation_report(
                 f"| mapped object properties | {len(coverage.mapped_object_properties)} |",
                 f"| unmapped object properties | {len(coverage.unmapped_object_properties)} |",
                 f"| explicitly listed blank mappings | {len(coverage.explicit_blank_terms)} |",
+                f"| listed only in domain/range property-typing rows | {len(coverage.listed_unmapped_terms)} |",
                 f"| source terms absent from spreadsheet | {len(coverage.absent_terms)} |",
                 f"| spreadsheet subjects not found in source ontologies | {len(coverage.spreadsheet_missing_subjects)} |",
             ]
@@ -1413,6 +1578,14 @@ def write_generation_report(
                 f"| class-expression differences | {len(comparison.class_expression_differences)} |",
                 f"| object-property mapping differences | {len(comparison.object_property_differences)} |",
                 f"| property-chain differences | {len(comparison.property_chain_differences)} |",
+                f"| domain axioms present in both | {len(comparison.domain_both)} |",
+                f"| domain axioms only in generated candidate | {len(comparison.domain_generated_only)} |",
+                f"| domain axioms only in current ontology | {len(comparison.domain_current_only)} |",
+                f"| domain target differences | {len(comparison.domain_differences)} |",
+                f"| range axioms present in both | {len(comparison.range_both)} |",
+                f"| range axioms only in generated candidate | {len(comparison.range_generated_only)} |",
+                f"| range axioms only in current ontology | {len(comparison.range_current_only)} |",
+                f"| range target differences | {len(comparison.range_differences)} |",
                 f"| current domain/range basis absent | {len(comparison.current_domain_range_absent)} |",
             ]
         )
@@ -1454,10 +1627,13 @@ def write_summary_json(
         "generation_timestamp": generation_timestamp,
         "generated_candidate_sha256": candidate_sha256,
         "worksheets_read": stats.worksheets_read,
+        "active_axiom_rows": stats.active_axiom_rows,
         "mapped_rows": stats.mapped_rows,
         "blank_mapping_rows": stats.blank_mapping_rows,
         "class_mapping_rows": stats.class_mapping_rows,
         "object_property_mapping_rows": stats.object_property_mapping_rows,
+        "domain_rows": stats.domain_rows,
+        "range_rows": stats.range_rows,
         "property_chain_rows": stats.property_chain_rows,
         "generated_ontology_triple_count": None if hermit is None else hermit.generated_triple_count,
         "candidate_closure_triple_count": None if hermit is None else hermit.closure_triple_count,
@@ -1476,6 +1652,7 @@ def write_summary_json(
             "mapped_object_properties": len(coverage.mapped_object_properties),
             "unmapped_object_properties": len(coverage.unmapped_object_properties),
             "explicitly_listed_blank_mappings": len(coverage.explicit_blank_terms),
+            "listed_only_in_domain_range_rows": len(coverage.listed_unmapped_terms),
             "source_terms_absent_from_spreadsheet": len(coverage.absent_terms),
             "spreadsheet_subjects_not_found": len(coverage.spreadsheet_missing_subjects),
         },
@@ -1488,6 +1665,14 @@ def write_summary_json(
             "class_expression_differences": len(comparison.class_expression_differences),
             "object_property_differences": len(comparison.object_property_differences),
             "property_chain_differences": len(comparison.property_chain_differences),
+            "domain_axioms_present_in_both": len(comparison.domain_both),
+            "domain_axioms_only_in_generated": len(comparison.domain_generated_only),
+            "domain_axioms_only_in_current": len(comparison.domain_current_only),
+            "domain_target_differences": len(comparison.domain_differences),
+            "range_axioms_present_in_both": len(comparison.range_both),
+            "range_axioms_only_in_generated": len(comparison.range_generated_only),
+            "range_axioms_only_in_current": len(comparison.range_current_only),
+            "range_target_differences": len(comparison.range_differences),
         },
         "errors": errors,
         "runtime_seconds": round(elapsed_seconds, 3),
@@ -1552,13 +1737,13 @@ def main(argv: list[str] | None = None) -> int:
     hermit: HermitResult | None = None
     coverage: CoverageResult | None = None
     comparison: ComparisonResult | None = None
-    normalized_rows: list[tuple[str, str, str, str, str]] = []
+    normalized_rows: list[NormalizedRow] = []
 
     try:
         rows, stats = read_workbook(input_path)
         processed = validate_and_process_rows(rows, resolver, stats)
         graph = generate_ontology(processed, output_path)
-        normalized_rows = normalized_mapping_rows(processed, graph)
+        normalized_rows = normalized_axiom_rows(processed, graph)
         coverage = build_coverage(processed, [], coverage_report_path)
         graph.parse(output_path, format="turtle")
         hermit = run_candidate_hermit(output_path, Path(args.tmp_dir))
@@ -1619,6 +1804,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Blank mapping rows: {stats.blank_mapping_rows}")
     print(f"Class mapping rows: {stats.class_mapping_rows}")
     print(f"Object-property mapping rows: {stats.object_property_mapping_rows}")
+    print(f"Domain rows: {stats.domain_rows}")
+    print(f"Range rows: {stats.range_rows}")
     print(f"Property-chain rows: {stats.property_chain_rows}")
     if hermit is not None:
         print(f"Generated triple count: {hermit.generated_triple_count}")

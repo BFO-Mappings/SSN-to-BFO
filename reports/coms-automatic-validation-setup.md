@@ -45,6 +45,21 @@ Current local status is available with:
 make coms-status
 ```
 
+## Mapping And Property-Typing Rows
+
+Mapping rows use class or relation-mapping predicates such as `rdfs:subClassOf`, `owl:equivalentClass`, `rdfs:subPropertyOf`, `owl:equivalentProperty`, and `owl:propertyChainAxiom`. These rows determine whether a source class or object property is counted as mapped by the source-term coverage report.
+
+Object-property typing rows use:
+
+```text
+sosa:hasFeatureOfInterest | rdfs:domain | (sosa:Observation or sosa:Actuation or sosa:Sampling)
+sosa:hasFeatureOfInterest | rdfs:range | sosa:FeatureOfInterest
+```
+
+For `rdfs:domain` and `rdfs:range`, the subject must resolve to a declared source object property and the target is parsed by the same Manchester class-expression parser used for class mappings. Named classes, intersections, unions, and existential restrictions are supported. The generated ontology uses the standard RDF/OWL domain or range triple, with an OWL class-expression blank node when the target is complex.
+
+A property may have a relation mapping, one domain row, and one range row. Domain/range rows are local typing axioms and do not by themselves make the property relation-mapped. At most one populated domain row and one populated range row are allowed per property. Multiple OWL domain or range axioms are conjunctive, so alternatives must be combined in one target with Manchester `or`.
+
 ## Checks Performed
 
 Each complete check:
@@ -52,7 +67,7 @@ Each complete check:
 1. Opens the workbook and records its SHA-256.
 2. Compiles `tools/generate_mapping_from_coms.py`.
 3. Runs the existing generator against temporary outputs.
-4. Uses the generator's established validation for allowed predicates, source and target resolution, class/property compatibility, exact label-to-IRI resolution, Manchester expressions, property chains, duplicates, contradictions, and explicit blank mappings.
+4. Uses the generator's established validation for allowed predicates, source and target resolution, class/property compatibility, exact label-to-IRI resolution, Manchester expressions, domain/range property typing, property chains, duplicates, contradictions, and explicit blank mappings.
 5. Runs the maintained SPARQL source inventory and unmapped-term coverage queries.
 6. Parses the temporary generated candidate.
 7. Builds the full local candidate closure from CCO, SOSA, SOSA Sampling, SSN, SSN Systems, and the generated candidate.

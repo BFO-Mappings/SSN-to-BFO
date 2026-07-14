@@ -22,6 +22,7 @@ compile:
 		tools/generate_mapping_from_coms.py \
 		tools/check_coms_mapping.py \
 		tools/watch_coms_mapping.py \
+		tests/test_generate_mapping_from_coms.py \
 		tools/workflow_check.py
 
 check-coms:

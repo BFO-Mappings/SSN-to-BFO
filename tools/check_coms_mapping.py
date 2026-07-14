@@ -411,6 +411,7 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
             "mapped_object_properties": coverage.get("mapped_object_properties"),
             "unmapped_object_properties": coverage.get("unmapped_object_properties"),
             "explicitly_listed_blank_mappings": coverage.get("explicitly_listed_blank_mappings"),
+            "listed_only_in_domain_range_rows": coverage.get("listed_only_in_domain_range_rows"),
             "source_terms_absent_from_spreadsheet": coverage.get("source_terms_absent_from_spreadsheet"),
         },
     }
