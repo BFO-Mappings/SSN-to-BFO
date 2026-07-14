@@ -8,10 +8,10 @@ Freshness is determined from content hashes, not file timestamps.
 
 | Item | Value |
 |---|---|
-| workbook SHA-256 | `5f4292a3c274306262327c4c3c5113aa51ca93c4ae822a24f9fa88dfbe8eac0c` |
+| workbook SHA-256 | `b1d53596a2cc46f6138f6ad8bbfb01d79defcc253787b65fd974dfa7083d5e3b` |
 | generator SHA-256 | `cec3cfff5345bd543939012b6bf13aafab2cfbe18d70b78c235bdc0c91c4c37b` |
-| generation timestamp (UTC) | `2026-07-14T01:55:36+00:00` |
-| generated candidate SHA-256 | `4b0140b8e226cfd11a24db53c6e3865d881559e1f06a5ca6cd9f99e44e59ecad` |
+| generation timestamp (UTC) | `2026-07-14T02:07:03+00:00` |
+| generated candidate SHA-256 | `4c29d4ef409931febd089f8a270e772354defd073732eb57b68f95bbd120198a` |
 
 ## Workbook
 
@@ -20,20 +20,20 @@ Freshness is determined from content hashes, not file timestamps.
 
 | Worksheet | Rows scanned | Populated rows |
 |---|---:|---:|
-| `Sheet1` | 35 | 35 |
-| `Sheet2` | 16 | 12 |
+| `Sheet1` | 43 | 43 |
+| `Sheet2` | 14 | 14 |
 
 ## Row Counts
 
 | Item | Count |
 |---|---:|
-| active axiom row count | 42 |
-| mapped row count | 42 |
-| blank mapping row count | 5 |
-| class mapping count | 35 |
+| active axiom row count | 54 |
+| mapped row count | 50 |
+| blank mapping row count | 3 |
+| class mapping count | 43 |
 | object-property mapping count | 7 |
-| domain row count | 0 |
-| range row count | 0 |
+| domain row count | 2 |
+| range row count | 2 |
 | property-chain count | 0 |
 
 ## Prefixes Derived
@@ -54,52 +54,57 @@ Freshness is determined from content hashes, not file timestamps.
 |---|---|---|---|---|---|
 | `bfo:Continuant` | class | label_style_key | continuant | `http://purl.obolibrary.org/obo/BFO_0000002` | `Sheet1!26` |
 | `bfo:Disposition` | class | label_style_key | disposition | `http://purl.obolibrary.org/obo/BFO_0000016` | `Sheet1!19` |
-| `bfo:Function` | class | label_style_key | function | `http://purl.obolibrary.org/obo/BFO_0000034` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!20`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30` |
-| `bfo:MaterialEntity` | class | label_style_key | material entity | `http://purl.obolibrary.org/obo/BFO_0000040` | `Sheet1!10`, `Sheet1!11`, `Sheet1!31`, `Sheet1!36`, `Sheet1!6`, `Sheet1!9` |
-| `bfo:Process` | class | label_style_key | process | `http://purl.obolibrary.org/obo/BFO_0000015` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!20`, `Sheet1!23`, `Sheet1!24`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30`, `Sheet1!6` |
-| `bfo:ProcessProfile` | class | label_style_key | Process Profile | `http://purl.obolibrary.org/obo/BFO_0000144` | `Sheet1!14`, `Sheet1!21`, `Sheet1!22`, `Sheet1!29`, `Sheet1!34`, `Sheet1!4`, `Sheet1!7` |
-| `bfo:SpecificallyDependentContinuant` | class | label_style_key | specifically dependent continuant | `http://purl.obolibrary.org/obo/BFO_0000020` | `Sheet1!14`, `Sheet1!19`, `Sheet1!21`, `Sheet1!22`, `Sheet1!29`, `Sheet1!34`, `Sheet1!4`, `Sheet1!7` |
+| `bfo:Function` | class | label_style_key | function | `http://purl.obolibrary.org/obo/BFO_0000034` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!20`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30`, `Sheet1!40`, `Sheet1!41`, `Sheet1!42`, `Sheet1!43` |
+| `bfo:MaterialEntity` | class | label_style_key | material entity | `http://purl.obolibrary.org/obo/BFO_0000040` | `Sheet1!10`, `Sheet1!11`, `Sheet1!31`, `Sheet1!36`, `Sheet1!37`, `Sheet1!39`, `Sheet1!6`, `Sheet1!9` |
+| `bfo:Process` | class | label_style_key | process | `http://purl.obolibrary.org/obo/BFO_0000015` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!20`, `Sheet1!23`, `Sheet1!24`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30`, `Sheet1!38`, `Sheet1!41`, `Sheet1!43`, `Sheet1!6` |
+| `bfo:ProcessProfile` | class | label_style_key | Process Profile | `http://purl.obolibrary.org/obo/BFO_0000144` | `Sheet1!14`, `Sheet1!21`, `Sheet1!22`, `Sheet1!29`, `Sheet1!34`, `Sheet1!4`, `Sheet1!44`, `Sheet1!6`, `Sheet1!7` |
+| `bfo:RealizableEntity` | class | label_style_key | realizable entity | `http://purl.obolibrary.org/obo/BFO_0000017` | `Sheet1!37`, `Sheet1!39` |
+| `bfo:SpecificallyDependentContinuant` | class | label_style_key | specifically dependent continuant | `http://purl.obolibrary.org/obo/BFO_0000020` | `Sheet1!14`, `Sheet1!19`, `Sheet1!21`, `Sheet1!22`, `Sheet1!29`, `Sheet1!34`, `Sheet1!4`, `Sheet1!40`, `Sheet1!44`, `Sheet1!6`, `Sheet1!7` |
 | `bfo:TemporalRegion` | class | label_style_key | temporal region | `http://purl.obolibrary.org/obo/BFO_0000008` | `Sheet1!18`, `Sheet1!25` |
-| `bfo:has_occurrent_part` | object_property | label_style_key | has occurrent part | `http://purl.obolibrary.org/obo/BFO_0000117` | `Sheet1!17`, `Sheet1!19`, `Sheet1!20` |
+| `bfo:bearer_of` | object_property | label_style_key | bearer of | `http://purl.obolibrary.org/obo/BFO_0000196` | `Sheet1!37`, `Sheet1!39` |
+| `bfo:has_occurrent_part` | object_property | label_style_key | has occurrent part | `http://purl.obolibrary.org/obo/BFO_0000117` | `Sheet1!17`, `Sheet1!19`, `Sheet1!20`, `Sheet1!41` |
 | `bfo:has_participant` | object_property | label_style_key | has participant | `http://purl.obolibrary.org/obo/BFO_0000057` | `Sheet1!26` |
-| `bfo:has_realization` | object_property | label_style_key | has realization | `http://purl.obolibrary.org/obo/BFO_0000054` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!19`, `Sheet1!20`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30` |
+| `bfo:has_realization` | object_property | label_style_key | has realization | `http://purl.obolibrary.org/obo/BFO_0000054` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!19`, `Sheet1!20`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30`, `Sheet1!37`, `Sheet1!39`, `Sheet1!40`, `Sheet1!41`, `Sheet1!42`, `Sheet1!43` |
 | `bfo:inheres_in` | object_property | label_style_key | inheres in | `http://purl.obolibrary.org/obo/BFO_0000197` | `Sheet1!4`, `Sheet1!7` |
 | `bfo:occupies_temporal_region` | object_property | label_style_key | occupies temporal region | `http://purl.obolibrary.org/obo/BFO_0000199` | `Sheet1!18`, `Sheet1!25` |
 | `bfo:occurrent_part_of` | object_property | label_style_key | occurrent part of | `http://purl.obolibrary.org/obo/BFO_0000132` | `Sheet1!4`, `Sheet1!7` |
 | `bfo:participates_in` | object_property | label_style_key | participates in | `http://purl.obolibrary.org/obo/BFO_0000056` | `Sheet1!19` |
-| `bfo:realizes` | object_property | exact_label | realizes | `http://purl.obolibrary.org/obo/BFO_0000055` | `Sheet1!28`, `Sheet1!30` |
+| `bfo:realizes` | object_property | exact_label | realizes | `http://purl.obolibrary.org/obo/BFO_0000055` | `Sheet1!28`, `Sheet1!30`, `Sheet1!41`, `Sheet1!43` |
 | `cco:ActOfMaintenance` | class | label_style_key | Act of Maintenance | `https://www.commoncoreontologies.org/ont00000950` | `Sheet1!19` |
-| `cco:ActOfMeasuring` | class | label_style_key | Act of Measuring | `https://www.commoncoreontologies.org/ont00000345` | `Sheet1!6`, `Sheet1!8` |
+| `cco:ActOfMeasuring` | class | label_style_key | Act of Measuring | `https://www.commoncoreontologies.org/ont00000345` | `Sheet1!8` |
 | `cco:ActOfObservation` | class | label_style_key | Act of Observation | `https://www.commoncoreontologies.org/ont00000037` | `Sheet1!8` |
-| `cco:Affordance` | class | exact_label | Affordance | `https://www.commoncoreontologies.org/ont00000177` | `Sheet1!28`, `Sheet1!30` |
-| `cco:ArtifactDesign` | class | label_style_key | Artifact Design | `https://www.commoncoreontologies.org/ont00000319` | `Sheet1!19`, `Sheet1!20`, `Sheet1!21`, `Sheet1!22`, `Sheet1!28`, `Sheet1!30` |
-| `cco:ArtifactFunctionSpecification` | class | label_style_key | Artifact Function Specification | `https://www.commoncoreontologies.org/ont00000118` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27` |
+| `cco:Affordance` | class | exact_label | Affordance | `https://www.commoncoreontologies.org/ont00000177` | `Sheet1!28`, `Sheet1!30`, `Sheet1!41`, `Sheet1!43` |
+| `cco:ArtifactDesign` | class | label_style_key | Artifact Design | `https://www.commoncoreontologies.org/ont00000319` | `Sheet1!19`, `Sheet1!20`, `Sheet1!21`, `Sheet1!22`, `Sheet1!28`, `Sheet1!30`, `Sheet1!41`, `Sheet1!43` |
+| `cco:ArtifactFunctionSpecification` | class | label_style_key | Artifact Function Specification | `https://www.commoncoreontologies.org/ont00000118` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!40`, `Sheet1!42`, `Sheet1!44` |
 | `cco:Cause` | class | exact_label | Cause | `https://www.commoncoreontologies.org/ont00000978` | `Sheet1!18`, `Sheet1!25`, `Sheet1!35` |
 | `cco:Change` | class | exact_label | Change | `https://www.commoncoreontologies.org/ont00000004` | `Sheet1!19` |
 | `cco:DescriptiveInformationContentEntity` | class | label_style_key | Descriptive Information Content Entity | `https://www.commoncoreontologies.org/ont00000853` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!23`, `Sheet1!24`, `Sheet1!27` |
 | `cco:DeviationMeasurementInformationContentEntity` | class | label_style_key | Deviation Measurement Information Content Entity | `https://www.commoncoreontologies.org/ont00000731` | `Sheet1!16`, `Sheet1!24` |
+| `cco:DirectiveInformationContentEntity` | class | label_style_key | Directive Information Content Entity | `https://www.commoncoreontologies.org/ont00000965` | `Sheet1!38` |
 | `cco:Effect` | class | exact_label | Effect | `https://www.commoncoreontologies.org/ont00000660` | `Sheet1!18`, `Sheet1!25` |
 | `cco:Frequency` | class | exact_label | Frequency | `https://www.commoncoreontologies.org/ont00001047` | `Sheet1!17`, `Sheet1!19` |
 | `cco:InformationContentEntity` | class | label_style_key | Information Content Entity | `https://www.commoncoreontologies.org/ont00000958` | `Sheet1!10`, `Sheet1!2`, `Sheet1!3`, `Sheet1!32`, `Sheet1!33` |
 | `cco:PerformanceSpecification` | class | label_style_key | Performance Specification | `https://www.commoncoreontologies.org/ont00000127` | `Sheet1!14`, `Sheet1!29` |
 | `cco:PlannedAct` | class | label_style_key | Planned Act | `https://www.commoncoreontologies.org/ont00000228` | `Sheet1!12`, `Sheet1!17`, `Sheet1!18`, `Sheet1!25`, `Sheet1!26`, `Sheet1!31`, `Sheet1!5`, `Sheet1!8` |
-| `cco:Power` | class | exact_label | Power | `https://www.commoncoreontologies.org/ont00000503` | `Sheet1!20` |
+| `cco:Power` | class | exact_label | Power | `https://www.commoncoreontologies.org/ont00000503` | `Sheet1!20`, `Sheet1!41` |
 | `cco:RatioMeasurementInformationContentEntity` | class | label_style_key | Ratio Measurement Information Content Entity | `https://www.commoncoreontologies.org/ont00001022` | `Sheet1!27` |
 | `cco:ReliabilityMeasurementInformationContentEntity` | class | label_style_key | Reliability Measurement Information Content Entity | `https://www.commoncoreontologies.org/ont00001256` | `Sheet1!23` |
-| `cco:StasisOfArtifactOperationality` | class | label_style_key | Stasis of Artifact Operationality | `https://www.commoncoreontologies.org/ont00001213` | `Sheet1!30` |
+| `cco:StasisOfArtifactOperationality` | class | label_style_key | Stasis of Artifact Operationality | `https://www.commoncoreontologies.org/ont00001213` | `Sheet1!30`, `Sheet1!41` |
 | `cco:VeracityMeasurementInformationContentEntity` | class | label_style_key | Veracity Measurement Information Content Entity | `https://www.commoncoreontologies.org/ont00000592` | `Sheet1!13`, `Sheet1!15` |
 | `cco:affects` | object_property | exact_label | affects | `https://www.commoncoreontologies.org/ont00001834` | `Sheet1!19`, `Sheet2!5` |
-| `cco:caused_by` | object_property | label_style_key | caused by | `https://www.commoncoreontologies.org/ont00001819` | `Sheet1!28`, `Sheet1!30` |
+| `cco:agent_in` | object_property | label_style_key | agent in | `https://www.commoncoreontologies.org/ont00001787` | `Sheet1!37`, `Sheet1!39` |
+| `cco:caused_by` | object_property | label_style_key | caused by | `https://www.commoncoreontologies.org/ont00001819` | `Sheet1!28`, `Sheet1!30`, `Sheet1!41`, `Sheet1!42`, `Sheet1!43` |
 | `cco:condition_described_by` | object_property | label_style_key | condition described by | `https://www.commoncoreontologies.org/ont00001884` | `Sheet1!14`, `Sheet1!29` |
-| `cco:has_output` | object_property | label_style_key | has output | `https://www.commoncoreontologies.org/ont00001986` | `Sheet1!12`, `Sheet2!12`, `Sheet2!7` |
+| `cco:has_output` | object_property | label_style_key | has output | `https://www.commoncoreontologies.org/ont00001986` | `Sheet1!12`, `Sheet1!40`, `Sheet2!14`, `Sheet2!8` |
 | `cco:has_process_part` | object_property | label_style_key | has process part | `https://www.commoncoreontologies.org/ont00001777` | `Sheet1!18`, `Sheet1!25`, `Sheet1!8` |
 | `cco:is_about` | object_property | label_style_key | is about | `https://www.commoncoreontologies.org/ont00001808` | `Sheet2!3`, `Sheet2!4` |
 | `cco:is_cause_of` | object_property | label_style_key | is cause of | `https://www.commoncoreontologies.org/ont00001803` | `Sheet1!35` |
 | `cco:is_measured_by` | object_property | label_style_key | is measured by | `https://www.commoncoreontologies.org/ont00001904` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!23`, `Sheet1!24`, `Sheet1!27` |
-| `cco:is_object_of` | object_property | label_style_key | is object of | `https://www.commoncoreontologies.org/ont00001936` | `Sheet1!11`, `Sheet1!6` |
+| `cco:is_object_of` | object_property | label_style_key | is object of | `https://www.commoncoreontologies.org/ont00001936` | `Sheet1!11` |
 | `cco:is_output_of` | object_property | label_style_key | is output of | `https://www.commoncoreontologies.org/ont00001816` | `Sheet1!10` |
 | `cco:is_subject_of` | object_property | label_style_key | is subject of | `https://www.commoncoreontologies.org/ont00001801` | `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!23`, `Sheet1!24`, `Sheet1!27`, `Sheet2!2` |
-| `cco:prescribed_by` | object_property | label_style_key | prescribed by | `https://www.commoncoreontologies.org/ont00001920` | `Sheet1!12`, `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!19`, `Sheet1!20`, `Sheet1!21`, `Sheet1!22`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30`, `Sheet2!10` |
+| `cco:prescribed_by` | object_property | label_style_key | prescribed by | `https://www.commoncoreontologies.org/ont00001920` | `Sheet1!12`, `Sheet1!13`, `Sheet1!15`, `Sheet1!16`, `Sheet1!17`, `Sheet1!18`, `Sheet1!19`, `Sheet1!20`, `Sheet1!21`, `Sheet1!22`, `Sheet1!23`, `Sheet1!24`, `Sheet1!25`, `Sheet1!26`, `Sheet1!27`, `Sheet1!28`, `Sheet1!30`, `Sheet1!40`, `Sheet1!41`, `Sheet1!42`, `Sheet1!43`, `Sheet1!44`, `Sheet2!12` |
+| `cco:prescribes` | object_property | exact_label | prescribes | `https://www.commoncoreontologies.org/ont00001942` | `Sheet1!38` |
 
 ## Malformed Or Unresolved Rows
 
@@ -114,7 +119,7 @@ Freshness is determined from content hashes, not file timestamps.
 ## Generated Ontology
 
 - Path: `generated/SSN2BFO-from-COMS.ttl`
-- Generated ontology triple count: 800
+- Generated ontology triple count: 999
 - `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.
 - `SSN2BFO.ttl` was not replaced or edited by this tool.
 
@@ -125,7 +130,7 @@ Freshness is determined from content hashes, not file timestamps.
 | ROBOT executable | `/usr/local/bin/robot` |
 | candidate closure graph path | temporary validation artifact (`coms-candidate-full-closure.ttl`) |
 | reasoned output path | temporary validation artifact (`coms-candidate-full-closure-reasoned.ttl`) |
-| full candidate closure triple count | 15588 |
+| full candidate closure triple count | 15787 |
 | HermiT return code | 0 |
 | reasoned output produced | yes |
 | `owl:Nothing` count | 0 |
@@ -143,7 +148,7 @@ This section records mapping and domain/range property-typing rows after parsing
 | `Sheet1!3` | `sampling:SampleRelationship` | `rdfs:subClassOf` | no | cco:InformationContentEntity | https://www.commoncoreontologies.org/ont00000958 | `sampling:SampleRelationship rdfs:subClassOf https://www.commoncoreontologies.org/ont00000958 .` |
 | `Sheet1!4` | `sosa:ActuatableProperty` | `rdfs:subClassOf` | no | (bfo:SpecificallyDependentContinuant and bfo:inheres_in some sosa:FeatureOfInterest) or (bfo:ProcessProfile and bfo:occurrent_part_of some sosa:FeatureOfInterest) | ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000132 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000144) ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000197 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000020)) | `sosa:ActuatableProperty rdfs:subClassOf ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000132 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000144) ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000197 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000020)) .` |
 | `Sheet1!5` | `sosa:Actuation` | `owl:equivalentClass` | no | cco:PlannedAct and (sosa:actsOnProperty some sosa:ActuatableProperty) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/actsOnProperty http://www.w3.org/ns/sosa/ActuatableProperty) https://www.commoncoreontologies.org/ont00000228) | `sosa:Actuation owl:equivalentClass ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/actsOnProperty http://www.w3.org/ns/sosa/ActuatableProperty) https://www.commoncoreontologies.org/ont00000228) .` |
-| `Sheet1!6` | `sosa:FeatureOfInterest` | `owl:equivalentClass` | no | (bfo:MaterialEntity and (cco:is_object_of some (cco:ActOfMeasuring or sosa:Sampling or sosa:Actuation))) or (bfo:Process and (sosa:isFeatureOfInterestOf some (cco:ActOfMeasuring or sosa:Sampling or sosa:Actuation))) | ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/isFeatureOfInterestOf ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000015) ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001936 ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000040)) | `sosa:FeatureOfInterest owl:equivalentClass ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/isFeatureOfInterestOf ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000015) ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001936 ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000040)) .` |
+| `Sheet1!6` | `sosa:FeatureOfInterest` | `rdfs:subClassOf` | no | (bfo:SpecificallyDependentContinuant or bfo:ProcessProfile or bfo:MaterialEntity or bfo:Process) | ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000015 http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000040 http://purl.obolibrary.org/obo/BFO_0000144) | `sosa:FeatureOfInterest rdfs:subClassOf ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000015 http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000040 http://purl.obolibrary.org/obo/BFO_0000144) .` |
 | `Sheet1!7` | `sosa:ObservableProperty` | `rdfs:subClassOf` | no | (bfo:SpecificallyDependentContinuant and bfo:inheres_in some sosa:FeatureOfInterest) or (bfo:ProcessProfile and bfo:occurrent_part_of some sosa:FeatureOfInterest) | ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000132 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000144) ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000197 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000020)) | `sosa:ObservableProperty rdfs:subClassOf ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000132 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000144) ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000197 http://www.w3.org/ns/sosa/FeatureOfInterest) http://purl.obolibrary.org/obo/BFO_0000020)) .` |
 | `Sheet1!8` | `sosa:Observation` | `rdfs:subClassOf` | no | cco:PlannedAct and (cco:has_process_part some (cco:ActOfMeasuring and cco:ActOfObservation)) | ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001777 ObjectIntersectionOf(https://www.commoncoreontologies.org/ont00000037 https://www.commoncoreontologies.org/ont00000345)) https://www.commoncoreontologies.org/ont00000228) | `sosa:Observation rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001777 ObjectIntersectionOf(https://www.commoncoreontologies.org/ont00000037 https://www.commoncoreontologies.org/ont00000345)) https://www.commoncoreontologies.org/ont00000228) .` |
 | `Sheet1!9` | `sosa:Platform` | `owl:equivalentClass` | no | bfo:MaterialEntity and (sosa:hosts some ssn:System) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/hosts http://www.w3.org/ns/ssn/System) http://purl.obolibrary.org/obo/BFO_0000040) | `sosa:Platform owl:equivalentClass ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/hosts http://www.w3.org/ns/ssn/System) http://purl.obolibrary.org/obo/BFO_0000040) .` |
@@ -174,47 +179,59 @@ This section records mapping and domain/range property-typing rows after parsing
 | `Sheet1!34` | `ssn:Property` | `owl:equivalentClass` | no | (bfo:SpecificallyDependentContinuant or bfo:ProcessProfile) | ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144) | `ssn:Property owl:equivalentClass ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144) .` |
 | `Sheet1!35` | `ssn:Stimulus` | `owl:equivalentClass` | no | cco:Cause and (cco:is_cause_of some sosa:Observation) | ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001803 http://www.w3.org/ns/sosa/Observation) https://www.commoncoreontologies.org/ont00000978) | `ssn:Stimulus owl:equivalentClass ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001803 http://www.w3.org/ns/sosa/Observation) https://www.commoncoreontologies.org/ont00000978) .` |
 | `Sheet1!36` | `ssn:System` | `owl:equivalentClass` | no | bfo:MaterialEntity and (ssn:implements some sosa:Procedure) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/ssn/implements http://www.w3.org/ns/sosa/Procedure) http://purl.obolibrary.org/obo/BFO_0000040) | `ssn:System owl:equivalentClass ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/ssn/implements http://www.w3.org/ns/sosa/Procedure) http://purl.obolibrary.org/obo/BFO_0000040) .` |
+| `Sheet1!37` | `sosa:Actuator` | `rdfs:subClassOf` | no | bfo:MaterialEntity and (bfo:bearer_of some (bfo:RealizableEntity and (bfo:has_realization some sosa:Actuation))) and (cco:agent_in some sosa:Actuation) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Actuation) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Actuation) http://purl.obolibrary.org/obo/BFO_0000040) | `sosa:Actuator rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Actuation) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Actuation) http://purl.obolibrary.org/obo/BFO_0000040) .` |
+| `Sheet1!38` | `sosa:Procedure` | `rdfs:subClassOf` | no | cco:DirectiveInformationContentEntity and (cco:prescribes some bfo:Process) | ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001942 http://purl.obolibrary.org/obo/BFO_0000015) https://www.commoncoreontologies.org/ont00000965) | `sosa:Procedure rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001942 http://purl.obolibrary.org/obo/BFO_0000015) https://www.commoncoreontologies.org/ont00000965) .` |
+| `Sheet1!39` | `sosa:Sampler` | `owl:equivalentClass` | no | bfo:MaterialEntity and (bfo:bearer_of some (bfo:RealizableEntity and (bfo:has_realization some sosa:Sampling))) and (cco:agent_in some sosa:Sampling) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000040) | `sosa:Sampler owl:equivalentClass ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000040) .` |
+| `Sheet1!40` | `ssn-system:ActuationRange` | `rdfs:subClassOf` | no | bfo:Function and (bfo:has_realization some (sosa:Actuation and ((cco:has_output some bfo:SpecificallyDependentContinuant) and (cco:prescribed_by some cco:ArtifactFunctionSpecification)))) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001986 http://purl.obolibrary.org/obo/BFO_0000020)) http://www.w3.org/ns/sosa/Actuation)) http://purl.obolibrary.org/obo/BFO_0000034) | `ssn-system:ActuationRange rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001986 http://purl.obolibrary.org/obo/BFO_0000020)) http://www.w3.org/ns/sosa/Actuation)) http://purl.obolibrary.org/obo/BFO_0000034) .` |
+| `Sheet1!41` | `ssn-system:BatteryLifetime` | `rdfs:subClassOf` | no | bfo:Function and (bfo:has_realization some (cco:StasisOfArtifactOperationality and (bfo:has_occurrent_part some cco:Power) and (cco:caused_by some (bfo:Process and (bfo:realizes some (cco:Affordance and (cco:prescribed_by some cco:ArtifactDesign))))))) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000117 https://www.commoncoreontologies.org/ont00000503) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) https://www.commoncoreontologies.org/ont00001213)) http://purl.obolibrary.org/obo/BFO_0000034) | `ssn-system:BatteryLifetime rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000117 https://www.commoncoreontologies.org/ont00000503) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) https://www.commoncoreontologies.org/ont00001213)) http://purl.obolibrary.org/obo/BFO_0000034) .` |
+| `Sheet1!42` | `ssn-system:MeasurementRange` | `rdfs:subClassOf` | no | bfo:Function and (bfo:has_realization some (sosa:Observation and (cco:caused_by some (ssn:Stimulus and (cco:prescribed_by some cco:ArtifactFunctionSpecification))))) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://www.w3.org/ns/ssn/Stimulus)) http://www.w3.org/ns/sosa/Observation)) http://purl.obolibrary.org/obo/BFO_0000034) | `ssn-system:MeasurementRange rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://www.w3.org/ns/ssn/Stimulus)) http://www.w3.org/ns/sosa/Observation)) http://purl.obolibrary.org/obo/BFO_0000034) .` |
+| `Sheet1!43` | `ssn-system:SurvivalRange` | `rdfs:subClassOf` | no | bfo:Function and (bfo:has_realization some (bfo:Process and (cco:caused_by some (bfo:Process and (bfo:realizes some (cco:Affordance and (cco:prescribed_by some cco:ArtifactDesign))))))) | ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034) | `ssn-system:SurvivalRange rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034) .` |
+| `Sheet1!44` | `ssn-system:SystemProperty` | `rdfs:subClassOf` | no | (bfo:SpecificallyDependentContinuant or bfo:ProcessProfile) and (cco:prescribed_by some cco:ArtifactFunctionSpecification) | ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144)) | `ssn-system:SystemProperty rdfs:subClassOf ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144)) .` |
 | `Sheet2!2` | `sampling:hasSampleRelationship` | `rdfs:subPropertyOf` | yes | cco:is_subject_of | cco:ont00001801 | `sampling:hasSampleRelationship rdfs:subPropertyOf cco:ont00001801 .` |
 | `Sheet2!3` | `sampling:natureOfRelationship` | `rdfs:subPropertyOf` | yes | cco:is_about | cco:ont00001808 | `sampling:natureOfRelationship rdfs:subPropertyOf cco:ont00001808 .` |
 | `Sheet2!4` | `sampling:relatedSample` | `rdfs:subPropertyOf` | yes | cco:is_about | cco:ont00001808 | `sampling:relatedSample rdfs:subPropertyOf cco:ont00001808 .` |
 | `Sheet2!5` | `sosa:actsOnProperty` | `rdfs:subPropertyOf` | yes | cco:affects | cco:ont00001834 | `sosa:actsOnProperty rdfs:subPropertyOf cco:ont00001834 .` |
-| `Sheet2!7` | `sosa:hasResult` | `rdfs:subPropertyOf` | yes | cco:has_output | cco:ont00001986 | `sosa:hasResult rdfs:subPropertyOf cco:ont00001986 .` |
-| `Sheet2!10` | `sosa:usedProcedure` | `rdfs:subPropertyOf` | yes | cco:prescribed_by | cco:ont00001920 | `sosa:usedProcedure rdfs:subPropertyOf cco:ont00001920 .` |
-| `Sheet2!12` | `ssn-system:qualityOfObservation` | `rdfs:subPropertyOf` | yes | cco:has_output | cco:ont00001986 | `ssn-system:qualityOfObservation rdfs:subPropertyOf cco:ont00001986 .` |
+| `Sheet2!6` | `sosa:hasFeatureOfInterest` | `rdfs:domain` | yes | (sosa:Observation or sosa:Actuation or sosa:Sampling) | ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling) | `sosa:hasFeatureOfInterest rdfs:domain ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling) .` |
+| `Sheet2!7` | `sosa:hasFeatureOfInterest` | `rdfs:range` | yes | sosa:FeatureOfInterest | http://www.w3.org/ns/sosa/FeatureOfInterest | `sosa:hasFeatureOfInterest rdfs:range http://www.w3.org/ns/sosa/FeatureOfInterest .` |
+| `Sheet2!8` | `sosa:hasResult` | `rdfs:subPropertyOf` | yes | cco:has_output | cco:ont00001986 | `sosa:hasResult rdfs:subPropertyOf cco:ont00001986 .` |
+| `Sheet2!9` | `sosa:isFeatureOfInterestOf` | `rdfs:domain` | yes | sosa:FeatureOfInterest | http://www.w3.org/ns/sosa/FeatureOfInterest | `sosa:isFeatureOfInterestOf rdfs:domain http://www.w3.org/ns/sosa/FeatureOfInterest .` |
+| `Sheet2!10` | `sosa:isFeatureOfInterestOf` | `rdfs:range` | yes | (sosa:Observation or sosa:Actuation or sosa:Sampling) | ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling) | `sosa:isFeatureOfInterestOf rdfs:range ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling) .` |
+| `Sheet2!12` | `sosa:usedProcedure` | `rdfs:subPropertyOf` | yes | cco:prescribed_by | cco:ont00001920 | `sosa:usedProcedure rdfs:subPropertyOf cco:ont00001920 .` |
+| `Sheet2!14` | `ssn-system:qualityOfObservation` | `rdfs:subPropertyOf` | yes | cco:has_output | cco:ont00001986 | `ssn-system:qualityOfObservation rdfs:subPropertyOf cco:ont00001986 .` |
 
 ## Source-Term Coverage Summary
 
 | Item | Count |
 |---|---:|
-| mapped classes | 35 |
-| unmapped classes | 9 |
+| mapped classes | 43 |
+| unmapped classes | 1 |
 | mapped object properties | 7 |
 | unmapped object properties | 40 |
-| explicitly listed blank mappings | 5 |
-| listed only in domain/range property-typing rows | 0 |
-| source terms absent from spreadsheet | 44 |
+| explicitly listed blank mappings | 3 |
+| listed only in domain/range property-typing rows | 2 |
+| source terms absent from spreadsheet | 36 |
 | spreadsheet subjects not found in source ontologies | 0 |
 
 ## Generated-Versus-Current Summary
 
 | Item | Count |
 |---|---:|
-| mappings present in both | 38 |
-| mappings only in generated candidate | 4 |
-| mappings only in current validated ontology | 30 |
+| mappings present in both | 41 |
+| mappings only in generated candidate | 9 |
+| mappings only in current validated ontology | 27 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
 | domain axioms present in both | 0 |
-| domain axioms only in generated candidate | 0 |
+| domain axioms only in generated candidate | 2 |
 | domain axioms only in current ontology | 22 |
 | domain target differences | 0 |
 | range axioms present in both | 0 |
-| range axioms only in generated candidate | 0 |
+| range axioms only in generated candidate | 2 |
 | range axioms only in current ontology | 0 |
 | range target differences | 0 |
 | current domain/range basis absent | 22 |
 
 ## Runtime
 
-- Runtime seconds: 2.86
+- Runtime seconds: 2.92
