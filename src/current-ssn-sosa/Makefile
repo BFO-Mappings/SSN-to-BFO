@@ -17,7 +17,7 @@ config.EXAMPLES_DIR       := examples
 config.FAIL_ON_TEST_FAILURES := false
 config.REPORT_FAIL_ON        := none
 config.ENABLE_UNMAPPED_REPORTS := false
-config.AUTHORED_CCO_MAPPING_FILE := ../../SSN2BFO.ttl
+config.AUTHORITATIVE_CCO_MAPPING_FILE := ../../SSN2BFO.ttl
 config.CCO_IMPORT_FILE := ../../imports/cco.ttl
 
 TODAY     := $(shell date +%Y-%m-%d)
@@ -77,10 +77,10 @@ else
 	@echo "Unmapped-term reports are disabled for $(config.ONTOLOGY_PREFIX). Enable config.ENABLE_UNMAPPED_REPORTS only after real source imports and final source namespace configuration are added."
 endif
 
-derive-bfo-from-cco: $(config.AUTHORED_CCO_MAPPING_FILE) $(config.CCO_IMPORT_FILE) $(PROJECTION_CATALOG_FILE) $(config.CONSTRUCT_QUERIES_DIR)/derive-bfo-from-cco.rq $(config.REPORT_QUERIES_DIR)/unprojectable-cco-targets.rq | $(config.TEMP_DIR) $(ROBOT_FILE)
-	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORED_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
+derive-bfo-from-cco: $(config.AUTHORITATIVE_CCO_MAPPING_FILE) $(config.CCO_IMPORT_FILE) $(PROJECTION_CATALOG_FILE) $(config.CONSTRUCT_QUERIES_DIR)/derive-bfo-from-cco.rq $(config.REPORT_QUERIES_DIR)/unprojectable-cco-targets.rq | $(config.TEMP_DIR) $(ROBOT_FILE)
+	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORITATIVE_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
 	query --query $(config.CONSTRUCT_QUERIES_DIR)/derive-bfo-from-cco.rq $(BFO_ONLY_GENERATED_FILE)
-	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORED_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
+	$(ROBOT) merge --catalog $(PROJECTION_CATALOG_FILE) --collapse-import-closure false --input $(config.AUTHORITATIVE_CCO_MAPPING_FILE) --input $(config.CCO_IMPORT_FILE) \
 	query --query $(config.REPORT_QUERIES_DIR)/unprojectable-cco-targets.rq $(BFO_ONLY_SKIPPED_CCO_TARGETS_FILE) --format csv
 
 validate-examples: | $(EXAMPLE_VALIDATION_DIR) $(ROBOT_FILE)

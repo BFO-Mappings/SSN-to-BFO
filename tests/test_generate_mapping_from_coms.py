@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused tests for COMS domain/range spreadsheet rows."""
+"""Focused tests for COMS generation, coverage, and authority migration."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import openpyxl
 from rdflib import BNode, RDF, RDFS, OWL, URIRef
@@ -16,6 +17,7 @@ from rdflib.collection import Collection
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
+import check_coms_mapping as checker  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
 
 
@@ -86,6 +88,14 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertEqual(normalized[0].subject_kind, "object_property")
         self.assertEqual(normalized[0].predicate, "rdfs:domain")
         self.assertIn("rdfs:domain", normalized[0].rdf_owl_form)
+
+    def test_generated_file_notice_is_nonsemantic_turtle_comment(self) -> None:
+        graph, _, _ = self.generate([(SUBJECT, "rdfs:domain", "sosa:Observation")])
+        output = self.root / "candidate.ttl"
+
+        self.assertTrue(output.read_text(encoding="utf-8").startswith(coms.GENERATED_NOTICE + "\n\n"))
+        reparsed = coms.Graph().parse(output, format="turtle")
+        self.assertEqual(set(graph), set(reparsed))
 
     def test_union_domain_generates_one_union_expression(self) -> None:
         target = "(sosa:Observation or sosa:Actuation or sosa:Sampling)"
@@ -247,6 +257,146 @@ class ComsDomainRangeTests(unittest.TestCase):
             coverage.query_unmapped_count,
             len(coverage.unmapped_classes) + len(coverage.unmapped_object_properties),
         )
+
+
+class ComsAuthorityMigrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="coms-authority-test-")
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+
+    def maintained_outputs(self) -> dict[str, Path]:
+        return {
+            "candidate": self.root / "SSN2BFO.ttl",
+            "generation_report": self.root / "reports/coms-generation-validation.md",
+            "coverage_report": self.root / "reports/coms-source-term-coverage.md",
+            "diff_report": self.root / "reports/coms-vs-pre-coms-legacy-diff.md",
+        }
+
+    @staticmethod
+    def write(path: Path, content: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+    def test_root_ontology_is_the_maintained_output(self) -> None:
+        self.assertEqual(checker.MAINTAINED_OUTPUTS["candidate"], REPO_ROOT / "SSN2BFO.ttl")
+        self.assertEqual(
+            checker.MAINTAINED_OUTPUTS["diff_report"],
+            REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
+        )
+
+    def test_legacy_ontology_is_the_comparison_baseline(self) -> None:
+        generated_path = self.root / "generated.ttl"
+        legacy_path = self.root / "legacy.ttl"
+        report_path = self.root / "comparison.md"
+        subject = URIRef("http://example.org/Source")
+        coms_target = URIRef("http://example.org/ComsTarget")
+        legacy_target = URIRef("http://example.org/LegacyTarget")
+        generated = coms.Graph()
+        generated.add((subject, RDFS.subClassOf, coms_target))
+        generated.serialize(destination=generated_path, format="turtle")
+        legacy = coms.Graph()
+        legacy.add((subject, RDFS.subClassOf, legacy_target))
+        legacy.serialize(destination=legacy_path, format="turtle")
+
+        with mock.patch.object(coms, "LEGACY_ONTOLOGY", legacy_path):
+            result = coms.compare_coms_to_legacy(generated_path, report_path, [])
+
+        self.assertIn(("class", str(subject), str(RDFS.subClassOf), str(coms_target)), result.coms_only)
+        self.assertIn(("class", str(subject), str(RDFS.subClassOf), str(legacy_target)), result.legacy_only)
+        self.assertIn("COMS vs Pre-COMS Legacy", report_path.read_text(encoding="utf-8"))
+
+    def test_freshness_uses_the_root_ontology_hash(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"maintained-{name}\n")
+        candidate_hash = checker.sha256_file(outputs["candidate"])
+        self.write(
+            outputs["generation_report"],
+            "\n".join(
+                [
+                    "| workbook SHA-256 | `workbook-hash` |",
+                    "| generator SHA-256 | `generator-hash` |",
+                    "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
+                    "| maintained ontology path | `SSN2BFO.ttl` |",
+                    f"| generated ontology SHA-256 | `{candidate_hash}` |",
+                ]
+            ),
+        )
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+        ):
+            self.assertEqual(checker.freshness_errors("workbook-hash", "generator-hash"), [])
+            self.write(outputs["candidate"], "changed root ontology\n")
+            self.assertIn(
+                "generated candidate hash differs from the generated report",
+                checker.freshness_errors("workbook-hash", "generator-hash"),
+            )
+
+    def test_temporary_validation_precedes_atomic_root_replacement(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"old-{name}\n")
+        cache_dir = self.root / ".cache/coms"
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            for name in outputs:
+                self.write(paths[name], f"new-{name}\n")
+            self.write(paths["summary"], "{}\n")
+
+        def fake_validate(*_args, **_kwargs):
+            self.assertEqual(outputs["candidate"].read_text(encoding="utf-8"), "old-candidate\n")
+            return {}
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", side_effect=fake_validate),
+            mock.patch.object(checker, "git_diff_check"),
+            mock.patch.object(checker, "output_differences", return_value=["candidate"]),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 0)
+
+        self.assertEqual(outputs["candidate"].read_text(encoding="utf-8"), "new-candidate\n")
+
+    def test_atomic_replacement_rolls_back_root_on_post_update_failure(self) -> None:
+        outputs = self.maintained_outputs()
+        transaction_dir = self.root / "transaction"
+        paths = checker.transaction_paths(transaction_dir)
+        for name, destination in outputs.items():
+            self.write(destination, f"old-{name}\n")
+            self.write(paths[name], f"new-{name}\n")
+
+        with (
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "git_diff_check", side_effect=checker.CheckFailure("post-update failure")),
+            self.assertRaises(checker.CheckFailure),
+        ):
+            checker.replace_outputs_atomically(paths, transaction_dir, [])
+
+        for name, destination in outputs.items():
+            self.assertEqual(destination.read_text(encoding="utf-8"), f"old-{name}\n")
+
+    def test_no_active_dependency_on_retired_generated_path(self) -> None:
+        retired = str(Path("generated") / "SSN2BFO-from-COMS.ttl")
+        active_files = [REPO_ROOT / "Makefile", REPO_ROOT / "README.md"]
+        active_files.extend((REPO_ROOT / "tools").glob("*.py"))
+        active_files.extend((REPO_ROOT / "tests").glob("*.py"))
+        active_files.extend((REPO_ROOT / "src").rglob("Makefile"))
+        for path in active_files:
+            self.assertNotIn(retired, path.read_text(encoding="utf-8"), str(path))
+        self.assertFalse((REPO_ROOT / retired).exists())
 
 
 if __name__ == "__main__":

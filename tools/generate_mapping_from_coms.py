@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a parallel SSN2BFO mapping candidate from a COMS workbook."""
+"""Generate the authoritative SSN2BFO ontology from the COMS workbook."""
 
 from __future__ import annotations
 
@@ -32,6 +32,11 @@ except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guar
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+LEGACY_ONTOLOGY = REPO_ROOT / "legacy/SSN2BFO-pre-COMS.ttl"
+GENERATED_NOTICE = (
+    "# GENERATED FILE: produced from mappings/SSN2BFO-COMS.xlsx; "
+    "do not edit SSN2BFO.ttl directly."
+)
 
 REQUIRED_COLUMNS = (
     "sssom:subject_id",
@@ -289,29 +294,29 @@ class CoverageResult:
 @dataclass
 class ComparisonResult:
     both: set[tuple[str, str, str, str]]
-    generated_only: set[tuple[str, str, str, str]]
-    current_only: set[tuple[str, str, str, str]]
+    coms_only: set[tuple[str, str, str, str]]
+    legacy_only: set[tuple[str, str, str, str]]
     class_expression_differences: list[str]
     object_property_differences: list[str]
     property_chain_differences: list[str]
     domain_both: set[tuple[str, str]]
-    domain_generated_only: set[tuple[str, str]]
-    domain_current_only: set[tuple[str, str]]
+    domain_coms_only: set[tuple[str, str]]
+    domain_legacy_only: set[tuple[str, str]]
     domain_differences: list[str]
     range_both: set[tuple[str, str]]
-    range_generated_only: set[tuple[str, str]]
-    range_current_only: set[tuple[str, str]]
+    range_coms_only: set[tuple[str, str]]
+    range_legacy_only: set[tuple[str, str]]
     range_differences: list[str]
 
     @property
-    def current_domain_range_absent(self) -> set[tuple[str, str, str]]:
+    def legacy_domain_range_absent_from_coms(self) -> set[tuple[str, str, str]]:
         domains = {
             (subject, str(RDFS.domain), target)
-            for subject, target in self.domain_current_only
+            for subject, target in self.domain_legacy_only
         }
         ranges = {
             (subject, str(RDFS.range), target)
-            for subject, target in self.range_current_only
+            for subject, target in self.range_legacy_only
         }
         return domains | ranges
 
@@ -818,7 +823,8 @@ def generate_ontology(processed_rows: list[ProcessedRow], output_path: Path) -> 
             raise GenerationError(f"{item.row.row_id}: processed row has no target")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    graph.serialize(destination=output_path, format="turtle")
+    turtle = graph.serialize(format="turtle").rstrip() + "\n"
+    output_path.write_text(f"{GENERATED_NOTICE}\n\n{turtle}", encoding="utf-8")
     return graph
 
 
@@ -1130,42 +1136,46 @@ def extract_property_typing_axioms(graph: Graph, predicate: URIRef) -> set[tuple
     }
 
 
-def compare_generated_to_current(generated_path: Path, report_path: Path, processed_rows: list[ProcessedRow]) -> ComparisonResult:
+def compare_coms_to_legacy(
+    generated_path: Path,
+    report_path: Path,
+    processed_rows: list[ProcessedRow],
+) -> ComparisonResult:
     generated = Graph()
     generated.parse(generated_path, format="turtle")
-    current = Graph()
-    current.parse(REPO_ROOT / "SSN2BFO.ttl", format="turtle")
+    legacy = Graph()
+    legacy.parse(LEGACY_ONTOLOGY, format="turtle")
 
     generated_mappings = extract_mapping_axioms(generated)
-    current_mappings = extract_mapping_axioms(current)
-    both = generated_mappings & current_mappings
-    generated_only = generated_mappings - current_mappings
-    current_only = current_mappings - generated_mappings
+    legacy_mappings = extract_mapping_axioms(legacy)
+    both = generated_mappings & legacy_mappings
+    coms_only = generated_mappings - legacy_mappings
+    legacy_only = legacy_mappings - generated_mappings
 
-    class_diffs = diff_by_subject_predicate(generated_mappings, current_mappings, "class")
-    object_property_diffs = diff_by_subject_predicate(generated_mappings, current_mappings, "object_property")
-    property_chain_diffs = diff_by_subject_predicate(generated_mappings, current_mappings, "property_chain")
+    class_diffs = diff_by_subject_predicate(generated_mappings, legacy_mappings, "class")
+    object_property_diffs = diff_by_subject_predicate(generated_mappings, legacy_mappings, "object_property")
+    property_chain_diffs = diff_by_subject_predicate(generated_mappings, legacy_mappings, "property_chain")
 
     generated_domains = extract_property_typing_axioms(generated, RDFS.domain)
-    current_domains = extract_property_typing_axioms(current, RDFS.domain)
+    legacy_domains = extract_property_typing_axioms(legacy, RDFS.domain)
     generated_ranges = extract_property_typing_axioms(generated, RDFS.range)
-    current_ranges = extract_property_typing_axioms(current, RDFS.range)
+    legacy_ranges = extract_property_typing_axioms(legacy, RDFS.range)
 
     result = ComparisonResult(
         both=both,
-        generated_only=generated_only,
-        current_only=current_only,
+        coms_only=coms_only,
+        legacy_only=legacy_only,
         class_expression_differences=class_diffs,
         object_property_differences=object_property_diffs,
         property_chain_differences=property_chain_diffs,
-        domain_both=generated_domains & current_domains,
-        domain_generated_only=generated_domains - current_domains,
-        domain_current_only=current_domains - generated_domains,
-        domain_differences=diff_axiom_targets(generated_domains, current_domains),
-        range_both=generated_ranges & current_ranges,
-        range_generated_only=generated_ranges - current_ranges,
-        range_current_only=current_ranges - generated_ranges,
-        range_differences=diff_axiom_targets(generated_ranges, current_ranges),
+        domain_both=generated_domains & legacy_domains,
+        domain_coms_only=generated_domains - legacy_domains,
+        domain_legacy_only=legacy_domains - generated_domains,
+        domain_differences=diff_axiom_targets(generated_domains, legacy_domains),
+        range_both=generated_ranges & legacy_ranges,
+        range_coms_only=generated_ranges - legacy_ranges,
+        range_legacy_only=legacy_ranges - generated_ranges,
+        range_differences=diff_axiom_targets(generated_ranges, legacy_ranges),
     )
     write_comparison_report(report_path, result, processed_rows)
     return result
@@ -1173,43 +1183,43 @@ def compare_generated_to_current(generated_path: Path, report_path: Path, proces
 
 def diff_by_subject_predicate(
     generated: set[tuple[str, str, str, str]],
-    current: set[tuple[str, str, str, str]],
+    legacy: set[tuple[str, str, str, str]],
     kind: str,
 ) -> list[str]:
     gen_index = defaultdict(set)
-    cur_index = defaultdict(set)
+    legacy_index = defaultdict(set)
     for item in generated:
         if item[0] == kind:
             gen_index[(item[1], item[2])].add(item[3])
-    for item in current:
+    for item in legacy:
         if item[0] == kind:
-            cur_index[(item[1], item[2])].add(item[3])
+            legacy_index[(item[1], item[2])].add(item[3])
     diffs: list[str] = []
-    for key in sorted(set(gen_index) & set(cur_index)):
-        if gen_index[key] != cur_index[key]:
+    for key in sorted(set(gen_index) & set(legacy_index)):
+        if gen_index[key] != legacy_index[key]:
             subject, predicate = key
             diffs.append(
                 f"`{compact_iri(subject)}` `{compact_iri(predicate)}`: "
-                f"generated={sorted(gen_index[key])}; current={sorted(cur_index[key])}"
+                f"COMS={sorted(gen_index[key])}; legacy={sorted(legacy_index[key])}"
             )
     return diffs
 
 
 def diff_axiom_targets(
     generated: set[tuple[str, str]],
-    current: set[tuple[str, str]],
+    legacy: set[tuple[str, str]],
 ) -> list[str]:
     gen_index: dict[str, set[str]] = defaultdict(set)
-    cur_index: dict[str, set[str]] = defaultdict(set)
+    legacy_index: dict[str, set[str]] = defaultdict(set)
     for subject, target in generated:
         gen_index[subject].add(target)
-    for subject, target in current:
-        cur_index[subject].add(target)
+    for subject, target in legacy:
+        legacy_index[subject].add(target)
     return [
-        f"`{compact_iri(subject)}`: generated={sorted(gen_index[subject])}; "
-        f"current={sorted(cur_index[subject])}"
-        for subject in sorted(set(gen_index) & set(cur_index))
-        if gen_index[subject] != cur_index[subject]
+        f"`{compact_iri(subject)}`: COMS={sorted(gen_index[subject])}; "
+        f"legacy={sorted(legacy_index[subject])}"
+        for subject in sorted(set(gen_index) & set(legacy_index))
+        if gen_index[subject] != legacy_index[subject]
     ]
 
 
@@ -1242,43 +1252,43 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
     blank_row_lines = [f"- `{item.row.subject_text}` at `{item.row.row_id}`" for item in blank_rows] or ["- none"]
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        "# COMS Generated vs Current Mapping Diff",
+        "# COMS vs Pre-COMS Legacy Mapping Diff",
         "",
-        "This report compares mapping-bearing axioms and, separately, domain/range property-typing axioms in `generated/SSN2BFO-from-COMS.ttl` against `SSN2BFO.ttl`. "
-        "The candidate is not loaded together with the current ontology.",
+        "This informational report compares mapping-bearing axioms and, separately, domain/range property-typing axioms generated from `mappings/SSN2BFO-COMS.xlsx` for `SSN2BFO.ttl` against the frozen `legacy/SSN2BFO-pre-COMS.ttl` snapshot. "
+        "COMS is not required to reproduce every legacy axiom, and the two ontologies are never loaded together for candidate validation.",
         "",
         "## Summary",
         "",
         "| Item | Count |",
         "|---|---:|",
         f"| mappings present in both | {len(result.both)} |",
-        f"| mappings only in generated candidate | {len(result.generated_only)} |",
-        f"| mappings only in current validated ontology | {len(result.current_only)} |",
+        f"| mappings only in COMS | {len(result.coms_only)} |",
+        f"| mappings only in pre-COMS legacy ontology | {len(result.legacy_only)} |",
         f"| class-expression differences | {len(result.class_expression_differences)} |",
         f"| object-property mapping differences | {len(result.object_property_differences)} |",
         f"| property-chain differences | {len(result.property_chain_differences)} |",
         f"| domain axioms present in both | {len(result.domain_both)} |",
-        f"| domain axioms only in generated candidate | {len(result.domain_generated_only)} |",
-        f"| domain axioms only in current validated ontology | {len(result.domain_current_only)} |",
+        f"| domain axioms only in COMS | {len(result.domain_coms_only)} |",
+        f"| domain axioms only in pre-COMS legacy ontology | {len(result.domain_legacy_only)} |",
         f"| domain target differences | {len(result.domain_differences)} |",
         f"| range axioms present in both | {len(result.range_both)} |",
-        f"| range axioms only in generated candidate | {len(result.range_generated_only)} |",
-        f"| range axioms only in current validated ontology | {len(result.range_current_only)} |",
+        f"| range axioms only in COMS | {len(result.range_coms_only)} |",
+        f"| range axioms only in pre-COMS legacy ontology | {len(result.range_legacy_only)} |",
         f"| range target differences | {len(result.range_differences)} |",
-        f"| current local domain/range basis axioms absent from candidate | {len(result.current_domain_range_absent)} |",
+        f"| legacy domain/range axioms absent from COMS | {len(result.legacy_domain_range_absent_from_coms)} |",
         f"| spreadsheet rows intentionally producing no mapping | {len(blank_rows)} |",
         "",
         "## Mappings Present In Both",
         "",
         *format_mapping_rows(result.both),
         "",
-        "## Only In Generated Candidate",
+        "## Only In COMS",
         "",
-        *format_mapping_rows(result.generated_only),
+        *format_mapping_rows(result.coms_only),
         "",
-        "## Only In Current Validated Ontology",
+        "## Only In Pre-COMS Legacy Ontology",
         "",
-        *format_mapping_rows(result.current_only),
+        *format_mapping_rows(result.legacy_only),
         "",
         "## Class-Expression Differences",
         "",
@@ -1296,13 +1306,13 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
         "",
         *format_property_typing_rows(result.domain_both, "rdfs:domain"),
         "",
-        "## Domain Axioms Only In Generated Candidate",
+        "## Domain Axioms Only In COMS",
         "",
-        *format_property_typing_rows(result.domain_generated_only, "rdfs:domain"),
+        *format_property_typing_rows(result.domain_coms_only, "rdfs:domain"),
         "",
-        "## Domain Axioms Only In Current Validated Ontology",
+        "## Domain Axioms Only In Pre-COMS Legacy Ontology",
         "",
-        *format_property_typing_rows(result.domain_current_only, "rdfs:domain"),
+        *format_property_typing_rows(result.domain_legacy_only, "rdfs:domain"),
         "",
         "## Domain Target Differences",
         "",
@@ -1312,13 +1322,13 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
         "",
         *format_property_typing_rows(result.range_both, "rdfs:range"),
         "",
-        "## Range Axioms Only In Generated Candidate",
+        "## Range Axioms Only In COMS",
         "",
-        *format_property_typing_rows(result.range_generated_only, "rdfs:range"),
+        *format_property_typing_rows(result.range_coms_only, "rdfs:range"),
         "",
-        "## Range Axioms Only In Current Validated Ontology",
+        "## Range Axioms Only In Pre-COMS Legacy Ontology",
         "",
-        *format_property_typing_rows(result.range_current_only, "rdfs:range"),
+        *format_property_typing_rows(result.range_legacy_only, "rdfs:range"),
         "",
         "## Range Target Differences",
         "",
@@ -1330,7 +1340,7 @@ def write_comparison_report(path: Path, result: ComparisonResult, processed_rows
         "",
         "## Terms Requiring Human Review",
         "",
-        "Human review should consider mapping differences separately from domain/range property-typing differences, plus explicitly blank spreadsheet rows.",
+        "Human review should consider COMS-versus-legacy mapping differences separately from domain/range property-typing differences. Legacy-only axioms are informational and are not release requirements.",
         "",
     ]
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -1370,7 +1380,8 @@ def write_generation_report(
         f"| workbook SHA-256 | `{workbook_sha256}` |",
         f"| generator SHA-256 | `{generator_sha256}` |",
         f"| generation timestamp (UTC) | `{generation_timestamp}` |",
-        f"| generated candidate SHA-256 | `{candidate_sha256}` |",
+        f"| maintained ontology path | `{output_path}` |",
+        f"| generated ontology SHA-256 | `{candidate_sha256}` |",
         "",
         "## Workbook",
         "",
@@ -1442,8 +1453,8 @@ def write_generation_report(
             "",
             f"- Path: `{output_path}`",
             f"- Generated ontology triple count: {'n/a' if hermit is None else hermit.generated_triple_count}",
+            f"- `{output_path}` is generated from `mappings/SSN2BFO-COMS.xlsx` and must not be edited directly.",
             "- `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.",
-            "- `SSN2BFO.ttl` was not replaced or edited by this tool.",
             "",
             "## Candidate Closure HermiT Result",
             "",
@@ -1564,7 +1575,7 @@ def write_generation_report(
     lines.extend(
         [
             "",
-            "## Generated-Versus-Current Summary",
+            "## COMS-Versus-Pre-COMS-Legacy Summary",
             "",
             "| Item | Count |",
             "|---|---:|",
@@ -1574,28 +1585,28 @@ def write_generation_report(
         lines.extend(
             [
                 "| mappings present in both | n/a |",
-                "| mappings only in generated candidate | n/a |",
-                "| mappings only in current validated ontology | n/a |",
+                "| mappings only in COMS | n/a |",
+                "| mappings only in pre-COMS legacy ontology | n/a |",
             ]
         )
     else:
         lines.extend(
             [
                 f"| mappings present in both | {len(comparison.both)} |",
-                f"| mappings only in generated candidate | {len(comparison.generated_only)} |",
-                f"| mappings only in current validated ontology | {len(comparison.current_only)} |",
+                f"| mappings only in COMS | {len(comparison.coms_only)} |",
+                f"| mappings only in pre-COMS legacy ontology | {len(comparison.legacy_only)} |",
                 f"| class-expression differences | {len(comparison.class_expression_differences)} |",
                 f"| object-property mapping differences | {len(comparison.object_property_differences)} |",
                 f"| property-chain differences | {len(comparison.property_chain_differences)} |",
                 f"| domain axioms present in both | {len(comparison.domain_both)} |",
-                f"| domain axioms only in generated candidate | {len(comparison.domain_generated_only)} |",
-                f"| domain axioms only in current ontology | {len(comparison.domain_current_only)} |",
+                f"| domain axioms only in COMS | {len(comparison.domain_coms_only)} |",
+                f"| domain axioms only in pre-COMS legacy ontology | {len(comparison.domain_legacy_only)} |",
                 f"| domain target differences | {len(comparison.domain_differences)} |",
                 f"| range axioms present in both | {len(comparison.range_both)} |",
-                f"| range axioms only in generated candidate | {len(comparison.range_generated_only)} |",
-                f"| range axioms only in current ontology | {len(comparison.range_current_only)} |",
+                f"| range axioms only in COMS | {len(comparison.range_coms_only)} |",
+                f"| range axioms only in pre-COMS legacy ontology | {len(comparison.range_legacy_only)} |",
                 f"| range target differences | {len(comparison.range_differences)} |",
-                f"| current domain/range basis absent | {len(comparison.current_domain_range_absent)} |",
+                f"| legacy domain/range axioms absent from COMS | {len(comparison.legacy_domain_range_absent_from_coms)} |",
             ]
         )
 
@@ -1665,22 +1676,22 @@ def write_summary_json(
             "source_terms_absent_from_spreadsheet": len(coverage.absent_terms),
             "spreadsheet_subjects_not_found": len(coverage.spreadsheet_missing_subjects),
         },
-        "generated_vs_current": None
+        "coms_vs_pre_coms_legacy": None
         if comparison is None
         else {
             "mappings_present_in_both": len(comparison.both),
-            "mappings_only_in_generated": len(comparison.generated_only),
-            "mappings_only_in_current": len(comparison.current_only),
+            "mappings_only_in_coms": len(comparison.coms_only),
+            "mappings_only_in_legacy": len(comparison.legacy_only),
             "class_expression_differences": len(comparison.class_expression_differences),
             "object_property_differences": len(comparison.object_property_differences),
             "property_chain_differences": len(comparison.property_chain_differences),
             "domain_axioms_present_in_both": len(comparison.domain_both),
-            "domain_axioms_only_in_generated": len(comparison.domain_generated_only),
-            "domain_axioms_only_in_current": len(comparison.domain_current_only),
+            "domain_axioms_only_in_coms": len(comparison.domain_coms_only),
+            "domain_axioms_only_in_legacy": len(comparison.domain_legacy_only),
             "domain_target_differences": len(comparison.domain_differences),
             "range_axioms_present_in_both": len(comparison.range_both),
-            "range_axioms_only_in_generated": len(comparison.range_generated_only),
-            "range_axioms_only_in_current": len(comparison.range_current_only),
+            "range_axioms_only_in_coms": len(comparison.range_coms_only),
+            "range_axioms_only_in_legacy": len(comparison.range_legacy_only),
             "range_target_differences": len(comparison.range_differences),
         },
         "errors": errors,
@@ -1702,8 +1713,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--diff-report",
-        default="reports/coms-generated-vs-current-mapping-diff.md",
-        help="Generated-vs-current mapping diff report path.",
+        default="reports/coms-vs-pre-coms-legacy-diff.md",
+        help="COMS-vs-pre-COMS-legacy mapping diff report path.",
     )
     parser.add_argument(
         "--tmp-dir",
@@ -1756,7 +1767,7 @@ def main(argv: list[str] | None = None) -> int:
         coverage = build_coverage(processed, [], coverage_report_path)
         graph.parse(output_path, format="turtle")
         hermit = run_candidate_hermit(output_path, Path(args.tmp_dir))
-        comparison = compare_generated_to_current(output_path, diff_report_path, processed)
+        comparison = compare_coms_to_legacy(output_path, diff_report_path, processed)
         if not hermit.passed:
             errors.append("candidate full local closure is not HermiT-clean")
     except GenerationError as exc:
@@ -1830,8 +1841,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Unmapped object properties: {len(coverage.unmapped_object_properties)}")
     if comparison is not None:
         print(f"Mappings present in both: {len(comparison.both)}")
-        print(f"Generated-only mappings: {len(comparison.generated_only)}")
-        print(f"Current-only mappings: {len(comparison.current_only)}")
+        print(f"COMS-only mappings: {len(comparison.coms_only)}")
+        print(f"Pre-COMS legacy-only mappings: {len(comparison.legacy_only)}")
     if errors:
         print("Errors:")
         for error in errors:

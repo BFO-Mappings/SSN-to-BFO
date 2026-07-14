@@ -18,10 +18,10 @@ WORKBOOK = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
 CHECKER = REPO_ROOT / "tools/check_coms_mapping.py"
 LAST_SUCCESS = REPO_ROOT / ".cache/coms/last-success.json"
 MAINTAINED_OUTPUTS = (
-    REPO_ROOT / "generated/SSN2BFO-from-COMS.ttl",
+    REPO_ROOT / "SSN2BFO.ttl",
     REPO_ROOT / "reports/coms-generation-validation.md",
     REPO_ROOT / "reports/coms-source-term-coverage.md",
-    REPO_ROOT / "reports/coms-generated-vs-current-mapping-diff.md",
+    REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
 )
 POLL_SECONDS = 1.0
 DEBOUNCE_SECONDS = 1.5

@@ -9,9 +9,10 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `99a1780246faa702406fe80dd29c03320ac43ec745ca050df929e3e65efae855` |
-| generator SHA-256 | `adb1f1019cb85123e135b32a100ef229693c5e49d41d28062ed2ca7f62a04818` |
-| generation timestamp (UTC) | `2026-07-14T18:21:56+00:00` |
-| generated candidate SHA-256 | `6485f4b5338307a12d8166d6433c1054b7ba31c1b0d2e432a12af2153c70351b` |
+| generator SHA-256 | `e0ecc5bd46ba9ccb482fec6ecca1b85efe527e53a9e52242e6b7f82799b66371` |
+| generation timestamp (UTC) | `2026-07-14T19:04:48+00:00` |
+| maintained ontology path | `SSN2BFO.ttl` |
+| generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
 
 ## Workbook
 
@@ -129,10 +130,10 @@ Freshness is determined from content hashes, not file timestamps.
 
 ## Generated Ontology
 
-- Path: `generated/SSN2BFO-from-COMS.ttl`
+- Path: `SSN2BFO.ttl`
 - Generated ontology triple count: 1117
+- `SSN2BFO.ttl` is generated from `mappings/SSN2BFO-COMS.xlsx` and must not be edited directly.
 - `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.
-- `SSN2BFO.ttl` was not replaced or edited by this tool.
 
 ## Candidate Closure HermiT Result
 
@@ -274,26 +275,26 @@ This section records mapping and domain/range property-typing rows after parsing
 | source terms absent from spreadsheet | 0 |
 | spreadsheet subjects not found in source ontologies | 0 |
 
-## Generated-Versus-Current Summary
+## COMS-Versus-Pre-COMS-Legacy Summary
 
 | Item | Count |
 |---|---:|
 | mappings present in both | 57 |
-| mappings only in generated candidate | 17 |
-| mappings only in current validated ontology | 11 |
+| mappings only in COMS | 17 |
+| mappings only in pre-COMS legacy ontology | 11 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
 | domain axioms present in both | 9 |
-| domain axioms only in generated candidate | 7 |
-| domain axioms only in current ontology | 13 |
+| domain axioms only in COMS | 7 |
+| domain axioms only in pre-COMS legacy ontology | 13 |
 | domain target differences | 0 |
 | range axioms present in both | 0 |
-| range axioms only in generated candidate | 15 |
-| range axioms only in current ontology | 0 |
+| range axioms only in COMS | 15 |
+| range axioms only in pre-COMS legacy ontology | 0 |
 | range target differences | 0 |
-| current domain/range basis absent | 13 |
+| legacy domain/range axioms absent from COMS | 13 |
 
 ## Runtime
 
-- Runtime seconds: 3.12
+- Runtime seconds: 2.98
