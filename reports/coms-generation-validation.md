@@ -9,8 +9,8 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `b1d53596a2cc46f6138f6ad8bbfb01d79defcc253787b65fd974dfa7083d5e3b` |
-| generator SHA-256 | `cec3cfff5345bd543939012b6bf13aafab2cfbe18d70b78c235bdc0c91c4c37b` |
-| generation timestamp (UTC) | `2026-07-14T02:07:03+00:00` |
+| generator SHA-256 | `adb1f1019cb85123e135b32a100ef229693c5e49d41d28062ed2ca7f62a04818` |
+| generation timestamp (UTC) | `2026-07-14T05:15:49+00:00` |
 | generated candidate SHA-256 | `4c29d4ef409931febd089f8a270e772354defd073732eb57b68f95bbd120198a` |
 
 ## Workbook
@@ -206,7 +206,7 @@ This section records mapping and domain/range property-typing rows after parsing
 | mapped classes | 43 |
 | unmapped classes | 1 |
 | mapped object properties | 7 |
-| unmapped object properties | 40 |
+| unmapped object properties | 38 |
 | explicitly listed blank mappings | 3 |
 | listed only in domain/range property-typing rows | 2 |
 | source terms absent from spreadsheet | 36 |
@@ -234,4 +234,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 2.92
+- Runtime seconds: 2.87

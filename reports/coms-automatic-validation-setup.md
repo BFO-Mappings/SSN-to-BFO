@@ -58,7 +58,7 @@ sosa:hasFeatureOfInterest | rdfs:range | sosa:FeatureOfInterest
 
 For `rdfs:domain` and `rdfs:range`, the subject must resolve to a declared source object property and the target is parsed by the same Manchester class-expression parser used for class mappings. Named classes, intersections, unions, and existential restrictions are supported. The generated ontology uses the standard RDF/OWL domain or range triple, with an OWL class-expression blank node when the target is complex.
 
-A property may have a relation mapping, one domain row, and one range row. Domain/range rows are local typing axioms and do not by themselves make the property relation-mapped. At most one populated domain row and one populated range row are allowed per property. Multiple OWL domain or range axioms are conjunctive, so alternatives must be combined in one target with Manchester `or`.
+A property may have a relation mapping, one domain row, and one range row. Domain/range rows are local typing axioms and do not by themselves make the property relation-mapped, but they do cover the property for source-term coverage and exclude it from the unmapped object-property set. Such properties remain reported separately as listed only in domain/range property-typing rows. At most one populated domain row and one populated range row are allowed per property. Multiple OWL domain or range axioms are conjunctive, so alternatives must be combined in one target with Manchester `or`.
 
 ## Checks Performed
 
