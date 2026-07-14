@@ -9,8 +9,8 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `99a1780246faa702406fe80dd29c03320ac43ec745ca050df929e3e65efae855` |
-| generator SHA-256 | `e0ecc5bd46ba9ccb482fec6ecca1b85efe527e53a9e52242e6b7f82799b66371` |
-| generation timestamp (UTC) | `2026-07-14T19:04:48+00:00` |
+| generator SHA-256 | `ecb99cca039da82f58546a32473743ecd6f570c9c590dd5e227567fbbe1bfd9d` |
+| generation timestamp (UTC) | `2026-07-14T23:44:04+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
 | generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
 
@@ -139,7 +139,7 @@ Freshness is determined from content hashes, not file timestamps.
 
 | Item | Result |
 |---|---|
-| ROBOT executable | `/usr/local/bin/robot` |
+| ROBOT command | `robot` (resolved from `PATH`) |
 | candidate closure graph path | temporary validation artifact (`coms-candidate-full-closure.ttl`) |
 | reasoned output path | temporary validation artifact (`coms-candidate-full-closure-reasoned.ttl`) |
 | full candidate closure triple count | 15905 |
@@ -297,4 +297,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 2.98
+- Runtime seconds: 3.04

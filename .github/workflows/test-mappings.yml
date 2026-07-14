@@ -1,6 +1,6 @@
-name: Test SSN/SOSA and SOSA-Only BFO/CCO Mapping Changes
+name: Validate Authoritative COMS Mapping
 
-on:
+"on":
   pull_request:
     branches:
       - main
@@ -8,42 +8,82 @@ on:
       - tests
   workflow_dispatch:
 
-env:
-  cache-path: build/lib
-  artifacts-path: src/**/build/artifacts/
-  cache-key: build-cache-dependencies
+permissions:
+  contents: read
 
 jobs:
-  ontology_test:
+  authoritative_coms_mapping:
+    name: Validate authoritative COMS mapping
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Restore cached dependencies
-        id: restore-cache
-        uses: actions/cache/restore@v3
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          path: ${{ env.cache-path }}
-          key: ${{ runner.os }}-${{ env.cache-key }}
+          python-version: "3.12"
 
-      - name: Validate current SSN/SOSA mappings
-        run: make -C src current-ssn-sosa
+      - name: Install Python dependencies
+        run: python -m pip install openpyxl==3.1.5 rdflib==7.6.0
 
-      - name: Validate forthcoming SOSA-only mappings
-        run: make -C src sosa-next
-        if: always()
+      - name: Set up Java 22
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "22"
 
-      - name: Save artifacts
+      - name: Install verified ROBOT 1.9.7
+        env:
+          ROBOT_SHA256: 91890c2e83d0f092dd08731376f154b36610544cfbe8685337a1bf7244ccaa2d
+        run: |
+          set -euo pipefail
+          robot_dir="${RUNNER_TEMP}/robot"
+          bin_dir="${RUNNER_TEMP}/bin"
+          robot_jar="${robot_dir}/robot.jar"
+          mkdir -p "${robot_dir}" "${bin_dir}"
+          curl --fail --location --silent --show-error \
+            --output "${robot_jar}" \
+            https://github.com/ontodev/robot/releases/download/v1.9.7/robot.jar
+          printf '%s  %s\n' "${ROBOT_SHA256}" "${robot_jar}" | sha256sum --check -
+          printf '#!/usr/bin/env bash\nexec java -Xmx4G -jar "%s" "$@"\n' \
+            "${robot_jar}" > "${bin_dir}/robot"
+          chmod +x "${bin_dir}/robot"
+          echo "${bin_dir}" >> "${GITHUB_PATH}"
+
+      - name: Verify tool versions
+        run: |
+          set -euo pipefail
+          python --version
+          java -version
+          robot_version="$(robot --version 2>&1)"
+          printf '%s\n' "${robot_version}"
+          if ! grep -Eq '(^|[^0-9])1\.9\.7([^0-9]|$)' <<< "${robot_version}"; then
+            echo "Expected ROBOT 1.9.7, got: ${robot_version}" >&2
+            exit 1
+          fi
+          python - <<'PY'
+          import openpyxl
+          import rdflib
+
+          print(f"openpyxl {openpyxl.__version__}")
+          print(f"rdflib {rdflib.__version__}")
+          PY
+
+      - name: Validate authoritative COMS mapping
+        run: make check
+
+      - name: Verify validation did not modify the repository
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"
+
+      - name: Upload failure diagnostics
+        if: failure()
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: ontology_test_results
-          path: ${{ env.artifacts-path }}
-
-      - name: Save dependencies to cache
-        id: save-cache
-        uses: actions/cache/save@v3
-        if: always() && steps.restore-cache.outputs.cache-hit != 'true'
-        with:
-          path: ${{ env.cache-path }}
-          key: ${{ runner.os }}-${{ env.cache-key }}
+          name: authoritative-coms-validation-diagnostics
+          path: |
+            /tmp/ssn-to-bfo-validation-suite/
+            .cache/coms/last-failure.log
+          if-no-files-found: ignore

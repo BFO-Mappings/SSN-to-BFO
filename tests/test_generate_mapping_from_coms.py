@@ -259,6 +259,70 @@ class ComsDomainRangeTests(unittest.TestCase):
         )
 
 
+class ComsGenerationReportTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="coms-report-test-")
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+
+    def hermit_result(self, robot_path: str | None) -> coms.HermitResult:
+        available = robot_path is not None
+        return coms.HermitResult(
+            graph_path=self.root / "closure.ttl",
+            reasoned_path=self.root / "reasoned.ttl",
+            generated_triple_count=1117,
+            closure_triple_count=15905,
+            return_code=0 if available else None,
+            reasoned_output_produced=available,
+            owl_nothing_count=0 if available else None,
+            unsat_classes=[],
+            robot_output="" if available else "ROBOT executable not found on PATH.",
+            robot_path=robot_path,
+        )
+
+    def render_report(self, name: str, robot_path: str | None) -> str:
+        path = self.root / f"{name}.md"
+        coms.write_generation_report(
+            path,
+            workbook_path=Path("mappings/SSN2BFO-COMS.xlsx"),
+            stats=coms.WorkbookStats(),
+            resolver=mock.Mock(records={}),
+            errors=[] if robot_path is not None else ["candidate HermiT unavailable"],
+            output_path=Path("SSN2BFO.ttl"),
+            hermit=self.hermit_result(robot_path),
+            coverage=None,
+            comparison=None,
+            normalized_rows=[],
+            elapsed_seconds=1.0,
+            workbook_sha256="workbook-hash",
+            generator_sha256="generator-hash",
+            generation_timestamp="2026-01-01T00:00:00+00:00",
+            candidate_sha256="candidate-hash",
+        )
+        return path.read_text(encoding="utf-8")
+
+    def test_robot_report_value_is_stable_across_paths_and_accurate_when_missing(self) -> None:
+        first_path = "/opt/toolchains/robot-a/bin/robot"
+        second_path = "/home/runner/work/_temp/robot-b/bin/robot"
+        first_report = self.render_report("first", first_path)
+        second_report = self.render_report("second", second_path)
+
+        self.assertEqual(first_report, second_report)
+        self.assertNotIn(first_path, first_report)
+        self.assertNotIn(second_path, second_report)
+        self.assertIn(
+            "| ROBOT command | `robot` (resolved from `PATH`) |",
+            first_report,
+        )
+
+        missing_report = self.render_report("missing", None)
+        self.assertIn(
+            "| ROBOT command | `robot` (not found on `PATH`) |",
+            missing_report,
+        )
+        self.assertIn("ROBOT executable not found on PATH.", missing_report)
+
+
 class ComsAuthorityMigrationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory(prefix="coms-authority-test-")
