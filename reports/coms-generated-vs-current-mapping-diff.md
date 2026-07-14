@@ -6,22 +6,22 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 | Item | Count |
 |---|---:|
-| mappings present in both | 41 |
-| mappings only in generated candidate | 9 |
-| mappings only in current validated ontology | 27 |
+| mappings present in both | 60 |
+| mappings only in generated candidate | 17 |
+| mappings only in current validated ontology | 8 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
-| domain axioms present in both | 0 |
-| domain axioms only in generated candidate | 2 |
-| domain axioms only in current validated ontology | 22 |
+| domain axioms present in both | 6 |
+| domain axioms only in generated candidate | 7 |
+| domain axioms only in current validated ontology | 16 |
 | domain target differences | 0 |
 | range axioms present in both | 0 |
-| range axioms only in generated candidate | 2 |
+| range axioms only in generated candidate | 12 |
 | range axioms only in current validated ontology | 0 |
 | range target differences | 0 |
-| current local domain/range basis axioms absent from candidate | 22 |
-| spreadsheet rows intentionally producing no mapping | 3 |
+| current local domain/range basis axioms absent from candidate | 16 |
+| spreadsheet rows intentionally producing no mapping | 0 |
 
 ## Mappings Present In Both
 
@@ -36,6 +36,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `class` `sosa:Sample` `owl:equivalentClass` `ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001936 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000040)`
 - `class` `sosa:Sampler` `owl:equivalentClass` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Sampling) http://purl.obolibrary.org/obo/BFO_0000040)`
 - `class` `sosa:Sampling` `owl:equivalentClass` `ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 http://www.w3.org/ns/sosa/Procedure) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001986 http://www.w3.org/ns/sosa/Sample) https://www.commoncoreontologies.org/ont00000228)`
+- `class` `sosa:Sensor` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Observation) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Observation) http://purl.obolibrary.org/obo/BFO_0000040)`
 - `class` `sampling:RelationshipNature` `rdfs:subClassOf` `https://www.commoncoreontologies.org/ont00000958`
 - `class` `sampling:SampleRelationship` `rdfs:subClassOf` `https://www.commoncoreontologies.org/ont00000958`
 - `class` `ssn:Deployment` `owl:equivalentClass` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/ssn/deployedOnPlatform http://purl.obolibrary.org/obo/BFO_0000040) ObjectSomeValuesFrom(http://www.w3.org/ns/ssn/deployedSystem http://www.w3.org/ns/ssn/System) https://www.commoncoreontologies.org/ont00000228)`
@@ -64,35 +65,11 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `class` `ssn-system:SystemLifetime` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) https://www.commoncoreontologies.org/ont00001213)) http://purl.obolibrary.org/obo/BFO_0000034)`
 - `object_property` `sosa:actsOnProperty` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001834`
 - `object_property` `sosa:hasResult` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001986`
-- `object_property` `sosa:usedProcedure` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001920`
-- `object_property` `ssn-system:qualityOfObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001986`
-
-## Only In Generated Candidate
-
-- `class` `sosa:FeatureOfInterest` `rdfs:subClassOf` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000015 http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000040 http://purl.obolibrary.org/obo/BFO_0000144)`
-- `class` `ssn-system:BatteryLifetime` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000117 https://www.commoncoreontologies.org/ont00000503) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) https://www.commoncoreontologies.org/ont00001213)) http://purl.obolibrary.org/obo/BFO_0000034)`
-- `class` `ssn-system:MeasurementRange` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://www.w3.org/ns/ssn/Stimulus)) http://www.w3.org/ns/sosa/Observation)) http://purl.obolibrary.org/obo/BFO_0000034)`
-- `class` `ssn-system:Sensitivity` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) https://www.commoncoreontologies.org/ont00001022)) https://www.commoncoreontologies.org/ont00000853)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)`
-- `class` `ssn-system:SurvivalRange` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)`
-- `class` `ssn-system:SystemProperty` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144))`
-- `object_property` `sampling:hasSampleRelationship` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001801`
-- `object_property` `sampling:natureOfRelationship` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001808`
-- `object_property` `sampling:relatedSample` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001808`
-
-## Only In Current Validated Ontology
-
-- `class` `sosa:FeatureOfInterest` `owl:equivalentClass` `ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/isFeatureOfInterestOf ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000015) ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001936 ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000040))`
-- `class` `sosa:Sensor` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000196 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 http://www.w3.org/ns/sosa/Observation) http://purl.obolibrary.org/obo/BFO_0000017)) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001787 http://www.w3.org/ns/sosa/Observation) http://purl.obolibrary.org/obo/BFO_0000040)`
-- `class` `sampling:SampleRelationship` `rdfs:subClassOf` `ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/natureOfRelationship http://www.w3.org/ns/sosa/sampling/RelationshipNature)`
-- `class` `sampling:SampleRelationship` `rdfs:subClassOf` `ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/relatedSample http://www.w3.org/ns/sosa/Sample)`
-- `class` `ssn-system:Sensitivity` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 https://www.commoncoreontologies.org/ont00000853) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 https://www.commoncoreontologies.org/ont00001022) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)`
 - `object_property` `sosa:isActedOnBy` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001886`
 - `object_property` `sosa:isResultOf` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001816`
 - `object_property` `sosa:madeBySampler` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001833`
-- `object_property` `sosa:madeBySensor` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001833`
-- `object_property` `sosa:madeObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001787`
 - `object_property` `sosa:madeSampling` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001787`
-- `object_property` `sosa:observes` `rdfs:subPropertyOf` `http://www.w3.org/ns/ssn/forProperty`
+- `object_property` `sosa:usedProcedure` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001920`
 - `object_property` `ssn:deployedOnPlatform` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000057`
 - `object_property` `ssn:deployedSystem` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000057`
 - `object_property` `ssn:detects` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001886`
@@ -102,11 +79,42 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `object_property` `ssn-system:hasOperatingRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
 - `object_property` `ssn-system:hasSurvivalRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
 - `object_property` `ssn-system:hasSystemCapability` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
+- `object_property` `ssn-system:qualityOfObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001986`
 - `object_property` `ssn:wasOriginatedBy` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001962`
 - `property_chain` `sosa:hasSample` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001873 o http://purl.obolibrary.org/obo/BFO_0000084`
 - `property_chain` `sosa:hosts` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000196 o http://purl.obolibrary.org/obo/BFO_0000054 o http://purl.obolibrary.org/obo/BFO_0000057`
 - `property_chain` `sosa:isHostedBy` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000056 o http://purl.obolibrary.org/obo/BFO_0000055 o http://purl.obolibrary.org/obo/BFO_0000197`
 - `property_chain` `sosa:isSampleOf` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000101 o https://www.commoncoreontologies.org/ont00001938`
+
+## Only In Generated Candidate
+
+- `class` `sosa:FeatureOfInterest` `rdfs:subClassOf` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000015 http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000040 http://purl.obolibrary.org/obo/BFO_0000144)`
+- `class` `ssn-system:BatteryLifetime` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000117 https://www.commoncoreontologies.org/ont00000503) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) https://www.commoncoreontologies.org/ont00001213)) http://purl.obolibrary.org/obo/BFO_0000034)`
+- `class` `ssn-system:MeasurementRange` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://www.w3.org/ns/ssn/Stimulus)) http://www.w3.org/ns/sosa/Observation)) http://purl.obolibrary.org/obo/BFO_0000034)`
+- `class` `ssn-system:Sensitivity` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) https://www.commoncoreontologies.org/ont00001022)) https://www.commoncoreontologies.org/ont00000853)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)`
+- `class` `ssn-system:SurvivalRange` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)`
+- `class` `ssn-system:SystemProperty` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144))`
+- `object_property` `sosa:observedProperty` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001921`
+- `object_property` `sosa:phenomenonTime` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000199`
+- `object_property` `sampling:hasSampleRelationship` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001801`
+- `object_property` `sampling:natureOfRelationship` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001808`
+- `object_property` `sampling:relatedSample` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001808`
+- `object_property` `ssn:implementedBy` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001942`
+- `object_property` `ssn:implements` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001920`
+- `object_property` `ssn-system:hasOperatingProperty` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000194`
+- `object_property` `ssn-system:hasSurvivalProperty` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000194`
+- `object_property` `ssn-system:hasSystemProperty` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000194`
+- `property_chain` `ssn:forProperty` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001917 o https://www.commoncoreontologies.org/ont00001808`
+
+## Only In Current Validated Ontology
+
+- `class` `sosa:FeatureOfInterest` `owl:equivalentClass` `ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/isFeatureOfInterestOf ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000015) ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001936 ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000040))`
+- `class` `sampling:SampleRelationship` `rdfs:subClassOf` `ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/natureOfRelationship http://www.w3.org/ns/sosa/sampling/RelationshipNature)`
+- `class` `sampling:SampleRelationship` `rdfs:subClassOf` `ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/relatedSample http://www.w3.org/ns/sosa/Sample)`
+- `class` `ssn-system:Sensitivity` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 https://www.commoncoreontologies.org/ont00000853) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 https://www.commoncoreontologies.org/ont00001022) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)`
+- `object_property` `sosa:madeBySensor` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001833`
+- `object_property` `sosa:madeObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001787`
+- `object_property` `sosa:observes` `rdfs:subPropertyOf` `http://www.w3.org/ns/ssn/forProperty`
 - `property_chain` `ssn:implementedBy` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001942 o https://www.commoncoreontologies.org/ont00001833`
 
 ## Class-Expression Differences
@@ -124,30 +132,34 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 ## Domain Axioms Present In Both
 
-- none
+- `sosa:isObservedBy` `rdfs:domain` `http://www.w3.org/ns/sosa/ObservableProperty`
+- `sosa:madeByActuator` `rdfs:domain` `http://www.w3.org/ns/sosa/Actuation`
+- `sosa:madeObservation` `rdfs:domain` `http://www.w3.org/ns/sosa/Sensor`
+- `ssn:hasInput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
+- `ssn:hasOutput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
+- `ssn:isProxyFor` `rdfs:domain` `http://www.w3.org/ns/ssn/Stimulus`
 
 ## Domain Axioms Only In Generated Candidate
 
 - `sosa:hasFeatureOfInterest` `rdfs:domain` `ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling)`
 - `sosa:isFeatureOfInterestOf` `rdfs:domain` `http://www.w3.org/ns/sosa/FeatureOfInterest`
+- `sosa:madeActuation` `rdfs:domain` `http://www.w3.org/ns/sosa/Actuator`
+- `sosa:madeBySensor` `rdfs:domain` `http://www.w3.org/ns/sosa/Observation`
+- `sosa:observes` `rdfs:domain` `http://www.w3.org/ns/sosa/Sensor`
+- `ssn:isPropertyOf` `rdfs:domain` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144)`
+- `ssn-system:inCondition` `rdfs:domain` `ObjectUnionOf(http://www.w3.org/ns/ssn/systems/OperatingRange http://www.w3.org/ns/ssn/systems/SurvivalRange http://www.w3.org/ns/ssn/systems/SystemCapability)`
 
 ## Domain Axioms Only In Current Validated Ontology
 
 - `sosa:isActedOnBy` `rdfs:domain` `http://www.w3.org/ns/sosa/ActuatableProperty`
-- `sosa:isObservedBy` `rdfs:domain` `http://www.w3.org/ns/sosa/ObservableProperty`
 - `sosa:isSampleOf` `rdfs:domain` `http://www.w3.org/ns/sosa/Sample`
-- `sosa:madeByActuator` `rdfs:domain` `http://www.w3.org/ns/sosa/Actuation`
-- `sosa:madeObservation` `rdfs:domain` `http://www.w3.org/ns/sosa/Sensor`
 - `sosa:madeSampling` `rdfs:domain` `http://www.w3.org/ns/sosa/Sampler`
 - `sosa:observedProperty` `rdfs:domain` `http://www.w3.org/ns/sosa/Observation`
 - `ssn:detects` `rdfs:domain` `http://www.w3.org/ns/sosa/Sensor`
 - `ssn:hasDeployment` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
-- `ssn:hasInput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
-- `ssn:hasOutput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
 - `ssn:hasSubSystem` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn:implements` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn:inDeployment` `rdfs:domain` `http://www.w3.org/ns/sosa/Platform`
-- `ssn:isProxyFor` `rdfs:domain` `http://www.w3.org/ns/ssn/Stimulus`
 - `ssn-system:hasOperatingProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/OperatingRange`
 - `ssn-system:hasOperatingRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn-system:hasSurvivalProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/SurvivalRange`
@@ -168,6 +180,16 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 - `sosa:hasFeatureOfInterest` `rdfs:range` `http://www.w3.org/ns/sosa/FeatureOfInterest`
 - `sosa:isFeatureOfInterestOf` `rdfs:range` `ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling)`
+- `sosa:isObservedBy` `rdfs:range` `http://www.w3.org/ns/sosa/Sensor`
+- `sosa:madeActuation` `rdfs:range` `http://www.w3.org/ns/sosa/Actuation`
+- `sosa:madeByActuator` `rdfs:range` `http://www.w3.org/ns/sosa/Actuator`
+- `sosa:madeBySensor` `rdfs:range` `http://www.w3.org/ns/sosa/Sensor`
+- `sosa:madeObservation` `rdfs:range` `http://www.w3.org/ns/sosa/Observation`
+- `sosa:observes` `rdfs:range` `http://www.w3.org/ns/sosa/ObservableProperty`
+- `ssn:hasInput` `rdfs:range` `http://www.w3.org/ns/ssn/Input`
+- `ssn:hasOutput` `rdfs:range` `http://www.w3.org/ns/ssn/Output`
+- `ssn:hasProperty` `rdfs:range` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144)`
+- `ssn:isProxyFor` `rdfs:range` `http://www.w3.org/ns/ssn/Property`
 
 ## Range Axioms Only In Current Validated Ontology
 
@@ -179,9 +201,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 ## Spreadsheet Rows Intentionally Producing No Mapping
 
-- `sosa:phenomenonTime` at `Sheet2!11`
-- `ssn-system:inCondition` at `Sheet2!13`
-- `ssn:isPropertyOf` at `Sheet2!15`
+- none
 
 ## Terms Requiring Human Review
 
