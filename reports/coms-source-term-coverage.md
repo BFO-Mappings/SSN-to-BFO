@@ -17,26 +17,29 @@ A domain or range row lists a property for local typing review but does not coun
 | Item | Count |
 |---|---:|
 | source terms returned by SPARQL | 91 |
-| mapped classes | 35 |
-| unmapped classes | 9 |
+| mapped classes | 43 |
+| unmapped classes | 1 |
 | mapped object properties | 7 |
 | unmapped object properties | 40 |
-| explicitly listed blank mappings | 5 |
-| listed only in domain/range property-typing rows | 0 |
-| source terms absent from spreadsheet | 44 |
+| explicitly listed blank mappings | 3 |
+| listed only in domain/range property-typing rows | 2 |
+| source terms absent from spreadsheet | 36 |
 | spreadsheet subjects not found in source ontologies | 0 |
-| unmapped rows returned by SPARQL coverage query | 49 |
+| unmapped rows returned by SPARQL coverage query | 41 |
 
 ## Mapped Classes
 
 - `sosa:ActuatableProperty`
 - `sosa:Actuation`
+- `sosa:Actuator`
 - `sosa:FeatureOfInterest`
 - `sosa:ObservableProperty`
 - `sosa:Observation`
 - `sosa:Platform`
+- `sosa:Procedure`
 - `sosa:Result`
 - `sosa:Sample`
+- `sosa:Sampler`
 - `sosa:Sampling`
 - `sampling:RelationshipNature`
 - `sampling:SampleRelationship`
@@ -47,12 +50,15 @@ A domain or range row lists a property for local typing review but does not coun
 - `ssn:Stimulus`
 - `ssn:System`
 - `ssn-system:Accuracy`
+- `ssn-system:ActuationRange`
+- `ssn-system:BatteryLifetime`
 - `ssn-system:Condition`
 - `ssn-system:DetectionLimit`
 - `ssn-system:Drift`
 - `ssn-system:Frequency`
 - `ssn-system:Latency`
 - `ssn-system:MaintenanceSchedule`
+- `ssn-system:MeasurementRange`
 - `ssn-system:OperatingPowerRange`
 - `ssn-system:OperatingProperty`
 - `ssn-system:OperatingRange`
@@ -62,20 +68,14 @@ A domain or range row lists a property for local typing review but does not coun
 - `ssn-system:Selectivity`
 - `ssn-system:Sensitivity`
 - `ssn-system:SurvivalProperty`
+- `ssn-system:SurvivalRange`
 - `ssn-system:SystemCapability`
 - `ssn-system:SystemLifetime`
+- `ssn-system:SystemProperty`
 
 ## Unmapped Classes
 
-- `sosa:Actuator`
-- `sosa:Procedure`
-- `sosa:Sampler`
 - `sosa:Sensor`
-- `ssn-system:ActuationRange`
-- `ssn-system:BatteryLifetime`
-- `ssn-system:MeasurementRange`
-- `ssn-system:SurvivalRange`
-- `ssn-system:SystemProperty`
 
 ## Mapped Object Properties
 
@@ -132,20 +132,17 @@ A domain or range row lists a property for local typing review but does not coun
 
 ## Explicitly Listed Blank Mappings
 
-- `sosa:hasFeatureOfInterest`
-- `sosa:isFeatureOfInterestOf`
 - `sosa:phenomenonTime`
 - `ssn:isPropertyOf`
 - `ssn-system:inCondition`
 
 ## Listed Only In Domain/Range Property-Typing Rows
 
+- `sosa:hasFeatureOfInterest`
+- `sosa:isFeatureOfInterestOf`
 
 ## Source Terms Absent From Spreadsheet
 
-- `sosa:Actuator`
-- `sosa:Procedure`
-- `sosa:Sampler`
 - `sosa:Sensor`
 - `sosa:hasSample`
 - `sosa:hosts`
@@ -175,11 +172,6 @@ A domain or range row lists a property for local typing review but does not coun
 - `ssn:implements`
 - `ssn:inDeployment`
 - `ssn:isProxyFor`
-- `ssn-system:ActuationRange`
-- `ssn-system:BatteryLifetime`
-- `ssn-system:MeasurementRange`
-- `ssn-system:SurvivalRange`
-- `ssn-system:SystemProperty`
 - `ssn-system:hasOperatingProperty`
 - `ssn-system:hasOperatingRange`
 - `ssn-system:hasSurvivalProperty`
