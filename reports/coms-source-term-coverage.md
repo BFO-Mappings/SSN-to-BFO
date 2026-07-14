@@ -17,15 +17,15 @@ A domain or range row covers a property for source-term coverage but does not co
 | Item | Count |
 |---|---:|
 | source terms returned by SPARQL | 91 |
-| mapped classes | 43 |
-| unmapped classes | 1 |
-| mapped object properties | 7 |
-| unmapped object properties | 38 |
-| explicitly listed blank mappings | 3 |
-| listed only in domain/range property-typing rows | 2 |
-| source terms absent from spreadsheet | 36 |
+| mapped classes | 44 |
+| unmapped classes | 0 |
+| mapped object properties | 33 |
+| unmapped object properties | 0 |
+| explicitly listed blank mappings | 0 |
+| listed only in domain/range property-typing rows | 14 |
+| source terms absent from spreadsheet | 0 |
 | spreadsheet subjects not found in source ontologies | 0 |
-| unmapped rows returned by SPARQL coverage query | 39 |
+| unmapped rows returned by SPARQL coverage query | 0 |
 
 ## Mapped Classes
 
@@ -41,6 +41,7 @@ A domain or range row covers a property for source-term coverage but does not co
 - `sosa:Sample`
 - `sosa:Sampler`
 - `sosa:Sampling`
+- `sosa:Sensor`
 - `sampling:RelationshipNature`
 - `sampling:SampleRelationship`
 - `ssn:Deployment`
@@ -75,108 +76,68 @@ A domain or range row covers a property for source-term coverage but does not co
 
 ## Unmapped Classes
 
-- `sosa:Sensor`
 
 ## Mapped Object Properties
 
 - `sosa:actsOnProperty`
 - `sosa:hasResult`
-- `sampling:hasSampleRelationship`
-- `sampling:natureOfRelationship`
-- `sampling:relatedSample`
-- `sosa:usedProcedure`
-- `ssn-system:qualityOfObservation`
-
-## Unmapped Object Properties
-
 - `sosa:hasSample`
 - `sosa:hosts`
 - `sosa:isActedOnBy`
 - `sosa:isHostedBy`
-- `sosa:isObservedBy`
 - `sosa:isResultOf`
 - `sosa:isSampleOf`
-- `sosa:madeActuation`
-- `sosa:madeByActuator`
 - `sosa:madeBySampler`
-- `sosa:madeBySensor`
-- `sosa:madeObservation`
 - `sosa:madeSampling`
 - `sosa:observedProperty`
-- `sosa:observes`
 - `sosa:phenomenonTime`
+- `sampling:hasSampleRelationship`
+- `sampling:natureOfRelationship`
+- `sampling:relatedSample`
+- `sosa:usedProcedure`
 - `ssn:deployedOnPlatform`
 - `ssn:deployedSystem`
 - `ssn:detects`
 - `ssn:forProperty`
 - `ssn:hasDeployment`
-- `ssn:hasInput`
-- `ssn:hasOutput`
-- `ssn:hasProperty`
 - `ssn:hasSubSystem`
 - `ssn:implementedBy`
 - `ssn:implements`
 - `ssn:inDeployment`
-- `ssn:isPropertyOf`
-- `ssn:isProxyFor`
 - `ssn-system:hasOperatingProperty`
 - `ssn-system:hasOperatingRange`
 - `ssn-system:hasSurvivalProperty`
 - `ssn-system:hasSurvivalRange`
 - `ssn-system:hasSystemCapability`
 - `ssn-system:hasSystemProperty`
-- `ssn-system:inCondition`
+- `ssn-system:qualityOfObservation`
 - `ssn:wasOriginatedBy`
+
+## Unmapped Object Properties
+
 
 ## Explicitly Listed Blank Mappings
 
-- `sosa:phenomenonTime`
-- `ssn:isPropertyOf`
-- `ssn-system:inCondition`
 
 ## Listed Only In Domain/Range Property-Typing Rows
 
 - `sosa:hasFeatureOfInterest`
 - `sosa:isFeatureOfInterestOf`
-
-## Source Terms Absent From Spreadsheet
-
-- `sosa:Sensor`
-- `sosa:hasSample`
-- `sosa:hosts`
-- `sosa:isActedOnBy`
-- `sosa:isHostedBy`
 - `sosa:isObservedBy`
-- `sosa:isResultOf`
-- `sosa:isSampleOf`
 - `sosa:madeActuation`
 - `sosa:madeByActuator`
-- `sosa:madeBySampler`
 - `sosa:madeBySensor`
 - `sosa:madeObservation`
-- `sosa:madeSampling`
-- `sosa:observedProperty`
 - `sosa:observes`
-- `ssn:deployedOnPlatform`
-- `ssn:deployedSystem`
-- `ssn:detects`
-- `ssn:forProperty`
-- `ssn:hasDeployment`
 - `ssn:hasInput`
 - `ssn:hasOutput`
 - `ssn:hasProperty`
-- `ssn:hasSubSystem`
-- `ssn:implementedBy`
-- `ssn:implements`
-- `ssn:inDeployment`
+- `ssn:isPropertyOf`
 - `ssn:isProxyFor`
-- `ssn-system:hasOperatingProperty`
-- `ssn-system:hasOperatingRange`
-- `ssn-system:hasSurvivalProperty`
-- `ssn-system:hasSurvivalRange`
-- `ssn-system:hasSystemCapability`
-- `ssn-system:hasSystemProperty`
-- `ssn:wasOriginatedBy`
+- `ssn-system:inCondition`
+
+## Source Terms Absent From Spreadsheet
+
 
 ## Spreadsheet Subjects Not Found In Source Ontologies
 
