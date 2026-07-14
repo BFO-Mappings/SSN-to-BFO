@@ -6,21 +6,21 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 | Item | Count |
 |---|---:|
-| mappings present in both | 60 |
+| mappings present in both | 57 |
 | mappings only in generated candidate | 17 |
-| mappings only in current validated ontology | 8 |
+| mappings only in current validated ontology | 11 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
-| domain axioms present in both | 6 |
+| domain axioms present in both | 9 |
 | domain axioms only in generated candidate | 7 |
-| domain axioms only in current validated ontology | 16 |
+| domain axioms only in current validated ontology | 13 |
 | domain target differences | 0 |
 | range axioms present in both | 0 |
-| range axioms only in generated candidate | 12 |
+| range axioms only in generated candidate | 15 |
 | range axioms only in current validated ontology | 0 |
 | range target differences | 0 |
-| current local domain/range basis axioms absent from candidate | 16 |
+| current local domain/range basis axioms absent from candidate | 13 |
 | spreadsheet rows intentionally producing no mapping | 0 |
 
 ## Mappings Present In Both
@@ -76,9 +76,6 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `object_property` `ssn:hasDeployment` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000056`
 - `object_property` `ssn:hasSubSystem` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000178`
 - `object_property` `ssn:inDeployment` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000056`
-- `object_property` `ssn-system:hasOperatingRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
-- `object_property` `ssn-system:hasSurvivalRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
-- `object_property` `ssn-system:hasSystemCapability` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
 - `object_property` `ssn-system:qualityOfObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001986`
 - `object_property` `ssn:wasOriginatedBy` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001962`
 - `property_chain` `sosa:hasSample` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001873 o http://purl.obolibrary.org/obo/BFO_0000084`
@@ -115,6 +112,9 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `object_property` `sosa:madeBySensor` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001833`
 - `object_property` `sosa:madeObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001787`
 - `object_property` `sosa:observes` `rdfs:subPropertyOf` `http://www.w3.org/ns/ssn/forProperty`
+- `object_property` `ssn-system:hasOperatingRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
+- `object_property` `ssn-system:hasSurvivalRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
+- `object_property` `ssn-system:hasSystemCapability` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
 - `property_chain` `ssn:implementedBy` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001942 o https://www.commoncoreontologies.org/ont00001833`
 
 ## Class-Expression Differences
@@ -138,6 +138,9 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `ssn:hasInput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
 - `ssn:hasOutput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
 - `ssn:isProxyFor` `rdfs:domain` `http://www.w3.org/ns/ssn/Stimulus`
+- `ssn-system:hasOperatingRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn-system:hasSurvivalRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn-system:hasSystemCapability` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 
 ## Domain Axioms Only In Generated Candidate
 
@@ -161,10 +164,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `ssn:implements` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn:inDeployment` `rdfs:domain` `http://www.w3.org/ns/sosa/Platform`
 - `ssn-system:hasOperatingProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/OperatingRange`
-- `ssn-system:hasOperatingRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn-system:hasSurvivalProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/SurvivalRange`
-- `ssn-system:hasSurvivalRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
-- `ssn-system:hasSystemCapability` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn-system:hasSystemProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/SystemCapability`
 - `ssn:wasOriginatedBy` `rdfs:domain` `http://www.w3.org/ns/sosa/Observation`
 
@@ -190,6 +190,9 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `ssn:hasOutput` `rdfs:range` `http://www.w3.org/ns/ssn/Output`
 - `ssn:hasProperty` `rdfs:range` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144)`
 - `ssn:isProxyFor` `rdfs:range` `http://www.w3.org/ns/ssn/Property`
+- `ssn-system:hasOperatingRange` `rdfs:range` `http://www.w3.org/ns/ssn/systems/OperatingRange`
+- `ssn-system:hasSurvivalRange` `rdfs:range` `http://www.w3.org/ns/ssn/systems/SurvivalRange`
+- `ssn-system:hasSystemCapability` `rdfs:range` `http://www.w3.org/ns/ssn/systems/SystemCapability`
 
 ## Range Axioms Only In Current Validated Ontology
 
