@@ -56,6 +56,26 @@ def last_good_status(workbook_hash: str | None, check_passed: bool) -> str:
     return f"preserved (workbook SHA-256 {payload.get('workbook_sha256', 'unknown')})"
 
 
+def last_success_coverage_status() -> str | None:
+    try:
+        payload = json.loads(LAST_SUCCESS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    counts = payload.get("source_term_counts")
+    if not isinstance(counts, dict):
+        return None
+    mapped = counts.get("mapped_object_properties")
+    typing_only = counts.get("listed_only_in_domain_range_rows")
+    unmapped = counts.get("unmapped_object_properties")
+    if any(value is None for value in (mapped, typing_only, unmapped)):
+        return None
+    return (
+        f"Coverage counts: mapped object properties {mapped}; "
+        f"listed only in domain/range property-typing rows {typing_only}; "
+        f"unmapped object properties {unmapped}"
+    )
+
+
 def run_check(trigger: str, workbook_hash: str | None) -> bool:
     started = time.perf_counter()
     print(f"Detection time: {now_text()}", flush=True)
@@ -67,6 +87,10 @@ def run_check(trigger: str, workbook_hash: str | None) -> bool:
     print(f"Check result: {'PASS' if passed else f'FAIL ({proc.returncode})'}", flush=True)
     print(f"Duration: {elapsed:.2f} seconds", flush=True)
     print(f"Last-good output status: {last_good_status(workbook_hash, passed)}", flush=True)
+    if passed:
+        coverage_status = last_success_coverage_status()
+        if coverage_status is not None:
+            print(coverage_status, flush=True)
     return passed
 
 

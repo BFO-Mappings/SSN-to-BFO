@@ -244,6 +244,7 @@ class HermitResult:
 class CoverageResult:
     source_terms: dict[URIRef, str]
     mapped_terms: set[URIRef]
+    property_typing_terms: set[URIRef]
     listed_terms: set[URIRef]
     explicit_blank_terms: set[URIRef]
     spreadsheet_missing_subjects: set[str]
@@ -271,7 +272,9 @@ class CoverageResult:
         return {
             term
             for term, kind in self.source_terms.items()
-            if kind == "object_property" and term not in self.mapped_terms
+            if kind == "object_property"
+            and term not in self.mapped_terms
+            and term not in self.property_typing_terms
         }
 
     @property
@@ -279,8 +282,8 @@ class CoverageResult:
         return set(self.source_terms) - self.listed_terms
 
     @property
-    def listed_unmapped_terms(self) -> set[URIRef]:
-        return self.listed_terms - self.mapped_terms - self.explicit_blank_terms
+    def property_typing_only_terms(self) -> set[URIRef]:
+        return self.property_typing_terms - self.mapped_terms
 
 
 @dataclass
@@ -972,6 +975,11 @@ def build_coverage(
     }
 
     mapped_terms = {row.subject for row in processed_rows if row.predicate in MAPPING_PREDICATES}
+    property_typing_terms = {
+        row.subject
+        for row in processed_rows
+        if row.predicate in DOMAIN_RANGE_PREDICATES
+    }
     listed_terms = {row.subject for row in processed_rows}
     explicit_blank_terms = {row.subject for row in processed_rows if not row.predicate}
     missing_subjects = set(source_subject_errors)
@@ -983,10 +991,10 @@ def build_coverage(
         coverage_graph.add((term, COMS_COVERAGE.sourceKind, Literal(kind)))
         if term in mapped_terms:
             status = "mapped"
+        elif term in property_typing_terms:
+            status = "covered_by_property_typing"
         elif term in explicit_blank_terms:
             status = "explicitly_unmapped"
-        elif term in listed_terms:
-            status = "listed_unmapped"
         else:
             status = "absent_from_spreadsheet"
         coverage_graph.add((term, COMS_COVERAGE.coverageStatus, Literal(status)))
@@ -995,6 +1003,7 @@ def build_coverage(
     result = CoverageResult(
         source_terms=source_terms,
         mapped_terms=mapped_terms,
+        property_typing_terms=property_typing_terms,
         listed_terms=listed_terms,
         explicit_blank_terms=explicit_blank_terms,
         spreadsheet_missing_subjects=missing_subjects,
@@ -1022,7 +1031,7 @@ def write_coverage_report(path: Path, coverage: CoverageResult) -> None:
         "",
         "The source term inventory is produced by `queries/source-classes-and-object-properties.rq`. "
         "Unmapped terms are selected from the generated coverage graph by `queries/unmapped-source-terms.rq`.",
-        "A domain or range row lists a property for local typing review but does not count it as relation-mapped; only subproperty, equivalent-property, or property-chain rows do so.",
+        "A domain or range row covers a property for source-term coverage but does not count it as relation-mapped; only subproperty, equivalent-property, or property-chain rows do so.",
         "",
         "## Summary",
         "",
@@ -1034,7 +1043,7 @@ def write_coverage_report(path: Path, coverage: CoverageResult) -> None:
         f"| mapped object properties | {len(coverage.mapped_object_properties)} |",
         f"| unmapped object properties | {len(coverage.unmapped_object_properties)} |",
         f"| explicitly listed blank mappings | {len(coverage.explicit_blank_terms)} |",
-        f"| listed only in domain/range property-typing rows | {len(coverage.listed_unmapped_terms)} |",
+        f"| listed only in domain/range property-typing rows | {len(coverage.property_typing_only_terms)} |",
         f"| source terms absent from spreadsheet | {len(coverage.absent_terms)} |",
         f"| spreadsheet subjects not found in source ontologies | {len(coverage.spreadsheet_missing_subjects)} |",
         f"| unmapped rows returned by SPARQL coverage query | {coverage.query_unmapped_count} |",
@@ -1061,7 +1070,7 @@ def write_coverage_report(path: Path, coverage: CoverageResult) -> None:
         "",
         "## Listed Only In Domain/Range Property-Typing Rows",
         "",
-        *format_term_list(coverage.listed_unmapped_terms),
+        *format_term_list(coverage.property_typing_only_terms),
         "",
         "## Source Terms Absent From Spreadsheet",
         "",
@@ -1546,7 +1555,7 @@ def write_generation_report(
                 f"| mapped object properties | {len(coverage.mapped_object_properties)} |",
                 f"| unmapped object properties | {len(coverage.unmapped_object_properties)} |",
                 f"| explicitly listed blank mappings | {len(coverage.explicit_blank_terms)} |",
-                f"| listed only in domain/range property-typing rows | {len(coverage.listed_unmapped_terms)} |",
+                f"| listed only in domain/range property-typing rows | {len(coverage.property_typing_only_terms)} |",
                 f"| source terms absent from spreadsheet | {len(coverage.absent_terms)} |",
                 f"| spreadsheet subjects not found in source ontologies | {len(coverage.spreadsheet_missing_subjects)} |",
             ]
@@ -1652,7 +1661,7 @@ def write_summary_json(
             "mapped_object_properties": len(coverage.mapped_object_properties),
             "unmapped_object_properties": len(coverage.unmapped_object_properties),
             "explicitly_listed_blank_mappings": len(coverage.explicit_blank_terms),
-            "listed_only_in_domain_range_rows": len(coverage.listed_unmapped_terms),
+            "listed_only_in_domain_range_rows": len(coverage.property_typing_only_terms),
             "source_terms_absent_from_spreadsheet": len(coverage.absent_terms),
             "spreadsheet_subjects_not_found": len(coverage.spreadsheet_missing_subjects),
         },

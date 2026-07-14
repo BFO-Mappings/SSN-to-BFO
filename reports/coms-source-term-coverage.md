@@ -10,7 +10,7 @@ Coverage scope is all non-deprecated named OWL classes and object properties def
 - `imports/ssn-systems.ttl`
 
 The source term inventory is produced by `queries/source-classes-and-object-properties.rq`. Unmapped terms are selected from the generated coverage graph by `queries/unmapped-source-terms.rq`.
-A domain or range row lists a property for local typing review but does not count it as relation-mapped; only subproperty, equivalent-property, or property-chain rows do so.
+A domain or range row covers a property for source-term coverage but does not count it as relation-mapped; only subproperty, equivalent-property, or property-chain rows do so.
 
 ## Summary
 
@@ -20,12 +20,12 @@ A domain or range row lists a property for local typing review but does not coun
 | mapped classes | 43 |
 | unmapped classes | 1 |
 | mapped object properties | 7 |
-| unmapped object properties | 40 |
+| unmapped object properties | 38 |
 | explicitly listed blank mappings | 3 |
 | listed only in domain/range property-typing rows | 2 |
 | source terms absent from spreadsheet | 36 |
 | spreadsheet subjects not found in source ontologies | 0 |
-| unmapped rows returned by SPARQL coverage query | 41 |
+| unmapped rows returned by SPARQL coverage query | 39 |
 
 ## Mapped Classes
 
@@ -89,11 +89,9 @@ A domain or range row lists a property for local typing review but does not coun
 
 ## Unmapped Object Properties
 
-- `sosa:hasFeatureOfInterest`
 - `sosa:hasSample`
 - `sosa:hosts`
 - `sosa:isActedOnBy`
-- `sosa:isFeatureOfInterestOf`
 - `sosa:isHostedBy`
 - `sosa:isObservedBy`
 - `sosa:isResultOf`

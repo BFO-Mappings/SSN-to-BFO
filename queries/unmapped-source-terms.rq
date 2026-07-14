@@ -4,6 +4,6 @@ SELECT ?term ?kind ?coverageStatus
 WHERE {
   ?term coms:sourceKind ?kind ;
         coms:coverageStatus ?coverageStatus .
-  FILTER(?coverageStatus != "mapped")
+  FILTER(?coverageStatus NOT IN ("mapped", "covered_by_property_typing"))
 }
 ORDER BY ?kind ?coverageStatus ?term

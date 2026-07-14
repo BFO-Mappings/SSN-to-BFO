@@ -25,6 +25,10 @@ OBSERVATION = URIRef("http://www.w3.org/ns/sosa/Observation")
 ACTUATION = URIRef("http://www.w3.org/ns/sosa/Actuation")
 SAMPLING = URIRef("http://www.w3.org/ns/sosa/Sampling")
 FEATURE_OF_INTEREST = URIRef("http://www.w3.org/ns/sosa/FeatureOfInterest")
+MAPPED_PROPERTY = URIRef("http://www.w3.org/ns/sosa/actsOnProperty")
+DOMAIN_ONLY_PROPERTY = SUBJECT_IRI
+RANGE_ONLY_PROPERTY = URIRef("http://www.w3.org/ns/sosa/hasResult")
+UNCOVERED_PROPERTY = URIRef("http://www.w3.org/ns/sosa/hosts")
 
 
 class ComsDomainRangeTests(unittest.TestCase):
@@ -180,7 +184,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         )
 
     def test_subproperty_domain_and_range_can_coexist(self) -> None:
-        graph, _, stats = self.generate(
+        graph, processed, stats = self.generate(
             [
                 (SUBJECT, "rdfs:subPropertyOf", "sosa:isFeatureOfInterestOf"),
                 (SUBJECT, "rdfs:domain", "sosa:Observation or sosa:Actuation"),
@@ -197,22 +201,52 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertEqual(len(list(graph.objects(SUBJECT_IRI, RDFS.subPropertyOf))), 1)
         self.assertEqual(len(list(graph.objects(SUBJECT_IRI, RDFS.domain))), 1)
         self.assertEqual(len(list(graph.objects(SUBJECT_IRI, RDFS.range))), 1)
+        coverage = coms.build_coverage(processed, [], self.root / "coexistence-coverage.md")
+        self.assertIn(SUBJECT_IRI, coverage.mapped_object_properties)
+        self.assertNotIn(SUBJECT_IRI, coverage.property_typing_only_terms)
+        self.assertNotIn(SUBJECT_IRI, coverage.unmapped_object_properties)
 
-    def test_domain_range_only_property_remains_unmapped_in_coverage(self) -> None:
+    def coverage_classification_fixture(self):
         processed, _ = self.process(
             [
+                ("sosa:actsOnProperty", "rdfs:subPropertyOf", "sosa:isActedOnBy"),
                 (SUBJECT, "rdfs:domain", "sosa:Observation"),
-                (SUBJECT, "rdfs:range", "sosa:FeatureOfInterest"),
+                ("sosa:hasResult", "rdfs:range", "sosa:Result"),
             ]
         )
-        coverage = coms.build_coverage(processed, [], self.root / "coverage.md")
+        return coms.build_coverage(processed, [], self.root / "coverage.md")
 
-        self.assertNotIn(SUBJECT_IRI, coverage.mapped_terms)
-        self.assertNotIn(SUBJECT_IRI, coverage.mapped_object_properties)
-        self.assertIn(SUBJECT_IRI, coverage.unmapped_object_properties)
-        self.assertIn(SUBJECT_IRI, coverage.listed_terms)
-        self.assertIn(SUBJECT_IRI, coverage.listed_unmapped_terms)
-        self.assertNotIn(SUBJECT_IRI, coverage.absent_terms)
+    def test_relation_mapped_property_is_mapped_and_covered(self) -> None:
+        coverage = self.coverage_classification_fixture()
+
+        self.assertIn(MAPPED_PROPERTY, coverage.mapped_object_properties)
+        self.assertNotIn(MAPPED_PROPERTY, coverage.property_typing_only_terms)
+        self.assertNotIn(MAPPED_PROPERTY, coverage.unmapped_object_properties)
+
+    def test_domain_only_property_is_covered_but_not_mapped(self) -> None:
+        coverage = self.coverage_classification_fixture()
+
+        self.assertNotIn(DOMAIN_ONLY_PROPERTY, coverage.mapped_object_properties)
+        self.assertIn(DOMAIN_ONLY_PROPERTY, coverage.property_typing_only_terms)
+        self.assertNotIn(DOMAIN_ONLY_PROPERTY, coverage.unmapped_object_properties)
+
+    def test_range_only_property_is_covered_but_not_mapped(self) -> None:
+        coverage = self.coverage_classification_fixture()
+
+        self.assertNotIn(RANGE_ONLY_PROPERTY, coverage.mapped_object_properties)
+        self.assertIn(RANGE_ONLY_PROPERTY, coverage.property_typing_only_terms)
+        self.assertNotIn(RANGE_ONLY_PROPERTY, coverage.unmapped_object_properties)
+
+    def test_genuinely_uncovered_property_remains_unmapped(self) -> None:
+        coverage = self.coverage_classification_fixture()
+
+        self.assertNotIn(UNCOVERED_PROPERTY, coverage.mapped_object_properties)
+        self.assertNotIn(UNCOVERED_PROPERTY, coverage.property_typing_only_terms)
+        self.assertIn(UNCOVERED_PROPERTY, coverage.unmapped_object_properties)
+        self.assertEqual(
+            coverage.query_unmapped_count,
+            len(coverage.unmapped_classes) + len(coverage.unmapped_object_properties),
+        )
 
 
 if __name__ == "__main__":
