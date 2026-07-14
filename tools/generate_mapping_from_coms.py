@@ -245,6 +245,14 @@ class HermitResult:
         )
 
 
+def robot_command_report_value(hermit: HermitResult | None) -> str:
+    if hermit is None:
+        return "not evaluated"
+    if hermit.robot_path is None:
+        return "`robot` (not found on `PATH`)"
+    return "`robot` (resolved from `PATH`)"
+
+
 @dataclass
 class CoverageResult:
     source_terms: dict[URIRef, str]
@@ -1460,12 +1468,12 @@ def write_generation_report(
             "",
             "| Item | Result |",
             "|---|---|",
+            f"| ROBOT command | {robot_command_report_value(hermit)} |",
         ]
     )
     if hermit is None:
         lines.extend(
             [
-                "| ROBOT executable | n/a |",
                 "| full candidate closure triple count | n/a |",
                 "| HermiT return code | n/a |",
                 "| reasoned output produced | no |",
@@ -1478,7 +1486,6 @@ def write_generation_report(
     else:
         lines.extend(
             [
-                f"| ROBOT executable | `{hermit.robot_path or 'not found'}` |",
                 "| candidate closure graph path | temporary validation artifact (`coms-candidate-full-closure.ttl`) |",
                 "| reasoned output path | temporary validation artifact (`coms-candidate-full-closure-reasoned.ttl`) |",
                 f"| full candidate closure triple count | {hermit.closure_triple_count} |",
