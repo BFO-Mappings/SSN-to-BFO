@@ -19,10 +19,10 @@ A domain or range row covers a property for source-term coverage but does not co
 | source terms returned by SPARQL | 91 |
 | mapped classes | 44 |
 | unmapped classes | 0 |
-| mapped object properties | 33 |
+| mapped object properties | 30 |
 | unmapped object properties | 0 |
 | explicitly listed blank mappings | 0 |
-| listed only in domain/range property-typing rows | 14 |
+| listed only in domain/range property-typing rows | 17 |
 | source terms absent from spreadsheet | 0 |
 | spreadsheet subjects not found in source ontologies | 0 |
 | unmapped rows returned by SPARQL coverage query | 0 |
@@ -105,10 +105,7 @@ A domain or range row covers a property for source-term coverage but does not co
 - `ssn:implements`
 - `ssn:inDeployment`
 - `ssn-system:hasOperatingProperty`
-- `ssn-system:hasOperatingRange`
 - `ssn-system:hasSurvivalProperty`
-- `ssn-system:hasSurvivalRange`
-- `ssn-system:hasSystemCapability`
 - `ssn-system:hasSystemProperty`
 - `ssn-system:qualityOfObservation`
 - `ssn:wasOriginatedBy`
@@ -134,6 +131,9 @@ A domain or range row covers a property for source-term coverage but does not co
 - `ssn:hasProperty`
 - `ssn:isPropertyOf`
 - `ssn:isProxyFor`
+- `ssn-system:hasOperatingRange`
+- `ssn-system:hasSurvivalRange`
+- `ssn-system:hasSystemCapability`
 - `ssn-system:inCondition`
 
 ## Source Terms Absent From Spreadsheet

@@ -378,13 +378,16 @@ ssn-system:SystemProperty rdfs:subClassOf [ a owl:Class ;
 
 ssn-system:hasOperatingProperty rdfs:subPropertyOf bfo:BFO_0000194 .
 
-ssn-system:hasOperatingRange rdfs:subPropertyOf bfo:BFO_0000196 .
+ssn-system:hasOperatingRange rdfs:domain ssn:System ;
+    rdfs:range ssn-system:OperatingRange .
 
 ssn-system:hasSurvivalProperty rdfs:subPropertyOf bfo:BFO_0000194 .
 
-ssn-system:hasSurvivalRange rdfs:subPropertyOf bfo:BFO_0000196 .
+ssn-system:hasSurvivalRange rdfs:domain ssn:System ;
+    rdfs:range ssn-system:SurvivalRange .
 
-ssn-system:hasSystemCapability rdfs:subPropertyOf bfo:BFO_0000196 .
+ssn-system:hasSystemCapability rdfs:domain ssn:System ;
+    rdfs:range ssn-system:SystemCapability .
 
 ssn-system:hasSystemProperty rdfs:subPropertyOf bfo:BFO_0000194 .
 
@@ -426,6 +429,30 @@ ssn:deployedSystem rdfs:subPropertyOf bfo:BFO_0000057 .
 
 ssn:implements rdfs:subPropertyOf cco:ont00001920 .
 
+sosa:Actuator rdfs:subClassOf [ a owl:Class ;
+            owl:intersectionOf ( bfo:BFO_0000040 [ a owl:Restriction ;
+                        owl:onProperty bfo:BFO_0000196 ;
+                        owl:someValuesFrom [ a owl:Class ;
+                                owl:intersectionOf ( bfo:BFO_0000017 [ a owl:Restriction ;
+                                            owl:onProperty bfo:BFO_0000054 ;
+                                            owl:someValuesFrom sosa:Actuation ] ) ] ] [ a owl:Restriction ;
+                        owl:onProperty cco:ont00001787 ;
+                        owl:someValuesFrom sosa:Actuation ] ) ] .
+
+sosa:ObservableProperty rdfs:subClassOf [ a owl:Class ;
+            owl:unionOf ( [ a owl:Class ;
+                        owl:intersectionOf ( bfo:BFO_0000020 [ a owl:Restriction ;
+                                    owl:onProperty bfo:BFO_0000197 ;
+                                    owl:someValuesFrom sosa:FeatureOfInterest ] ) ] [ a owl:Class ;
+                        owl:intersectionOf ( bfo:BFO_0000144 [ a owl:Restriction ;
+                                    owl:onProperty bfo:BFO_0000132 ;
+                                    owl:someValuesFrom sosa:FeatureOfInterest ] ) ] ) ] .
+
+ssn:Stimulus owl:equivalentClass [ a owl:Class ;
+            owl:intersectionOf ( cco:ont00000978 [ a owl:Restriction ;
+                        owl:onProperty cco:ont00001803 ;
+                        owl:someValuesFrom sosa:Observation ] ) ] .
+
 ssn-system:OperatingRange rdfs:subClassOf [ a owl:Class ;
             owl:intersectionOf ( [ a owl:Class ;
                         owl:unionOf ( bfo:BFO_0000020 bfo:BFO_0000144 ) ] [ a owl:Restriction ;
@@ -452,35 +479,6 @@ ssn-system:SystemCapability rdfs:subClassOf [ a owl:Class ;
                         owl:onProperty cco:ont00001884 ;
                         owl:someValuesFrom cco:ont00000127 ] ) ] .
 
-sosa:Actuator rdfs:subClassOf [ a owl:Class ;
-            owl:intersectionOf ( bfo:BFO_0000040 [ a owl:Restriction ;
-                        owl:onProperty bfo:BFO_0000196 ;
-                        owl:someValuesFrom [ a owl:Class ;
-                                owl:intersectionOf ( bfo:BFO_0000017 [ a owl:Restriction ;
-                                            owl:onProperty bfo:BFO_0000054 ;
-                                            owl:someValuesFrom sosa:Actuation ] ) ] ] [ a owl:Restriction ;
-                        owl:onProperty cco:ont00001787 ;
-                        owl:someValuesFrom sosa:Actuation ] ) ] .
-
-sosa:ObservableProperty rdfs:subClassOf [ a owl:Class ;
-            owl:unionOf ( [ a owl:Class ;
-                        owl:intersectionOf ( bfo:BFO_0000020 [ a owl:Restriction ;
-                                    owl:onProperty bfo:BFO_0000197 ;
-                                    owl:someValuesFrom sosa:FeatureOfInterest ] ) ] [ a owl:Class ;
-                        owl:intersectionOf ( bfo:BFO_0000144 [ a owl:Restriction ;
-                                    owl:onProperty bfo:BFO_0000132 ;
-                                    owl:someValuesFrom sosa:FeatureOfInterest ] ) ] ) ] .
-
-ssn:Stimulus owl:equivalentClass [ a owl:Class ;
-            owl:intersectionOf ( cco:ont00000978 [ a owl:Restriction ;
-                        owl:onProperty cco:ont00001803 ;
-                        owl:someValuesFrom sosa:Observation ] ) ] .
-
-ssn:System owl:equivalentClass [ a owl:Class ;
-            owl:intersectionOf ( bfo:BFO_0000040 [ a owl:Restriction ;
-                        owl:onProperty ssn:implements ;
-                        owl:someValuesFrom sosa:Procedure ] ) ] .
-
 sosa:Procedure rdfs:subClassOf [ a owl:Class ;
             owl:intersectionOf ( cco:ont00000965 [ a owl:Restriction ;
                         owl:onProperty cco:ont00001942 ;
@@ -495,6 +493,11 @@ sosa:Sensor rdfs:subClassOf [ a owl:Class ;
                                             owl:someValuesFrom sosa:Observation ] ) ] ] [ a owl:Restriction ;
                         owl:onProperty cco:ont00001787 ;
                         owl:someValuesFrom sosa:Observation ] ) ] .
+
+ssn:System owl:equivalentClass [ a owl:Class ;
+            owl:intersectionOf ( bfo:BFO_0000040 [ a owl:Restriction ;
+                        owl:onProperty ssn:implements ;
+                        owl:someValuesFrom sosa:Procedure ] ) ] .
 
 sosa:FeatureOfInterest rdfs:subClassOf [ a owl:Class ;
             owl:unionOf ( bfo:BFO_0000020 bfo:BFO_0000144 bfo:BFO_0000040 bfo:BFO_0000015 ) ] .
