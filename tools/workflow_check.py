@@ -25,6 +25,7 @@ COMPILE_COMMAND = [
     "tools/compare_mappings.py",
     "tools/check_coms_mapping.py",
     "tools/watch_coms_mapping.py",
+    "tests/test_generate_mapping_from_coms.py",
     "tools/workflow_check.py",
 ]
 VALIDATE_COMMAND = [PYTHON, "tools/run_validation_suite.py"]

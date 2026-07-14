@@ -10,6 +10,7 @@ Coverage scope is all non-deprecated named OWL classes and object properties def
 - `imports/ssn-systems.ttl`
 
 The source term inventory is produced by `queries/source-classes-and-object-properties.rq`. Unmapped terms are selected from the generated coverage graph by `queries/unmapped-source-terms.rq`.
+A domain or range row lists a property for local typing review but does not count it as relation-mapped; only subproperty, equivalent-property, or property-chain rows do so.
 
 ## Summary
 
@@ -21,6 +22,7 @@ The source term inventory is produced by `queries/source-classes-and-object-prop
 | mapped object properties | 7 |
 | unmapped object properties | 40 |
 | explicitly listed blank mappings | 5 |
+| listed only in domain/range property-typing rows | 0 |
 | source terms absent from spreadsheet | 44 |
 | spreadsheet subjects not found in source ontologies | 0 |
 | unmapped rows returned by SPARQL coverage query | 49 |
@@ -135,6 +137,9 @@ The source term inventory is produced by `queries/source-classes-and-object-prop
 - `sosa:phenomenonTime`
 - `ssn:isPropertyOf`
 - `ssn-system:inCondition`
+
+## Listed Only In Domain/Range Property-Typing Rows
+
 
 ## Source Terms Absent From Spreadsheet
 

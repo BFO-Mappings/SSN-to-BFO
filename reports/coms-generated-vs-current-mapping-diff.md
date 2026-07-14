@@ -1,6 +1,6 @@
 # COMS Generated vs Current Mapping Diff
 
-This report compares mapping-bearing axioms in `generated/SSN2BFO-from-COMS.ttl` against `SSN2BFO.ttl`. The candidate is not loaded together with the current ontology.
+This report compares mapping-bearing axioms and, separately, domain/range property-typing axioms in `generated/SSN2BFO-from-COMS.ttl` against `SSN2BFO.ttl`. The candidate is not loaded together with the current ontology.
 
 ## Summary
 
@@ -12,6 +12,14 @@ This report compares mapping-bearing axioms in `generated/SSN2BFO-from-COMS.ttl`
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
+| domain axioms present in both | 0 |
+| domain axioms only in generated candidate | 0 |
+| domain axioms only in current validated ontology | 22 |
+| domain target differences | 0 |
+| range axioms present in both | 0 |
+| range axioms only in generated candidate | 0 |
+| range axioms only in current validated ontology | 0 |
+| range target differences | 0 |
 | current local domain/range basis axioms absent from candidate | 22 |
 | spreadsheet rows intentionally producing no mapping | 5 |
 
@@ -109,30 +117,58 @@ This report compares mapping-bearing axioms in `generated/SSN2BFO-from-COMS.ttl`
 
 - none
 
-## Current Local Domain/Range Basis Axioms Absent From Candidate
+## Domain Axioms Present In Both
 
-- `sosa:isActedOnBy` `rdfs:domain` `sosa:ActuatableProperty`
-- `sosa:isObservedBy` `rdfs:domain` `sosa:ObservableProperty`
-- `sosa:isSampleOf` `rdfs:domain` `sosa:Sample`
-- `sosa:madeByActuator` `rdfs:domain` `sosa:Actuation`
-- `sosa:madeObservation` `rdfs:domain` `sosa:Sensor`
-- `sosa:madeSampling` `rdfs:domain` `sosa:Sampler`
-- `sosa:observedProperty` `rdfs:domain` `sosa:Observation`
-- `ssn:detects` `rdfs:domain` `sosa:Sensor`
-- `ssn:hasDeployment` `rdfs:domain` `ssn:System`
-- `ssn:hasInput` `rdfs:domain` `sosa:Procedure`
-- `ssn:hasOutput` `rdfs:domain` `sosa:Procedure`
-- `ssn:hasSubSystem` `rdfs:domain` `ssn:System`
-- `ssn:implements` `rdfs:domain` `ssn:System`
-- `ssn:inDeployment` `rdfs:domain` `sosa:Platform`
-- `ssn:isProxyFor` `rdfs:domain` `ssn:Stimulus`
-- `ssn-system:hasOperatingProperty` `rdfs:domain` `ssn-system:OperatingRange`
-- `ssn-system:hasOperatingRange` `rdfs:domain` `ssn:System`
-- `ssn-system:hasSurvivalProperty` `rdfs:domain` `ssn-system:SurvivalRange`
-- `ssn-system:hasSurvivalRange` `rdfs:domain` `ssn:System`
-- `ssn-system:hasSystemCapability` `rdfs:domain` `ssn:System`
-- `ssn-system:hasSystemProperty` `rdfs:domain` `ssn-system:SystemCapability`
-- `ssn:wasOriginatedBy` `rdfs:domain` `sosa:Observation`
+- none
+
+## Domain Axioms Only In Generated Candidate
+
+- none
+
+## Domain Axioms Only In Current Validated Ontology
+
+- `sosa:isActedOnBy` `rdfs:domain` `http://www.w3.org/ns/sosa/ActuatableProperty`
+- `sosa:isObservedBy` `rdfs:domain` `http://www.w3.org/ns/sosa/ObservableProperty`
+- `sosa:isSampleOf` `rdfs:domain` `http://www.w3.org/ns/sosa/Sample`
+- `sosa:madeByActuator` `rdfs:domain` `http://www.w3.org/ns/sosa/Actuation`
+- `sosa:madeObservation` `rdfs:domain` `http://www.w3.org/ns/sosa/Sensor`
+- `sosa:madeSampling` `rdfs:domain` `http://www.w3.org/ns/sosa/Sampler`
+- `sosa:observedProperty` `rdfs:domain` `http://www.w3.org/ns/sosa/Observation`
+- `ssn:detects` `rdfs:domain` `http://www.w3.org/ns/sosa/Sensor`
+- `ssn:hasDeployment` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn:hasInput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
+- `ssn:hasOutput` `rdfs:domain` `http://www.w3.org/ns/sosa/Procedure`
+- `ssn:hasSubSystem` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn:implements` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn:inDeployment` `rdfs:domain` `http://www.w3.org/ns/sosa/Platform`
+- `ssn:isProxyFor` `rdfs:domain` `http://www.w3.org/ns/ssn/Stimulus`
+- `ssn-system:hasOperatingProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/OperatingRange`
+- `ssn-system:hasOperatingRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn-system:hasSurvivalProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/SurvivalRange`
+- `ssn-system:hasSurvivalRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn-system:hasSystemCapability` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
+- `ssn-system:hasSystemProperty` `rdfs:domain` `http://www.w3.org/ns/ssn/systems/SystemCapability`
+- `ssn:wasOriginatedBy` `rdfs:domain` `http://www.w3.org/ns/sosa/Observation`
+
+## Domain Target Differences
+
+- none
+
+## Range Axioms Present In Both
+
+- none
+
+## Range Axioms Only In Generated Candidate
+
+- none
+
+## Range Axioms Only In Current Validated Ontology
+
+- none
+
+## Range Target Differences
+
+- none
 
 ## Spreadsheet Rows Intentionally Producing No Mapping
 
@@ -144,4 +180,4 @@ This report compares mapping-bearing axioms in `generated/SSN2BFO-from-COMS.ttl`
 
 ## Terms Requiring Human Review
 
-Human review should focus on generated-only mappings, current-only mappings, the absent local domain/range basis, and explicitly blank spreadsheet rows.
+Human review should consider mapping differences separately from domain/range property-typing differences, plus explicitly blank spreadsheet rows.
