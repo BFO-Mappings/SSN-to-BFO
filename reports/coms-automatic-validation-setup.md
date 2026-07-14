@@ -37,7 +37,7 @@ The default mode is `--update`. For a non-mutating freshness and quality gate, u
 python tools/check_coms_mapping.py --check-only
 ```
 
-`--check-only` fails when the workbook hash, generator hash, candidate hash, maintained reports, or regenerated semantic products do not match. It does not rewrite tracked artifacts. The ordinary validation suite invokes this mode.
+`--check-only` fails when the workbook hash, generator hash, authoritative ontology hash, maintained reports, or regenerated semantic products do not match. It does not rewrite tracked artifacts. The ordinary validation suite invokes this mode.
 
 Current local status is available with:
 
@@ -76,18 +76,20 @@ Each complete check:
 10. Requires all generated reports and validates hash-based source metadata.
 11. Runs `git diff --check`.
 
-The generated validation report records the workbook SHA-256, generator-file SHA-256, UTC generation timestamp, and generated-candidate SHA-256. Freshness never relies on timestamps alone.
+The generated validation report records the workbook SHA-256, generator-file SHA-256, UTC generation timestamp, maintained ontology path, and generated ontology SHA-256. Freshness never relies on timestamps alone.
 
 ## Last-Known-Good Outputs
 
 Generation and validation happen under `.cache/coms/`. The maintained files are replaced only after all temporary checks pass:
 
-- `generated/SSN2BFO-from-COMS.ttl`
+- `SSN2BFO.ttl`
 - `reports/coms-generation-validation.md`
 - `reports/coms-source-term-coverage.md`
-- `reports/coms-generated-vs-current-mapping-diff.md`
+- `reports/coms-vs-pre-coms-legacy-diff.md`
 
 Each replacement is atomic. If any check fails, the maintained last-known-good files remain unchanged. A post-replacement whitespace failure also triggers rollback from temporary backups.
+
+`SSN2BFO.ttl` is the authoritative generated publication artifact. `mappings/SSN2BFO-COMS.xlsx` is its sole editable mapping source, and `legacy/SSN2BFO-pre-COMS.ttl` is used only as the frozen informational comparison baseline.
 
 The last successful result is stored in `.cache/coms/last-success.json`. Detailed failure output is written to `.cache/coms/last-failure.log`. The `.cache/coms/` directory is ignored and must not be committed.
 

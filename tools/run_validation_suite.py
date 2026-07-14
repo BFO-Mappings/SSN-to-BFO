@@ -4,21 +4,15 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import shlex
 import subprocess
 import sys
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TMP_DIR = Path("/tmp/ssn-to-bfo-validation-suite")
-EXPECTED_AUDIT_COUNTS = Counter({"missing_in_spreadsheet": 1, "missing_in_ttl": 1})
-EXPECTED_AUDIT_TOTAL = 2
-EXPECTED_AUDIT_SOURCE_TERM = "sosa:Sensor"
-EXPECTED_AUDIT_SOURCE_IRI = "http://www.w3.org/ns/sosa/Sensor"
 
 
 @dataclass
@@ -49,76 +43,6 @@ def parse_ttl_check() -> StepResult:
         "print('SSN2BFO.ttl parse OK')"
     )
     return run_command("Turtle parse check", [sys.executable, "-c", code])
-
-
-def run_mapping_audit(output_md: Path, output_csv: Path) -> StepResult:
-    output_md.parent.mkdir(parents=True, exist_ok=True)
-    command = [
-        sys.executable,
-        "tools/compare_mappings.py",
-        "--ttl",
-        "SSN2BFO.ttl",
-        "--spreadsheet",
-        "Current_SOSA-SSN to BFO-CCO.xlsx",
-        "--output-md",
-        str(output_md),
-        "--output-csv",
-        str(output_csv),
-    ]
-    return run_command("Mapping consistency audit", command)
-
-
-def audit_summary(csv_path: Path, allow_drift: bool) -> StepResult:
-    print("\n==> Audit issue summary")
-    print(f"Reading {csv_path}")
-    if not csv_path.exists():
-        detail = f"missing audit CSV: {csv_path}"
-        print(f"Audit issue summary: FAIL ({detail})")
-        return StepResult("Audit issue summary", False, detail)
-
-    with csv_path.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
-
-    counts = Counter(row.get("category", "") for row in rows)
-    print(f"total issues: {len(rows)}")
-    for category, count in sorted(counts.items()):
-        print(f"{category}: {count}")
-    for row in rows:
-        print(
-            " ".join(
-                [
-                    row.get("issue_id", ""),
-                    row.get("category", ""),
-                    row.get("sheet", ""),
-                    row.get("spreadsheet_row", ""),
-                    row.get("source_term", ""),
-                    "=>",
-                    row.get("spreadsheet_target") or row.get("ttl_target") or "",
-                ]
-            )
-        )
-
-    expected_shape = len(rows) == EXPECTED_AUDIT_TOTAL and counts == EXPECTED_AUDIT_COUNTS
-    expected_sensor_rows = all(
-        row.get("source_term") == EXPECTED_AUDIT_SOURCE_TERM
-        and row.get("source_iri") == EXPECTED_AUDIT_SOURCE_IRI
-        for row in rows
-    )
-    if expected_shape and expected_sensor_rows:
-        detail = "recognized expected two sosa:Sensor version-alignment issues"
-        print(f"Audit issue summary: PASS ({detail})")
-        return StepResult("Audit issue summary", True, detail)
-
-    detail = (
-        "audit issue shape differs from expected "
-        f"{dict(EXPECTED_AUDIT_COUNTS)} / total {EXPECTED_AUDIT_TOTAL}"
-    )
-    if allow_drift:
-        print(f"Audit issue summary: PASS with --allow-audit-drift ({detail})")
-        return StepResult("Audit issue summary", True, detail)
-
-    print(f"Audit issue summary: FAIL ({detail})")
-    return StepResult("Audit issue summary", False, detail)
 
 
 def compile_check() -> StepResult:
@@ -163,11 +87,6 @@ def print_summary(results: list[StepResult], report_paths: dict[str, Path], used
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--allow-audit-drift",
-        action="store_true",
-        help="Do not fail when the mapping audit issue shape differs from the expected current baseline.",
-    )
-    parser.add_argument(
         "--write-reports",
         action="store_true",
         help="Write validation reports to canonical reports/ paths instead of temporary outputs.",
@@ -181,27 +100,18 @@ def main() -> int:
 
     tmp_dir = Path(args.tmp_dir)
     if args.write_reports:
-        audit_md = REPO_ROOT / "reports/mapping-consistency-audit.md"
-        audit_csv = REPO_ROOT / "reports/mapping-consistency-audit.csv"
         smoke_report = REPO_ROOT / "reports/instance-data-smoke-test.md"
         elk_report = REPO_ROOT / "reports/elk-instance-mapping-entailments.md"
         full_sosa_hermit_report = REPO_ROOT / "reports/full-sosa-closure-hermit-check.md"
-        object_property_probe_report = REPO_ROOT / "reports/object-property-typing-probe-check.md"
     else:
-        audit_md = tmp_dir / "mapping-consistency-audit.md"
-        audit_csv = tmp_dir / "mapping-consistency-audit.csv"
         smoke_report = tmp_dir / "instance-data-smoke-test.md"
         elk_report = tmp_dir / "elk-instance-mapping-entailments.md"
         full_sosa_hermit_report = tmp_dir / "full-sosa-closure-hermit-check.md"
-        object_property_probe_report = tmp_dir / "object-property-typing-probe-check.md"
 
     report_paths = {
-        "mapping audit markdown": audit_md,
-        "mapping audit CSV": audit_csv,
         "instance smoke report": smoke_report,
         "ELK entailment report": elk_report,
         "full SOSA closure HermiT report": full_sosa_hermit_report,
-        "object-property typing probe report": object_property_probe_report,
     }
 
     results: list[StepResult] = []
@@ -230,10 +140,6 @@ def main() -> int:
             )
         )
     if results[-1].passed:
-        results.append(run_mapping_audit(audit_md, audit_csv))
-    if results[-1].passed:
-        results.append(audit_summary(audit_csv, args.allow_audit_drift))
-    if results[-1].passed:
         results.append(
             run_command(
                 "Instance-data smoke test",
@@ -261,18 +167,6 @@ def main() -> int:
                     "tools/test_full_sosa_closure_hermit.py",
                     "--output",
                     str(full_sosa_hermit_report),
-                ],
-            )
-        )
-    if results[-1].passed:
-        results.append(
-            run_command(
-                "Object-property typing entailment probes",
-                [
-                    sys.executable,
-                    "tools/test_object_property_typing_probes.py",
-                    "--output",
-                    str(object_property_probe_report),
                 ],
             )
         )

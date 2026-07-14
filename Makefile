@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write compile check check-coms watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -6,9 +6,12 @@ validate:
 validate-write:
 	python tools/run_validation_suite.py --write-reports
 
-audit-write:
+audit-write: legacy-audit-write
+
+legacy-audit-write:
+	@echo "Running informational pre-COMS legacy ontology/spreadsheet audit (not a release gate)."
 	python tools/compare_mappings.py \
-		--ttl SSN2BFO.ttl \
+		--ttl legacy/SSN2BFO-pre-COMS.ttl \
 		--spreadsheet "Current_SOSA-SSN to BFO-CCO.xlsx" \
 		--output-md reports/mapping-consistency-audit.md \
 		--output-csv reports/mapping-consistency-audit.csv

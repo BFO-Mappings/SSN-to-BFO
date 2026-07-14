@@ -1,26 +1,26 @@
-# COMS Generated vs Current Mapping Diff
+# COMS vs Pre-COMS Legacy Mapping Diff
 
-This report compares mapping-bearing axioms and, separately, domain/range property-typing axioms in `generated/SSN2BFO-from-COMS.ttl` against `SSN2BFO.ttl`. The candidate is not loaded together with the current ontology.
+This informational report compares mapping-bearing axioms and, separately, domain/range property-typing axioms generated from `mappings/SSN2BFO-COMS.xlsx` for `SSN2BFO.ttl` against the frozen `legacy/SSN2BFO-pre-COMS.ttl` snapshot. COMS is not required to reproduce every legacy axiom, and the two ontologies are never loaded together for candidate validation.
 
 ## Summary
 
 | Item | Count |
 |---|---:|
 | mappings present in both | 57 |
-| mappings only in generated candidate | 17 |
-| mappings only in current validated ontology | 11 |
+| mappings only in COMS | 17 |
+| mappings only in pre-COMS legacy ontology | 11 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
 | domain axioms present in both | 9 |
-| domain axioms only in generated candidate | 7 |
-| domain axioms only in current validated ontology | 13 |
+| domain axioms only in COMS | 7 |
+| domain axioms only in pre-COMS legacy ontology | 13 |
 | domain target differences | 0 |
 | range axioms present in both | 0 |
-| range axioms only in generated candidate | 15 |
-| range axioms only in current validated ontology | 0 |
+| range axioms only in COMS | 15 |
+| range axioms only in pre-COMS legacy ontology | 0 |
 | range target differences | 0 |
-| current local domain/range basis axioms absent from candidate | 13 |
+| legacy domain/range axioms absent from COMS | 13 |
 | spreadsheet rows intentionally producing no mapping | 0 |
 
 ## Mappings Present In Both
@@ -83,7 +83,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `property_chain` `sosa:isHostedBy` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000056 o http://purl.obolibrary.org/obo/BFO_0000055 o http://purl.obolibrary.org/obo/BFO_0000197`
 - `property_chain` `sosa:isSampleOf` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000101 o https://www.commoncoreontologies.org/ont00001938`
 
-## Only In Generated Candidate
+## Only In COMS
 
 - `class` `sosa:FeatureOfInterest` `rdfs:subClassOf` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000015 http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000040 http://purl.obolibrary.org/obo/BFO_0000144)`
 - `class` `ssn-system:BatteryLifetime` `rdfs:subClassOf` `ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000117 https://www.commoncoreontologies.org/ont00000503) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001819 ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000055 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000319) https://www.commoncoreontologies.org/ont00000177)) http://purl.obolibrary.org/obo/BFO_0000015)) https://www.commoncoreontologies.org/ont00001213)) http://purl.obolibrary.org/obo/BFO_0000034)`
@@ -103,7 +103,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `object_property` `ssn-system:hasSystemProperty` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000194`
 - `property_chain` `ssn:forProperty` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001917 o https://www.commoncoreontologies.org/ont00001808`
 
-## Only In Current Validated Ontology
+## Only In Pre-COMS Legacy Ontology
 
 - `class` `sosa:FeatureOfInterest` `owl:equivalentClass` `ObjectUnionOf(ObjectIntersectionOf(ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/isFeatureOfInterestOf ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000015) ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001936 ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Sampling https://www.commoncoreontologies.org/ont00000345)) http://purl.obolibrary.org/obo/BFO_0000040))`
 - `class` `sampling:SampleRelationship` `rdfs:subClassOf` `ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/natureOfRelationship http://www.w3.org/ns/sosa/sampling/RelationshipNature)`
@@ -119,8 +119,8 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 ## Class-Expression Differences
 
-- `sampling:SampleRelationship` `rdfs:subClassOf`: generated=['https://www.commoncoreontologies.org/ont00000958']; current=['ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/natureOfRelationship http://www.w3.org/ns/sosa/sampling/RelationshipNature)', 'ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/relatedSample http://www.w3.org/ns/sosa/Sample)', 'https://www.commoncoreontologies.org/ont00000958']
-- `ssn-system:Sensitivity` `rdfs:subClassOf`: generated=['ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) https://www.commoncoreontologies.org/ont00001022)) https://www.commoncoreontologies.org/ont00000853)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)']; current=['ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 https://www.commoncoreontologies.org/ont00000853) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 https://www.commoncoreontologies.org/ont00001022) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)']
+- `sampling:SampleRelationship` `rdfs:subClassOf`: COMS=['https://www.commoncoreontologies.org/ont00000958']; legacy=['ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/natureOfRelationship http://www.w3.org/ns/sosa/sampling/RelationshipNature)', 'ObjectSomeValuesFrom(http://www.w3.org/ns/sosa/sampling/relatedSample http://www.w3.org/ns/sosa/Sample)', 'https://www.commoncoreontologies.org/ont00000958']
+- `ssn-system:Sensitivity` `rdfs:subClassOf`: COMS=['ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) https://www.commoncoreontologies.org/ont00001022)) https://www.commoncoreontologies.org/ont00000853)) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)']; legacy=['ObjectIntersectionOf(ObjectSomeValuesFrom(http://purl.obolibrary.org/obo/BFO_0000054 ObjectIntersectionOf(ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001801 https://www.commoncoreontologies.org/ont00000853) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001904 https://www.commoncoreontologies.org/ont00001022) ObjectSomeValuesFrom(https://www.commoncoreontologies.org/ont00001920 https://www.commoncoreontologies.org/ont00000118) http://purl.obolibrary.org/obo/BFO_0000015)) http://purl.obolibrary.org/obo/BFO_0000034)']
 
 ## Object-Property Mapping Differences
 
@@ -142,7 +142,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `ssn-system:hasSurvivalRange` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 - `ssn-system:hasSystemCapability` `rdfs:domain` `http://www.w3.org/ns/ssn/System`
 
-## Domain Axioms Only In Generated Candidate
+## Domain Axioms Only In COMS
 
 - `sosa:hasFeatureOfInterest` `rdfs:domain` `ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling)`
 - `sosa:isFeatureOfInterestOf` `rdfs:domain` `http://www.w3.org/ns/sosa/FeatureOfInterest`
@@ -152,7 +152,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `ssn:isPropertyOf` `rdfs:domain` `ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144)`
 - `ssn-system:inCondition` `rdfs:domain` `ObjectUnionOf(http://www.w3.org/ns/ssn/systems/OperatingRange http://www.w3.org/ns/ssn/systems/SurvivalRange http://www.w3.org/ns/ssn/systems/SystemCapability)`
 
-## Domain Axioms Only In Current Validated Ontology
+## Domain Axioms Only In Pre-COMS Legacy Ontology
 
 - `sosa:isActedOnBy` `rdfs:domain` `http://www.w3.org/ns/sosa/ActuatableProperty`
 - `sosa:isSampleOf` `rdfs:domain` `http://www.w3.org/ns/sosa/Sample`
@@ -176,7 +176,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 - none
 
-## Range Axioms Only In Generated Candidate
+## Range Axioms Only In COMS
 
 - `sosa:hasFeatureOfInterest` `rdfs:range` `http://www.w3.org/ns/sosa/FeatureOfInterest`
 - `sosa:isFeatureOfInterestOf` `rdfs:range` `ObjectUnionOf(http://www.w3.org/ns/sosa/Actuation http://www.w3.org/ns/sosa/Observation http://www.w3.org/ns/sosa/Sampling)`
@@ -194,7 +194,7 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 - `ssn-system:hasSurvivalRange` `rdfs:range` `http://www.w3.org/ns/ssn/systems/SurvivalRange`
 - `ssn-system:hasSystemCapability` `rdfs:range` `http://www.w3.org/ns/ssn/systems/SystemCapability`
 
-## Range Axioms Only In Current Validated Ontology
+## Range Axioms Only In Pre-COMS Legacy Ontology
 
 - none
 
@@ -208,4 +208,4 @@ This report compares mapping-bearing axioms and, separately, domain/range proper
 
 ## Terms Requiring Human Review
 
-Human review should consider mapping differences separately from domain/range property-typing differences, plus explicitly blank spreadsheet rows.
+Human review should consider COMS-versus-legacy mapping differences separately from domain/range property-typing differences. Legacy-only axioms are informational and are not release requirements.

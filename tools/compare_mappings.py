@@ -287,7 +287,7 @@ def current_command() -> str:
 
 def portable_command() -> str:
     return (
-        'python tools/compare_mappings.py --ttl SSN2BFO.ttl '
+        'python tools/compare_mappings.py --ttl legacy/SSN2BFO-pre-COMS.ttl '
         '--spreadsheet "Current_SOSA-SSN to BFO-CCO.xlsx" '
         "--output-md reports/mapping-consistency-audit.md "
         "--output-csv reports/mapping-consistency-audit.csv"
@@ -1083,7 +1083,7 @@ def write_markdown(
     lines.append("")
     lines.append("### Proposed TTL Edits")
     lines.append(
-        "- Do not edit `SSN2BFO.ttl` until each `target_mismatch`, `relation_mismatch`, and `missing_in_ttl` row has been reviewed against the spreadsheet's `OWL Axiom` and reasoning text."
+        "- Do not edit authoritative generated `SSN2BFO.ttl` or frozen `legacy/SSN2BFO-pre-COMS.ttl`; this legacy audit is informational, and any accepted mapping change belongs in `mappings/SSN2BFO-COMS.xlsx`."
     )
     lines.append(
         "- For confirmed spreadsheet-governed rows, align the TTL predicate and named target IRIs with the spreadsheet axiom using the smallest possible axiom change."

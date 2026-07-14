@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Atomically validate and refresh the spreadsheet-driven COMS candidate.
+"""Atomically validate and publish the spreadsheet-driven COMS ontology.
 
 The default mode is ``--update``: generate and validate all products in a
 temporary directory, then replace maintained outputs only after every check
@@ -42,17 +42,18 @@ LAST_SUCCESS = CACHE_DIR / "last-success.json"
 LAST_FAILURE = CACHE_DIR / "last-failure.log"
 
 MAINTAINED_OUTPUTS = {
-    "candidate": REPO_ROOT / "generated/SSN2BFO-from-COMS.ttl",
+    "candidate": REPO_ROOT / "SSN2BFO.ttl",
     "generation_report": REPO_ROOT / "reports/coms-generation-validation.md",
     "coverage_report": REPO_ROOT / "reports/coms-source-term-coverage.md",
-    "diff_report": REPO_ROOT / "reports/coms-generated-vs-current-mapping-diff.md",
+    "diff_report": REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
 }
 
 METADATA_LABELS = {
     "workbook SHA-256": "workbook_sha256",
     "generator SHA-256": "generator_sha256",
     "generation timestamp (UTC)": "generation_timestamp",
-    "generated candidate SHA-256": "generated_candidate_sha256",
+    "maintained ontology path": "maintained_output_path",
+    "generated ontology SHA-256": "generated_candidate_sha256",
 }
 
 
@@ -138,10 +139,10 @@ def run_command(label: str, command: list[str], log: list[str]) -> subprocess.Co
 
 def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
     return {
-        "candidate": transaction_dir / "generated/SSN2BFO-from-COMS.ttl",
+        "candidate": transaction_dir / "candidate/SSN2BFO.ttl",
         "generation_report": transaction_dir / "reports/coms-generation-validation.md",
         "coverage_report": transaction_dir / "reports/coms-source-term-coverage.md",
-        "diff_report": transaction_dir / "reports/coms-generated-vs-current-mapping-diff.md",
+        "diff_report": transaction_dir / "reports/coms-vs-pre-coms-legacy-diff.md",
         "summary": transaction_dir / "summary.json",
         "hermit": transaction_dir / "hermit",
     }
@@ -261,6 +262,7 @@ def validate_temporary_outputs(
     expected_metadata = {
         "workbook_sha256": workbook_hash,
         "generator_sha256": generator_hash,
+        "maintained_output_path": relative(MAINTAINED_OUTPUTS["candidate"]),
         "generated_candidate_sha256": candidate_hash,
     }
     for key, expected in expected_metadata.items():
@@ -311,6 +313,8 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         errors.append("workbook hash differs from the generated report")
     if metadata.get("generator_sha256") != generator_hash:
         errors.append("generator hash differs from the generated report")
+    if metadata.get("maintained_output_path") != relative(MAINTAINED_OUTPUTS["candidate"]):
+        errors.append("maintained ontology path differs from the generated report")
     candidate_hash = sha256_file(MAINTAINED_OUTPUTS["candidate"])
     if metadata.get("generated_candidate_sha256") != candidate_hash:
         errors.append("generated candidate hash differs from the generated report")
@@ -485,7 +489,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv or sys.argv[1:])
+    args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.status:
         return print_status()
 

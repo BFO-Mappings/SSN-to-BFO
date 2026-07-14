@@ -14,9 +14,15 @@ Each track supports two direct-mapping deliverables:
 - BFO direct mappings.
 - CCO direct mappings.
 
-The existing root-level `SSN2BFO.ttl` file is preserved as legacy/current mapping content. It has not been moved, split, normalized, revised, or overwritten by this scaffold migration.
+## Mapping authority
 
-The existing spreadsheets remain preserved at the repository root:
+`mappings/SSN2BFO-COMS.xlsx` is the sole editable mapping authority. Root-level `SSN2BFO.ttl` is the authoritative generated publication artifact; direct edits to it are prohibited because `make check-coms` regenerates, validates, and atomically replaces it from the workbook only after the candidate passes all checks.
+
+`legacy/SSN2BFO-pre-COMS.ttl` is a frozen, byte-preserved snapshot of the manually maintained ontology that preceded COMS authority. It and `Current_SOSA-SSN to BFO-CCO.xlsx` are historical comparison sources, not release authorities. COMS is not required to reproduce every legacy axiom.
+
+For historical investigation only, `make legacy-audit-write` compares those two pre-COMS sources. The frozen `tools/test_object_property_typing_probes.py` profile likewise targets the legacy ontology. Neither diagnostic is part of the default validation or release gate.
+
+Historical spreadsheets remain preserved at the repository root:
 
 - `Current_SOSA-SSN to BFO-CCO.xlsx`
 - `FINAL_SOSA 2023 to BFO-CCO .xlsx`
@@ -38,7 +44,7 @@ make -C src/sosa-next all
 make -C src all
 ```
 
-Release-file BFO projection from CCO mappings is not implemented in this migration. Spreadsheet-to-TTL conversion is also not implemented in this migration.
+Release-file BFO projection from CCO mappings is not implemented in this migration. The authoritative root ontology is generated from the COMS workbook by `make check-coms`.
 
 ## Workflow artifacts and reports
 
@@ -62,13 +68,13 @@ make -C src artifacts
 
 `unmapped` is scaffolded but disabled by default. It exits successfully with a message until real source imports and final source namespace configuration are added.
 
-Generated report and artifact files are ignored by Git. Spreadsheet-to-TTL conversion is not implemented. Release-file BFO projection from CCO mappings is not implemented. The existing `SSN2BFO.ttl`, root spreadsheets, and root `imports/` directory remain preserved.
+Generated build artifacts are ignored by Git. Release-file BFO projection from CCO mappings is not implemented. Root spreadsheets and the root `imports/` directory remain preserved; `SSN2BFO.ttl` is a maintained generated artifact.
 
 ## Current SSN/SOSA CCO mapping and BFO-only projection
 
 Under this project's convention, a mapping file counts as a CCO direct mapping when its target vocabulary includes CCO terms, even when it also includes BFO terms, because CCO imports and extends BFO. A BFO direct mapping is BFO-only: its mapping targets should be BFO IRIs and not CCO IRIs.
 
-The root `SSN2BFO.ttl` file is preserved unchanged as the authored current SSN/SOSA to CCO direct mapping candidate. It has not been moved, split, renamed, normalized, or overwritten.
+The root `SSN2BFO.ttl` file is the authoritative generated current SSN/SOSA to CCO mapping. Edit `mappings/SSN2BFO-COMS.xlsx`, then run `make check-coms`; do not edit the Turtle file directly.
 
 The current SSN/SOSA track includes a generated-artifact workflow for deriving a review-only BFO-only artifact from `SSN2BFO.ttl` and `imports/cco.ttl`:
 
@@ -77,11 +83,11 @@ make -C src/current-ssn-sosa derive-bfo-from-cco
 make -C src derive-bfo-from-cco
 ```
 
-The generated BFO-only artifact is written to `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-generated.ttl`. It combines direct BFO-target mappings already present in `SSN2BFO.ttl` with conservative BFO projections from direct named CCO targets that have explicit CCO to BFO superclass or superproperty paths in `imports/cco.ttl`.
+The generated BFO-only artifact is written to `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-generated.ttl`. It combines direct BFO-target mappings in the authoritative generated `SSN2BFO.ttl` with conservative BFO projections from direct named CCO targets that have explicit CCO to BFO superclass or superproperty paths in `imports/cco.ttl`.
 
 The skipped-target report is written to `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-skipped-cco-targets.csv`. CCO targets without explicit BFO paths are reported there rather than guessed.
 
-This generated artifact is not a release file. The BFO release placeholder is not populated by this workflow. Complex blank-node expressions, restrictions, intersections, unions, property chains, labels, comments, definitions, natural-language notes, and mapping justifications are skipped. Spreadsheet-to-TTL conversion is not implemented, and no `sosa-next` projection is implemented yet.
+This generated artifact is not a release file. The BFO release placeholder is not populated by this workflow. Complex blank-node expressions, restrictions, intersections, unions, property chains, labels, comments, definitions, natural-language notes, and mapping justifications are skipped. No `sosa-next` projection is implemented yet.
 
 ## Example validation
 
