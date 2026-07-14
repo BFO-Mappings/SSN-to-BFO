@@ -7,6 +7,9 @@ venv/
 __pycache__/
 *.pyc
 
+# Local COMS watcher/check state
+.cache/coms/
+
 # ROBOT dependency cache
 build/lib/
 

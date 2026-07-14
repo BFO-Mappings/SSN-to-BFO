@@ -134,6 +134,9 @@ def compile_check() -> StepResult:
             "tools/test_object_property_typing_probes.py",
             "tools/test_instance_data.py",
             "tools/compare_mappings.py",
+            "tools/generate_mapping_from_coms.py",
+            "tools/check_coms_mapping.py",
+            "tools/watch_coms_mapping.py",
         ],
     )
 
@@ -202,6 +205,13 @@ def main() -> int:
 
     results: list[StepResult] = []
     results.append(parse_ttl_check())
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "COMS workbook freshness and candidate quality check",
+                [sys.executable, "tools/check_coms_mapping.py", "--check-only"],
+            )
+        )
     if results[-1].passed:
         results.append(run_mapping_audit(audit_md, audit_csv))
     if results[-1].passed:

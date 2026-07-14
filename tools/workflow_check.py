@@ -23,6 +23,8 @@ COMPILE_COMMAND = [
     "tools/test_object_property_typing_probes.py",
     "tools/test_instance_data.py",
     "tools/compare_mappings.py",
+    "tools/check_coms_mapping.py",
+    "tools/watch_coms_mapping.py",
     "tools/workflow_check.py",
 ]
 VALIDATE_COMMAND = [PYTHON, "tools/run_validation_suite.py"]
