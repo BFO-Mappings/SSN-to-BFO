@@ -60,6 +60,7 @@ def compile_check() -> StepResult:
             "tools/compare_mappings.py",
             "tools/coms_row_identity.py",
             "tools/product_dispositions.py",
+            "tools/modular_products.py",
             "tools/generate_mapping_from_coms.py",
             "tools/check_coms_mapping.py",
             "tools/watch_coms_mapping.py",
@@ -68,6 +69,7 @@ def compile_check() -> StepResult:
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
+            "tests/test_modular_products.py",
             "tests/test_publication_metadata.py",
         ],
     )
@@ -152,6 +154,22 @@ def main() -> int:
                     "tests",
                     "-p",
                     "test_product_dispositions.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Alignment-core modular-product focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_modular_products.py",
                 ],
             )
         )

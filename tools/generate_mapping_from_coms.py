@@ -41,6 +41,15 @@ from product_dispositions import (
     serialize_disposition_document,
     validate_disposition_file,
 )
+from modular_products import (
+    ModularProductError,
+    ModularProductResult,
+    build_alignment_core,
+    build_fixed_source_closure,
+    select_product_axioms,
+    serialize_modular_product,
+    validate_alignment_core,
+)
 from publication_metadata import PublicationMetadataError, load_metadata
 
 try:
@@ -60,6 +69,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 LEGACY_ONTOLOGY = REPO_ROOT / "legacy/SSN2BFO-pre-COMS.ttl"
 IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
 DISPOSITION_MODULE = REPO_ROOT / "tools/product_dispositions.py"
+MODULAR_PRODUCTS_MODULE = REPO_ROOT / "tools/modular_products.py"
 PUBLICATION_METADATA = REPO_ROOT / "config/publication-metadata.toml"
 GENERATED_NOTICE = (
     "# GENERATED FILE: produced from mappings/SSN2BFO-COMS.xlsx; "
@@ -1300,6 +1310,128 @@ def run_candidate_hermit(generated_path: Path, tmp_dir: Path) -> HermitResult:
     )
 
 
+def run_alignment_core_hermit(generated_path: Path, tmp_dir: Path) -> HermitResult:
+    """Reason over the import-free core plus the fixed tracked source closure."""
+
+    generated_graph = Graph()
+    generated_graph.parse(generated_path, format="turtle")
+    closure = build_fixed_source_closure(
+        generated_path.read_bytes(),
+        (REPO_ROOT / path for path in SOURCE_IMPORTS),
+    )
+    for triple in CLEANUP_TRIPLES:
+        closure.remove(triple)
+
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    graph_path = tmp_dir / "alignment-core-source-closure.ttl"
+    reasoned_path = tmp_dir / "alignment-core-source-closure-reasoned.ttl"
+    if reasoned_path.exists():
+        reasoned_path.unlink()
+    closure.serialize(destination=graph_path, format="turtle")
+
+    robot = shutil.which("robot")
+    if robot is None:
+        return HermitResult(
+            graph_path=graph_path,
+            reasoned_path=reasoned_path,
+            generated_triple_count=len(generated_graph),
+            closure_triple_count=len(closure),
+            return_code=None,
+            reasoned_output_produced=False,
+            owl_nothing_count=None,
+            unsat_classes=[],
+            robot_output="ROBOT executable not found on PATH.",
+            robot_path=None,
+        )
+
+    command = [
+        robot,
+        "reason",
+        "--reasoner",
+        "HermiT",
+        "--input",
+        str(graph_path),
+        "--output",
+        str(reasoned_path),
+    ]
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    output = "\n".join(part for part in (proc.stdout.strip(), proc.stderr.strip()) if part)
+    output_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
+    reasoned_output_produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
+    owl_nothing_count: int | None = None
+    inferred_unsats: set[URIRef] = set(output_unsats)
+    if reasoned_output_produced:
+        reasoned_graph = Graph()
+        bind_prefixes(reasoned_graph)
+        reasoned_graph.parse(reasoned_path, format="turtle")
+        inferred_unsats |= set(unsat_classes(reasoned_graph))
+        owl_nothing_count = len(inferred_unsats)
+
+    return HermitResult(
+        graph_path=graph_path,
+        reasoned_path=reasoned_path,
+        generated_triple_count=len(generated_graph),
+        closure_triple_count=len(closure),
+        return_code=proc.returncode,
+        reasoned_output_produced=reasoned_output_produced,
+        owl_nothing_count=owl_nothing_count,
+        unsat_classes=sorted(inferred_unsats, key=str),
+        robot_output=output,
+        robot_path=robot,
+    )
+
+
+def build_and_write_alignment_core(
+    processed_rows: list[ProcessedRow],
+    identity_audits: list[CanonicalRowAudit],
+    disposition_document: DispositionDocument,
+    integrated_graph: Graph,
+    output_path: Path,
+    tmp_dir: Path,
+) -> tuple[ModularProductResult, HermitResult]:
+    """Build and fully validate the candidate alignment-core development artifact."""
+
+    try:
+        metadata = load_metadata(PUBLICATION_METADATA)
+        canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
+        selected = select_product_axioms(
+            "alignment_core",
+            canonical_rows,
+            identity_audits,
+            disposition_document,
+        )
+        result = build_alignment_core(selected, metadata)
+        closure = build_fixed_source_closure(
+            result.serialized_bytes,
+            (REPO_ROOT / path for path in SOURCE_IMPORTS),
+        )
+        structural_issues = validate_alignment_core(
+            result.serialized_bytes,
+            selected,
+            metadata,
+            fixed_source_closure=closure,
+            integrated_graph=integrated_graph,
+        )
+        if structural_issues:
+            raise ModularProductError(structural_issues)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(serialize_modular_product(result))
+        hermit = run_alignment_core_hermit(output_path, tmp_dir)
+    except (ModularProductError, PublicationMetadataError) as exc:
+        output_path.unlink(missing_ok=True)
+        raise GenerationError(str(exc)) from exc
+    if not hermit.passed:
+        output_path.unlink(missing_ok=True)
+        raise GenerationError("alignment-core fixed source closure is not HermiT-clean")
+    return result, hermit
+
+
 def run_select_query(graph: Graph, query_path: Path) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for row in graph.query((REPO_ROOT / query_path).read_text(encoding="utf-8")):
@@ -1718,6 +1850,11 @@ def write_generation_report(
     disposition_sha256: str = "unavailable",
     disposition_module_sha256: str = "unavailable",
     publication_metadata_sha256: str = "unavailable",
+    modular_products_module_sha256: str = "unavailable",
+    alignment_core_result: ModularProductResult | None = None,
+    alignment_core_path: Path | None = None,
+    alignment_core_sha256: str = "unavailable",
+    alignment_core_hermit: HermitResult | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     error_lines = [f"- {error}" for error in errors] or ["- none"]
@@ -1742,12 +1879,15 @@ def write_generation_report(
         f"| generator SHA-256 | `{generator_sha256}` |",
         f"| row-identity module SHA-256 | `{identity_module_sha256}` |",
         f"| product-disposition module SHA-256 | `{disposition_module_sha256}` |",
+        f"| modular-products module SHA-256 | `{modular_products_module_sha256}` |",
         f"| publication metadata SHA-256 | `{publication_metadata_sha256}` |",
         f"| generation timestamp (UTC) | `{generation_timestamp}` |",
         f"| maintained ontology path | `{output_path}` |",
         f"| generated ontology SHA-256 | `{candidate_sha256}` |",
         f"| maintained product-disposition path | `{disposition_path or 'unavailable'}` |",
         f"| product-disposition JSON SHA-256 | `{disposition_sha256}` |",
+        f"| maintained alignment-core path | `{alignment_core_path or 'unavailable'}` |",
+        f"| alignment-core Turtle SHA-256 | `{alignment_core_sha256}` |",
         "",
         "## Workbook",
         "",
@@ -1832,6 +1972,41 @@ def write_generation_report(
             "- No lossless transformation or weakened projection is approved by this artifact.",
         ]
 
+    if alignment_core_result is None:
+        alignment_core_lines = [
+            "## Alignment Core",
+            "",
+            "- Generation and validation: unavailable",
+        ]
+    else:
+        source_paths = ", ".join(f"`{path}`" for path in SOURCE_IMPORTS)
+        alignment_core_lines = [
+            "## Alignment Core",
+            "",
+            "This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.",
+            "",
+            f"- Path: `{alignment_core_path}`",
+            f"- Stable ontology IRI: `{alignment_core_result.metadata.stable_ontology_iri}`",
+            f"- Governed authoritative axioms: {alignment_core_result.governed_axiom_count}",
+            f"- Domain axioms: {alignment_core_result.domain_axiom_count}",
+            f"- Range axioms: {alignment_core_result.range_axiom_count}",
+            f"- Named target expressions: {alignment_core_result.named_target_count}",
+            f"- Union target expressions: {alignment_core_result.union_target_count}",
+            f"- Logical RDF triples: {alignment_core_result.logical_triple_count}",
+            f"- Ontology-header triples: {alignment_core_result.ontology_header_triple_count}",
+            f"- Total RDF triples: {alignment_core_result.total_triple_count}",
+            "- Imports: 0",
+            "- BFO/CCO/RO and unexpected logical-vocabulary audit: PASS",
+            "- Integrated-root canonical-axiom reconciliation: PASS",
+            "- Deterministic serialization: PASS",
+            f"- Fixed local source closure: {source_paths}",
+            f"- Source-closure HermiT return code: {'n/a' if alignment_core_hermit is None else alignment_core_hermit.return_code}",
+            f"- Source-closure reasoned output produced: {'no' if alignment_core_hermit is None else 'yes' if alignment_core_hermit.reasoned_output_produced else 'no'}",
+            f"- Source-closure named unsatisfiable classes: {'n/a' if alignment_core_hermit is None else len(alignment_core_hermit.unsat_classes)}",
+            f"- Source-closure HermiT result: {'FAIL' if alignment_core_hermit is None else 'PASS' if alignment_core_hermit.passed else 'FAIL'}",
+            "- Full publication metadata and formal release identity remain deferred.",
+        ]
+
     lines.extend(
         [
             "",
@@ -1898,6 +2073,8 @@ def write_generation_report(
             ],
             "",
             *disposition_lines,
+            "",
+            *alignment_core_lines,
             "",
             "## Generated Ontology",
             "",
@@ -2093,6 +2270,11 @@ def write_summary_json(
     disposition_sha256: str = "unavailable",
     disposition_module_sha256: str = "unavailable",
     publication_metadata_sha256: str = "unavailable",
+    modular_products_module_sha256: str = "unavailable",
+    alignment_core_result: ModularProductResult | None = None,
+    alignment_core_path: Path | None = None,
+    alignment_core_sha256: str = "unavailable",
+    alignment_core_hermit: HermitResult | None = None,
 ) -> None:
     payload = {
         "status": "PASS" if not errors else "FAIL",
@@ -2102,11 +2284,32 @@ def write_summary_json(
         "generator_sha256": generator_sha256,
         "row_identity_module_sha256": identity_module_sha256,
         "product_disposition_module_sha256": disposition_module_sha256,
+        "modular_products_module_sha256": modular_products_module_sha256,
         "publication_metadata_sha256": publication_metadata_sha256,
         "generation_timestamp": generation_timestamp,
         "generated_candidate_sha256": candidate_sha256,
         "product_disposition_report_path": None if disposition_path is None else str(disposition_path),
         "product_disposition_report_sha256": disposition_sha256,
+        "alignment_core_path": None if alignment_core_path is None else str(alignment_core_path),
+        "alignment_core_sha256": alignment_core_sha256,
+        "alignment_core": None
+        if alignment_core_result is None
+        else {
+            "product_key": alignment_core_result.metadata.product_key,
+            "stable_ontology_iri": alignment_core_result.metadata.stable_ontology_iri,
+            "governed_axiom_count": alignment_core_result.governed_axiom_count,
+            "logical_triple_count": alignment_core_result.logical_triple_count,
+            "ontology_header_triple_count": alignment_core_result.ontology_header_triple_count,
+            "total_triple_count": alignment_core_result.total_triple_count,
+            "domain_axiom_count": alignment_core_result.domain_axiom_count,
+            "range_axiom_count": alignment_core_result.range_axiom_count,
+            "named_target_count": alignment_core_result.named_target_count,
+            "union_target_count": alignment_core_result.union_target_count,
+            "hermit_return_code": None if alignment_core_hermit is None else alignment_core_hermit.return_code,
+            "hermit_result": "FAIL" if alignment_core_hermit is None else "PASS" if alignment_core_hermit.passed else "FAIL",
+            "closure_triple_count": None if alignment_core_hermit is None else alignment_core_hermit.closure_triple_count,
+            "named_unsat_count": None if alignment_core_hermit is None else len(alignment_core_hermit.unsat_classes),
+        },
         "worksheets_read": stats.worksheets_read,
         "active_axiom_rows": stats.active_axiom_rows,
         "mapped_rows": stats.mapped_rows,
@@ -2201,6 +2404,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Generated COMS per-product disposition JSON path.",
     )
     parser.add_argument(
+        "--alignment-core-output",
+        required=True,
+        help="Generated import-free SSN/SOSA alignment-core Turtle path.",
+    )
+    parser.add_argument(
         "--coverage-report",
         default="reports/coms-source-term-coverage.md",
         help="Source-term coverage report path.",
@@ -2228,6 +2436,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Disposition path displayed in reports. Defaults to the actual --disposition-report path.",
     )
     parser.add_argument(
+        "--report-alignment-core-path",
+        help="Alignment-core path displayed in reports. Defaults to the actual --alignment-core-output path.",
+    )
+    parser.add_argument(
         "--summary-json",
         help="Optional machine-readable generation summary path.",
     )
@@ -2238,11 +2450,13 @@ def main(argv: list[str] | None = None) -> int:
     output_path = REPO_ROOT / args.output if not Path(args.output).is_absolute() else Path(args.output)
     report_path = REPO_ROOT / args.report if not Path(args.report).is_absolute() else Path(args.report)
     disposition_report_path = REPO_ROOT / args.disposition_report if not Path(args.disposition_report).is_absolute() else Path(args.disposition_report)
+    alignment_core_output_path = REPO_ROOT / args.alignment_core_output if not Path(args.alignment_core_output).is_absolute() else Path(args.alignment_core_output)
     coverage_report_path = REPO_ROOT / args.coverage_report if not Path(args.coverage_report).is_absolute() else Path(args.coverage_report)
     diff_report_path = REPO_ROOT / args.diff_report if not Path(args.diff_report).is_absolute() else Path(args.diff_report)
     report_workbook_path = Path(args.report_workbook_path) if args.report_workbook_path else input_path
     report_output_path = Path(args.report_output_path) if args.report_output_path else output_path
     report_disposition_path = Path(args.report_disposition_path) if args.report_disposition_path else disposition_report_path
+    report_alignment_core_path = Path(args.report_alignment_core_path) if args.report_alignment_core_path else alignment_core_output_path
     summary_json_path = None
     if args.summary_json:
         summary_json_path = REPO_ROOT / args.summary_json if not Path(args.summary_json).is_absolute() else Path(args.summary_json)
@@ -2251,9 +2465,11 @@ def main(argv: list[str] | None = None) -> int:
     generator_sha256 = sha256_file(Path(__file__).resolve())
     identity_module_sha256 = sha256_file(IDENTITY_MODULE)
     disposition_module_sha256 = sha256_file(DISPOSITION_MODULE)
+    modular_products_module_sha256 = sha256_file(MODULAR_PRODUCTS_MODULE)
     publication_metadata_sha256 = sha256_file(PUBLICATION_METADATA)
     candidate_sha256 = "unavailable"
     disposition_sha256 = "unavailable"
+    alignment_core_sha256 = "unavailable"
 
     stats = WorkbookStats()
     resolver = Resolver()
@@ -2264,6 +2480,8 @@ def main(argv: list[str] | None = None) -> int:
     normalized_rows: list[NormalizedRow] = []
     identity_audits: list[CanonicalRowAudit] = []
     disposition_document: DispositionDocument | None = None
+    alignment_core_result: ModularProductResult | None = None
+    alignment_core_hermit: HermitResult | None = None
 
     try:
         rows, stats = read_workbook(input_path)
@@ -2286,6 +2504,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         disposition_sha256 = sha256_file(disposition_report_path)
         graph = generate_ontology(processed, output_path)
+        alignment_core_result, alignment_core_hermit = build_and_write_alignment_core(
+            processed,
+            identity_audits,
+            disposition_document,
+            graph,
+            alignment_core_output_path,
+            Path(args.tmp_dir) / "alignment-core",
+        )
+        alignment_core_sha256 = sha256_file(alignment_core_output_path)
         normalized_rows = normalized_axiom_rows(processed, graph)
         coverage = build_coverage(processed, [], coverage_report_path)
         graph.parse(output_path, format="turtle")
@@ -2324,6 +2551,11 @@ def main(argv: list[str] | None = None) -> int:
         disposition_sha256=disposition_sha256,
         disposition_module_sha256=disposition_module_sha256,
         publication_metadata_sha256=publication_metadata_sha256,
+        modular_products_module_sha256=modular_products_module_sha256,
+        alignment_core_result=alignment_core_result,
+        alignment_core_path=report_alignment_core_path,
+        alignment_core_sha256=alignment_core_sha256,
+        alignment_core_hermit=alignment_core_hermit,
     )
     if summary_json_path is not None:
         write_summary_json(
@@ -2347,6 +2579,11 @@ def main(argv: list[str] | None = None) -> int:
             disposition_sha256=disposition_sha256,
             disposition_module_sha256=disposition_module_sha256,
             publication_metadata_sha256=publication_metadata_sha256,
+            modular_products_module_sha256=modular_products_module_sha256,
+            alignment_core_result=alignment_core_result,
+            alignment_core_path=report_alignment_core_path,
+            alignment_core_sha256=alignment_core_sha256,
+            alignment_core_hermit=alignment_core_hermit,
         )
 
     print(f"Wrote {report_path}")
@@ -2358,6 +2595,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote {diff_report_path}")
     if disposition_report_path.exists():
         print(f"Wrote {disposition_report_path}")
+    if alignment_core_output_path.exists():
+        print(f"Wrote {alignment_core_output_path}")
     print(f"Worksheets read: {', '.join(stats.worksheets_read) or 'none'}")
     print(f"Mapped rows: {stats.mapped_rows}")
     print(f"Blank mapping rows: {stats.blank_mapping_rows}")
@@ -2380,6 +2619,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Disposition BFO-bearing axioms: {disposition_summary.bfo_bearing_axiom_count}")
         print(f"Disposition CCO-bearing axioms: {disposition_summary.cco_bearing_axiom_count}")
         print(f"Disposition mixed BFO/CCO axioms: {disposition_summary.mixed_bfo_cco_axiom_count}")
+    if alignment_core_result is not None:
+        print(f"Alignment-core governed axioms: {alignment_core_result.governed_axiom_count}")
+        print(f"Alignment-core logical triples: {alignment_core_result.logical_triple_count}")
+        print(f"Alignment-core total triples: {alignment_core_result.total_triple_count}")
+        print(f"Alignment-core SHA-256: {alignment_core_result.sha256}")
+    if alignment_core_hermit is not None:
+        print(f"Alignment-core source-closure HermiT: {'PASS' if alignment_core_hermit.passed else 'FAIL'}")
     if hermit is not None:
         print(f"Generated triple count: {hermit.generated_triple_count}")
         print(f"Candidate closure triple count: {hermit.closure_triple_count}")

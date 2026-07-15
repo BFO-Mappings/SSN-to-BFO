@@ -9,15 +9,18 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `febb8b58b4a701cead90697412a9721112c4e6dfd3af47d3c3a77c93754690e0` |
-| generator SHA-256 | `8a74fd84c79314fc43f7f1fd85af54c8717588bd40c1d1ce8fbfc2bb3d65eb78` |
+| generator SHA-256 | `6e2897f5bbb49be748da66d9924dd220c0cba057758e033e6e219164be604c09` |
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
 | product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
+| modular-products module SHA-256 | `67b7da97b1218f72fa05afc72fa06cf0d1afe21cabac5c1e01144d327ade2226` |
 | publication metadata SHA-256 | `a25196f873bc849a0a5b33012c22312d3ea9e70504219c9e781e77e595993564` |
-| generation timestamp (UTC) | `2026-07-15T16:33:02+00:00` |
+| generation timestamp (UTC) | `2026-07-15T18:28:01+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
 | generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
 | maintained product-disposition path | `reports/coms-product-dispositions.json` |
-| product-disposition JSON SHA-256 | `d2a97c288d107dd0242d59836b751a1a864c5a69d9865c340d50bd59fe629393` |
+| product-disposition JSON SHA-256 | `55f9652b7a37556cb2558ea5a6084fefe0ba608431a1da8660eeb024a59eabc7` |
+| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |
+| alignment-core Turtle SHA-256 | `95f71184b90224906b0ba703d0ea60fd2f8b993b3853b803c66b88b91ba0b01c` |
 
 ## Workbook
 
@@ -279,6 +282,31 @@ The RowID is persistent identity; the source-expression SHA-256 excludes locatio
 - Disposition reconciliation and canonical serialization: PASS
 - No lossless transformation or weakened projection is approved by this artifact.
 
+## Alignment Core
+
+This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.
+
+- Path: `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl`
+- Stable ontology IRI: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core`
+- Governed authoritative axioms: 29
+- Domain axioms: 15
+- Range axioms: 14
+- Named target expressions: 26
+- Union target expressions: 3
+- Logical RDF triples: 53
+- Ontology-header triples: 1
+- Total RDF triples: 54
+- Imports: 0
+- BFO/CCO/RO and unexpected logical-vocabulary audit: PASS
+- Integrated-root canonical-axiom reconciliation: PASS
+- Deterministic serialization: PASS
+- Fixed local source closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`
+- Source-closure HermiT return code: 0
+- Source-closure reasoned output produced: yes
+- Source-closure named unsatisfiable classes: 0
+- Source-closure HermiT result: PASS
+- Full publication metadata and formal release identity remain deferred.
+
 ## Generated Ontology
 
 - Path: `SSN2BFO.ttl`
@@ -448,4 +476,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 3.19
+- Runtime seconds: 3.76

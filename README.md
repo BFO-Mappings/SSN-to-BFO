@@ -37,7 +37,13 @@ RowIDs must never be reused. Deletion, retirement, replacement, splitting, and m
 
 `reports/coms-product-dispositions.json` is generated evidence accounting for every governed row and canonical authoritative axiom across the integrated, alignment-core, strict-BFO-mapping, BFO-projection, and CCO-extension products. It is derived from COMS RowIDs, canonical expressions, and `config/publication-metadata.toml`; it is not an editable mapping authority.
 
-The artifact classifies axioms as target-neutral, BFO-bearing, CCO-bearing, or mixed BFO/CCO and records the approved per-product status. CCO-bearing and mixed axioms remain explicitly deferred for strict BFO transformation and BFO projection because no transformation rule or weakened projection is approved. Modular ontology generation and transformations remain unimplemented. Run the focused nonmutating gate with `make check-coms-product-dispositions`.
+The artifact classifies axioms as target-neutral, BFO-bearing, CCO-bearing, or mixed BFO/CCO and records the approved per-product status. CCO-bearing and mixed axioms remain explicitly deferred for strict BFO transformation and BFO projection because no transformation rule or weakened projection is approved. Run the focused nonmutating gate with `make check-coms-product-dispositions`.
+
+### SSN/SOSA alignment core
+
+`releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` is the maintained authoritative development artifact for the 29 target-neutral governed COMS axioms. It is generated from the same in-memory COMS identities and product dispositions as the integrated root, contains 15 domain and 14 range axioms, and imports no source, target, or project ontology. The integrated `SSN2BFO.ttl` remains the complete standalone authoritative product; the alignment core does not replace it.
+
+The development artifact has only its governed stable ontology IRI and ontology declaration. Complete publication metadata, formal release identity, the strict BFO mapping, BFO projection, CCO extension, and transformation rules remain unimplemented. Run its focused tests and the shared nonmutating six-output transaction with `make check-alignment-core`.
 
 ## Validation environment
 

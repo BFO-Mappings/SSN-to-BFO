@@ -116,6 +116,8 @@ class ComsDomainRangeTests(unittest.TestCase):
                 str(report_path),
                 "--disposition-report",
                 str(disposition_path),
+                "--alignment-core-output",
+                str(self.root / "alignment-core.ttl"),
                 "--coverage-report",
                 str(self.root / "coverage.md"),
                 "--diff-report",
@@ -136,6 +138,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertEqual(return_code, 1)
         self.assertFalse(output_path.exists())
         self.assertFalse(disposition_path.exists())
+        self.assertFalse((self.root / "alignment-core.ttl").exists())
         self.assertTrue(report_path.is_file())
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("| overall status | FAIL |", report)
@@ -164,6 +167,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertEqual(return_code, 1)
         self.assertFalse(output_path.exists())
         self.assertFalse(disposition_path.exists())
+        self.assertFalse((self.root / "alignment-core.ttl").exists())
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("TARGET_CATEGORY_MISMATCH", report)
         self.assertIn("| overall status | FAIL |", report)
@@ -699,6 +703,8 @@ class ComsGenerationReportTests(unittest.TestCase):
         stats: coms.WorkbookStats | None = None,
         identity_audits: list[identity.CanonicalRowAudit] | None = None,
         disposition_document: dispositions.DispositionDocument | None = None,
+        alignment_core_result: object | None = None,
+        alignment_core_hermit: object | None = None,
     ) -> str:
         path = self.root / f"{name}.md"
         coms.write_generation_report(
@@ -724,6 +730,13 @@ class ComsGenerationReportTests(unittest.TestCase):
             disposition_sha256="disposition-hash",
             disposition_module_sha256="disposition-module-hash",
             publication_metadata_sha256="publication-metadata-hash",
+            modular_products_module_sha256="modular-products-module-hash",
+            alignment_core_result=alignment_core_result,
+            alignment_core_path=Path(
+                "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
+            ),
+            alignment_core_sha256="alignment-core-hash",
+            alignment_core_hermit=alignment_core_hermit,
         )
         return path.read_text(encoding="utf-8")
 
@@ -816,6 +829,48 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Target-neutral axioms: 1", report)
         self.assertIn("Disposition reconciliation and canonical serialization: PASS", report)
 
+    def test_generation_report_includes_alignment_core_results(self) -> None:
+        result = SimpleNamespace(
+            metadata=SimpleNamespace(
+                stable_ontology_iri=(
+                    "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
+                )
+            ),
+            governed_axiom_count=29,
+            domain_axiom_count=15,
+            range_axiom_count=14,
+            named_target_count=26,
+            union_target_count=3,
+            logical_triple_count=53,
+            ontology_header_triple_count=1,
+            total_triple_count=54,
+        )
+        hermit = SimpleNamespace(
+            return_code=0,
+            reasoned_output_produced=True,
+            unsat_classes=[],
+            passed=True,
+        )
+
+        report = self.render_report(
+            "alignment-core",
+            "/opt/robot",
+            alignment_core_result=result,
+            alignment_core_hermit=hermit,
+        )
+
+        self.assertIn("## Alignment Core", report)
+        self.assertIn(
+            "maintained authoritative development artifact at the approved production path",
+            report,
+        )
+        self.assertIn("Governed authoritative axioms: 29", report)
+        self.assertIn("Domain axioms: 15", report)
+        self.assertIn("Range axioms: 14", report)
+        self.assertIn("Logical RDF triples: 53", report)
+        self.assertIn("Total RDF triples: 54", report)
+        self.assertIn("Source-closure HermiT result: PASS", report)
+
 
 class ComsAuthorityMigrationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -830,6 +885,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "coverage_report": self.root / "reports/coms-source-term-coverage.md",
             "diff_report": self.root / "reports/coms-vs-pre-coms-legacy-diff.md",
             "disposition_report": self.root / "reports/coms-product-dispositions.json",
+            "alignment_core": self.root / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         }
 
     @staticmethod
@@ -846,6 +902,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(
             checker.MAINTAINED_OUTPUTS["disposition_report"],
             REPO_ROOT / "reports/coms-product-dispositions.json",
+        )
+        self.assertEqual(
+            checker.MAINTAINED_OUTPUTS["alignment_core"],
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         )
 
     def test_legacy_ontology_is_the_comparison_baseline(self) -> None:
@@ -876,7 +936,9 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         candidate_hash = checker.sha256_file(outputs["candidate"])
         disposition_hash = checker.sha256_file(outputs["disposition_report"])
         disposition_module_hash = checker.sha256_file(checker.DISPOSITION_MODULE)
+        modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
+        alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
         self.write(
             outputs["generation_report"],
             "\n".join(
@@ -884,12 +946,15 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "| workbook SHA-256 | `workbook-hash` |",
                     "| generator SHA-256 | `generator-hash` |",
                     f"| product-disposition module SHA-256 | `{disposition_module_hash}` |",
+                    f"| modular-products module SHA-256 | `{modular_products_module_hash}` |",
                     f"| publication metadata SHA-256 | `{publication_metadata_hash}` |",
                     "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
                     "| maintained ontology path | `SSN2BFO.ttl` |",
                     f"| generated ontology SHA-256 | `{candidate_hash}` |",
                     "| maintained product-disposition path | `reports/coms-product-dispositions.json` |",
                     f"| product-disposition JSON SHA-256 | `{disposition_hash}` |",
+                    "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
+                    f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
                 ]
             ),
         )
@@ -923,6 +988,199 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 "generated candidate hash differs from the generated report",
                 checker.freshness_errors("workbook-hash", "generator-hash"),
             )
+
+    def test_stale_alignment_core_hash_fails_check_only_without_rewriting_outputs(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"maintained-{name}\n")
+        candidate_hash = checker.sha256_file(outputs["candidate"])
+        disposition_hash = checker.sha256_file(outputs["disposition_report"])
+        disposition_module_hash = checker.sha256_file(checker.DISPOSITION_MODULE)
+        modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
+        publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
+        alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
+        self.write(
+            outputs["generation_report"],
+            "\n".join(
+                [
+                    "| workbook SHA-256 | `workbook-hash` |",
+                    "| generator SHA-256 | `generator-hash` |",
+                    f"| product-disposition module SHA-256 | `{disposition_module_hash}` |",
+                    f"| modular-products module SHA-256 | `{modular_products_module_hash}` |",
+                    f"| publication metadata SHA-256 | `{publication_metadata_hash}` |",
+                    "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
+                    "| maintained ontology path | `SSN2BFO.ttl` |",
+                    f"| generated ontology SHA-256 | `{candidate_hash}` |",
+                    "| maintained product-disposition path | `reports/coms-product-dispositions.json` |",
+                    f"| product-disposition JSON SHA-256 | `{disposition_hash}` |",
+                    "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
+                    f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
+                ]
+            ),
+        )
+        fake_disposition = SimpleNamespace(
+            input_hashes=SimpleNamespace(
+                workbook_sha256="workbook-hash",
+                generator_sha256="generator-hash",
+                row_identity_module_sha256=checker.sha256_file(checker.ROW_IDENTITY_MODULE),
+                disposition_module_sha256=disposition_module_hash,
+                publication_metadata_sha256=publication_metadata_hash,
+            ),
+            product_order=tuple(
+                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
+            ),
+        )
+        cache_dir = self.root / ".cache/coms"
+        run_generator = mock.Mock()
+
+        self.write(outputs["alignment_core"], "modified maintained alignment core\n")
+        expected = {path: path.read_bytes() for path in outputs.values()}
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "run_generator", run_generator),
+            mock.patch.object(checker, "load_disposition_document", return_value=fake_disposition),
+            mock.patch.object(
+                checker,
+                "serialize_disposition_document",
+                return_value=outputs["disposition_report"].read_bytes(),
+            ),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            errors = checker.freshness_errors("workbook-hash", "generator-hash")
+            self.assertEqual(
+                errors,
+                ["alignment-core hash differs from the generated report"],
+            )
+            self.assertEqual(
+                checker.relative(outputs["alignment_core"]),
+                "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+            )
+            self.assertNotIn(
+                "generated candidate hash differs from the generated report",
+                errors,
+            )
+            self.assertEqual(checker.main(["--check-only"]), 1)
+
+        run_generator.assert_not_called()
+        for path, content in expected.items():
+            self.assertEqual(path.read_bytes(), content)
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+
+    def test_first_successful_update_creates_initially_absent_alignment_core(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {
+            name: path
+            for name, path in outputs.items()
+            if name != "alignment_core"
+        }
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        self.assertFalse(outputs["alignment_core"].exists())
+
+        expected_generated = {
+            name: f"new-{name}\n".encode("utf-8")
+            for name in existing
+        }
+        alignment_core_bytes = (
+            REPO_ROOT
+            / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
+        ).read_bytes()
+        ontology_iri = URIRef(
+            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
+        )
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        events: list[str] = []
+        validation_complete = False
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            self.assertFalse(outputs["alignment_core"].exists())
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name, content in expected_generated.items():
+                paths[name].parent.mkdir(parents=True, exist_ok=True)
+                paths[name].write_bytes(content)
+            paths["alignment_core"].parent.mkdir(parents=True, exist_ok=True)
+            paths["alignment_core"].write_bytes(alignment_core_bytes)
+            self.write(paths["summary"], "{}\n")
+            events.append("generated")
+
+        def fake_validate(paths: dict[str, Path], *_args, **_kwargs):
+            nonlocal validation_complete
+            self.assertFalse(outputs["alignment_core"].exists())
+            graph = coms.Graph().parse(paths["alignment_core"], format="turtle")
+            self.assertEqual(set(graph.subjects(RDF.type, OWL.Ontology)), {ontology_iri})
+            self.assertEqual(list(graph.triples((None, OWL.imports, None))), [])
+            governed_axioms = len(set(graph.triples((None, RDFS.domain, None)))) + len(
+                set(graph.triples((None, RDFS.range, None)))
+            )
+            self.assertEqual(governed_axioms, 29)
+            self.assertEqual(len(graph), 54)
+            validation_complete = True
+            events.append("validated")
+            return {}
+
+        production_replace = checker.replace_outputs_atomically
+
+        def observe_replace(
+            paths: dict[str, Path], transaction_dir: Path, log: list[str]
+        ) -> None:
+            self.assertTrue(validation_complete)
+            self.assertFalse(outputs["alignment_core"].exists())
+            events.append("replace-start")
+            production_replace(paths, transaction_dir, log)
+            self.assertTrue(outputs["alignment_core"].exists())
+            events.append("replace-complete")
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["missing alignment core"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", side_effect=fake_validate),
+            mock.patch.object(checker, "git_diff_check"),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(
+                checker,
+                "replace_outputs_atomically",
+                side_effect=observe_replace,
+            ),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 0)
+
+        self.assertEqual(
+            events,
+            ["generated", "validated", "replace-start", "replace-complete"],
+        )
+        for name, content in expected_generated.items():
+            self.assertEqual(outputs[name].read_bytes(), content)
+        self.assertEqual(outputs["alignment_core"].read_bytes(), alignment_core_bytes)
+        final_graph = coms.Graph().parse(outputs["alignment_core"], format="turtle")
+        self.assertEqual(set(final_graph.subjects(RDF.type, OWL.Ontology)), {ontology_iri})
+        self.assertEqual(list(final_graph.triples((None, OWL.imports, None))), [])
+        self.assertEqual(
+            len(set(final_graph.triples((None, RDFS.domain, None))))
+            + len(set(final_graph.triples((None, RDFS.range, None)))),
+            29,
+        )
+        self.assertEqual(len(final_graph), 54)
+        self.assertTrue(all(path.is_file() for path in outputs.values()))
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
 
     def test_temporary_validation_precedes_atomic_root_replacement(self) -> None:
         outputs = self.maintained_outputs()
@@ -959,7 +1217,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
 
         self.assertEqual(outputs["candidate"].read_text(encoding="utf-8"), "new-candidate\n")
 
-    def test_check_only_preserves_all_five_outputs_and_workbook(self) -> None:
+    def test_check_only_preserves_all_six_outputs_and_workbook(self) -> None:
         outputs = self.maintained_outputs()
         workbook = self.root / "mappings/SSN2BFO-COMS.xlsx"
         self.write(workbook, "workbook-bytes\n")
@@ -1065,6 +1323,58 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
 
+    def test_rollback_removes_new_alignment_core_when_it_was_initially_absent(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {
+            name: path
+            for name, path in outputs.items()
+            if name != "alignment_core"
+        }
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in existing.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"new-{name}\n")
+            self.write(paths["summary"], "{}\n")
+
+        diff_checks = 0
+
+        def fail_post_update(_log: list[str], _label: str) -> None:
+            nonlocal diff_checks
+            diff_checks += 1
+            if diff_checks == 2:
+                raise checker.CheckFailure("post-update failure")
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", return_value={}),
+            mock.patch.object(checker, "git_diff_check", side_effect=fail_post_update),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+
+        self.assertEqual(diff_checks, 2)
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertFalse(outputs["alignment_core"].exists())
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
     def test_written_malformed_disposition_fails_before_replacement(self) -> None:
         outputs = self.maintained_outputs()
         for name, path in outputs.items():
@@ -1117,6 +1427,98 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
 
         self.assertEqual(len(observed_candidates), 1)
         self.assertIn(b'"schema_version": 1', observed_candidates[0])
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
+    def test_written_malformed_alignment_core_fails_before_replacement(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        observed_candidates: list[bytes] = []
+        disposition_source = REPO_ROOT / "reports/coms-product-dispositions.json"
+        disposition = checker.load_disposition_document(disposition_source)
+        disposition_bytes = disposition_source.read_bytes()
+        workbook_hash = disposition.input_hashes.workbook_sha256
+        generator_hash = disposition.input_hashes.generator_sha256
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"temporary-{name}\n")
+            paths["disposition_report"].write_bytes(disposition_bytes)
+            malformed_core = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
+            paths["alignment_core"].write_bytes(malformed_core)
+            self.write(
+                paths["summary"],
+                json.dumps(
+                    {
+                        "status": "PASS",
+                        "workbook_sha256": workbook_hash,
+                        "generator_sha256": generator_hash,
+                        "product_disposition_report_sha256": checker.sha256_file(
+                            paths["disposition_report"]
+                        ),
+                        "product_dispositions": {
+                            field: getattr(disposition.summary, field)
+                            for field in disposition.summary.__dataclass_fields__
+                        },
+                        "alignment_core_sha256": checker.sha256_file(
+                            paths["alignment_core"]
+                        ),
+                        "modular_products_module_sha256": checker.sha256_file(
+                            checker.MODULAR_PRODUCTS_MODULE
+                        ),
+                        "alignment_core": {
+                            "product_key": "alignment_core",
+                            "stable_ontology_iri": (
+                                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
+                            ),
+                            "governed_axiom_count": 29,
+                            "logical_triple_count": 53,
+                            "ontology_header_triple_count": 1,
+                            "total_triple_count": 54,
+                            "domain_axiom_count": 15,
+                            "range_axiom_count": 14,
+                            "named_target_count": 26,
+                            "union_target_count": 3,
+                            "hermit_return_code": 0,
+                            "hermit_result": "PASS",
+                            "named_unsat_count": 0,
+                        },
+                    }
+                )
+                + "\n",
+            )
+
+        original_parse = checker.Graph.parse
+
+        def observe_parse(graph, source=None, *args, **kwargs):
+            if source == checker.transaction_paths(transaction_dirs[0])["alignment_core"]:
+                observed_candidates.append(Path(source).read_bytes())
+            return original_parse(graph, source, *args, **kwargs)
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value=workbook_hash),
+            mock.patch.object(checker, "compile_generator", return_value=generator_hash),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker.Graph, "parse", new=observe_parse),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+
+        self.assertEqual(len(observed_candidates), 1)
+        self.assertIn(b"[", observed_candidates[0])
         for path, expected in before.items():
             self.assertEqual(path.read_bytes(), expected)
         self.assertEqual(len(transaction_dirs), 1)
