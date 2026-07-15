@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-publication-metadata watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -25,8 +25,15 @@ compile:
 		tools/generate_mapping_from_coms.py \
 		tools/check_coms_mapping.py \
 		tools/watch_coms_mapping.py \
+		tools/publication_metadata.py \
+		tools/check_publication_metadata.py \
 		tests/test_generate_mapping_from_coms.py \
+		tests/test_publication_metadata.py \
 		tools/workflow_check.py
+
+check-publication-metadata:
+	python -m unittest discover -s tests -p 'test_publication_metadata.py'
+	python tools/check_publication_metadata.py
 
 check-coms:
 	python tools/check_coms_mapping.py

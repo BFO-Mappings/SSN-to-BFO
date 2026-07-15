@@ -49,6 +49,28 @@ robot --version
 make check
 ```
 
+### Publication metadata validation
+
+`config/publication-metadata.toml` is the governed source for approved product paths, stable ontology IRIs, and deterministic release-version-IRI construction. Schema version 1 deliberately contains only static product identity and release-IRI suffix data; it does not contain release dates, hashes, manifests, contributors, provenance, or dependency metadata.
+
+Run the focused tests and development-mode validation with:
+
+```bash
+make check-publication-metadata
+python tools/check_publication_metadata.py
+```
+
+Development mode validates the stable product identities and does not claim immutable release version IRIs. Validate an explicit formal-release context with:
+
+```bash
+python tools/check_publication_metadata.py \
+  --mode release \
+  --release-id 2026-07-14 \
+  --git-tag v2026-07-14
+```
+
+Formal release version IRIs are derived from the configured release base, supplied release identifier, and each product's release suffix. This foundation validator does not inspect Git tags or tag-to-commit binding, emit ontology metadata, create release manifests, compare cross-artifact hashes, or prove that a version IRI has never identified different bytes.
+
 The four new release files under `releases/` are placeholders until completed mapping content is inserted:
 
 - `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl`
