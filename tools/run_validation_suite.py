@@ -58,12 +58,14 @@ def compile_check() -> StepResult:
             "tools/test_object_property_typing_probes.py",
             "tools/test_instance_data.py",
             "tools/compare_mappings.py",
+            "tools/coms_row_identity.py",
             "tools/generate_mapping_from_coms.py",
             "tools/check_coms_mapping.py",
             "tools/watch_coms_mapping.py",
             "tools/publication_metadata.py",
             "tools/check_publication_metadata.py",
             "tests/test_generate_mapping_from_coms.py",
+            "tests/test_coms_row_identity.py",
             "tests/test_publication_metadata.py",
         ],
     )
@@ -119,6 +121,22 @@ def main() -> int:
 
     results: list[StepResult] = []
     results.append(parse_ttl_check())
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "COMS row-identity focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_coms_row_identity.py",
+                ],
+            )
+        )
     if results[-1].passed:
         results.append(
             run_command(

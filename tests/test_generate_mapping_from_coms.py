@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import check_coms_mapping as checker  # noqa: E402
+import coms_row_identity as identity  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
 
 
@@ -39,42 +40,399 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.addCleanup(self.temp_dir.cleanup)
         self.root = Path(self.temp_dir.name)
 
-    def synthetic_workbook(self, rows: list[tuple[str, str, str]]) -> Path:
+    @staticmethod
+    def row_id_for(index: int) -> str:
+        return f"urn:uuid:00000000-0000-4000-8000-{index:012x}"
+
+    def synthetic_workbook(
+        self,
+        rows: list[tuple[str, ...]],
+        *,
+        row_ids: list[str] | None = None,
+        headers: tuple[str, ...] = coms.REQUIRED_COLUMNS,
+    ) -> Path:
         path = self.root / "synthetic-coms.xlsx"
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
         worksheet.title = "Synthetic"
-        worksheet.append(list(coms.REQUIRED_COLUMNS))
-        for subject, predicate, target in rows:
-            worksheet.append([subject, predicate, target, "synthetic test row"])
+        worksheet.append(list(headers))
+        for index, row in enumerate(rows, start=1):
+            subject, predicate, target = row[:3]
+            reasoning = row[3] if len(row) > 3 else "synthetic test row"
+            row_id = row_ids[index - 1] if row_ids is not None else self.row_id_for(index)
+            values = {
+                "sssom:subject_id": subject,
+                "sssom:predicate_id": predicate,
+                "coms:Target": target,
+                "coms:Reasoning": reasoning,
+                "coms:RowID": row_id,
+            }
+            worksheet.append([values[header] for header in headers])
         workbook.save(path)
         workbook.close()
         return path
 
-    def process(self, rows: list[tuple[str, str, str]]):
-        workbook_path = self.synthetic_workbook(rows)
+    def process(self, rows: list[tuple[str, ...]], *, row_ids: list[str] | None = None):
+        workbook_path = self.synthetic_workbook(rows, row_ids=row_ids)
         workbook_rows, stats = coms.read_workbook(workbook_path)
         processed = coms.validate_and_process_rows(workbook_rows, coms.Resolver(), stats)
         return processed, stats
 
-    def generate(self, rows: list[tuple[str, str, str]]):
-        processed, stats = self.process(rows)
+    def generate(self, rows: list[tuple[str, ...]], *, row_ids: list[str] | None = None):
+        processed, stats = self.process(rows, row_ids=row_ids)
         output = self.root / "candidate.ttl"
         graph = coms.generate_ontology(processed, output)
         return graph, processed, stats
 
     def assert_generation_error(
         self,
-        rows: list[tuple[str, str, str]],
+        rows: list[tuple[str, ...]],
         *expected_fragments: str,
+        row_ids: list[str] | None = None,
     ) -> None:
-        workbook_path = self.synthetic_workbook(rows)
+        workbook_path = self.synthetic_workbook(rows, row_ids=row_ids)
         workbook_rows, stats = coms.read_workbook(workbook_path)
         with self.assertRaises(coms.GenerationError) as raised:
             coms.validate_and_process_rows(workbook_rows, coms.Resolver(), stats)
         message = str(raised.exception)
         for fragment in expected_fragments:
             self.assertIn(fragment, message)
+
+    def run_generator(self, workbook_path: Path) -> tuple[int, Path, Path]:
+        output_path = self.root / "candidate-output.ttl"
+        report_path = self.root / "generation-report.md"
+        return_code = coms.main(
+            [
+                "--input",
+                str(workbook_path),
+                "--output",
+                str(output_path),
+                "--report",
+                str(report_path),
+                "--coverage-report",
+                str(self.root / "coverage.md"),
+                "--diff-report",
+                str(self.root / "comparison.md"),
+                "--tmp-dir",
+                str(self.root / "reasoner"),
+            ]
+        )
+        return return_code, output_path, report_path
+
+    def assert_generator_main_failure(
+        self,
+        workbook_path: Path,
+        *expected_fragments: str,
+    ) -> None:
+        before = workbook_path.read_bytes()
+        return_code, output_path, report_path = self.run_generator(workbook_path)
+        self.assertEqual(return_code, 1)
+        self.assertFalse(output_path.exists())
+        self.assertTrue(report_path.is_file())
+        report = report_path.read_text(encoding="utf-8")
+        self.assertIn("| overall status | FAIL |", report)
+        for fragment in expected_fragments:
+            self.assertIn(fragment, report)
+        self.assertEqual(workbook_path.read_bytes(), before)
+
+    def governed_row(
+        self,
+        index: int,
+        *,
+        sheet: str = "Synthetic",
+        row_number: int | None = None,
+    ) -> coms.WorkbookRow:
+        return coms.WorkbookRow(
+            sheet=sheet,
+            row_number=row_number if row_number is not None else index + 1,
+            subject_text=SUBJECT,
+            predicate_text="rdfs:domain",
+            target_text="sosa:Observation",
+            reasoning_text="synthetic test row",
+            stable_row_id=self.row_id_for(index),
+        )
+
+    @staticmethod
+    def processed_row(row: coms.WorkbookRow) -> coms.ProcessedRow:
+        return coms.ProcessedRow(
+            row=row,
+            subject=URIRef(f"urn:test:property:{row.stable_row_id[-12:]}"),
+            subject_kind="object_property",
+            predicate="rdfs:domain",
+            target="sosa:Observation",
+            expr=coms.Expr(kind="named", iri=OBSERVATION),
+        )
+
+    def assert_completeness_error(
+        self,
+        governed_rows: list[coms.WorkbookRow],
+        processed_rows: list[coms.ProcessedRow],
+        audits: tuple[identity.CanonicalRowAudit, ...],
+        *expected_fragments: str,
+    ) -> str:
+        with self.assertRaises(coms.GenerationError) as raised:
+            coms.validate_identity_audit_completeness(
+                governed_rows,
+                processed_rows,
+                audits,
+            )
+        message = str(raised.exception)
+        for fragment in expected_fragments:
+            self.assertIn(fragment, message)
+        return message
+
+    def test_row_id_only_governed_row_is_fatal(self) -> None:
+        row_id = self.row_id_for(1)
+        workbook_path = self.synthetic_workbook(
+            [("", "", "", "")],
+            row_ids=[row_id],
+        )
+        self.assert_generator_main_failure(
+            workbook_path,
+            "MISSING_SOURCE_SUBJECT",
+            "Synthetic!2",
+            row_id,
+            "sssom:subject_id",
+        )
+
+    def test_row_id_and_reasoning_only_governed_row_is_fatal(self) -> None:
+        row_id = self.row_id_for(1)
+        workbook_path = self.synthetic_workbook(
+            [("", "", "", "retained rationale")],
+            row_ids=[row_id],
+        )
+        self.assert_generator_main_failure(
+            workbook_path,
+            "MISSING_SOURCE_SUBJECT",
+            "Synthetic!2",
+            row_id,
+            "sssom:subject_id",
+        )
+
+    def test_predicate_and_target_without_subject_are_fatal(self) -> None:
+        row_id = self.row_id_for(1)
+        workbook_path = self.synthetic_workbook(
+            [("", "rdfs:subClassOf", "bfo:MaterialEntity", "")],
+            row_ids=[row_id],
+        )
+        self.assert_generator_main_failure(
+            workbook_path,
+            "MISSING_SOURCE_SUBJECT",
+            "Synthetic!2",
+            row_id,
+            "sssom:subject_id",
+        )
+
+    def test_governed_worksheet_without_row_id_header_is_fatal(self) -> None:
+        workbook_path = self.synthetic_workbook(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")],
+            headers=coms.BASE_REQUIRED_COLUMNS,
+        )
+        self.assert_generator_main_failure(
+            workbook_path,
+            "Synthetic!1",
+            "coms:RowID",
+            "missing required header",
+        )
+
+    def test_identity_audit_completeness_mismatch_is_fatal(self) -> None:
+        workbook_path = self.synthetic_workbook(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")]
+        )
+        with mock.patch.object(coms, "attach_canonical_identities", return_value=()):
+            self.assert_generator_main_failure(
+                workbook_path,
+                "IDENTITY_AUDIT_INCOMPLETE",
+                "processed row count 1 does not match identity-audit row count 0",
+                self.row_id_for(1),
+            )
+
+    def test_equal_count_governed_processed_row_id_substitution_is_fatal(self) -> None:
+        governed = [self.governed_row(1), self.governed_row(2)]
+        processed = [
+            self.processed_row(governed[0]),
+            self.processed_row(self.governed_row(3)),
+        ]
+        audits = coms.attach_canonical_identities(processed)
+        self.assert_completeness_error(
+            governed,
+            processed,
+            audits,
+            "GOVERNED_PROCESSED_ROWID_MISMATCH",
+            f"{self.row_id_for(2)} (Synthetic!3)",
+            f"{self.row_id_for(3)} (Synthetic!4)",
+        )
+
+    def test_equal_count_processed_audit_row_id_substitution_is_fatal(self) -> None:
+        governed = [self.governed_row(1), self.governed_row(2)]
+        processed = [self.processed_row(row) for row in governed]
+        coms.attach_canonical_identities(processed)
+        unexpected = self.processed_row(self.governed_row(3))
+        unexpected_audit = coms.attach_canonical_identities([unexpected])[0]
+        audits = (processed[0].identity_audit, unexpected_audit)
+        self.assert_completeness_error(
+            governed,
+            processed,
+            audits,
+            "PROCESSED_AUDIT_ROWID_MISMATCH",
+            f"{self.row_id_for(2)} (Synthetic!3)",
+            f"{self.row_id_for(3)} (Synthetic!4)",
+        )
+
+    def test_governed_processed_location_mismatch_is_fatal(self) -> None:
+        governed = [self.governed_row(1, sheet="Sheet1", row_number=2)]
+        processed = [
+            self.processed_row(self.governed_row(1, sheet="Sheet2", row_number=9))
+        ]
+        audits = coms.attach_canonical_identities(processed)
+        self.assert_completeness_error(
+            governed,
+            processed,
+            audits,
+            "IDENTITY_AUDIT_LOCATION_MISMATCH",
+            "governed-to-processed location mismatch",
+            self.row_id_for(1),
+            "governed Sheet1!2, processed Sheet2!9",
+        )
+
+    def test_processed_audit_location_mismatch_is_fatal(self) -> None:
+        governed = [self.governed_row(1, sheet="Sheet1", row_number=2)]
+        processed = [self.processed_row(governed[0])]
+        coms.attach_canonical_identities(processed)
+        alternate = self.processed_row(
+            self.governed_row(1, sheet="Sheet2", row_number=9)
+        )
+        alternate_audit = coms.attach_canonical_identities([alternate])
+        self.assert_completeness_error(
+            governed,
+            processed,
+            alternate_audit,
+            "IDENTITY_AUDIT_LOCATION_MISMATCH",
+            "processed-to-audit location mismatch",
+            self.row_id_for(1),
+            "processed Sheet1!2, audit Sheet2!9",
+        )
+
+    def test_row_id_mismatch_diagnostics_are_sorted(self) -> None:
+        governed = [self.governed_row(3), self.governed_row(1)]
+        processed = [
+            self.processed_row(self.governed_row(4)),
+            self.processed_row(self.governed_row(2)),
+        ]
+        audits = coms.attach_canonical_identities(processed)
+        message = self.assert_completeness_error(
+            governed,
+            processed,
+            audits,
+            "GOVERNED_PROCESSED_ROWID_MISMATCH",
+        )
+        self.assertLess(message.index(self.row_id_for(1)), message.index(self.row_id_for(3)))
+        self.assertLess(message.index(self.row_id_for(2)), message.index(self.row_id_for(4)))
+
+    def test_successful_processing_has_complete_identity_counts(self) -> None:
+        processed, stats = self.process(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")]
+        )
+        self.assertEqual(stats.governed_row_id_count, 1)
+        self.assertEqual(stats.processed_row_count, 1)
+        self.assertEqual(stats.identity_audit_row_count, 1)
+        self.assertTrue(stats.identity_count_reconciliation_passed)
+        self.assertTrue(stats.identity_row_id_set_reconciliation_passed)
+        self.assertTrue(stats.identity_location_reconciliation_passed)
+        self.assertEqual(len(processed), 1)
+        audit = processed[0].identity_audit
+        self.assertIsNotNone(audit)
+        self.assertEqual(processed[0].row.stable_row_id, audit.row_id)
+        self.assertEqual(processed[0].row.location, audit.location)
+        self.assertEqual(len(audit.authoritative_axioms), 1)
+
+    def test_missing_row_id_is_rejected(self) -> None:
+        self.assert_generation_error(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")],
+            "MISSING_ROW_ID",
+            "Synthetic!2",
+            row_ids=[""],
+        )
+
+    def test_malformed_row_id_is_rejected_with_location_and_value(self) -> None:
+        malformed = "urn:uuid:NOT-CANONICAL"
+        self.assert_generation_error(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")],
+            "MALFORMED_ROW_ID",
+            "Synthetic!2",
+            malformed,
+            row_ids=[malformed],
+        )
+
+    def test_duplicate_row_id_is_rejected(self) -> None:
+        duplicate = self.row_id_for(1)
+        self.assert_generation_error(
+            [
+                (SUBJECT, "rdfs:domain", "sosa:Observation"),
+                (SUBJECT, "rdfs:range", "sosa:FeatureOfInterest"),
+            ],
+            "DUPLICATE_ROW_ID",
+            "Synthetic!2",
+            "Synthetic!3",
+            duplicate,
+            row_ids=[duplicate, duplicate],
+        )
+
+    def test_duplicate_canonical_authoritative_axiom_is_rejected(self) -> None:
+        self.assert_generation_error(
+            [
+                (
+                    "sosa:Observation",
+                    "rdfs:subClassOf",
+                    "bfo:MaterialEntity and sosa:FeatureOfInterest",
+                    "first rationale",
+                ),
+                (
+                    "sosa:Observation",
+                    "rdfs:subClassOf",
+                    "sosa:FeatureOfInterest and bfo:MaterialEntity",
+                    "second rationale",
+                ),
+            ],
+            "DUPLICATE_AUTHORITATIVE_AXIOM",
+            "Synthetic!2",
+            "Synthetic!3",
+            self.row_id_for(1),
+            self.row_id_for(2),
+        )
+
+    def test_incompatible_duplicate_mapping_still_fails(self) -> None:
+        self.assert_generation_error(
+            [
+                ("sosa:Observation", "rdfs:subClassOf", "bfo:MaterialEntity"),
+                ("sosa:Observation", "rdfs:subClassOf", "sosa:FeatureOfInterest"),
+            ],
+            "incompatible target",
+            "Synthetic!2",
+            "Synthetic!3",
+            self.row_id_for(1),
+            self.row_id_for(2),
+        )
+
+    def test_row_id_does_not_change_generated_ontology(self) -> None:
+        rows = [(SUBJECT, "rdfs:domain", "sosa:Observation")]
+        first, _ = self.process(rows, row_ids=[self.row_id_for(1)])
+        first_output = self.root / "first.ttl"
+        coms.generate_ontology(first, first_output)
+        second, _ = self.process(rows, row_ids=[self.row_id_for(2)])
+        second_output = self.root / "second.ttl"
+        coms.generate_ontology(second, second_output)
+        self.assertEqual(first_output.read_bytes(), second_output.read_bytes())
+
+    def test_generation_does_not_mutate_workbook(self) -> None:
+        workbook_path = self.synthetic_workbook(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")]
+        )
+        before = workbook_path.read_bytes()
+        workbook_rows, stats = coms.read_workbook(workbook_path)
+        processed = coms.validate_and_process_rows(workbook_rows, coms.Resolver(), stats)
+        coms.generate_ontology(processed, self.root / "nonmutating.ttl")
+        self.assertEqual(before, workbook_path.read_bytes())
 
     def test_named_class_domain(self) -> None:
         graph, processed, stats = self.generate([(SUBJECT, "rdfs:domain", "sosa:Observation")])
@@ -280,12 +638,19 @@ class ComsGenerationReportTests(unittest.TestCase):
             robot_path=robot_path,
         )
 
-    def render_report(self, name: str, robot_path: str | None) -> str:
+    def render_report(
+        self,
+        name: str,
+        robot_path: str | None,
+        *,
+        stats: coms.WorkbookStats | None = None,
+        identity_audits: list[identity.CanonicalRowAudit] | None = None,
+    ) -> str:
         path = self.root / f"{name}.md"
         coms.write_generation_report(
             path,
             workbook_path=Path("mappings/SSN2BFO-COMS.xlsx"),
-            stats=coms.WorkbookStats(),
+            stats=stats or coms.WorkbookStats(),
             resolver=mock.Mock(records={}),
             errors=[] if robot_path is not None else ["candidate HermiT unavailable"],
             output_path=Path("SSN2BFO.ttl"),
@@ -293,9 +658,11 @@ class ComsGenerationReportTests(unittest.TestCase):
             coverage=None,
             comparison=None,
             normalized_rows=[],
+            identity_audits=identity_audits or [],
             elapsed_seconds=1.0,
             workbook_sha256="workbook-hash",
             generator_sha256="generator-hash",
+            identity_module_sha256="identity-module-hash",
             generation_timestamp="2026-01-01T00:00:00+00:00",
             candidate_sha256="candidate-hash",
         )
@@ -321,6 +688,50 @@ class ComsGenerationReportTests(unittest.TestCase):
             missing_report,
         )
         self.assertIn("ROBOT executable not found on PATH.", missing_report)
+
+    def test_generation_report_includes_row_identity_audit(self) -> None:
+        row = identity.CanonicalRowInput(
+            row_id="urn:uuid:11111111-1111-4111-8111-111111111111",
+            location=identity.RowLocation("Synthetic", 7),
+            subject_iri=str(SUBJECT_IRI),
+            predicate_iri=identity.RDFS_DOMAIN,
+            mapping_type="domain",
+            expression=identity.ExpressionNode(kind="named", iri=str(OBSERVATION)),
+        )
+        audit = identity.build_row_audit(row)
+        stats = coms.WorkbookStats(
+            worksheets_read=["Synthetic"],
+            domain_rows=1,
+            governed_row_id_count=1,
+            unique_row_id_count=1,
+            processed_row_count=1,
+            identity_audit_row_count=1,
+            identity_count_reconciliation_passed=True,
+            identity_row_id_set_reconciliation_passed=True,
+            identity_location_reconciliation_passed=True,
+        )
+        report = self.render_report(
+            "identity",
+            "/opt/robot",
+            stats=stats,
+            identity_audits=[audit],
+        )
+
+        self.assertIn("Governed RowID header: `coms:RowID`", report)
+        self.assertIn("Canonical-expression version: `coms-row-expression-v1`", report)
+        self.assertIn("Processed governed row count: 1", report)
+        self.assertIn("Identity-audit row count: 1", report)
+        self.assertIn("Canonical authoritative axiom count: 1", report)
+        self.assertIn("Count reconciliation result: PASS", report)
+        self.assertIn("RowID-set reconciliation result: PASS", report)
+        self.assertIn("Location reconciliation result: PASS", report)
+        self.assertIn("Identity-audit completeness result: PASS", report)
+        self.assertIn("Duplicate RowID result: PASS", report)
+        self.assertIn("Duplicate authoritative-axiom result: PASS", report)
+        self.assertIn(audit.row_id, report)
+        self.assertIn(audit.source_expression_sha256, report)
+        self.assertIn(audit.authoritative_axioms[0].canonical_axiom, report)
+        self.assertIn("_(blank)_", report)
 
 
 class ComsAuthorityMigrationTests(unittest.TestCase):

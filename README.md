@@ -27,6 +27,12 @@ Historical spreadsheets remain preserved at the repository root:
 - `Current_SOSA-SSN to BFO-CCO.xlsx`
 - `FINAL_SOSA 2023 to BFO-CCO .xlsx`
 
+### COMS row identity
+
+Every governed row in `mappings/SSN2BFO-COMS.xlsx` has a persistent `coms:RowID` using the lowercase canonical UUIDv4 URN form `urn:uuid:xxxxxxxx-xxxx-4xxx-[89ab]xxx-xxxxxxxxxxxx`. The RowID identifies the mapping record and remains unchanged when a row moves or receives an intentional in-place correction. A separate canonical source-expression SHA-256 excludes row location and `coms:Reasoning`, so it detects logical mapping changes without treating rationale edits or row movement as identity changes.
+
+RowIDs must never be reused. Deletion, retirement, replacement, splitting, and merging of governed rows remain prohibited until a governed lineage and retirement registry exists. Two active rows may not resolve to the same canonical authoritative axiom, even when their RowIDs, locations, or rationales differ. Run the focused identity and normal COMS checks with `make check-coms-row-identities`.
+
 ## Validation environment
 
 `make check` is the canonical authoritative validation gate used both locally and by hosted CI. It validates the COMS workbook and authoritative root mapping, including freshness, source coverage, focused generator tests, example checks, HermiT consistency, Python compilation, whitespace, and repository cleanliness as currently implemented.

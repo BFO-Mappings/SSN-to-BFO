@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-publication-metadata watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-publication-metadata watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -22,12 +22,14 @@ compile:
 		tools/test_elk_instance_mapping_entailments.py \
 		tools/test_instance_data.py \
 		tools/compare_mappings.py \
+		tools/coms_row_identity.py \
 		tools/generate_mapping_from_coms.py \
 		tools/check_coms_mapping.py \
 		tools/watch_coms_mapping.py \
 		tools/publication_metadata.py \
 		tools/check_publication_metadata.py \
 		tests/test_generate_mapping_from_coms.py \
+		tests/test_coms_row_identity.py \
 		tests/test_publication_metadata.py \
 		tools/workflow_check.py
 
@@ -37,6 +39,11 @@ check-publication-metadata:
 
 check-coms:
 	python tools/check_coms_mapping.py
+
+check-coms-row-identities:
+	python -m unittest discover -s tests -p 'test_coms_row_identity.py'
+	python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
+	python tools/check_coms_mapping.py --check-only
 
 watch-coms:
 	@echo "Watching mappings/SSN2BFO-COMS.xlsx. Press Ctrl+C to stop."
