@@ -25,6 +25,7 @@ COMPILE_COMMAND = [
     "tools/compare_mappings.py",
     "tools/coms_row_identity.py",
     "tools/product_dispositions.py",
+    "tools/modular_products.py",
     "tools/check_coms_mapping.py",
     "tools/watch_coms_mapping.py",
     "tools/publication_metadata.py",
@@ -32,6 +33,7 @@ COMPILE_COMMAND = [
     "tests/test_generate_mapping_from_coms.py",
     "tests/test_coms_row_identity.py",
     "tests/test_product_dispositions.py",
+    "tests/test_modular_products.py",
     "tests/test_publication_metadata.py",
     "tools/workflow_check.py",
 ]
@@ -190,6 +192,7 @@ def mapping_change_scope(state: WorkflowState) -> None:
         "reports/mapping-consistency-audit.csv",
         "reports/elk-instance-mapping-entailments.md",
         "reports/coms-product-dispositions.json",
+        "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     }
     unexpected = [
         path

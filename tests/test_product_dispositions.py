@@ -672,10 +672,17 @@ class ProductDispositionTests(unittest.TestCase):
                     code,
                 )
 
-    def test_future_modular_ttl_files_are_not_required(self) -> None:
-        for product in self.metadata.products:
-            if product.key != "integrated":
-                self.assertFalse((REPO_ROOT / product.path).is_file())
+    def test_disposition_build_does_not_require_unimplemented_modular_ttl_files(self) -> None:
+        products = {product.key: product for product in self.metadata.products}
+        self.assertTrue((REPO_ROOT / products["alignment_core"].path).is_file())
+        for product_key in (
+            "strict_bfo_mapping",
+            "bfo_projection",
+            "cco_extension",
+        ):
+            with self.subTest(product_key=product_key):
+                self.assertFalse((REPO_ROOT / products[product_key].path).is_file())
+
         self.assertEqual(self.build(row_input()).summary.governed_row_count, 1)
 
 

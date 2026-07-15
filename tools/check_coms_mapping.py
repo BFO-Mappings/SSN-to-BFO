@@ -36,7 +36,7 @@ except ModuleNotFoundError:  # pragma: no cover - runtime dependency guard
     openpyxl = None
 
 try:
-    from rdflib import Graph
+    from rdflib import Graph, RDF, OWL, URIRef
 except ModuleNotFoundError:  # pragma: no cover - runtime dependency guard
     Graph = None
 
@@ -46,6 +46,7 @@ WORKBOOK = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
 GENERATOR = REPO_ROOT / "tools/generate_mapping_from_coms.py"
 ROW_IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
 DISPOSITION_MODULE = REPO_ROOT / "tools/product_dispositions.py"
+MODULAR_PRODUCTS_MODULE = REPO_ROOT / "tools/modular_products.py"
 PUBLICATION_METADATA = REPO_ROOT / "config/publication-metadata.toml"
 PUBLICATION_METADATA_MODULE = REPO_ROOT / "tools/publication_metadata.py"
 CACHE_DIR = REPO_ROOT / ".cache/coms"
@@ -58,6 +59,7 @@ MAINTAINED_OUTPUTS = {
     "coverage_report": REPO_ROOT / "reports/coms-source-term-coverage.md",
     "diff_report": REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
     "disposition_report": REPO_ROOT / "reports/coms-product-dispositions.json",
+    "alignment_core": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
 }
 
 METADATA_LABELS = {
@@ -67,9 +69,12 @@ METADATA_LABELS = {
     "maintained ontology path": "maintained_output_path",
     "generated ontology SHA-256": "generated_candidate_sha256",
     "product-disposition module SHA-256": "disposition_module_sha256",
+    "modular-products module SHA-256": "modular_products_module_sha256",
     "publication metadata SHA-256": "publication_metadata_sha256",
     "maintained product-disposition path": "disposition_report_path",
     "product-disposition JSON SHA-256": "disposition_report_sha256",
+    "maintained alignment-core path": "alignment_core_path",
+    "alignment-core Turtle SHA-256": "alignment_core_sha256",
 }
 
 
@@ -124,7 +129,13 @@ def verify_workbook(log: list[str]) -> str:
 def compile_generator(log: list[str]) -> str:
     emit("[2/11] Compiling COMS generator", log)
     try:
-        for path in (GENERATOR, ROW_IDENTITY_MODULE, DISPOSITION_MODULE, PUBLICATION_METADATA_MODULE):
+        for path in (
+            GENERATOR,
+            ROW_IDENTITY_MODULE,
+            DISPOSITION_MODULE,
+            MODULAR_PRODUCTS_MODULE,
+            PUBLICATION_METADATA_MODULE,
+        ):
             py_compile.compile(str(path), doraise=True)
     except py_compile.PyCompileError as exc:
         raise CheckFailure(f"generator compile failed: {exc.msg}") from exc
@@ -161,6 +172,7 @@ def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
         "coverage_report": transaction_dir / "reports/coms-source-term-coverage.md",
         "diff_report": transaction_dir / "reports/coms-vs-pre-coms-legacy-diff.md",
         "disposition_report": transaction_dir / "reports/coms-product-dispositions.json",
+        "alignment_core": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         "summary": transaction_dir / "summary.json",
         "hermit": transaction_dir / "hermit",
     }
@@ -179,6 +191,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         str(paths["generation_report"]),
         "--disposition-report",
         str(paths["disposition_report"]),
+        "--alignment-core-output",
+        str(paths["alignment_core"]),
         "--coverage-report",
         str(paths["coverage_report"]),
         "--diff-report",
@@ -191,6 +205,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         relative(MAINTAINED_OUTPUTS["candidate"]),
         "--report-disposition-path",
         relative(MAINTAINED_OUTPUTS["disposition_report"]),
+        "--report-alignment-core-path",
+        relative(MAINTAINED_OUTPUTS["alignment_core"]),
         "--summary-json",
         str(paths["summary"]),
     ]
@@ -267,6 +283,60 @@ def validate_temporary_outputs(
         log,
     )
 
+    alignment_path = paths["alignment_core"]
+    alignment_hash = sha256_file(alignment_path)
+    alignment_summary = summary.get("alignment_core")
+    if not isinstance(alignment_summary, dict):
+        raise CheckFailure("generator summary is missing alignment-core results")
+    alignment_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "alignment_core"
+    )
+    expected_alignment = {
+        "product_key": "alignment_core",
+        "stable_ontology_iri": alignment_metadata.stable_ontology_iri,
+        "governed_axiom_count": 29,
+        "logical_triple_count": 53,
+        "ontology_header_triple_count": 1,
+        "total_triple_count": 54,
+        "domain_axiom_count": 15,
+        "range_axiom_count": 14,
+        "named_target_count": 26,
+        "union_target_count": 3,
+        "hermit_return_code": 0,
+        "hermit_result": "PASS",
+        "named_unsat_count": 0,
+    }
+    for field, expected in expected_alignment.items():
+        if alignment_summary.get(field) != expected:
+            raise CheckFailure(
+                f"alignment-core summary mismatch for {field}: "
+                f"expected {expected!r}, got {alignment_summary.get(field)!r}"
+            )
+    if summary.get("alignment_core_sha256") != alignment_hash:
+        raise CheckFailure("alignment-core hash does not match generator summary")
+    if summary.get("modular_products_module_sha256") != sha256_file(MODULAR_PRODUCTS_MODULE):
+        raise CheckFailure("modular-products module hash does not match generator summary")
+    alignment_graph = Graph()
+    try:
+        alignment_graph.parse(alignment_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"alignment-core parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    ontology_iri = URIRef(alignment_metadata.stable_ontology_iri)
+    if set(alignment_graph.subjects(RDF.type, OWL.Ontology)) != {ontology_iri}:
+        raise CheckFailure("alignment core has an incorrect ontology declaration")
+    if any(True for _ in alignment_graph.triples((None, OWL.imports, None))):
+        raise CheckFailure("alignment core must not contain owl:imports")
+    if len(alignment_graph) != 54:
+        raise CheckFailure(f"alignment-core parsed triple count is {len(alignment_graph)}, expected 54")
+    emit(
+        "Alignment core: PASS (29 governed axioms; 53 logical triples; 54 total triples)",
+        log,
+    )
+
     emit("[5/11] Confirming maintained SPARQL source-term coverage checks ran", log)
     coverage = summary.get("source_term_coverage")
     if not isinstance(coverage, dict):
@@ -323,16 +393,24 @@ def validate_temporary_outputs(
         "maintained_output_path": relative(MAINTAINED_OUTPUTS["candidate"]),
         "generated_candidate_sha256": candidate_hash,
         "disposition_module_sha256": sha256_file(DISPOSITION_MODULE),
+        "modular_products_module_sha256": sha256_file(MODULAR_PRODUCTS_MODULE),
         "publication_metadata_sha256": sha256_file(PUBLICATION_METADATA),
         "disposition_report_path": relative(MAINTAINED_OUTPUTS["disposition_report"]),
         "disposition_report_sha256": disposition_hash,
+        "alignment_core_path": relative(MAINTAINED_OUTPUTS["alignment_core"]),
+        "alignment_core_sha256": alignment_hash,
     }
     for key, expected in expected_metadata.items():
         if metadata.get(key) != expected:
             raise CheckFailure(f"temporary generation report {key} mismatch")
     if not metadata.get("generation_timestamp"):
         raise CheckFailure("temporary generation report lacks generation timestamp")
-    for path in (paths["generation_report"], paths["coverage_report"], paths["diff_report"]):
+    for path in (
+        paths["generation_report"],
+        paths["coverage_report"],
+        paths["diff_report"],
+        paths["alignment_core"],
+    ):
         assert_no_trailing_whitespace(path)
     return summary
 
@@ -376,9 +454,12 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
     if metadata.get("generator_sha256") != generator_hash:
         errors.append("generator hash differs from the generated report")
     disposition_module_hash = sha256_file(DISPOSITION_MODULE)
+    modular_products_module_hash = sha256_file(MODULAR_PRODUCTS_MODULE)
     publication_metadata_hash = sha256_file(PUBLICATION_METADATA)
     if metadata.get("disposition_module_sha256") != disposition_module_hash:
         errors.append("product-disposition module hash differs from the generated report")
+    if metadata.get("modular_products_module_sha256") != modular_products_module_hash:
+        errors.append("modular-products module hash differs from the generated report")
     if metadata.get("publication_metadata_sha256") != publication_metadata_hash:
         errors.append("publication metadata hash differs from the generated report")
     if metadata.get("maintained_output_path") != relative(MAINTAINED_OUTPUTS["candidate"]):
@@ -392,6 +473,12 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         errors.append("maintained product-disposition path differs from the generated report")
     if metadata.get("disposition_report_sha256") != disposition_hash:
         errors.append("product-disposition hash differs from the generated report")
+    alignment_path = MAINTAINED_OUTPUTS["alignment_core"]
+    alignment_hash = sha256_file(alignment_path)
+    if metadata.get("alignment_core_path") != relative(alignment_path):
+        errors.append("alignment-core path differs from the generated report")
+    if metadata.get("alignment_core_sha256") != alignment_hash:
+        errors.append("alignment-core hash differs from the generated report")
     try:
         disposition = load_disposition_document(disposition_path)
         publication_metadata = load_metadata(PUBLICATION_METADATA)
@@ -427,7 +514,13 @@ def normalized_generation_report(path: Path) -> str:
 
 def output_differences(paths: dict[str, Path]) -> list[str]:
     differences: list[str] = []
-    for name in ("candidate", "coverage_report", "diff_report", "disposition_report"):
+    for name in (
+        "candidate",
+        "coverage_report",
+        "diff_report",
+        "disposition_report",
+        "alignment_core",
+    ):
         current = MAINTAINED_OUTPUTS[name]
         if not current.is_file() or current.read_bytes() != paths[name].read_bytes():
             differences.append(name)
@@ -502,6 +595,9 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
         "product_disposition_report_path": summary.get("product_disposition_report_path"),
         "product_disposition_report_sha256": summary.get("product_disposition_report_sha256"),
         "product_dispositions": summary.get("product_dispositions"),
+        "alignment_core_path": summary.get("alignment_core_path"),
+        "alignment_core_sha256": summary.get("alignment_core_sha256"),
+        "alignment_core": summary.get("alignment_core"),
         "timestamp": utc_now(),
         "generated_ontology_triple_count": summary.get("generated_ontology_triple_count"),
         "candidate_closure_triple_count": summary.get("candidate_closure_triple_count"),

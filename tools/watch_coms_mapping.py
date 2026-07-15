@@ -23,6 +23,7 @@ MAINTAINED_OUTPUTS = (
     REPO_ROOT / "reports/coms-source-term-coverage.md",
     REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
     REPO_ROOT / "reports/coms-product-dispositions.json",
+    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
 )
 POLL_SECONDS = 1.0
 DEBOUNCE_SECONDS = 1.5
