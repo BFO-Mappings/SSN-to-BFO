@@ -18,6 +18,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
+from coms_row_identity import (
+    CANONICALIZATION_VERSION,
+    CanonicalRowAudit,
+    CanonicalRowInput,
+    ComsRowIdentityError,
+    ExpressionNode as CanonicalExpressionNode,
+    RowIdentityReference,
+    RowLocation,
+    build_row_audit,
+    validate_row_id,
+    validate_unique_authoritative_axioms,
+    validate_unique_row_ids,
+)
+
 try:
     import openpyxl
 except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guard
@@ -33,17 +47,20 @@ except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guar
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEGACY_ONTOLOGY = REPO_ROOT / "legacy/SSN2BFO-pre-COMS.ttl"
+IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
 GENERATED_NOTICE = (
     "# GENERATED FILE: produced from mappings/SSN2BFO-COMS.xlsx; "
     "do not edit SSN2BFO.ttl directly."
 )
 
-REQUIRED_COLUMNS = (
+BASE_REQUIRED_COLUMNS = (
     "sssom:subject_id",
     "sssom:predicate_id",
     "coms:Target",
     "coms:Reasoning",
 )
+ROW_ID_HEADER = "coms:RowID"
+REQUIRED_COLUMNS = BASE_REQUIRED_COLUMNS + (ROW_ID_HEADER,)
 
 ONTOLOGY_IRI = URIRef("http://www.sks.ai/SSN2BFO/")
 DIRECT_IMPORTS = (
@@ -144,10 +161,20 @@ class WorkbookRow:
     predicate_text: str
     target_text: str
     reasoning_text: str
+    stable_row_id: str
 
     @property
     def row_id(self) -> str:
         return f"{self.sheet}!{self.row_number}"
+
+    @property
+    def diagnostic_id(self) -> str:
+        suffix = f" [{self.stable_row_id}]" if self.stable_row_id else ""
+        return f"{self.row_id}{suffix}"
+
+    @property
+    def location(self) -> RowLocation:
+        return RowLocation(self.sheet, self.row_number)
 
     @property
     def is_blank_mapping(self) -> bool:
@@ -191,6 +218,7 @@ class ProcessedRow:
     expr: Expr | None = None
     target_property: URIRef | None = None
     property_chain: tuple[URIRef, ...] = ()
+    identity_audit: CanonicalRowAudit | None = None
 
 
 @dataclass(frozen=True)
@@ -216,6 +244,13 @@ class WorkbookStats:
     domain_rows: int = 0
     range_rows: int = 0
     property_chain_rows: int = 0
+    governed_row_id_count: int = 0
+    unique_row_id_count: int = 0
+    processed_row_count: int = 0
+    identity_audit_row_count: int = 0
+    identity_count_reconciliation_passed: bool = False
+    identity_row_id_set_reconciliation_passed: bool = False
+    identity_location_reconciliation_passed: bool = False
 
     @property
     def active_axiom_rows(self) -> int:
@@ -607,6 +642,10 @@ def command_text(command: list[str]) -> str:
     return shlex.join(command)
 
 
+def markdown_escape(value: str) -> str:
+    return value.replace("|", "\\|").replace("\n", "<br>")
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -626,8 +665,13 @@ def read_workbook(path: Path) -> tuple[list[WorkbookRow], WorkbookStats]:
     stats = WorkbookStats()
     for worksheet in workbook.worksheets:
         headers = [normalize_cell(worksheet.cell(row=1, column=col).value) for col in range(1, worksheet.max_column + 1)]
-        if not all(column in headers for column in REQUIRED_COLUMNS):
+        if not all(column in headers for column in BASE_REQUIRED_COLUMNS):
             continue
+        if ROW_ID_HEADER not in headers:
+            workbook.close()
+            raise GenerationError(
+                f"{worksheet.title}!1: governed worksheet is missing required header {ROW_ID_HEADER!r}"
+            )
         stats.worksheets_read.append(worksheet.title)
         header_index = {header: idx + 1 for idx, header in enumerate(headers)}
         for row_number in range(2, worksheet.max_row + 1):
@@ -638,27 +682,53 @@ def read_workbook(path: Path) -> tuple[list[WorkbookRow], WorkbookStats]:
                 predicate_text=normalize_cell(worksheet.cell(row=row_number, column=header_index["sssom:predicate_id"]).value),
                 target_text=normalize_cell(worksheet.cell(row=row_number, column=header_index["coms:Target"]).value),
                 reasoning_text=normalize_cell(worksheet.cell(row=row_number, column=header_index["coms:Reasoning"]).value),
+                stable_row_id=normalize_cell(worksheet.cell(row=row_number, column=header_index[ROW_ID_HEADER]).value),
             )
             stats.rows_by_sheet[worksheet.title] += 1
-            if row.subject_text or row.predicate_text or row.target_text or row.reasoning_text:
+            if (
+                row.subject_text
+                or row.predicate_text
+                or row.target_text
+                or row.reasoning_text
+                or row.stable_row_id
+            ):
                 stats.populated_rows_by_sheet[worksheet.title] += 1
                 rows.append(row)
+    workbook.close()
     if not stats.worksheets_read:
         raise GenerationError(f"no worksheet in {path} contains the required COMS header")
     return rows, stats
 
 
+def validate_workbook_row_ids(rows: list[WorkbookRow], stats: WorkbookStats) -> None:
+    references: list[RowIdentityReference] = []
+    issues = []
+    for row in rows:
+        try:
+            row_id = validate_row_id(row.stable_row_id, row.location)
+        except ComsRowIdentityError as exc:
+            issues.extend(exc.issues)
+            continue
+        references.append(RowIdentityReference(row_id=row_id, location=row.location))
+    issues.extend(validate_unique_row_ids(references))
+    stats.governed_row_id_count = len(rows)
+    stats.unique_row_id_count = len({reference.row_id for reference in references})
+    if issues:
+        raise GenerationError(str(ComsRowIdentityError(issues)))
+
+
 def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats: WorkbookStats) -> list[ProcessedRow]:
+    validate_workbook_row_ids(rows, stats)
     processed: list[ProcessedRow] = []
-    mapping_by_key: dict[tuple[str, str], str] = {}
     property_typing_row_by_key: dict[tuple[str, str], WorkbookRow] = {}
     for row in rows:
         if not row.subject_text:
-            if row.predicate_text or row.target_text:
-                raise GenerationError(f"{row.row_id}: predicate/target populated without subject")
-            continue
+            raise GenerationError(
+                f"ERROR [MISSING_SOURCE_SUBJECT] {row.diagnostic_id}: "
+                "sssom:subject_id is required for every governed row"
+            )
 
-        subject, subject_kind = resolver.resolve_source_subject(row.subject_text, row.row_id)
+        subject, subject_kind = resolver.resolve_source_subject(row.subject_text, row.diagnostic_id)
 
         if row.is_blank_mapping:
             stats.blank_mapping_rows += 1
@@ -675,17 +745,17 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
 
         if not row.predicate_text or not row.target_text:
             raise GenerationError(
-                f"{row.row_id}: active axiom rows must populate subject, predicate, and target; "
+                f"{row.diagnostic_id}: active axiom rows must populate subject, predicate, and target; "
                 "only subject-only rows are allowed as explicit blank mappings"
             )
         if row.predicate_text not in ALLOWED_PREDICATES:
-            raise GenerationError(f"{row.row_id}: invalid predicate {row.predicate_text!r}")
+            raise GenerationError(f"{row.diagnostic_id}: invalid predicate {row.predicate_text!r}")
 
         if row.predicate_text in CLASS_PREDICATES and subject_kind != "class":
-            raise GenerationError(f"{row.row_id}: class predicate used with {subject_kind} subject")
+            raise GenerationError(f"{row.diagnostic_id}: class predicate used with {subject_kind} subject")
         if row.predicate_text in OBJECT_PROPERTY_SUBJECT_PREDICATES and subject_kind != "object_property":
             raise GenerationError(
-                f"{row.row_id}: {row.predicate_text} requires an object-property subject; "
+                f"{row.diagnostic_id}: {row.predicate_text} requires an object-property subject; "
                 f"{row.subject_text} resolves as {subject_kind}"
             )
 
@@ -695,22 +765,13 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
             if previous_row is not None:
                 axiom_name = "domain" if row.predicate_text == "rdfs:domain" else "range"
                 raise GenerationError(
-                    f"{row.row_id}: duplicate {row.predicate_text} row for {row.subject_text}; "
-                    f"the first {axiom_name} row is {previous_row.row_id}. Multiple OWL {axiom_name} "
+                    f"{row.diagnostic_id}: duplicate {row.predicate_text} row for {row.subject_text}; "
+                    f"the first {axiom_name} row is {previous_row.diagnostic_id}. Multiple OWL {axiom_name} "
                     "axioms are conjunctive; write alternatives with Manchester 'or' in one target expression."
                 )
             property_typing_row_by_key[key] = row
-        else:
-            previous_target = mapping_by_key.get(key)
-            if previous_target is not None and previous_target != row.target_text:
-                raise GenerationError(
-                    f"{row.row_id}: duplicate mapping for {row.subject_text} {row.predicate_text} "
-                    f"has incompatible targets {previous_target!r} and {row.target_text!r}"
-                )
-            mapping_by_key[key] = row.target_text
-
         if row.predicate_text in CLASS_PREDICATES:
-            expr = ManchesterParser(row.target_text, resolver, row.row_id).parse()
+            expr = ManchesterParser(row.target_text, resolver, row.diagnostic_id).parse()
             stats.class_mapping_rows += 1
             stats.mapped_rows += 1
             processed.append(
@@ -724,7 +785,7 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
                 )
             )
         elif row.predicate_text in DOMAIN_RANGE_PREDICATES:
-            expr = ManchesterParser(row.target_text, resolver, row.row_id).parse()
+            expr = ManchesterParser(row.target_text, resolver, row.diagnostic_id).parse()
             if row.predicate_text == "rdfs:domain":
                 stats.domain_rows += 1
             else:
@@ -740,7 +801,7 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
                 )
             )
         elif row.predicate_text == "owl:propertyChainAxiom":
-            chain = parse_property_chain(row.target_text, resolver, row.row_id)
+            chain = parse_property_chain(row.target_text, resolver, row.diagnostic_id)
             stats.property_chain_rows += 1
             stats.mapped_rows += 1
             processed.append(
@@ -754,7 +815,7 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
                 )
             )
         else:
-            target_property = resolver.resolve(row.target_text, "object_property", row.row_id).iri
+            target_property = resolver.resolve(row.target_text, "object_property", row.diagnostic_id).iri
             stats.object_property_mapping_rows += 1
             stats.mapped_rows += 1
             processed.append(
@@ -767,7 +828,229 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
                     target_property=target_property,
                 )
             )
+    stats.processed_row_count = len(processed)
+    identity_audits = attach_canonical_identities(processed)
+    stats.identity_audit_row_count = len(identity_audits)
+    validate_identity_audit_completeness(rows, processed, identity_audits)
+    stats.identity_count_reconciliation_passed = True
+    stats.identity_row_id_set_reconciliation_passed = True
+    stats.identity_location_reconciliation_passed = True
+    validate_incompatible_duplicate_mappings(processed)
     return processed
+
+
+def canonical_expression_node(expr: Expr) -> CanonicalExpressionNode:
+    if expr.kind == "named":
+        return CanonicalExpressionNode(kind="named", iri=None if expr.iri is None else str(expr.iri))
+    if expr.kind in {"intersection", "union"}:
+        return CanonicalExpressionNode(
+            kind=expr.kind,
+            children=tuple(canonical_expression_node(child) for child in expr.children),
+        )
+    if expr.kind == "some":
+        return CanonicalExpressionNode(
+            kind="some",
+            property_iri=None if expr.prop is None else str(expr.prop),
+            filler=None if expr.filler is None else canonical_expression_node(expr.filler),
+        )
+    return CanonicalExpressionNode(kind=expr.kind)
+
+
+def mapping_type_for_processed_row(item: ProcessedRow) -> str:
+    if not item.predicate:
+        return "explicit_blank"
+    if item.predicate in CLASS_PREDICATES:
+        return "class_mapping"
+    if item.predicate == "owl:propertyChainAxiom":
+        return "property_chain"
+    if item.predicate == "rdfs:domain":
+        return "domain"
+    if item.predicate == "rdfs:range":
+        return "range"
+    return "object_property_mapping"
+
+
+def canonical_input_for_processed_row(item: ProcessedRow) -> CanonicalRowInput:
+    return CanonicalRowInput(
+        row_id=item.row.stable_row_id,
+        location=item.row.location,
+        subject_iri=str(item.subject),
+        predicate_iri=None if not item.predicate else str(ALLOWED_PREDICATES[item.predicate]),
+        mapping_type=mapping_type_for_processed_row(item),
+        reasoning=item.row.reasoning_text,
+        expression=None if item.expr is None else canonical_expression_node(item.expr),
+        target_property_iri=None if item.target_property is None else str(item.target_property),
+        property_chain=tuple(str(value) for value in item.property_chain),
+    )
+
+
+def attach_canonical_identities(processed_rows: list[ProcessedRow]) -> tuple[CanonicalRowAudit, ...]:
+    audits: list[CanonicalRowAudit] = []
+    for item in processed_rows:
+        try:
+            audit = build_row_audit(canonical_input_for_processed_row(item))
+        except ComsRowIdentityError as exc:
+            raise GenerationError(str(exc)) from exc
+        item.identity_audit = audit
+        audits.append(audit)
+    issues = validate_unique_authoritative_axioms(audits)
+    if issues:
+        raise GenerationError(str(ComsRowIdentityError(issues)))
+    return tuple(audits)
+
+
+def validate_identity_audit_completeness(
+    governed_rows: list[WorkbookRow],
+    processed_rows: list[ProcessedRow],
+    identity_audits: tuple[CanonicalRowAudit, ...],
+) -> None:
+    problems: list[tuple[str, str]] = []
+    if len(governed_rows) != len(processed_rows):
+        problems.append(
+            (
+                "IDENTITY_AUDIT_INCOMPLETE",
+                f"governed row count {len(governed_rows)} does not match "
+                f"processed row count {len(processed_rows)}",
+            )
+        )
+    if len(processed_rows) != len(identity_audits):
+        problems.append(
+            (
+                "IDENTITY_AUDIT_INCOMPLETE",
+                f"processed row count {len(processed_rows)} does not match "
+                f"identity-audit row count {len(identity_audits)}",
+            )
+        )
+
+    governed_by_id = {
+        row.stable_row_id: row.location
+        for row in governed_rows
+    }
+    processed_by_id = {
+        item.row.stable_row_id: item.row.location
+        for item in processed_rows
+    }
+    audit_by_id = {
+        audit.row_id: audit
+        for audit in identity_audits
+    }
+
+    def located_ids(row_ids: set[str], locations: dict[str, RowLocation]) -> str:
+        return ", ".join(
+            f"{row_id} ({locations[row_id].text})"
+            for row_id in sorted(row_ids)
+        )
+
+    governed_ids = set(governed_by_id)
+    processed_ids = set(processed_by_id)
+    audited_ids = set(audit_by_id)
+
+    missing_processed = governed_ids - processed_ids
+    unexpected_processed = processed_ids - governed_ids
+    if missing_processed or unexpected_processed:
+        details: list[str] = []
+        if missing_processed:
+            details.append(
+                "governed RowIDs missing from processed rows: "
+                + located_ids(missing_processed, governed_by_id)
+            )
+        if unexpected_processed:
+            details.append(
+                "unexpected processed RowIDs not present in governed rows: "
+                + located_ids(unexpected_processed, processed_by_id)
+            )
+        problems.append(("GOVERNED_PROCESSED_ROWID_MISMATCH", "; ".join(details)))
+
+    missing_audits = processed_ids - audited_ids
+    unexpected_audits = audited_ids - processed_ids
+    if missing_audits or unexpected_audits:
+        details = []
+        if missing_audits:
+            details.append(
+                "processed RowIDs missing from identity audits: "
+                + located_ids(missing_audits, processed_by_id)
+            )
+        if unexpected_audits:
+            audit_locations = {
+                row_id: audit_by_id[row_id].location
+                for row_id in unexpected_audits
+            }
+            details.append(
+                "unexpected audited RowIDs not present in processed rows: "
+                + located_ids(unexpected_audits, audit_locations)
+            )
+        problems.append(("PROCESSED_AUDIT_ROWID_MISMATCH", "; ".join(details)))
+
+    for row_id in sorted(governed_ids & processed_ids):
+        governed_location = governed_by_id[row_id]
+        processed_location = processed_by_id[row_id]
+        if governed_location != processed_location:
+            problems.append(
+                (
+                    "IDENTITY_AUDIT_LOCATION_MISMATCH",
+                    f"governed-to-processed location mismatch for {row_id}: "
+                    f"governed {governed_location.text}, processed {processed_location.text}",
+                )
+            )
+
+    for row_id in sorted(processed_ids & audited_ids):
+        processed_location = processed_by_id[row_id]
+        audit_location = audit_by_id[row_id].location
+        if processed_location != audit_location:
+            problems.append(
+                (
+                    "IDENTITY_AUDIT_LOCATION_MISMATCH",
+                    f"processed-to-audit location mismatch for {row_id}: "
+                    f"processed {processed_location.text}, audit {audit_location.text}",
+                )
+            )
+
+    for item in processed_rows:
+        audit = audit_by_id.get(item.row.stable_row_id)
+        if audit is None or item.identity_audit is None:
+            problems.append(
+                (
+                    "IDENTITY_AUDIT_INCOMPLETE",
+                    f"{item.row.diagnostic_id} is absent from the identity audit",
+                )
+            )
+            continue
+        if item.identity_audit != audit:
+            problems.append(
+                (
+                    "IDENTITY_AUDIT_INCOMPLETE",
+                    f"{item.row.diagnostic_id} has a mismatched identity audit",
+                )
+            )
+        if not audit.authoritative_axioms:
+            problems.append(
+                (
+                    "IDENTITY_AUDIT_INCOMPLETE",
+                    f"{item.row.diagnostic_id} does not produce a canonical authoritative axiom",
+                )
+            )
+
+    if problems:
+        raise GenerationError(
+            " | ".join(f"ERROR [{code}] {message}" for code, message in problems)
+        )
+
+
+def validate_incompatible_duplicate_mappings(processed_rows: list[ProcessedRow]) -> None:
+    first_by_key: dict[tuple[str, str], ProcessedRow] = {}
+    for item in processed_rows:
+        if not item.predicate or item.predicate in DOMAIN_RANGE_PREDICATES:
+            continue
+        key = (str(item.subject), item.predicate)
+        previous = first_by_key.get(key)
+        if previous is None:
+            first_by_key[key] = item
+            continue
+        raise GenerationError(
+            f"{item.row.diagnostic_id}: duplicate mapping for {item.row.subject_text} {item.predicate} "
+            f"has an incompatible target; the first mapping row is {previous.row.diagnostic_id}. "
+            "Canonically identical targets are reported as DUPLICATE_AUTHORITATIVE_AXIOM."
+        )
 
 
 def parse_property_chain(text: str, resolver: Resolver, row_id: str) -> tuple[URIRef, ...]:
@@ -828,7 +1111,7 @@ def generate_ontology(processed_rows: list[ProcessedRow], output_path: Path) -> 
             Collection(graph, chain_node, list(item.property_chain))
             graph.add((item.subject, OWL.propertyChainAxiom, chain_node))
         else:
-            raise GenerationError(f"{item.row.row_id}: processed row has no target")
+            raise GenerationError(f"{item.row.diagnostic_id}: processed row has no target")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     turtle = graph.serialize(format="turtle").rstrip() + "\n"
@@ -1366,14 +1649,22 @@ def write_generation_report(
     coverage: CoverageResult | None,
     comparison: ComparisonResult | None,
     normalized_rows: list[NormalizedRow],
+    identity_audits: list[CanonicalRowAudit],
     elapsed_seconds: float,
     workbook_sha256: str,
     generator_sha256: str,
+    identity_module_sha256: str,
     generation_timestamp: str,
     candidate_sha256: str,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     error_lines = [f"- {error}" for error in errors] or ["- none"]
+    authoritative_axioms = [
+        axiom.canonical_axiom
+        for audit in identity_audits
+        for axiom in audit.authoritative_axioms
+    ]
+    unique_authoritative_axioms = set(authoritative_axioms)
     lines = [
         "# COMS Mapping Generation Validation",
         "",
@@ -1387,6 +1678,7 @@ def write_generation_report(
         "|---|---|",
         f"| workbook SHA-256 | `{workbook_sha256}` |",
         f"| generator SHA-256 | `{generator_sha256}` |",
+        f"| row-identity module SHA-256 | `{identity_module_sha256}` |",
         f"| generation timestamp (UTC) | `{generation_timestamp}` |",
         f"| maintained ontology path | `{output_path}` |",
         f"| generated ontology SHA-256 | `{candidate_sha256}` |",
@@ -1395,6 +1687,7 @@ def write_generation_report(
         "",
         f"- Workbook path: `{workbook_path}`",
         f"- Worksheets read: {', '.join(f'`{name}`' for name in stats.worksheets_read) or 'none'}",
+        f"- Governed RowID header: `{ROW_ID_HEADER}` (recognized on {', '.join(f'`{name}`' for name in stats.worksheets_read) or 'no worksheets'})",
         "",
         "| Worksheet | Rows scanned | Populated rows |",
         "|---|---:|---:|",
@@ -1415,6 +1708,10 @@ def write_generation_report(
         f"| domain row count | {stats.domain_rows} |",
         f"| range row count | {stats.range_rows} |",
         f"| property-chain count | {stats.property_chain_rows} |",
+        f"| governed RowID count | {stats.governed_row_id_count} |",
+        f"| unique RowID count | {stats.unique_row_id_count} |",
+        f"| processed governed row count | {stats.processed_row_count} |",
+        f"| identity-audit row count | {stats.identity_audit_row_count} |",
         "",
         "## Prefixes Derived",
         "",
@@ -1456,6 +1753,55 @@ def write_generation_report(
             "- Duplicate subject/predicate rows with incompatible targets are fatal.",
             "- At most one populated `rdfs:domain` and one populated `rdfs:range` row are allowed per subject; alternatives belong in one Manchester `or` expression because multiple OWL domain/range axioms are conjunctive.",
             "- No incompatible duplicate mappings were found." if not errors else "- Duplicate checks did not complete cleanly because generation errors were present.",
+            "",
+            "## COMS Row Identity Integrity",
+            "",
+            f"- Canonical-expression version: `{CANONICALIZATION_VERSION}`",
+            f"- Governed RowID count: {stats.governed_row_id_count}",
+            f"- Unique RowID count: {stats.unique_row_id_count}",
+            f"- Processed governed row count: {stats.processed_row_count}",
+            f"- Identity-audit row count: {stats.identity_audit_row_count}",
+            f"- Canonical authoritative axiom count: {len(authoritative_axioms)}",
+            f"- Unique authoritative axiom count: {len(unique_authoritative_axioms)}",
+            f"- Count reconciliation result: {'PASS' if stats.identity_count_reconciliation_passed else 'FAIL'}",
+            f"- RowID-set reconciliation result: {'PASS' if stats.identity_row_id_set_reconciliation_passed else 'FAIL'}",
+            f"- Location reconciliation result: {'PASS' if stats.identity_location_reconciliation_passed else 'FAIL'}",
+            "- Identity-audit completeness result: "
+            + (
+                "PASS"
+                if stats.identity_count_reconciliation_passed
+                and stats.identity_row_id_set_reconciliation_passed
+                and stats.identity_location_reconciliation_passed
+                and all(audit.authoritative_axioms for audit in identity_audits)
+                else "FAIL"
+            ),
+            f"- Duplicate RowID result: {'PASS' if stats.governed_row_id_count == stats.unique_row_id_count else 'FAIL'}",
+            f"- Duplicate authoritative-axiom result: {'PASS' if len(identity_audits) == stats.governed_row_id_count and len(authoritative_axioms) == len(unique_authoritative_axioms) else 'FAIL'}",
+            "",
+            "The RowID is persistent identity; the source-expression SHA-256 excludes location and `coms:Reasoning`. Location and reasoning remain report-visible governed metadata.",
+            "",
+            "| RowID | Worksheet | Row | Mapping type | Source-expression SHA-256 | Canonical authoritative axiom | Reasoning |",
+            "|---|---|---:|---|---|---|---|",
+            *[
+                "| "
+                + " | ".join(
+                    [
+                        f"`{audit.row_id}`",
+                        f"`{audit.location.worksheet}`",
+                        str(audit.location.row_number),
+                        f"`{audit.expression.mapping_type}`",
+                        f"`{audit.source_expression_sha256}`",
+                        "<br>".join(
+                            "`" + markdown_escape(axiom.canonical_axiom) + "`"
+                            for axiom in audit.authoritative_axioms
+                        )
+                        or "_(none)_",
+                        markdown_escape(audit.reasoning) or "_(blank)_",
+                    ]
+                )
+                + " |"
+                for audit in sorted(identity_audits, key=lambda item: (item.location, item.row_id))
+            ],
             "",
             "## Generated Ontology",
             "",
@@ -1636,9 +1982,11 @@ def write_summary_json(
     output_path: Path,
     workbook_sha256: str,
     generator_sha256: str,
+    identity_module_sha256: str,
     generation_timestamp: str,
     candidate_sha256: str,
     stats: WorkbookStats,
+    identity_audits: list[CanonicalRowAudit],
     hermit: HermitResult | None,
     coverage: CoverageResult | None,
     comparison: ComparisonResult | None,
@@ -1651,6 +1999,7 @@ def write_summary_json(
         "output_path": str(output_path),
         "workbook_sha256": workbook_sha256,
         "generator_sha256": generator_sha256,
+        "row_identity_module_sha256": identity_module_sha256,
         "generation_timestamp": generation_timestamp,
         "generated_candidate_sha256": candidate_sha256,
         "worksheets_read": stats.worksheets_read,
@@ -1662,6 +2011,24 @@ def write_summary_json(
         "domain_rows": stats.domain_rows,
         "range_rows": stats.range_rows,
         "property_chain_rows": stats.property_chain_rows,
+        "governed_row_ids": stats.governed_row_id_count,
+        "unique_row_ids": stats.unique_row_id_count,
+        "processed_governed_rows": stats.processed_row_count,
+        "identity_audit_rows": stats.identity_audit_row_count,
+        "identity_count_reconciliation_passed": stats.identity_count_reconciliation_passed,
+        "identity_row_id_set_reconciliation_passed": stats.identity_row_id_set_reconciliation_passed,
+        "identity_location_reconciliation_passed": stats.identity_location_reconciliation_passed,
+        "canonicalization_version": CANONICALIZATION_VERSION,
+        "canonical_authoritative_axioms": sum(
+            len(audit.authoritative_axioms) for audit in identity_audits
+        ),
+        "unique_canonical_authoritative_axioms": len(
+            {
+                axiom.canonical_axiom
+                for audit in identity_audits
+                for axiom in audit.authoritative_axioms
+            }
+        ),
         "generated_ontology_triple_count": None if hermit is None else hermit.generated_triple_count,
         "candidate_closure_triple_count": None if hermit is None else hermit.closure_triple_count,
         "hermit_return_code": None if hermit is None else hermit.return_code,
@@ -1756,6 +2123,7 @@ def main(argv: list[str] | None = None) -> int:
     generation_timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
     workbook_sha256 = sha256_file(input_path) if input_path.is_file() else "unavailable"
     generator_sha256 = sha256_file(Path(__file__).resolve())
+    identity_module_sha256 = sha256_file(IDENTITY_MODULE)
     candidate_sha256 = "unavailable"
 
     stats = WorkbookStats()
@@ -1765,10 +2133,16 @@ def main(argv: list[str] | None = None) -> int:
     coverage: CoverageResult | None = None
     comparison: ComparisonResult | None = None
     normalized_rows: list[NormalizedRow] = []
+    identity_audits: list[CanonicalRowAudit] = []
 
     try:
         rows, stats = read_workbook(input_path)
         processed = validate_and_process_rows(rows, resolver, stats)
+        identity_audits = [
+            item.identity_audit
+            for item in processed
+            if item.identity_audit is not None
+        ]
         graph = generate_ontology(processed, output_path)
         normalized_rows = normalized_axiom_rows(processed, graph)
         coverage = build_coverage(processed, [], coverage_report_path)
@@ -1796,9 +2170,11 @@ def main(argv: list[str] | None = None) -> int:
         coverage=coverage,
         comparison=comparison,
         normalized_rows=normalized_rows,
+        identity_audits=identity_audits,
         elapsed_seconds=elapsed,
         workbook_sha256=workbook_sha256,
         generator_sha256=generator_sha256,
+        identity_module_sha256=identity_module_sha256,
         generation_timestamp=generation_timestamp,
         candidate_sha256=candidate_sha256,
     )
@@ -1809,9 +2185,11 @@ def main(argv: list[str] | None = None) -> int:
             output_path=report_output_path,
             workbook_sha256=workbook_sha256,
             generator_sha256=generator_sha256,
+            identity_module_sha256=identity_module_sha256,
             generation_timestamp=generation_timestamp,
             candidate_sha256=candidate_sha256,
             stats=stats,
+            identity_audits=identity_audits,
             hermit=hermit,
             coverage=coverage,
             comparison=comparison,
@@ -1834,6 +2212,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Domain rows: {stats.domain_rows}")
     print(f"Range rows: {stats.range_rows}")
     print(f"Property-chain rows: {stats.property_chain_rows}")
+    print(f"Governed RowIDs: {stats.governed_row_id_count}")
+    print(f"Unique RowIDs: {stats.unique_row_id_count}")
+    print(f"Processed governed rows: {stats.processed_row_count}")
+    print(f"Identity-audit rows: {stats.identity_audit_row_count}")
+    print(
+        "Canonical authoritative axioms: "
+        f"{sum(len(audit.authoritative_axioms) for audit in identity_audits)}"
+    )
     if hermit is not None:
         print(f"Generated triple count: {hermit.generated_triple_count}")
         print(f"Candidate closure triple count: {hermit.closure_triple_count}")

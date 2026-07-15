@@ -23,11 +23,13 @@ COMPILE_COMMAND = [
     "tools/test_object_property_typing_probes.py",
     "tools/test_instance_data.py",
     "tools/compare_mappings.py",
+    "tools/coms_row_identity.py",
     "tools/check_coms_mapping.py",
     "tools/watch_coms_mapping.py",
     "tools/publication_metadata.py",
     "tools/check_publication_metadata.py",
     "tests/test_generate_mapping_from_coms.py",
+    "tests/test_coms_row_identity.py",
     "tests/test_publication_metadata.py",
     "tools/workflow_check.py",
 ]
