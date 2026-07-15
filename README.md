@@ -33,6 +33,12 @@ Every governed row in `mappings/SSN2BFO-COMS.xlsx` has a persistent `coms:RowID`
 
 RowIDs must never be reused. Deletion, retirement, replacement, splitting, and merging of governed rows remain prohibited until a governed lineage and retirement registry exists. Two active rows may not resolve to the same canonical authoritative axiom, even when their RowIDs, locations, or rationales differ. Run the focused identity and normal COMS checks with `make check-coms-row-identities`.
 
+### COMS product dispositions
+
+`reports/coms-product-dispositions.json` is generated evidence accounting for every governed row and canonical authoritative axiom across the integrated, alignment-core, strict-BFO-mapping, BFO-projection, and CCO-extension products. It is derived from COMS RowIDs, canonical expressions, and `config/publication-metadata.toml`; it is not an editable mapping authority.
+
+The artifact classifies axioms as target-neutral, BFO-bearing, CCO-bearing, or mixed BFO/CCO and records the approved per-product status. CCO-bearing and mixed axioms remain explicitly deferred for strict BFO transformation and BFO projection because no transformation rule or weakened projection is approved. Modular ontology generation and transformations remain unimplemented. Run the focused nonmutating gate with `make check-coms-product-dispositions`.
+
 ## Validation environment
 
 `make check` is the canonical authoritative validation gate used both locally and by hosted CI. It validates the COMS workbook and authoritative root mapping, including freshness, source coverage, focused generator tests, example checks, HermiT consistency, Python compilation, whitespace, and repository cleanliness as currently implemented.

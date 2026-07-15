@@ -23,6 +23,13 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+from product_dispositions import (
+    ProductDispositionError,
+    load_disposition_document,
+    serialize_disposition_document,
+)
+from publication_metadata import PublicationMetadataError, load_metadata
+
 try:
     import openpyxl
 except ModuleNotFoundError:  # pragma: no cover - runtime dependency guard
@@ -37,6 +44,10 @@ except ModuleNotFoundError:  # pragma: no cover - runtime dependency guard
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
 GENERATOR = REPO_ROOT / "tools/generate_mapping_from_coms.py"
+ROW_IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
+DISPOSITION_MODULE = REPO_ROOT / "tools/product_dispositions.py"
+PUBLICATION_METADATA = REPO_ROOT / "config/publication-metadata.toml"
+PUBLICATION_METADATA_MODULE = REPO_ROOT / "tools/publication_metadata.py"
 CACHE_DIR = REPO_ROOT / ".cache/coms"
 LAST_SUCCESS = CACHE_DIR / "last-success.json"
 LAST_FAILURE = CACHE_DIR / "last-failure.log"
@@ -46,6 +57,7 @@ MAINTAINED_OUTPUTS = {
     "generation_report": REPO_ROOT / "reports/coms-generation-validation.md",
     "coverage_report": REPO_ROOT / "reports/coms-source-term-coverage.md",
     "diff_report": REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
+    "disposition_report": REPO_ROOT / "reports/coms-product-dispositions.json",
 }
 
 METADATA_LABELS = {
@@ -54,6 +66,10 @@ METADATA_LABELS = {
     "generation timestamp (UTC)": "generation_timestamp",
     "maintained ontology path": "maintained_output_path",
     "generated ontology SHA-256": "generated_candidate_sha256",
+    "product-disposition module SHA-256": "disposition_module_sha256",
+    "publication metadata SHA-256": "publication_metadata_sha256",
+    "maintained product-disposition path": "disposition_report_path",
+    "product-disposition JSON SHA-256": "disposition_report_sha256",
 }
 
 
@@ -108,7 +124,8 @@ def verify_workbook(log: list[str]) -> str:
 def compile_generator(log: list[str]) -> str:
     emit("[2/11] Compiling COMS generator", log)
     try:
-        py_compile.compile(str(GENERATOR), doraise=True)
+        for path in (GENERATOR, ROW_IDENTITY_MODULE, DISPOSITION_MODULE, PUBLICATION_METADATA_MODULE):
+            py_compile.compile(str(path), doraise=True)
     except py_compile.PyCompileError as exc:
         raise CheckFailure(f"generator compile failed: {exc.msg}") from exc
     generator_hash = sha256_file(GENERATOR)
@@ -143,6 +160,7 @@ def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
         "generation_report": transaction_dir / "reports/coms-generation-validation.md",
         "coverage_report": transaction_dir / "reports/coms-source-term-coverage.md",
         "diff_report": transaction_dir / "reports/coms-vs-pre-coms-legacy-diff.md",
+        "disposition_report": transaction_dir / "reports/coms-product-dispositions.json",
         "summary": transaction_dir / "summary.json",
         "hermit": transaction_dir / "hermit",
     }
@@ -159,6 +177,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         str(paths["candidate"]),
         "--report",
         str(paths["generation_report"]),
+        "--disposition-report",
+        str(paths["disposition_report"]),
         "--coverage-report",
         str(paths["coverage_report"]),
         "--diff-report",
@@ -169,6 +189,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         relative(WORKBOOK),
         "--report-output-path",
         relative(MAINTAINED_OUTPUTS["candidate"]),
+        "--report-disposition-path",
+        relative(MAINTAINED_OUTPUTS["disposition_report"]),
         "--summary-json",
         str(paths["summary"]),
     ]
@@ -208,6 +230,42 @@ def validate_temporary_outputs(
         raise CheckFailure("generator summary workbook hash does not match the checked input")
     if summary.get("generator_sha256") != generator_hash:
         raise CheckFailure("generator summary generator hash does not match the compiled generator")
+
+    try:
+        disposition = load_disposition_document(paths["disposition_report"])
+        publication_metadata = load_metadata(PUBLICATION_METADATA)
+    except (ProductDispositionError, PublicationMetadataError) as exc:
+        raise CheckFailure(f"product-disposition validation failed: {exc}") from exc
+    if paths["disposition_report"].read_bytes() != serialize_disposition_document(disposition):
+        raise CheckFailure("product-disposition JSON is not canonically serialized")
+    expected_disposition_hashes = {
+        "workbook_sha256": workbook_hash,
+        "generator_sha256": generator_hash,
+        "row_identity_module_sha256": sha256_file(ROW_IDENTITY_MODULE),
+        "disposition_module_sha256": sha256_file(DISPOSITION_MODULE),
+        "publication_metadata_sha256": sha256_file(PUBLICATION_METADATA),
+    }
+    for field, expected in expected_disposition_hashes.items():
+        if getattr(disposition.input_hashes, field) != expected:
+            raise CheckFailure(f"temporary product-disposition {field} mismatch")
+    expected_products = tuple(product.key for product in publication_metadata.products)
+    if disposition.product_order != expected_products:
+        raise CheckFailure("temporary product-disposition product order mismatch")
+    disposition_hash = sha256_file(paths["disposition_report"])
+    if summary.get("product_disposition_report_sha256") != disposition_hash:
+        raise CheckFailure("product-disposition hash does not match generator summary")
+    disposition_summary = summary.get("product_dispositions")
+    if not isinstance(disposition_summary, dict):
+        raise CheckFailure("generator summary is missing product-disposition results")
+    for field in disposition.summary.__dataclass_fields__:
+        if disposition_summary.get(field) != getattr(disposition.summary, field):
+            raise CheckFailure(f"product-disposition summary mismatch for {field}")
+    emit(
+        "Product dispositions: PASS "
+        f"({disposition.summary.governed_row_count} rows; "
+        f"{disposition.summary.authoritative_axiom_count} axioms)",
+        log,
+    )
 
     emit("[5/11] Confirming maintained SPARQL source-term coverage checks ran", log)
     coverage = summary.get("source_term_coverage")
@@ -264,6 +322,10 @@ def validate_temporary_outputs(
         "generator_sha256": generator_hash,
         "maintained_output_path": relative(MAINTAINED_OUTPUTS["candidate"]),
         "generated_candidate_sha256": candidate_hash,
+        "disposition_module_sha256": sha256_file(DISPOSITION_MODULE),
+        "publication_metadata_sha256": sha256_file(PUBLICATION_METADATA),
+        "disposition_report_path": relative(MAINTAINED_OUTPUTS["disposition_report"]),
+        "disposition_report_sha256": disposition_hash,
     }
     for key, expected in expected_metadata.items():
         if metadata.get(key) != expected:
@@ -313,11 +375,43 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         errors.append("workbook hash differs from the generated report")
     if metadata.get("generator_sha256") != generator_hash:
         errors.append("generator hash differs from the generated report")
+    disposition_module_hash = sha256_file(DISPOSITION_MODULE)
+    publication_metadata_hash = sha256_file(PUBLICATION_METADATA)
+    if metadata.get("disposition_module_sha256") != disposition_module_hash:
+        errors.append("product-disposition module hash differs from the generated report")
+    if metadata.get("publication_metadata_sha256") != publication_metadata_hash:
+        errors.append("publication metadata hash differs from the generated report")
     if metadata.get("maintained_output_path") != relative(MAINTAINED_OUTPUTS["candidate"]):
         errors.append("maintained ontology path differs from the generated report")
     candidate_hash = sha256_file(MAINTAINED_OUTPUTS["candidate"])
     if metadata.get("generated_candidate_sha256") != candidate_hash:
         errors.append("generated candidate hash differs from the generated report")
+    disposition_path = MAINTAINED_OUTPUTS["disposition_report"]
+    disposition_hash = sha256_file(disposition_path)
+    if metadata.get("disposition_report_path") != relative(disposition_path):
+        errors.append("maintained product-disposition path differs from the generated report")
+    if metadata.get("disposition_report_sha256") != disposition_hash:
+        errors.append("product-disposition hash differs from the generated report")
+    try:
+        disposition = load_disposition_document(disposition_path)
+        publication_metadata = load_metadata(PUBLICATION_METADATA)
+    except (ProductDispositionError, PublicationMetadataError) as exc:
+        errors.append(f"product-disposition document is invalid: {exc}")
+    else:
+        if disposition_path.read_bytes() != serialize_disposition_document(disposition):
+            errors.append("product-disposition document is not canonically serialized")
+        expected_hashes = {
+            "workbook_sha256": workbook_hash,
+            "generator_sha256": generator_hash,
+            "row_identity_module_sha256": sha256_file(ROW_IDENTITY_MODULE),
+            "disposition_module_sha256": disposition_module_hash,
+            "publication_metadata_sha256": publication_metadata_hash,
+        }
+        for field, expected in expected_hashes.items():
+            if getattr(disposition.input_hashes, field) != expected:
+                errors.append(f"product-disposition {field} is stale")
+        if disposition.product_order != tuple(product.key for product in publication_metadata.products):
+            errors.append("product-disposition product order differs from publication metadata")
     return errors
 
 
@@ -333,7 +427,7 @@ def normalized_generation_report(path: Path) -> str:
 
 def output_differences(paths: dict[str, Path]) -> list[str]:
     differences: list[str] = []
-    for name in ("candidate", "coverage_report", "diff_report"):
+    for name in ("candidate", "coverage_report", "diff_report", "disposition_report"):
         current = MAINTAINED_OUTPUTS[name]
         if not current.is_file() or current.read_bytes() != paths[name].read_bytes():
             differences.append(name)
@@ -405,6 +499,9 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
         "workbook_sha256": workbook_hash,
         "generator_sha256": generator_hash,
         "generated_candidate_sha256": summary.get("generated_candidate_sha256"),
+        "product_disposition_report_path": summary.get("product_disposition_report_path"),
+        "product_disposition_report_sha256": summary.get("product_disposition_report_sha256"),
+        "product_dispositions": summary.get("product_dispositions"),
         "timestamp": utc_now(),
         "generated_ontology_triple_count": summary.get("generated_ontology_triple_count"),
         "candidate_closure_triple_count": summary.get("candidate_closure_triple_count"),

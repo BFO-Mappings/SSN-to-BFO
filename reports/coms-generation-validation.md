@@ -9,11 +9,15 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `febb8b58b4a701cead90697412a9721112c4e6dfd3af47d3c3a77c93754690e0` |
-| generator SHA-256 | `810e1ea5ccbf0efe94d8783af618552407ba096f0f658e543987c964e0f59a51` |
+| generator SHA-256 | `8a74fd84c79314fc43f7f1fd85af54c8717588bd40c1d1ce8fbfc2bb3d65eb78` |
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
-| generation timestamp (UTC) | `2026-07-15T15:02:03+00:00` |
+| product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
+| publication metadata SHA-256 | `a25196f873bc849a0a5b33012c22312d3ea9e70504219c9e781e77e595993564` |
+| generation timestamp (UTC) | `2026-07-15T16:33:02+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
 | generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
+| maintained product-disposition path | `reports/coms-product-dispositions.json` |
+| product-disposition JSON SHA-256 | `d2a97c288d107dd0242d59836b751a1a864c5a69d9865c340d50bd59fe629393` |
 
 ## Workbook
 
@@ -260,6 +264,21 @@ The RowID is persistent identity; the source-expression SHA-256 excludes locatio
 | `urn:uuid:b7873da3-fc78-4a2a-92e1-ef83efb6d600` | `Sheet2` | 61 | `range` | `7867920787556af6ea7cdcfd036b466545cf68a1724655dad17b1288b19f62d8` | `ObjectPropertyRange(<http://www.w3.org/ns/ssn/isProxyFor> <http://www.w3.org/ns/ssn/Property>)` | _(blank)_ |
 | `urn:uuid:51c8556f-9b82-4113-a9d7-c733e70cf8cd` | `Sheet2` | 62 | `object_property_mapping` | `fe8a979e62b1dfe2f2f00c6a65df77262575c4c615fa293e1c5f5095ef61b44c` | `SubObjectPropertyOf(<http://www.w3.org/ns/ssn/wasOriginatedBy> <https://www.commoncoreontologies.org/ont00001962>)` | _(blank)_ |
 
+## Product Dispositions
+
+- Path: `reports/coms-product-dispositions.json`
+- Schema version: `1`
+- Product order: `integrated`, `alignment_core`, `strict_bfo_mapping`, `bfo_projection`, `cco_extension`
+- Governed rows: 105
+- Canonical authoritative axioms: 105
+- Zero-axiom rows: 0
+- Target-neutral axioms: 29
+- BFO-bearing axioms: 19
+- CCO-bearing axioms: 25
+- Mixed BFO/CCO axioms: 32
+- Disposition reconciliation and canonical serialization: PASS
+- No lossless transformation or weakened projection is approved by this artifact.
+
 ## Generated Ontology
 
 - Path: `SSN2BFO.ttl`
@@ -429,4 +448,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 3.12
+- Runtime seconds: 3.19

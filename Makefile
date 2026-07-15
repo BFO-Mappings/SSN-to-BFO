@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-publication-metadata watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-publication-metadata watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -23,6 +23,7 @@ compile:
 		tools/test_instance_data.py \
 		tools/compare_mappings.py \
 		tools/coms_row_identity.py \
+		tools/product_dispositions.py \
 		tools/generate_mapping_from_coms.py \
 		tools/check_coms_mapping.py \
 		tools/watch_coms_mapping.py \
@@ -30,6 +31,7 @@ compile:
 		tools/check_publication_metadata.py \
 		tests/test_generate_mapping_from_coms.py \
 		tests/test_coms_row_identity.py \
+		tests/test_product_dispositions.py \
 		tests/test_publication_metadata.py \
 		tools/workflow_check.py
 
@@ -43,6 +45,10 @@ check-coms:
 check-coms-row-identities:
 	python -m unittest discover -s tests -p 'test_coms_row_identity.py'
 	python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
+	python tools/check_coms_mapping.py --check-only
+
+check-coms-product-dispositions:
+	python -m unittest discover -s tests -p 'test_product_dispositions.py'
 	python tools/check_coms_mapping.py --check-only
 
 watch-coms:

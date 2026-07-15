@@ -37,7 +37,7 @@ The default mode is `--update`. For a non-mutating freshness and quality gate, u
 python tools/check_coms_mapping.py --check-only
 ```
 
-`--check-only` fails when the workbook hash, generator hash, authoritative ontology hash, maintained reports, or regenerated semantic products do not match. It does not rewrite tracked artifacts. The ordinary validation suite invokes this mode.
+`--check-only` fails when the workbook hash, generator or identity/disposition module hashes, publication-metadata hash, authoritative ontology hash, maintained reports, or regenerated semantic products do not match. It does not rewrite tracked artifacts. The ordinary validation suite invokes this mode.
 
 Current local status is available with:
 
@@ -74,7 +74,8 @@ Each complete check:
 8. Applies the established import and SOSA functional/inverse-functional cleanup.
 9. Runs HermiT and requires zero `owl:Nothing` and zero unexpected named unsatisfiable classes.
 10. Requires all generated reports and validates hash-based source metadata.
-11. Runs `git diff --check`.
+11. Derives and reconciles all per-product row and canonical-axiom dispositions, including target-vocabulary categories and canonical JSON serialization.
+12. Runs `git diff --check`.
 
 The generated validation report records the workbook SHA-256, generator-file SHA-256, UTC generation timestamp, maintained ontology path, and generated ontology SHA-256. Freshness never relies on timestamps alone.
 
@@ -86,8 +87,11 @@ Generation and validation happen under `.cache/coms/`. The maintained files are 
 - `reports/coms-generation-validation.md`
 - `reports/coms-source-term-coverage.md`
 - `reports/coms-vs-pre-coms-legacy-diff.md`
+- `reports/coms-product-dispositions.json`
 
 Each replacement is atomic. If any check fails, the maintained last-known-good files remain unchanged. A post-replacement whitespace failure also triggers rollback from temporary backups.
+
+The product-disposition JSON is generated evidence rather than an editable mapping source. It is published in the same transaction as the ontology and other reports, so no maintained output can become newer or older than the disposition accounting.
 
 `SSN2BFO.ttl` is the authoritative generated publication artifact. `mappings/SSN2BFO-COMS.xlsx` is its sole editable mapping source, and `legacy/SSN2BFO-pre-COMS.ttl` is used only as the frozen informational comparison baseline.
 

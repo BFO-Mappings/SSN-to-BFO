@@ -31,6 +31,17 @@ from coms_row_identity import (
     validate_unique_authoritative_axioms,
     validate_unique_row_ids,
 )
+from product_dispositions import (
+    DispositionDocument,
+    DispositionRowInput,
+    ProductDispositionError,
+    RequiredInputHashes,
+    axiom_input_from_canonical_row,
+    build_disposition_document,
+    serialize_disposition_document,
+    validate_disposition_file,
+)
+from publication_metadata import PublicationMetadataError, load_metadata
 
 try:
     import openpyxl
@@ -48,6 +59,8 @@ except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guar
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEGACY_ONTOLOGY = REPO_ROOT / "legacy/SSN2BFO-pre-COMS.ttl"
 IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
+DISPOSITION_MODULE = REPO_ROOT / "tools/product_dispositions.py"
+PUBLICATION_METADATA = REPO_ROOT / "config/publication-metadata.toml"
 GENERATED_NOTICE = (
     "# GENERATED FILE: produced from mappings/SSN2BFO-COMS.xlsx; "
     "do not edit SSN2BFO.ttl directly."
@@ -899,6 +912,50 @@ def attach_canonical_identities(processed_rows: list[ProcessedRow]) -> tuple[Can
     return tuple(audits)
 
 
+def disposition_input_for_processed_row(item: ProcessedRow) -> DispositionRowInput:
+    if item.identity_audit is None:
+        raise GenerationError(f"{item.row.diagnostic_id}: identity audit is required for dispositions")
+    canonical_input = canonical_input_for_processed_row(item)
+    try:
+        axiom_inputs = tuple(
+            axiom_input_from_canonical_row(identity, canonical_input)
+            for identity in item.identity_audit.authoritative_axioms
+        )
+    except ProductDispositionError as exc:
+        raise GenerationError(str(exc)) from exc
+    return DispositionRowInput(
+        row_id=item.row.stable_row_id,
+        location=item.row.location,
+        subject_lexical=item.row.subject_text,
+        predicate_lexical=item.row.predicate_text or None,
+        authoritative_target_lexical=item.row.target_text or None,
+        canonical_row=item.identity_audit.expression,
+        source_expression_sha256=item.identity_audit.source_expression_sha256,
+        mapping_type=mapping_type_for_processed_row(item),
+        reasoning=item.row.reasoning_text,
+        authoritative_axioms=axiom_inputs,
+    )
+
+
+def build_and_write_disposition_report(
+    processed_rows: list[ProcessedRow],
+    path: Path,
+    input_hashes: RequiredInputHashes,
+) -> tuple[DispositionDocument, list[DispositionRowInput]]:
+    try:
+        metadata = load_metadata(PUBLICATION_METADATA)
+        row_inputs = [disposition_input_for_processed_row(item) for item in processed_rows]
+        document = build_disposition_document(row_inputs, metadata, input_hashes)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(serialize_disposition_document(document))
+        loaded, issues = validate_disposition_file(path, row_inputs, metadata, input_hashes)
+    except (ProductDispositionError, PublicationMetadataError) as exc:
+        raise GenerationError(str(exc)) from exc
+    if issues:
+        raise GenerationError(str(ProductDispositionError(issues)))
+    return loaded, row_inputs
+
+
 def validate_identity_audit_completeness(
     governed_rows: list[WorkbookRow],
     processed_rows: list[ProcessedRow],
@@ -1656,6 +1713,11 @@ def write_generation_report(
     identity_module_sha256: str,
     generation_timestamp: str,
     candidate_sha256: str,
+    disposition_document: DispositionDocument | None = None,
+    disposition_path: Path | None = None,
+    disposition_sha256: str = "unavailable",
+    disposition_module_sha256: str = "unavailable",
+    publication_metadata_sha256: str = "unavailable",
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     error_lines = [f"- {error}" for error in errors] or ["- none"]
@@ -1679,9 +1741,13 @@ def write_generation_report(
         f"| workbook SHA-256 | `{workbook_sha256}` |",
         f"| generator SHA-256 | `{generator_sha256}` |",
         f"| row-identity module SHA-256 | `{identity_module_sha256}` |",
+        f"| product-disposition module SHA-256 | `{disposition_module_sha256}` |",
+        f"| publication metadata SHA-256 | `{publication_metadata_sha256}` |",
         f"| generation timestamp (UTC) | `{generation_timestamp}` |",
         f"| maintained ontology path | `{output_path}` |",
         f"| generated ontology SHA-256 | `{candidate_sha256}` |",
+        f"| maintained product-disposition path | `{disposition_path or 'unavailable'}` |",
+        f"| product-disposition JSON SHA-256 | `{disposition_sha256}` |",
         "",
         "## Workbook",
         "",
@@ -1740,6 +1806,31 @@ def write_generation_report(
             )
     else:
         lines.append("No label-to-IRI fallback resolutions were required.")
+
+    if disposition_document is None:
+        disposition_lines = [
+            "## Product Dispositions",
+            "",
+            "- Disposition generation: unavailable",
+        ]
+    else:
+        disposition_summary = disposition_document.summary
+        disposition_lines = [
+            "## Product Dispositions",
+            "",
+            f"- Path: `{disposition_path}`",
+            "- Schema version: `1`",
+            f"- Product order: {', '.join(f'`{key}`' for key in disposition_document.product_order)}",
+            f"- Governed rows: {disposition_summary.governed_row_count}",
+            f"- Canonical authoritative axioms: {disposition_summary.authoritative_axiom_count}",
+            f"- Zero-axiom rows: {disposition_summary.zero_axiom_row_count}",
+            f"- Target-neutral axioms: {disposition_summary.target_neutral_axiom_count}",
+            f"- BFO-bearing axioms: {disposition_summary.bfo_bearing_axiom_count}",
+            f"- CCO-bearing axioms: {disposition_summary.cco_bearing_axiom_count}",
+            f"- Mixed BFO/CCO axioms: {disposition_summary.mixed_bfo_cco_axiom_count}",
+            "- Disposition reconciliation and canonical serialization: PASS",
+            "- No lossless transformation or weakened projection is approved by this artifact.",
+        ]
 
     lines.extend(
         [
@@ -1800,8 +1891,13 @@ def write_generation_report(
                     ]
                 )
                 + " |"
-                for audit in sorted(identity_audits, key=lambda item: (item.location, item.row_id))
+                for audit in sorted(
+                    identity_audits,
+                    key=lambda item: (item.location, item.row_id),
+                )
             ],
+            "",
+            *disposition_lines,
             "",
             "## Generated Ontology",
             "",
@@ -1992,6 +2088,11 @@ def write_summary_json(
     comparison: ComparisonResult | None,
     errors: list[str],
     elapsed_seconds: float,
+    disposition_document: DispositionDocument | None = None,
+    disposition_path: Path | None = None,
+    disposition_sha256: str = "unavailable",
+    disposition_module_sha256: str = "unavailable",
+    publication_metadata_sha256: str = "unavailable",
 ) -> None:
     payload = {
         "status": "PASS" if not errors else "FAIL",
@@ -2000,8 +2101,12 @@ def write_summary_json(
         "workbook_sha256": workbook_sha256,
         "generator_sha256": generator_sha256,
         "row_identity_module_sha256": identity_module_sha256,
+        "product_disposition_module_sha256": disposition_module_sha256,
+        "publication_metadata_sha256": publication_metadata_sha256,
         "generation_timestamp": generation_timestamp,
         "generated_candidate_sha256": candidate_sha256,
+        "product_disposition_report_path": None if disposition_path is None else str(disposition_path),
+        "product_disposition_report_sha256": disposition_sha256,
         "worksheets_read": stats.worksheets_read,
         "active_axiom_rows": stats.active_axiom_rows,
         "mapped_rows": stats.mapped_rows,
@@ -2029,6 +2134,16 @@ def write_summary_json(
                 for axiom in audit.authoritative_axioms
             }
         ),
+        "product_dispositions": None
+        if disposition_document is None
+        else {
+            "schema_version": disposition_document.schema_version,
+            "product_order": list(disposition_document.product_order),
+            **{
+                field: getattr(disposition_document.summary, field)
+                for field in disposition_document.summary.__dataclass_fields__
+            },
+        },
         "generated_ontology_triple_count": None if hermit is None else hermit.generated_triple_count,
         "candidate_closure_triple_count": None if hermit is None else hermit.closure_triple_count,
         "hermit_return_code": None if hermit is None else hermit.return_code,
@@ -2081,6 +2196,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", required=True, help="Generated TTL output path.")
     parser.add_argument("--report", required=True, help="Generation validation report path.")
     parser.add_argument(
+        "--disposition-report",
+        required=True,
+        help="Generated COMS per-product disposition JSON path.",
+    )
+    parser.add_argument(
         "--coverage-report",
         default="reports/coms-source-term-coverage.md",
         help="Source-term coverage report path.",
@@ -2104,6 +2224,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Generated ontology path displayed in reports. Defaults to the actual --output path.",
     )
     parser.add_argument(
+        "--report-disposition-path",
+        help="Disposition path displayed in reports. Defaults to the actual --disposition-report path.",
+    )
+    parser.add_argument(
         "--summary-json",
         help="Optional machine-readable generation summary path.",
     )
@@ -2113,10 +2237,12 @@ def main(argv: list[str] | None = None) -> int:
     input_path = REPO_ROOT / args.input if not Path(args.input).is_absolute() else Path(args.input)
     output_path = REPO_ROOT / args.output if not Path(args.output).is_absolute() else Path(args.output)
     report_path = REPO_ROOT / args.report if not Path(args.report).is_absolute() else Path(args.report)
+    disposition_report_path = REPO_ROOT / args.disposition_report if not Path(args.disposition_report).is_absolute() else Path(args.disposition_report)
     coverage_report_path = REPO_ROOT / args.coverage_report if not Path(args.coverage_report).is_absolute() else Path(args.coverage_report)
     diff_report_path = REPO_ROOT / args.diff_report if not Path(args.diff_report).is_absolute() else Path(args.diff_report)
     report_workbook_path = Path(args.report_workbook_path) if args.report_workbook_path else input_path
     report_output_path = Path(args.report_output_path) if args.report_output_path else output_path
+    report_disposition_path = Path(args.report_disposition_path) if args.report_disposition_path else disposition_report_path
     summary_json_path = None
     if args.summary_json:
         summary_json_path = REPO_ROOT / args.summary_json if not Path(args.summary_json).is_absolute() else Path(args.summary_json)
@@ -2124,7 +2250,10 @@ def main(argv: list[str] | None = None) -> int:
     workbook_sha256 = sha256_file(input_path) if input_path.is_file() else "unavailable"
     generator_sha256 = sha256_file(Path(__file__).resolve())
     identity_module_sha256 = sha256_file(IDENTITY_MODULE)
+    disposition_module_sha256 = sha256_file(DISPOSITION_MODULE)
+    publication_metadata_sha256 = sha256_file(PUBLICATION_METADATA)
     candidate_sha256 = "unavailable"
+    disposition_sha256 = "unavailable"
 
     stats = WorkbookStats()
     resolver = Resolver()
@@ -2134,6 +2263,7 @@ def main(argv: list[str] | None = None) -> int:
     comparison: ComparisonResult | None = None
     normalized_rows: list[NormalizedRow] = []
     identity_audits: list[CanonicalRowAudit] = []
+    disposition_document: DispositionDocument | None = None
 
     try:
         rows, stats = read_workbook(input_path)
@@ -2143,6 +2273,18 @@ def main(argv: list[str] | None = None) -> int:
             for item in processed
             if item.identity_audit is not None
         ]
+        disposition_document, _ = build_and_write_disposition_report(
+            processed,
+            disposition_report_path,
+            RequiredInputHashes(
+                workbook_sha256=workbook_sha256,
+                generator_sha256=generator_sha256,
+                row_identity_module_sha256=identity_module_sha256,
+                disposition_module_sha256=disposition_module_sha256,
+                publication_metadata_sha256=publication_metadata_sha256,
+            ),
+        )
+        disposition_sha256 = sha256_file(disposition_report_path)
         graph = generate_ontology(processed, output_path)
         normalized_rows = normalized_axiom_rows(processed, graph)
         coverage = build_coverage(processed, [], coverage_report_path)
@@ -2177,6 +2319,11 @@ def main(argv: list[str] | None = None) -> int:
         identity_module_sha256=identity_module_sha256,
         generation_timestamp=generation_timestamp,
         candidate_sha256=candidate_sha256,
+        disposition_document=disposition_document,
+        disposition_path=report_disposition_path,
+        disposition_sha256=disposition_sha256,
+        disposition_module_sha256=disposition_module_sha256,
+        publication_metadata_sha256=publication_metadata_sha256,
     )
     if summary_json_path is not None:
         write_summary_json(
@@ -2195,6 +2342,11 @@ def main(argv: list[str] | None = None) -> int:
             comparison=comparison,
             errors=errors,
             elapsed_seconds=elapsed,
+            disposition_document=disposition_document,
+            disposition_path=report_disposition_path,
+            disposition_sha256=disposition_sha256,
+            disposition_module_sha256=disposition_module_sha256,
+            publication_metadata_sha256=publication_metadata_sha256,
         )
 
     print(f"Wrote {report_path}")
@@ -2204,6 +2356,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote {coverage_report_path}")
     if diff_report_path.exists():
         print(f"Wrote {diff_report_path}")
+    if disposition_report_path.exists():
+        print(f"Wrote {disposition_report_path}")
     print(f"Worksheets read: {', '.join(stats.worksheets_read) or 'none'}")
     print(f"Mapped rows: {stats.mapped_rows}")
     print(f"Blank mapping rows: {stats.blank_mapping_rows}")
@@ -2220,6 +2374,12 @@ def main(argv: list[str] | None = None) -> int:
         "Canonical authoritative axioms: "
         f"{sum(len(audit.authoritative_axioms) for audit in identity_audits)}"
     )
+    if disposition_document is not None:
+        disposition_summary = disposition_document.summary
+        print(f"Disposition target-neutral axioms: {disposition_summary.target_neutral_axiom_count}")
+        print(f"Disposition BFO-bearing axioms: {disposition_summary.bfo_bearing_axiom_count}")
+        print(f"Disposition CCO-bearing axioms: {disposition_summary.cco_bearing_axiom_count}")
+        print(f"Disposition mixed BFO/CCO axioms: {disposition_summary.mixed_bfo_cco_axiom_count}")
     if hermit is not None:
         print(f"Generated triple count: {hermit.generated_triple_count}")
         print(f"Candidate closure triple count: {hermit.closure_triple_count}")

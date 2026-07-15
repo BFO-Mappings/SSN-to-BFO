@@ -22,6 +22,7 @@ MAINTAINED_OUTPUTS = (
     REPO_ROOT / "reports/coms-generation-validation.md",
     REPO_ROOT / "reports/coms-source-term-coverage.md",
     REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
+    REPO_ROOT / "reports/coms-product-dispositions.json",
 )
 POLL_SECONDS = 1.0
 DEBOUNCE_SECONDS = 1.5
