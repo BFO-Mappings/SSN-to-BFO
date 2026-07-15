@@ -59,6 +59,7 @@ def compile_check() -> StepResult:
             "tools/test_instance_data.py",
             "tools/compare_mappings.py",
             "tools/coms_row_identity.py",
+            "tools/product_dispositions.py",
             "tools/generate_mapping_from_coms.py",
             "tools/check_coms_mapping.py",
             "tools/watch_coms_mapping.py",
@@ -66,6 +67,7 @@ def compile_check() -> StepResult:
             "tools/check_publication_metadata.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_coms_row_identity.py",
+            "tests/test_product_dispositions.py",
             "tests/test_publication_metadata.py",
         ],
     )
@@ -134,6 +136,22 @@ def main() -> int:
                     "tests",
                     "-p",
                     "test_coms_row_identity.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "COMS product-disposition focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_product_dispositions.py",
                 ],
             )
         )

@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import openpyxl
@@ -20,6 +22,8 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import check_coms_mapping as checker  # noqa: E402
 import coms_row_identity as identity  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
+import product_dispositions as dispositions  # noqa: E402
+from publication_metadata import load_metadata  # noqa: E402
 
 
 SUBJECT = "sosa:hasFeatureOfInterest"
@@ -98,9 +102,10 @@ class ComsDomainRangeTests(unittest.TestCase):
         for fragment in expected_fragments:
             self.assertIn(fragment, message)
 
-    def run_generator(self, workbook_path: Path) -> tuple[int, Path, Path]:
+    def run_generator(self, workbook_path: Path) -> tuple[int, Path, Path, Path]:
         output_path = self.root / "candidate-output.ttl"
         report_path = self.root / "generation-report.md"
+        disposition_path = self.root / "product-dispositions.json"
         return_code = coms.main(
             [
                 "--input",
@@ -109,6 +114,8 @@ class ComsDomainRangeTests(unittest.TestCase):
                 str(output_path),
                 "--report",
                 str(report_path),
+                "--disposition-report",
+                str(disposition_path),
                 "--coverage-report",
                 str(self.root / "coverage.md"),
                 "--diff-report",
@@ -117,7 +124,7 @@ class ComsDomainRangeTests(unittest.TestCase):
                 str(self.root / "reasoner"),
             ]
         )
-        return return_code, output_path, report_path
+        return return_code, output_path, report_path, disposition_path
 
     def assert_generator_main_failure(
         self,
@@ -125,14 +132,60 @@ class ComsDomainRangeTests(unittest.TestCase):
         *expected_fragments: str,
     ) -> None:
         before = workbook_path.read_bytes()
-        return_code, output_path, report_path = self.run_generator(workbook_path)
+        return_code, output_path, report_path, disposition_path = self.run_generator(workbook_path)
         self.assertEqual(return_code, 1)
         self.assertFalse(output_path.exists())
+        self.assertFalse(disposition_path.exists())
         self.assertTrue(report_path.is_file())
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("| overall status | FAIL |", report)
         for fragment in expected_fragments:
             self.assertIn(fragment, report)
+        self.assertEqual(workbook_path.read_bytes(), before)
+
+    def test_disposition_failure_prevents_ontology_generation(self) -> None:
+        workbook_path = self.synthetic_workbook(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")]
+        )
+        failure = dispositions.ProductDispositionError(
+            [
+                dispositions.ValidationIssue(
+                    code="TARGET_CATEGORY_MISMATCH",
+                    row_id=self.row_id_for(1),
+                    message="synthetic disposition failure",
+                )
+            ]
+        )
+        before = workbook_path.read_bytes()
+        with mock.patch.object(coms, "build_disposition_document", side_effect=failure):
+            return_code, output_path, report_path, disposition_path = self.run_generator(
+                workbook_path
+            )
+        self.assertEqual(return_code, 1)
+        self.assertFalse(output_path.exists())
+        self.assertFalse(disposition_path.exists())
+        report = report_path.read_text(encoding="utf-8")
+        self.assertIn("TARGET_CATEGORY_MISMATCH", report)
+        self.assertIn("| overall status | FAIL |", report)
+        self.assertEqual(workbook_path.read_bytes(), before)
+
+    def test_disposition_generation_succeeds_without_mutating_workbook(self) -> None:
+        workbook_path = self.synthetic_workbook(
+            [(SUBJECT, "rdfs:domain", "sosa:Observation")]
+        )
+        before = workbook_path.read_bytes()
+        workbook_rows, stats = coms.read_workbook(workbook_path)
+        processed = coms.validate_and_process_rows(workbook_rows, coms.Resolver(), stats)
+        path = self.root / "dispositions.json"
+        document, row_inputs = coms.build_and_write_disposition_report(
+            processed,
+            path,
+            dispositions.RequiredInputHashes(*["0" * 64] * 5),
+        )
+        self.assertEqual(document.summary.governed_row_count, 1)
+        self.assertEqual(document.summary.authoritative_axiom_count, 1)
+        self.assertEqual(document.summary.target_neutral_axiom_count, 1)
+        self.assertEqual(len(row_inputs), 1)
         self.assertEqual(workbook_path.read_bytes(), before)
 
     def governed_row(
@@ -645,6 +698,7 @@ class ComsGenerationReportTests(unittest.TestCase):
         *,
         stats: coms.WorkbookStats | None = None,
         identity_audits: list[identity.CanonicalRowAudit] | None = None,
+        disposition_document: dispositions.DispositionDocument | None = None,
     ) -> str:
         path = self.root / f"{name}.md"
         coms.write_generation_report(
@@ -665,6 +719,11 @@ class ComsGenerationReportTests(unittest.TestCase):
             identity_module_sha256="identity-module-hash",
             generation_timestamp="2026-01-01T00:00:00+00:00",
             candidate_sha256="candidate-hash",
+            disposition_document=disposition_document,
+            disposition_path=Path("reports/coms-product-dispositions.json"),
+            disposition_sha256="disposition-hash",
+            disposition_module_sha256="disposition-module-hash",
+            publication_metadata_sha256="publication-metadata-hash",
         )
         return path.read_text(encoding="utf-8")
 
@@ -715,6 +774,27 @@ class ComsGenerationReportTests(unittest.TestCase):
             "/opt/robot",
             stats=stats,
             identity_audits=[audit],
+            disposition_document=dispositions.build_disposition_document(
+                [
+                    dispositions.DispositionRowInput(
+                        row_id=row.row_id,
+                        location=row.location,
+                        subject_lexical=SUBJECT,
+                        predicate_lexical="rdfs:domain",
+                        authoritative_target_lexical="sosa:Observation",
+                        canonical_row=audit.expression,
+                        source_expression_sha256=audit.source_expression_sha256,
+                        mapping_type="domain",
+                        reasoning="",
+                        authoritative_axioms=tuple(
+                            dispositions.axiom_input_from_canonical_row(axiom, row)
+                            for axiom in audit.authoritative_axioms
+                        ),
+                    )
+                ],
+                load_metadata(REPO_ROOT / "config/publication-metadata.toml"),
+                dispositions.RequiredInputHashes(*["0" * 64] * 5),
+            ),
         )
 
         self.assertIn("Governed RowID header: `coms:RowID`", report)
@@ -732,6 +812,9 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn(audit.source_expression_sha256, report)
         self.assertIn(audit.authoritative_axioms[0].canonical_axiom, report)
         self.assertIn("_(blank)_", report)
+        self.assertIn("## Product Dispositions", report)
+        self.assertIn("Target-neutral axioms: 1", report)
+        self.assertIn("Disposition reconciliation and canonical serialization: PASS", report)
 
 
 class ComsAuthorityMigrationTests(unittest.TestCase):
@@ -746,6 +829,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "generation_report": self.root / "reports/coms-generation-validation.md",
             "coverage_report": self.root / "reports/coms-source-term-coverage.md",
             "diff_report": self.root / "reports/coms-vs-pre-coms-legacy-diff.md",
+            "disposition_report": self.root / "reports/coms-product-dispositions.json",
         }
 
     @staticmethod
@@ -758,6 +842,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(
             checker.MAINTAINED_OUTPUTS["diff_report"],
             REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
+        )
+        self.assertEqual(
+            checker.MAINTAINED_OUTPUTS["disposition_report"],
+            REPO_ROOT / "reports/coms-product-dispositions.json",
         )
 
     def test_legacy_ontology_is_the_comparison_baseline(self) -> None:
@@ -786,22 +874,48 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         for name, path in outputs.items():
             self.write(path, f"maintained-{name}\n")
         candidate_hash = checker.sha256_file(outputs["candidate"])
+        disposition_hash = checker.sha256_file(outputs["disposition_report"])
+        disposition_module_hash = checker.sha256_file(checker.DISPOSITION_MODULE)
+        publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         self.write(
             outputs["generation_report"],
             "\n".join(
                 [
                     "| workbook SHA-256 | `workbook-hash` |",
                     "| generator SHA-256 | `generator-hash` |",
+                    f"| product-disposition module SHA-256 | `{disposition_module_hash}` |",
+                    f"| publication metadata SHA-256 | `{publication_metadata_hash}` |",
                     "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
                     "| maintained ontology path | `SSN2BFO.ttl` |",
                     f"| generated ontology SHA-256 | `{candidate_hash}` |",
+                    "| maintained product-disposition path | `reports/coms-product-dispositions.json` |",
+                    f"| product-disposition JSON SHA-256 | `{disposition_hash}` |",
                 ]
+            ),
+        )
+
+        fake_disposition = SimpleNamespace(
+            input_hashes=SimpleNamespace(
+                workbook_sha256="workbook-hash",
+                generator_sha256="generator-hash",
+                row_identity_module_sha256=checker.sha256_file(checker.ROW_IDENTITY_MODULE),
+                disposition_module_sha256=disposition_module_hash,
+                publication_metadata_sha256=publication_metadata_hash,
+            ),
+            product_order=tuple(
+                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
             ),
         )
 
         with (
             mock.patch.object(checker, "REPO_ROOT", self.root),
             mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "load_disposition_document", return_value=fake_disposition),
+            mock.patch.object(
+                checker,
+                "serialize_disposition_document",
+                return_value=outputs["disposition_report"].read_bytes(),
+            ),
         ):
             self.assertEqual(checker.freshness_errors("workbook-hash", "generator-hash"), [])
             self.write(outputs["candidate"], "changed root ontology\n")
@@ -844,6 +958,169 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             self.assertEqual(checker.main([]), 0)
 
         self.assertEqual(outputs["candidate"].read_text(encoding="utf-8"), "new-candidate\n")
+
+    def test_check_only_preserves_all_five_outputs_and_workbook(self) -> None:
+        outputs = self.maintained_outputs()
+        workbook = self.root / "mappings/SSN2BFO-COMS.xlsx"
+        self.write(workbook, "workbook-bytes\n")
+        for name, path in outputs.items():
+            self.write(path, f"maintained-{name}\n")
+        protected = [workbook, *outputs.values()]
+        before = {
+            path: (path.read_bytes(), path.stat().st_mtime_ns)
+            for path in protected
+        }
+        files_before = {
+            path.relative_to(self.root)
+            for path in self.root.rglob("*")
+            if path.is_file()
+        }
+        cache_dir = self.root / ".cache/coms"
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            for name in outputs:
+                self.write(paths[name], f"temporary-{name}\n")
+            self.write(paths["summary"], "{}\n")
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "WORKBOOK", workbook),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=[]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", return_value={}),
+            mock.patch.object(checker, "git_diff_check"),
+            mock.patch.object(checker, "output_differences", return_value=[]),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main(["--check-only"]), 0)
+
+        for path, expected in before.items():
+            self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), expected)
+        files_after = {
+            path.relative_to(self.root)
+            for path in self.root.rglob("*")
+            if path.is_file()
+        }
+        self.assertEqual(files_after, files_before)
+
+    def test_rollback_removes_new_disposition_when_it_was_initially_absent(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {
+            name: path
+            for name, path in outputs.items()
+            if name != "disposition_report"
+        }
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        before = {
+            path: (path.read_bytes(), path.stat().st_mtime_ns)
+            for path in existing.values()
+        }
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"new-{name}\n")
+            self.write(paths["summary"], "{}\n")
+
+        diff_checks = 0
+
+        def fail_post_update(_log: list[str], _label: str) -> None:
+            nonlocal diff_checks
+            diff_checks += 1
+            if diff_checks == 2:
+                raise checker.CheckFailure("post-update failure")
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", return_value={}),
+            mock.patch.object(checker, "git_diff_check", side_effect=fail_post_update),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+
+        self.assertEqual(diff_checks, 2)
+        for path, expected in before.items():
+            self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), expected)
+        self.assertFalse(outputs["disposition_report"].exists())
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
+    def test_written_malformed_disposition_fails_before_replacement(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        observed_candidates: list[bytes] = []
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"temporary-{name}\n")
+            self.write(
+                paths["disposition_report"],
+                json.dumps({"schema_version": 1}, indent=2) + "\n",
+            )
+            self.write(
+                paths["summary"],
+                json.dumps(
+                    {
+                        "status": "PASS",
+                        "workbook_sha256": "workbook-hash",
+                        "generator_sha256": "generator-hash",
+                    }
+                )
+                + "\n",
+            )
+
+        production_loader = checker.load_disposition_document
+
+        def observe_load(path: Path):
+            observed_candidates.append(path.read_bytes())
+            return production_loader(path)
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "load_disposition_document", side_effect=observe_load),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+
+        self.assertEqual(len(observed_candidates), 1)
+        self.assertIn(b'"schema_version": 1', observed_candidates[0])
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
 
     def test_atomic_replacement_rolls_back_root_on_post_update_failure(self) -> None:
         outputs = self.maintained_outputs()
