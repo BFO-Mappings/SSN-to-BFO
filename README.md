@@ -106,3 +106,13 @@ make -C src validate-examples
 ```
 
 This target uses ROBOT `convert` to parse-check every `.ttl` file under `src/current-ssn-sosa/examples/` and writes temporary generated output under `src/current-ssn-sosa/build/artifacts/`. It is not part of `all`.
+
+## License
+
+Except for identified third-party material, project-authored content in this repository is made available under CC0 1.0 Universal, as set out in `LICENSE`. The CC0 dedication applies only to rights controlled by the project's licensor and does not relicense third-party material.
+
+Files under `imports/` retain their original licenses, rights statements, and notices. This includes CCO material carrying its BSD 3-Clause/CUBRC terms and SSN/SOSA material carrying applicable W3C/OGC terms.
+
+Source example data under `src/current-ssn-sosa/examples/` may contain third-party W3C/OGC material and retains its applicable original terms and notices. Any other incorporated third-party material remains governed by its original license and notices.
+
+Users redistributing third-party files should preserve their embedded or accompanying notices.
