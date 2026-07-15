@@ -1,0 +1,29 @@
+schema_version = 1
+
+[publication]
+release_iri_base = "http://www.sks.ai/SSN2BFO/releases"
+
+[products.integrated]
+path = "SSN2BFO.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/"
+release_iri_suffix = "integrated"
+
+[products.alignment_core]
+path = "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
+release_iri_suffix = "current-ssn-sosa/alignment-core"
+
+[products.strict_bfo_mapping]
+path = "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
+release_iri_suffix = "current-ssn-sosa/bfo-mapping"
+
+[products.bfo_projection]
+path = "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
+release_iri_suffix = "current-ssn-sosa/bfo-projection"
+
+[products.cco_extension]
+path = "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension"
+release_iri_suffix = "current-ssn-sosa/cco-extension"
