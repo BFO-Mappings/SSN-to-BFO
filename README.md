@@ -27,6 +27,28 @@ Historical spreadsheets remain preserved at the repository root:
 - `Current_SOSA-SSN to BFO-CCO.xlsx`
 - `FINAL_SOSA 2023 to BFO-CCO .xlsx`
 
+## Validation environment
+
+`make check` is the canonical authoritative validation gate used both locally and by hosted CI. It validates the COMS workbook and authoritative root mapping, including freshness, source coverage, focused generator tests, example checks, HermiT consistency, Python compilation, whitespace, and repository cleanliness as currently implemented.
+
+`requirements-validation.txt` declares the direct Python packages. `config/validation-toolchain.env` declares the supported Python, Java, and ROBOT versions together with the ROBOT release URL, checksum, and Java heap. `.github/workflows/test-mappings.yml` consumes those same declarations instead of maintaining an independent version list.
+
+The validation commands do not automatically install Python or Java dependencies. Java 22 must already be installed and available on `PATH`. The ROBOT installer is an explicit bootstrap helper that verifies the JAR checksum on every invocation. By default it installs under ignored `build/lib/`; pass a custom installation directory as its first argument when needed.
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-validation.txt
+python -m pip check
+
+robot_bin="$(tools/install_validation_robot.sh)"
+export PATH="${robot_bin}:${PATH}"
+
+java -version
+robot --version
+make check
+```
+
 The four new release files under `releases/` are placeholders until completed mapping content is inserted:
 
 - `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl`
@@ -34,7 +56,7 @@ The four new release files under `releases/` are placeholders until completed ma
 - `releases/sosa-next/sosa-bfo-directmappings.ttl`
 - `releases/sosa-next/sosa-cco-directmappings.ttl`
 
-Development editor placeholders live under `src/current-ssn-sosa/` and `src/sosa-next/`. The per-track validation workflow currently checks artifact hygiene only: minimal ontology declarations, expected temporary IRI bases, and absence of source-template leakage. It does not check mapping correctness.
+Development editor placeholders live under `src/current-ssn-sosa/` and `src/sosa-next/`. Their per-track targets remain available as optional local scaffold workflows for artifact hygiene, but they are not the authoritative hosted CI or release gate and do not validate the COMS/root mapping authority. Hosted CI runs `make check`.
 
 Run local validation with:
 
