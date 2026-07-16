@@ -66,6 +66,7 @@ def compile_check() -> StepResult:
             "tools/watch_coms_mapping.py",
             "tools/publication_metadata.py",
             "tools/check_publication_metadata.py",
+            "tools/release_context.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
@@ -74,6 +75,8 @@ def compile_check() -> StepResult:
             "tests/test_cco_extension.py",
             "tests/test_bfo_projection.py",
             "tests/test_publication_metadata.py",
+            "tests/test_release_context.py",
+            "tests/test_release_rendering.py",
         ],
     )
 
@@ -237,6 +240,38 @@ def main() -> int:
                     "tests",
                     "-p",
                     "test_publication_metadata.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Formal release-context focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_release_context.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Formal ontology-rendering focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_release_rendering.py",
                 ],
             )
         )

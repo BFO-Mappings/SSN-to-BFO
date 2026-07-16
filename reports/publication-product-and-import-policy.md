@@ -444,12 +444,12 @@ These stable IRIs identify product lines. This decision does not itself create o
 Use date-based immutable release identifiers:
 
 - `YYYY-MM-DD`
-- `YYYY-MM-DD.1`, `YYYY-MM-DD.2`, and so on for multiple releases on one date.
 
 Use corresponding Git tags:
 
 - `vYYYY-MM-DD`
-- `vYYYY-MM-DD.1`, `vYYYY-MM-DD.2`, and so on.
+
+Same-day revision suffixes are not approved in the current schema. A formal context also supplies the identical canonical release date and an exact 40-character lowercase hexadecimal source commit; these values are explicit inputs and are never inferred from the clock, branch, `HEAD`, tag state, or a remote.
 
 Formal release version IRIs are:
 
@@ -468,14 +468,16 @@ Development generation retains each stable ontology IRI and does not claim a new
 Formal release generation:
 
 - receives an explicit approved release identifier;
-- emits `owl:versionIRI` and `owl:versionInfo`;
+- replaces the development authority status with `http://www.sks.ai/SSN2BFO/authority-status/immutable-authoritative-release`;
+- emits `owl:versionIRI`, plain language-neutral `owl:versionInfo`, and `dcterms:issued` typed as `xsd:date`;
+- uses same-release immutable project-module imports while preserving the integrated root's four external imports;
 - validates the complete product set;
-- freezes exact artifact bytes; and
-- creates the Git tag only after those exact bytes pass hosted CI.
+- freezes exact artifact bytes only in a later packaging operation; and
+- creates no Git tag in the current rendering implementation.
 
 ### Governed metadata source
 
-`config/publication-metadata.toml` is the sole governed and editable publication-metadata source. Schema version 2 is parsed with standard-library `tomllib`, rejects unknown keys, and governs these global values:
+`config/publication-metadata.toml` is the sole governed and editable publication-metadata source. Schema version 3 is parsed with standard-library `tomllib`, rejects unknown keys, and governs these global values:
 
 | Field | Governed value |
 |---|---|
@@ -487,6 +489,7 @@ Formal release generation:
 | Generated warning | `Generated from governed COMS and publication metadata; do not edit this ontology directly.` |
 | Development authority-status predicate | `http://www.w3.org/ns/adms#status` |
 | Development authority-status value | `http://www.sks.ai/SSN2BFO/authority-status/maintained-authoritative-development` |
+| Formal release authority-status value | `http://www.sks.ai/SSN2BFO/authority-status/immutable-authoritative-release` |
 
 The five product records remain in canonical order and govern the existing path, stable ontology IRI, release suffix, and these publication values:
 
@@ -500,13 +503,15 @@ The five product records remain in canonical order and govern the existing path,
 
 The product-type IRIs are controlled `dcterms:type` values. They do not require declaration triples or a separate vocabulary ontology. The development authority status uses `adms:status` with the governed maintained-authoritative-development IRI. Descriptions remain lifecycle-neutral and do not repeat that status.
 
-Schema version 2 governs, validates, and transactionally emits exactly seven development annotations on each maintained ontology subject, in canonical order: `rdfs:label`, `dcterms:description`, `dcterms:type`, `adms:status`, `dcterms:license`, `rdfs:seeAlso`, and `rdfs:comment`. Labels, descriptions, and warnings are language-tagged with the governed default `en`; product type, status, license, and repository objects are IRIs. The integrated and modular emitters consume one shared immutable metadata model loaded once per nine-output transaction. The exact metadata set is validated separately from declarations, imports, and governed/structural logical triples.
+Schema version 3 governs and validates exactly seven development annotations on each maintained ontology subject, in canonical order: `rdfs:label`, `dcterms:description`, `dcterms:type`, `adms:status`, `dcterms:license`, `rdfs:seeAlso`, and `rdfs:comment`. Labels, descriptions, and warnings are language-tagged with the governed default `en`; product type, status, license, and repository objects are IRIs. The integrated and modular emitters consume one shared immutable metadata model loaded once per nine-output transaction. The exact metadata set is validated separately from declarations, imports, and governed/structural logical triples.
+
+With a complete validated formal context, the same renderer retains those seven predicates, substitutes the formal authority status, and appends exactly `owl:versionIRI`, plain `owl:versionInfo`, and `dcterms:issued` as `xsd:date`. Stable ontology subjects do not change. Alignment core has no project import; strict BFO imports the same-release alignment-core version IRI; BFO projection and CCO extension import the same-release strict-BFO version IRI; and the integrated root keeps its existing ordered external imports.
 
 Development serialization is deterministic and preserves the existing generated-file Turtle comments in addition to the machine-readable warning. Metadata prefix and ontology-header ordering are explicit, and stripping the ontology declaration, approved project imports, and exact seven annotations must reproduce the governed logical graph. Metadata is never counted as a governed axiom, mapping triple, structural expression triple, projection axiom, or copied declaration.
 
-Creator and contributor governance, ORCIDs, agents, provenance, source and dependency identities, local validation paths, dependency hashes, workbook or generator provenance, release identifiers and dates, Git tags, commit bindings, artifact hashes, manifests, and formal-release RDF remain deferred. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
+Creator and contributor governance, ORCIDs, agents, provenance RDF, source and dependency RDF, local validation paths, dependency hashes, workbook or generator provenance RDF, source-commit and tag RDF, artifact hashes, manifests, package construction, archives, tagging, and GitHub publication remain deferred. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
 
-Development artifacts use stable ontology IRIs and the governed development authority status. They do not claim `owl:versionIRI`, `owl:versionInfo`, `dcterms:issued`, a release date, a Git tag, or frozen artifact identity. Formal release context remains a separate, explicit operation using the approved release identifier and version-IRI helpers.
+Development artifacts use stable ontology IRIs and the governed development authority status. They do not claim `owl:versionIRI`, `owl:versionInfo`, `dcterms:issued`, a release date, a Git tag, or frozen artifact identity. Formal rendering is a separate explicit in-memory operation and does not alter the nine maintained development outputs. No actual release context has been selected and no release package builder exists yet.
 
 ### License scope
 
@@ -578,7 +583,7 @@ Layered-product gates additionally require:
 
 Formal release gates additionally require:
 
-- date-based release identifier and matching `v<version>` Git tag;
+- exact `YYYY-MM-DD` release identifier/date and matching `vYYYY-MM-DD` Git tag;
 - version IRIs under `http://www.sks.ai/SSN2BFO/releases/<version>/`;
 - immutable artifact and manifest hashes;
 - same-release project-module import resolution;
@@ -740,7 +745,7 @@ No implementation step may change the COMS workbook merely to simplify product g
 - [ ] Every COMS row has a stable identifier, authoritative expression, and deterministic disposition for every product.
 - [ ] Every transformation records pinned dependencies, rule identity, justification, receiving product, and positive/negative tests.
 - [ ] No row or complex expression is silently omitted or flattened.
-- [ ] Formal releases use `YYYY-MM-DD` or `YYYY-MM-DD.N`, matching `v<version>` tags, and immutable version IRIs under `http://www.sks.ai/SSN2BFO/releases/<version>/`.
+- [ ] Formal releases use `YYYY-MM-DD`, matching `vYYYY-MM-DD` tags, and immutable version IRIs under `http://www.sks.ai/SSN2BFO/releases/<version>/`.
 - [ ] No version IRI is reused for different bytes.
 - [x] Development metadata is generated from `config/publication-metadata.toml`, parsed with standard-library `tomllib`, and is not hand-edited into products.
 - [ ] Development generation does not claim an immutable release version IRI.

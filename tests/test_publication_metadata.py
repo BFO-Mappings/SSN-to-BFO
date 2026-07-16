@@ -24,6 +24,7 @@ import check_publication_metadata as checker  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
 import modular_products as modular  # noqa: E402
 import publication_metadata as metadata  # noqa: E402
+from release_context import parse_formal_release_context  # noqa: E402
 
 
 ACTUAL_CONFIG = REPO_ROOT / "config/publication-metadata.toml"
@@ -42,6 +43,10 @@ PUBLICATION_VALUES = {
     "development_status_iri": (
         "http://www.sks.ai/SSN2BFO/authority-status/"
         "maintained-authoritative-development"
+    ),
+    "formal_release_status_iri": (
+        "http://www.sks.ai/SSN2BFO/authority-status/"
+        "immutable-authoritative-release"
     ),
 }
 POLICY_PRODUCTS = {
@@ -113,7 +118,7 @@ def render_toml(
     raw_overrides: dict[tuple[str, str], str] | None = None,
     publication_raw_overrides: dict[str, str] | None = None,
     release_base_raw: str | None = None,
-    schema_raw: str = "2",
+    schema_raw: str = "3",
 ) -> str:
     overrides = raw_overrides or {}
     publication_overrides = publication_raw_overrides or {}
@@ -175,12 +180,12 @@ class MetadataTestCase(unittest.TestCase):
 class ConfigurationTests(MetadataTestCase):
     def test_actual_repository_config_passes(self) -> None:
         loaded = metadata.load_metadata(ACTUAL_CONFIG)
-        self.assertEqual(loaded.schema_version, 2)
+        self.assertEqual(loaded.schema_version, 3)
         self.assertEqual(tuple(product.key for product in loaded.products), metadata.PRODUCT_ORDER)
 
-    def test_minimal_complete_schema_2_document_passes(self) -> None:
+    def test_minimal_complete_schema_3_document_passes(self) -> None:
         loaded = metadata.load_metadata(self.write(render_toml()))
-        self.assertEqual(loaded.schema_version, 2)
+        self.assertEqual(loaded.schema_version, 3)
         self.assertEqual(len(loaded.products), 5)
 
     def test_actual_config_is_locked_to_approved_policy_values(self) -> None:
@@ -224,13 +229,13 @@ class ConfigurationTests(MetadataTestCase):
         self.assert_issue("schema_version =\n", "TOML_PARSE")
 
     def test_missing_top_level_field(self) -> None:
-        content = render_toml().replace("schema_version = 2\n\n", "")
+        content = render_toml().replace("schema_version = 3\n\n", "")
         self.assert_issue(content, "MISSING_FIELD", "metadata.schema_version")
 
     def test_unknown_top_level_field(self) -> None:
         content = render_toml().replace(
-            "schema_version = 2\n",
-            "schema_version = 2\nunknown = true\n",
+            "schema_version = 3\n",
+            "schema_version = 3\nunknown = true\n",
         )
         self.assert_issue(content, "UNKNOWN_FIELD", "metadata.unknown")
 
@@ -303,8 +308,8 @@ class ConfigurationTests(MetadataTestCase):
     def test_boolean_schema_version_is_rejected(self) -> None:
         self.assert_issue(render_toml(schema_raw="true"), "WRONG_TYPE", "schema_version")
 
-    def test_schema_1_and_unknown_schema_are_rejected(self) -> None:
-        for value in ("1", "3"):
+    def test_prior_and_unknown_schema_are_rejected(self) -> None:
+        for value in ("1", "2", "4"):
             with self.subTest(value=value):
                 self.assert_issue(
                     render_toml(schema_raw=value),
@@ -1047,7 +1052,7 @@ class IdentitySafetyTests(MetadataTestCase):
 
 
 class DevelopmentModeTests(MetadataTestCase):
-    def test_development_output_is_deterministic_and_reports_exact_schema_2_values(self) -> None:
+    def test_development_output_is_deterministic_and_reports_exact_schema_3_values(self) -> None:
         first = io.StringIO()
         second = io.StringIO()
         self.assertEqual(checker.main([], stdout=first), 0)
@@ -1056,7 +1061,7 @@ class DevelopmentModeTests(MetadataTestCase):
 
         rendered = first.getvalue()
         expected_lines = (
-            "Schema version: 2",
+            "Schema version: 3",
             f"Project title: {PUBLICATION_VALUES['project_title']}",
             f"Default language: {PUBLICATION_VALUES['default_language']}",
             f"Release IRI base: {PUBLICATION_VALUES['release_iri_base']}",
@@ -1068,6 +1073,7 @@ class DevelopmentModeTests(MetadataTestCase):
                 f"{PUBLICATION_VALUES['development_status_property_iri']}"
             ),
             f"Development status IRI: {PUBLICATION_VALUES['development_status_iri']}",
+            f"Formal release status IRI: {PUBLICATION_VALUES['formal_release_status_iri']}",
             "Canonical product count: 5",
             "Canonical product order: " + ", ".join(metadata.PRODUCT_ORDER),
         )
@@ -1113,10 +1119,10 @@ class ReleaseIdentifierTests(unittest.TestCase):
     def test_valid_date(self) -> None:
         self.assertEqual(metadata.validate_release_identifier("2026-07-14"), "2026-07-14")
 
-    def test_valid_sequences(self) -> None:
+    def test_revision_sequences_are_rejected(self) -> None:
         for value in ("2026-07-14.1", "2026-07-14.2", "2026-07-14.100"):
             with self.subTest(value=value):
-                self.assertEqual(metadata.validate_release_identifier(value), value)
+                self.assert_invalid(value)
 
     def test_invalid_calendar_date(self) -> None:
         self.assert_invalid("2026-02-30", "RELEASE_DATE_INVALID")
@@ -1140,36 +1146,74 @@ class ReleaseIdentifierTests(unittest.TestCase):
 
 class GitTagTests(unittest.TestCase):
     def test_exact_match(self) -> None:
-        context = metadata.validate_release_context("2026-07-14.1", "v2026-07-14.1")
-        self.assertEqual(context.git_tag, "v2026-07-14.1")
+        context = metadata.validate_release_context(
+            "2026-07-14",
+            "2026-07-14",
+            "v2026-07-14",
+            "0123456789abcdef0123456789abcdef01234567",
+        )
+        self.assertEqual(context.git_tag, "v2026-07-14")
 
     def test_missing_v(self) -> None:
         with self.assertRaises(metadata.PublicationMetadataError) as raised:
-            metadata.validate_release_context("2026-07-14", "2026-07-14")
+            metadata.validate_release_context(
+                "2026-07-14",
+                "2026-07-14",
+                "2026-07-14",
+                "0123456789abcdef0123456789abcdef01234567",
+            )
         self.assertEqual(raised.exception.issues[0].code, "GIT_TAG_FORMAT")
 
     def test_malformed_tag(self) -> None:
-        for value in ("version-2026-07-14", "v2026-02-30"):
+        for value, expected_code in (
+            ("version-2026-07-14", "GIT_TAG_FORMAT"),
+            ("v2026-02-30", "RELEASE_TAG_MISMATCH"),
+        ):
             with self.subTest(value=value):
                 with self.assertRaises(metadata.PublicationMetadataError) as raised:
-                    metadata.validate_release_context("2026-07-14", value)
-                self.assertEqual(raised.exception.issues[0].code, "GIT_TAG_FORMAT")
+                    metadata.validate_release_context(
+                        "2026-07-14",
+                        "2026-07-14",
+                        value,
+                        "0123456789abcdef0123456789abcdef01234567",
+                    )
+                self.assertEqual(raised.exception.issues[0].code, expected_code)
 
     def test_mismatched_date(self) -> None:
         with self.assertRaises(metadata.PublicationMetadataError) as raised:
-            metadata.validate_release_context("2026-07-14", "v2026-07-15")
+            metadata.validate_release_context(
+                "2026-07-14",
+                "2026-07-14",
+                "v2026-07-15",
+                "0123456789abcdef0123456789abcdef01234567",
+            )
         self.assertEqual(raised.exception.issues[0].code, "RELEASE_TAG_MISMATCH")
 
-    def test_mismatched_sequence(self) -> None:
+    def test_release_date_mismatch(self) -> None:
         with self.assertRaises(metadata.PublicationMetadataError) as raised:
-            metadata.validate_release_context("2026-07-14.1", "v2026-07-14.2")
-        self.assertEqual(raised.exception.issues[0].code, "RELEASE_TAG_MISMATCH")
+            metadata.validate_release_context(
+                "2026-07-14",
+                "2026-07-15",
+                "v2026-07-14",
+                "0123456789abcdef0123456789abcdef01234567",
+            )
+        self.assertEqual(raised.exception.issues[0].code, "RELEASE_DATE_MISMATCH")
 
     def test_release_mode_requires_release_and_tag_pair(self) -> None:
         for argv in (
             ["--mode", "release"],
             ["--mode", "release", "--release-id", "2026-07-14"],
             ["--mode", "release", "--git-tag", "v2026-07-14"],
+            [
+                "--mode",
+                "release",
+                "--release-id",
+                "2026-07-14",
+                "--release-date",
+                "2026-07-14",
+                "--git-tag",
+                "v2026-07-14",
+            ],
         ):
             with self.subTest(argv=argv):
                 error = io.StringIO()
@@ -1183,6 +1227,12 @@ class VersionIriTests(unittest.TestCase):
         cls.loaded = metadata.load_metadata(ACTUAL_CONFIG)
 
     def test_all_five_approved_version_iri_forms(self) -> None:
+        context = parse_formal_release_context(
+            "2026-07-14",
+            "2026-07-14",
+            "v2026-07-14",
+            "0123456789abcdef0123456789abcdef01234567",
+        )
         expected = {
             "integrated": f"{RELEASE_BASE}/2026-07-14/integrated",
             "alignment_core": f"{RELEASE_BASE}/2026-07-14/current-ssn-sosa/alignment-core",
@@ -1191,7 +1241,7 @@ class VersionIriTests(unittest.TestCase):
             "cco_extension": f"{RELEASE_BASE}/2026-07-14/current-ssn-sosa/cco-extension",
         }
         observed = {
-            product.key: metadata.build_version_iri(product, "2026-07-14")
+            product.key: metadata.release_version_iri(self.loaded, product.key, context)
             for product in self.loaded.products
         }
         self.assertEqual(observed, expected)
@@ -1337,8 +1387,12 @@ class ErrorAndCliTests(MetadataTestCase):
                 "release",
                 "--release-id",
                 "2026-07-14",
+                "--release-date",
+                "2026-07-14",
                 "--git-tag",
                 "v2026-07-14",
+                "--source-commit",
+                "0123456789abcdef0123456789abcdef01234567",
             ],
             stdout=output,
         )
@@ -1354,8 +1408,12 @@ class ErrorAndCliTests(MetadataTestCase):
                 "release",
                 "--release-id",
                 "2026-07-14",
+                "--release-date",
+                "2026-07-14",
                 "--git-tag",
                 "v2026-07-15",
+                "--source-commit",
+                "0123456789abcdef0123456789abcdef01234567",
             ],
             stderr=error,
         )

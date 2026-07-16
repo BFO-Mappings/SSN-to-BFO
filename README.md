@@ -43,25 +43,25 @@ The artifact classifies axioms as target-neutral, BFO-bearing, CCO-bearing, or m
 
 `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` is the maintained authoritative development artifact for the 29 target-neutral governed COMS axioms. It is generated from the same in-memory COMS identities and product dispositions as the integrated root, contains 15 domain and 14 range axioms, and imports no source, target, or project ontology. The integrated `SSN2BFO.ttl` remains the complete standalone authoritative product; the alignment core does not replace it.
 
-Like every maintained ontology product, the development artifact emits the seven governed schema-2 annotations for label, description, product type, development authority status, CC0 license, repository reference, and generated-file warning. Formal-release identity remains deferred. Run its focused tests and the shared nonmutating transaction with `make check-alignment-core`.
+Like every maintained ontology product, the development artifact emits the seven governed schema-3 development annotations for label, description, product type, development authority status, CC0 license, repository reference, and generated-file warning. Run its focused tests and the shared nonmutating transaction with `make check-alignment-core`.
 
 ### Strict BFO mapping
 
 `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` is the maintained authoritative development artifact for the 19 unchanged BFO-bearing governed COMS axioms. It imports only the alignment core, so the locally resolved project-module closure contains 48 governed axioms: 19 direct strict-BFO axioms plus 29 target-neutral core axioms. The 57 CCO-bearing or mixed mappings remain explicitly deferred because no transformation or weakened projection is approved.
 
-The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. The graph emits the seven governed development annotations; formal release identity and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
+The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. The graph emits the seven governed development annotations; formal package construction, an actual release identity, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
 
 ### BFO projection
 
 `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` is a maintained authoritative development artifact that imports only the strict BFO mapping. It intentionally asserts zero direct projection axioms because no CCO-to-BFO transformation or weakened-consequence rule is approved. Its locally resolved project-module closure is therefore exactly the 48 governed axioms already provided by strict BFO and the alignment core: 19 through import and 29 transitively.
 
-The direct nine-triple graph contains one ontology declaration, one strict-BFO import, and the seven governed development annotations; it contains zero logical mapping triples. It contains no source, BFO, CCO, or RO logical mapping content and is not an incomplete serialization. The BFO projection is the designated product for approved weaker but sound BFO consequences, but no direct projection axiom is currently approved. The generator reconciles all 105 product dispositions, leaving 25 CCO-bearing and 32 mixed axioms explicitly deferred, then reuses the same-transaction strict-BFO pinned merged CCO/BFO reasoning result only after proving exact closure equivalence. Future direct projection axioms require governed transformation rules and proof obligations. Formal release identity remains deferred. Run `make check-bfo-projection` for the focused tests and shared nonmutating nine-output transaction.
+The direct nine-triple graph contains one ontology declaration, one strict-BFO import, and the seven governed development annotations; it contains zero logical mapping triples. It contains no source, BFO, CCO, or RO logical mapping content and is not an incomplete serialization. The BFO projection is the designated product for approved weaker but sound BFO consequences, but no direct projection axiom is currently approved. The generator reconciles all 105 product dispositions, leaving 25 CCO-bearing and 32 mixed axioms explicitly deferred, then reuses the same-transaction strict-BFO pinned merged CCO/BFO reasoning result only after proving exact closure equivalence. Future direct projection axioms require governed transformation rules and proof obligations. Formal package construction and an actual release identity remain deferred. Run `make check-bfo-projection` for the focused tests and shared nonmutating nine-output transaction.
 
 ### CCO extension
 
 `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` is the maintained authoritative development artifact for 57 unchanged governed COMS axioms: 25 CCO-bearing and 32 mixed BFO/CCO axioms. It imports only the strict BFO mapping, whose alignment-core import completes a 105-axiom project-module closure without directly duplicating either imported layer.
 
-The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. The graph emits the seven governed development annotations; formal release identity and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
+The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. The graph emits the seven governed development annotations; formal package construction, an actual release identity, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
 
 ## Validation environment
 
@@ -87,7 +87,7 @@ make check
 
 ### Publication metadata validation
 
-`config/publication-metadata.toml` is the sole editable publication-metadata source. Schema version 2 governs the five product paths, stable ontology IRIs, release suffixes, English labels, lifecycle-neutral descriptions, CC0 license IRI, repository IRI, product-type IRIs, development authority status, and generated-file warning. Every maintained ontology deterministically emits exactly seven annotations in this order: `rdfs:label`, `dcterms:description`, `dcterms:type`, `adms:status`, `dcterms:license`, `rdfs:seeAlso`, and `rdfs:comment`. Labels, descriptions, and warnings use `@en`; the remaining values are IRIs.
+`config/publication-metadata.toml` is the sole editable publication-metadata source. Schema version 3 governs the five product paths, stable ontology IRIs, release suffixes, English labels, lifecycle-neutral descriptions, CC0 license IRI, repository IRI, product-type IRIs, development and immutable-release authority statuses, and generated-file warning. Every maintained development ontology still deterministically emits exactly seven annotations in this order: `rdfs:label`, `dcterms:description`, `dcterms:type`, `adms:status`, `dcterms:license`, `rdfs:seeAlso`, and `rdfs:comment`. Labels, descriptions, and warnings use `@en`; the remaining values are IRIs.
 
 Run the focused tests and development-mode validation with:
 
@@ -96,16 +96,20 @@ make check-publication-metadata
 python tools/check_publication_metadata.py
 ```
 
-Development mode validates and emits the governed static annotations without claiming immutable release version IRIs. Creator and contributor records, provenance, dependency RDF, release dates, Git and commit bindings, artifact hashes, and other formal-release fields remain deferred. Validate the existing pure release-IRI construction helpers with an explicit formal-release context using:
+Development mode validates and emits the governed static annotations without claiming immutable release identity. Formal rendering requires an explicit immutable context with a real `YYYY-MM-DD` release identifier and matching date, a `vYYYY-MM-DD` tag, and a full lowercase 40-hex source commit. The following checker invocation is illustrative synthetic input only; it validates context and version-IRI construction but does not build an ontology:
 
 ```bash
 python tools/check_publication_metadata.py \
   --mode release \
-  --release-id 2026-07-14 \
-  --git-tag v2026-07-14
+  --release-id 2099-01-02 \
+  --release-date 2099-01-02 \
+  --git-tag v2099-01-02 \
+  --source-commit 0123456789abcdef0123456789abcdef01234567
 ```
 
-Formal release version IRIs are derived from the configured release base, supplied release identifier, and each product's release suffix. The metadata checker does not write ontologies, inspect Git tags or tag-to-commit binding, create release manifests, compare cross-artifact hashes, or prove that a version IRI has never identified different bytes; ontology emission occurs only inside the shared COMS transaction.
+Formal renderers preserve each stable ontology IRI as the `owl:Ontology` subject, replace the development status with the immutable-release status, and add exactly `owl:versionIRI`, plain `owl:versionInfo`, and `dcterms:issued` as `xsd:date`. Modular imports use same-release version IRIs; the integrated root retains its four external imports. `make check-release-rendering` proves deterministic bytes, logical-graph preservation, exact closure counts, and independent HermiT consistency for all five synthetic formal products.
+
+The formal APIs render in memory or isolated temporary test paths. No package builder, dated release directory, manifest, checksum file, archive, tag, or GitHub release exists yet, and no actual release identifier, date, or notes have been selected. Creator/contributor metadata, provenance and dependency RDF, commit/tag/hash RDF, package construction, tagging, and publication remain deferred.
 
 The four new release files under `releases/` are placeholders until completed mapping content is inserted:
 

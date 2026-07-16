@@ -10,14 +10,21 @@ import re
 import tomllib
 import unicodedata
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import urlsplit
 
 from rdflib import Graph, Literal, RDF, RDFS, OWL, URIRef
 
+from release_context import (
+    FormalReleaseContext,
+    FormalReleaseContextError,
+    parse_formal_release_context,
+    validate_formal_release_context,
+    validate_release_identifier as validate_context_release_identifier,
+)
 
-SCHEMA_VERSION = 2
+
+SCHEMA_VERSION = 3
 PRODUCT_ORDER = (
     "integrated",
     "alignment_core",
@@ -35,6 +42,7 @@ PUBLICATION_FIELDS = (
     "generated_warning",
     "development_status_property_iri",
     "development_status_iri",
+    "formal_release_status_iri",
 )
 PRODUCT_FIELDS = (
     "path",
@@ -44,20 +52,17 @@ PRODUCT_FIELDS = (
     "description",
     "product_type_iri",
 )
-RELEASE_IDENTIFIER_PATTERN = re.compile(
-    r"(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})(?:\.(?P<sequence>[1-9][0-9]*))?\Z"
-)
-GIT_TAG_PATTERN = re.compile(
-    r"v(?P<release>[0-9]{4}-[0-9]{2}-[0-9]{2}(?:\.[1-9][0-9]*)?)\Z"
-)
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 LANGUAGE_LITERAL = "language_literal"
+PLAIN_LITERAL = "plain_literal"
+TYPED_LITERAL = "typed_literal"
 IRI_OBJECT = "iri"
 RDF_TYPE_IRI = str(RDF.type)
 OWL_ONTOLOGY_IRI = str(OWL.Ontology)
 OWL_IMPORTS_IRI = str(OWL.imports)
 DCTERMS_NAMESPACE = "http://purl.org/dc/terms/"
 ADMS_NAMESPACE = "http://www.w3.org/ns/adms#"
+XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema#"
 METADATA_PREFIXES = (
     ("adms", ADMS_NAMESPACE),
     ("dcterms", DCTERMS_NAMESPACE),
@@ -70,6 +75,9 @@ METADATA_PREDICATE_QNAMES = {
     DCTERMS_NAMESPACE + "license": "dcterms:license",
     str(RDFS.seeAlso): "rdfs:seeAlso",
     str(RDFS.comment): "rdfs:comment",
+    str(OWL.versionIRI): "owl:versionIRI",
+    str(OWL.versionInfo): "owl:versionInfo",
+    DCTERMS_NAMESPACE + "issued": "dcterms:issued",
 }
 RELEASE_ONLY_PREDICATES = frozenset(
     {
@@ -77,6 +85,12 @@ RELEASE_ONLY_PREDICATES = frozenset(
         str(OWL.versionInfo),
         DCTERMS_NAMESPACE + "issued",
     }
+)
+INTEGRATED_EXTERNAL_IMPORTS = (
+    "http://www.w3.org/ns/sosa/sampling/",
+    "http://www.w3.org/ns/ssn/",
+    "http://www.w3.org/ns/ssn/systems/",
+    "https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged",
 )
 
 
@@ -90,6 +104,7 @@ class PublicationSettings:
     generated_warning: str
     development_status_property_iri: str
     development_status_iri: str
+    formal_release_status_iri: str
 
 
 @dataclass(frozen=True)
@@ -122,12 +137,6 @@ class PublicationMetadata:
 
 
 @dataclass(frozen=True)
-class ReleaseContext:
-    release_identifier: str
-    git_tag: str
-
-
-@dataclass(frozen=True)
 class ValidationIssue:
     code: str
     field: str
@@ -144,6 +153,7 @@ class OntologyMetadataTriple:
     object_kind: str
     value: str
     language: str | None = None
+    datatype_iri: str | None = None
 
     @property
     def predicate_turtle(self) -> str:
@@ -158,6 +168,10 @@ class OntologyMetadataTriple:
             return f"<{self.value}>"
         if self.object_kind == LANGUAGE_LITERAL and self.language is not None:
             return json.dumps(self.value, ensure_ascii=False) + f"@{self.language}"
+        if self.object_kind == PLAIN_LITERAL:
+            return json.dumps(self.value, ensure_ascii=False)
+        if self.object_kind == TYPED_LITERAL and self.datatype_iri == XSD_NAMESPACE + "date":
+            return json.dumps(self.value, ensure_ascii=False) + "^^xsd:date"
         raise ValueError(f"unsupported ontology metadata object kind {self.object_kind!r}")
 
 
@@ -186,17 +200,57 @@ def _product(metadata: PublicationMetadata, product_key: str) -> ProductPublicat
     )
 
 
+def release_version_iri(
+    metadata: PublicationMetadata,
+    product_key: str,
+    context: FormalReleaseContext,
+) -> str:
+    """Return one governed immutable product version IRI."""
+
+    validated = validate_formal_release_context(context)
+    product = _product(metadata, product_key)
+    return (
+        f"{metadata.publication.release_iri_base}/"
+        f"{validated.release_identifier}/{product.release_iri_suffix}"
+    )
+
+
+def release_project_imports(
+    metadata: PublicationMetadata,
+    product_key: str,
+    context: FormalReleaseContext,
+) -> tuple[str, ...]:
+    """Return the exact formal import list without stable project imports."""
+
+    validate_formal_release_context(context)
+    _product(metadata, product_key)
+    if product_key == "integrated":
+        return INTEGRATED_EXTERNAL_IMPORTS
+    if product_key == "alignment_core":
+        return ()
+    if product_key == "strict_bfo_mapping":
+        return (release_version_iri(metadata, "alignment_core", context),)
+    if product_key in {"bfo_projection", "cco_extension"}:
+        return (release_version_iri(metadata, "strict_bfo_mapping", context),)
+    raise PublicationMetadataError(
+        [_issue("UNKNOWN_PRODUCT", f"products.{product_key}", "product is not governed")]
+    )
+
+
 def ontology_metadata_triples(
     metadata: PublicationMetadata,
     product_key: str,
+    context: FormalReleaseContext | None = None,
 ) -> tuple[OntologyMetadataTriple, ...]:
-    """Return the exact seven development annotations in governed predicate order."""
+    """Return exact development or formal annotations in governed order."""
 
     product = _product(metadata, product_key)
     publication = metadata.publication
     subject = product.stable_ontology_iri
     language = publication.default_language
-    return (
+    if context is not None:
+        validate_formal_release_context(context)
+    static = (
         OntologyMetadataTriple(
             product_key,
             subject,
@@ -225,7 +279,9 @@ def ontology_metadata_triples(
             subject,
             publication.development_status_property_iri,
             IRI_OBJECT,
-            publication.development_status_iri,
+            publication.development_status_iri
+            if context is None
+            else publication.formal_release_status_iri,
         ),
         OntologyMetadataTriple(
             product_key,
@@ -250,25 +306,87 @@ def ontology_metadata_triples(
             language,
         ),
     )
+    if context is None:
+        return static
+    return (
+        *static,
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            str(OWL.versionIRI),
+            IRI_OBJECT,
+            release_version_iri(metadata, product_key, context),
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            str(OWL.versionInfo),
+            PLAIN_LITERAL,
+            context.release_identifier,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            DCTERMS_NAMESPACE + "issued",
+            TYPED_LITERAL,
+            context.release_date,
+            datatype_iri=XSD_NAMESPACE + "date",
+        ),
+    )
 
 
 def ontology_metadata_rdf_triples(
     metadata: PublicationMetadata,
     product_key: str,
+    context: FormalReleaseContext | None = None,
 ) -> tuple[tuple[URIRef, URIRef, URIRef | Literal], ...]:
     """Convert governed metadata to immutable RDF terms without changing order."""
 
     converted: list[tuple[URIRef, URIRef, URIRef | Literal]] = []
-    for value in ontology_metadata_triples(metadata, product_key):
+    for value in ontology_metadata_triples(metadata, product_key, context):
         target: URIRef | Literal
         if value.object_kind == IRI_OBJECT:
             target = URIRef(value.value)
+        elif value.object_kind == TYPED_LITERAL:
+            target = Literal(value.value, datatype=URIRef(value.datatype_iri))
+        elif value.object_kind == PLAIN_LITERAL:
+            target = Literal(value.value)
         else:
             target = Literal(value.value, lang=value.language)
         converted.append(
             (URIRef(value.ontology_iri), URIRef(value.predicate_iri), target)
         )
     return tuple(converted)
+
+
+def canonical_ontology_prefixes(
+    prefixes: tuple[tuple[str, str], ...],
+    context: FormalReleaseContext | None = None,
+) -> tuple[tuple[str, str], ...]:
+    """Return canonical prefixes, inserting formal xsd after rdfs."""
+
+    if context is None:
+        return prefixes
+    validate_formal_release_context(context)
+    without_xsd = tuple(value for value in prefixes if value[0] != "xsd")
+    if len(without_xsd) != len(prefixes):
+        supplied = tuple(namespace for prefix, namespace in prefixes if prefix == "xsd")
+        if supplied != (XSD_NAMESPACE,):
+            raise PublicationMetadataError(
+                [_issue("INVALID_XSD_PREFIX", "ontology_prefixes.xsd", "expected XML Schema namespace")]
+            )
+    result: list[tuple[str, str]] = []
+    inserted = False
+    for value in without_xsd:
+        result.append(value)
+        if value[0] == "rdfs":
+            result.append(("xsd", XSD_NAMESPACE))
+            inserted = True
+    if not inserted:
+        raise PublicationMetadataError(
+            [_issue("MISSING_RDFS_PREFIX", "ontology_prefixes", "formal rendering requires rdfs")]
+        )
+    return tuple(result)
 
 
 def render_ontology_header_bytes(
@@ -279,6 +397,7 @@ def render_ontology_header_bytes(
     generated_notice: str,
     prefixes: tuple[tuple[str, str], ...],
     import_turtle_terms: tuple[str, ...] | None = None,
+    context: FormalReleaseContext | None = None,
 ) -> bytes:
     """Render the canonical generated preamble and ontology statement."""
 
@@ -296,10 +415,13 @@ def render_ontology_header_bytes(
             ]
         )
 
+    canonical_prefixes = canonical_ontology_prefixes(prefixes, context)
     lines = [generated_notice, ""]
-    lines.extend(f"@prefix {prefix}: <{namespace}> ." for prefix, namespace in prefixes)
+    lines.extend(
+        f"@prefix {prefix}: <{namespace}> ." for prefix, namespace in canonical_prefixes
+    )
     lines.extend(["", f"<{product.stable_ontology_iri}> a owl:Ontology ;"])
-    for value in ontology_metadata_triples(metadata, product_key):
+    for value in ontology_metadata_triples(metadata, product_key, context):
         lines.append(f"    {value.predicate_turtle} {value.object_turtle} ;")
 
     if not import_turtle_terms:
@@ -323,6 +445,7 @@ def validate_serialized_ontology_header(
     prefixes: tuple[tuple[str, str], ...],
     import_turtle_terms: tuple[str, ...] | None = None,
     mode: str = "development",
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ValidationIssue, ...]:
     """Strictly parse and validate graph semantics plus canonical header bytes."""
 
@@ -345,6 +468,7 @@ def validate_serialized_ontology_header(
             product_key,
             expected_imports,
             mode=mode,
+            context=context,
         )
     )
     expected_header = render_ontology_header_bytes(
@@ -354,6 +478,7 @@ def validate_serialized_ontology_header(
         generated_notice=generated_notice,
         prefixes=prefixes,
         import_turtle_terms=import_turtle_terms,
+        context=context,
     )
     remainder = serialized_bytes[len(expected_header) :] if serialized_bytes.startswith(expected_header) else None
     canonical_boundary = remainder == b"" or (
@@ -378,6 +503,7 @@ def strip_emitted_ontology_header(
     metadata: PublicationMetadata,
     product_key: str,
     expected_imports: tuple[str, ...],
+    context: FormalReleaseContext | None = None,
 ) -> Graph:
     """Return a copy containing only governed/structural logical content."""
 
@@ -386,7 +512,7 @@ def strip_emitted_ontology_header(
     removed = {
         (ontology, RDF.type, OWL.Ontology),
         *((ontology, OWL.imports, URIRef(value)) for value in expected_imports),
-        *ontology_metadata_rdf_triples(metadata, product_key),
+        *ontology_metadata_rdf_triples(metadata, product_key, context),
     }
     result = Graph()
     for triple in graph:
@@ -401,18 +527,35 @@ def validate_emitted_ontology_metadata(
     product_key: str,
     expected_imports: tuple[str, ...],
     mode: str = "development",
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ValidationIssue, ...]:
-    """Validate exact ontology identity, imports, and governed development metadata."""
+    """Validate exact ontology identity, imports, and governed metadata."""
 
     issues: list[ValidationIssue] = []
-    if mode != "development":
+    if mode not in {"development", "release"}:
         return (
             _issue(
                 "UNSUPPORTED_METADATA_MODE",
                 "ontology_metadata.mode",
-                "only development metadata emission is implemented",
+                "expected development or release",
             ),
         )
+    if (mode == "release") != (context is not None):
+        return (
+            _issue(
+                "RELEASE_CONTEXT_REQUIRED",
+                "ontology_metadata.context",
+                "release mode requires a complete context and development mode prohibits one",
+            ),
+        )
+    if context is not None:
+        try:
+            validate_formal_release_context(context)
+        except FormalReleaseContextError as exc:
+            return tuple(
+                _issue(value.code, f"release_context.{value.field}", value.message)
+                for value in exc.issues
+            )
 
     product = _product(metadata, product_key)
     ontology = URIRef(product.stable_ontology_iri)
@@ -442,17 +585,25 @@ def validate_emitted_ontology_metadata(
             )
         )
 
-    expected_metadata = ontology_metadata_rdf_triples(metadata, product_key)
+    expected_metadata = ontology_metadata_rdf_triples(metadata, product_key, context)
     expected_by_predicate = {
         predicate: triple for triple in expected_metadata for predicate in (triple[1],)
     }
     governed_predicates = set(expected_by_predicate)
+    formal_issue_codes = {
+        URIRef(metadata.publication.development_status_property_iri): "FORMAL_STATUS_MISMATCH",
+        OWL.versionIRI: "VERSION_IRI_MISMATCH",
+        OWL.versionInfo: "VERSION_INFO_MISMATCH",
+        URIRef(DCTERMS_NAMESPACE + "issued"): "ISSUED_DATE_MISMATCH",
+    }
     for predicate, expected in expected_by_predicate.items():
         observed = set(graph.triples((None, predicate, None)))
         if observed != {expected}:
             issues.append(
                 _issue(
-                    "ONTOLOGY_METADATA_MISMATCH",
+                    formal_issue_codes.get(predicate, "ONTOLOGY_METADATA_MISMATCH")
+                    if context is not None
+                    else "ONTOLOGY_METADATA_MISMATCH",
                     f"products.{product_key}.{predicate}",
                     f"expected {expected!r}, got {sorted(map(repr, observed))}",
                 )
@@ -489,20 +640,22 @@ def validate_emitted_ontology_metadata(
                 )
             )
 
-    for predicate_iri in RELEASE_ONLY_PREDICATES:
-        triples = set(graph.triples((None, URIRef(predicate_iri), None)))
-        if triples:
-            issues.append(
-                _issue(
-                    "RELEASE_METADATA_IN_DEVELOPMENT",
-                    f"products.{product_key}.{predicate_iri}",
-                    "formal-release metadata is prohibited in development output",
+    if context is None:
+        for predicate_iri in RELEASE_ONLY_PREDICATES:
+            triples = set(graph.triples((None, URIRef(predicate_iri), None)))
+            if triples:
+                issues.append(
+                    _issue(
+                        "RELEASE_METADATA_IN_DEVELOPMENT",
+                        f"products.{product_key}.{predicate_iri}",
+                        "formal-release metadata is prohibited in development output",
+                    )
                 )
-            )
 
     controlled_iris = (
         URIRef(product.product_type_iri),
         URIRef(metadata.publication.development_status_iri),
+        URIRef(metadata.publication.formal_release_status_iri),
     )
     for controlled in controlled_iris:
         if any(True for _ in graph.triples((controlled, RDF.type, None))):
@@ -700,9 +853,9 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
 
     issues: list[ValidationIssue] = []
     if type(metadata.schema_version) is not int:
-        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 2"))
+        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 3"))
     elif metadata.schema_version != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 2"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 3"))
 
     publication = metadata.publication
     for attribute in PUBLICATION_FIELDS:
@@ -718,7 +871,7 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
             _issue(
                 "UNSUPPORTED_LANGUAGE",
                 "publication.default_language",
-                "schema version 2 requires the exact language code 'en'",
+                "schema version 3 requires the exact language code 'en'",
             )
         )
     if (
@@ -770,6 +923,13 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
             False,
             False,
         ),
+        (
+            publication.formal_release_status_iri,
+            "publication.formal_release_status_iri",
+            "INVALID_FORMAL_STATUS_IRI",
+            False,
+            False,
+        ),
     )
     for value, field, code, allow_trailing_slash, allow_fragment in publication_iris:
         if isinstance(value, str) and value.strip():
@@ -781,6 +941,14 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
                 allow_trailing_slash=allow_trailing_slash,
                 allow_fragment=allow_fragment,
             )
+    if publication.formal_release_status_iri == publication.development_status_iri:
+        issues.append(
+            _issue(
+                "STATUS_IRI_COLLISION",
+                "publication.formal_release_status_iri",
+                "formal release status must differ from development status",
+            )
+        )
 
     keys = tuple(product.key for product in metadata.products)
     if set(keys) != set(PRODUCT_ORDER) or len(keys) != len(PRODUCT_ORDER):
@@ -864,7 +1032,7 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
 
 
 def load_metadata(path: str | Path) -> PublicationMetadata:
-    """Load UTF-8 TOML and return validated schema-2 metadata."""
+    """Load UTF-8 TOML and return validated schema-3 metadata."""
 
     source = Path(path)
     try:
@@ -884,9 +1052,9 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
     schema_version = top.get("schema_version")
     if type(schema_version) is not int:
         if "schema_version" in top:
-            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 2"))
+            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 3"))
     elif schema_version != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 2"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 3"))
 
     publication_table = (
         _table(top["publication"], "publication", PUBLICATION_FIELDS, issues)
@@ -955,51 +1123,35 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
 
 
 def validate_release_identifier(value: str) -> str:
-    """Validate and return a canonical date-based release identifier."""
+    """Compatibility wrapper for the schema-3 date-only release grammar."""
 
-    if not isinstance(value, str):
-        raise PublicationMetadataError(
-            [_issue("RELEASE_ID_FORMAT", "release_id", "expected YYYY-MM-DD or YYYY-MM-DD.N")]
-        )
-    match = RELEASE_IDENTIFIER_PATTERN.fullmatch(value)
-    if match is None:
-        raise PublicationMetadataError(
-            [_issue("RELEASE_ID_FORMAT", "release_id", "expected YYYY-MM-DD or YYYY-MM-DD.N")]
-        )
     try:
-        parsed_date = date.fromisoformat(match.group("date"))
-    except ValueError as exc:
+        return validate_context_release_identifier(value)
+    except FormalReleaseContextError as exc:
         raise PublicationMetadataError(
-            [_issue("RELEASE_DATE_INVALID", "release_id", f"invalid calendar date: {match.group('date')}")]
+            [_issue(issue.code, "release_id", issue.message) for issue in exc.issues]
         ) from exc
-    if parsed_date.isoformat() != match.group("date"):
-        raise PublicationMetadataError(
-            [_issue("RELEASE_ID_FORMAT", "release_id", "date must be zero-padded YYYY-MM-DD")]
-        )
-    return value
 
 
-def validate_release_context(release_id: str, git_tag: str) -> ReleaseContext:
-    """Validate a release identifier and its supplied intended Git tag."""
+def validate_release_context(
+    release_id: str,
+    release_date: str,
+    git_tag: str,
+    source_commit: str,
+) -> FormalReleaseContext:
+    """Compatibility wrapper returning a complete formal-release context."""
 
-    release_identifier = validate_release_identifier(release_id)
-    tag_match = GIT_TAG_PATTERN.fullmatch(git_tag) if isinstance(git_tag, str) else None
-    if tag_match is None:
-        raise PublicationMetadataError(
-            [_issue("GIT_TAG_FORMAT", "git_tag", "expected v<release-id>")]
-        )
     try:
-        validate_release_identifier(tag_match.group("release"))
-    except PublicationMetadataError as exc:
-        raise PublicationMetadataError(
-            [_issue("GIT_TAG_FORMAT", "git_tag", "expected v<release-id>")]
-        ) from exc
-    expected = f"v{release_identifier}"
-    if git_tag != expected:
-        raise PublicationMetadataError(
-            [_issue("RELEASE_TAG_MISMATCH", "git_tag", f"expected {expected}, got {git_tag}")]
+        return parse_formal_release_context(
+            release_id,
+            release_date,
+            git_tag,
+            source_commit,
         )
-    return ReleaseContext(release_identifier=release_identifier, git_tag=git_tag)
+    except FormalReleaseContextError as exc:
+        raise PublicationMetadataError(
+            [_issue(issue.code, issue.field, issue.message) for issue in exc.issues]
+        ) from exc
 
 
 def build_version_iri(product: ProductMetadata, release_id: str) -> str:
