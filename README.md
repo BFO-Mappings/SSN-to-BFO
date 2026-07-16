@@ -43,7 +43,13 @@ The artifact classifies axioms as target-neutral, BFO-bearing, CCO-bearing, or m
 
 `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` is the maintained authoritative development artifact for the 29 target-neutral governed COMS axioms. It is generated from the same in-memory COMS identities and product dispositions as the integrated root, contains 15 domain and 14 range axioms, and imports no source, target, or project ontology. The integrated `SSN2BFO.ttl` remains the complete standalone authoritative product; the alignment core does not replace it.
 
-The development artifact has only its governed stable ontology IRI and ontology declaration. Complete publication metadata, formal release identity, the strict BFO mapping, BFO projection, CCO extension, and transformation rules remain unimplemented. Run its focused tests and the shared nonmutating six-output transaction with `make check-alignment-core`.
+The development artifact has only its governed stable ontology IRI and ontology declaration. Complete publication metadata and formal release identity remain deferred. Run its focused tests and the shared nonmutating transaction with `make check-alignment-core`.
+
+### Strict BFO mapping
+
+`releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` is the maintained authoritative development artifact for the 19 unchanged BFO-bearing governed COMS axioms. It imports only the alignment core, so the locally resolved project-module closure contains 48 governed axioms: 19 direct strict-BFO axioms plus 29 target-neutral core axioms. The 57 CCO-bearing or mixed mappings remain explicitly deferred because no transformation or weakened projection is approved.
+
+The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. Full publication metadata, formal release identity, the BFO projection, CCO extension, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating seven-output transaction.
 
 ## Validation environment
 

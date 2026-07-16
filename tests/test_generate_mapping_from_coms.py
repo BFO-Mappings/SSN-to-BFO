@@ -118,6 +118,8 @@ class ComsDomainRangeTests(unittest.TestCase):
                 str(disposition_path),
                 "--alignment-core-output",
                 str(self.root / "alignment-core.ttl"),
+                "--strict-bfo-output",
+                str(self.root / "strict-bfo.ttl"),
                 "--coverage-report",
                 str(self.root / "coverage.md"),
                 "--diff-report",
@@ -139,6 +141,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertFalse(output_path.exists())
         self.assertFalse(disposition_path.exists())
         self.assertFalse((self.root / "alignment-core.ttl").exists())
+        self.assertFalse((self.root / "strict-bfo.ttl").exists())
         self.assertTrue(report_path.is_file())
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("| overall status | FAIL |", report)
@@ -168,6 +171,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertFalse(output_path.exists())
         self.assertFalse(disposition_path.exists())
         self.assertFalse((self.root / "alignment-core.ttl").exists())
+        self.assertFalse((self.root / "strict-bfo.ttl").exists())
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("TARGET_CATEGORY_MISMATCH", report)
         self.assertIn("| overall status | FAIL |", report)
@@ -705,6 +709,8 @@ class ComsGenerationReportTests(unittest.TestCase):
         disposition_document: dispositions.DispositionDocument | None = None,
         alignment_core_result: object | None = None,
         alignment_core_hermit: object | None = None,
+        strict_bfo_result: object | None = None,
+        strict_bfo_hermit: object | None = None,
     ) -> str:
         path = self.root / f"{name}.md"
         coms.write_generation_report(
@@ -737,6 +743,12 @@ class ComsGenerationReportTests(unittest.TestCase):
             ),
             alignment_core_sha256="alignment-core-hash",
             alignment_core_hermit=alignment_core_hermit,
+            strict_bfo_result=strict_bfo_result,
+            strict_bfo_path=Path(
+                "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
+            ),
+            strict_bfo_sha256="strict-bfo-hash",
+            strict_bfo_hermit=strict_bfo_hermit,
         )
         return path.read_text(encoding="utf-8")
 
@@ -871,6 +883,43 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Total RDF triples: 54", report)
         self.assertIn("Source-closure HermiT result: PASS", report)
 
+    def test_generation_report_includes_strict_bfo_results(self) -> None:
+        result = SimpleNamespace(
+            metadata=SimpleNamespace(
+                stable_ontology_iri=(
+                    "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
+                )
+            ),
+            governed_axiom_count=19,
+            subclass_axiom_count=3,
+            equivalent_class_axiom_count=3,
+            direct_subproperty_axiom_count=9,
+            property_chain_axiom_count=2,
+            domain_axiom_count=1,
+            range_axiom_count=1,
+            logical_triple_count=125,
+            ontology_header_triple_count=2,
+            total_triple_count=127,
+        )
+        hermit = SimpleNamespace(
+            closure_triple_count=14972,
+            return_code=0,
+            reasoned_output_produced=True,
+            unsat_classes=[],
+            passed=True,
+        )
+        report = self.render_report(
+            "strict-bfo",
+            "/opt/robot",
+            strict_bfo_result=result,
+            strict_bfo_hermit=hermit,
+        )
+        self.assertIn("## Strict BFO Mapping", report)
+        self.assertIn("Direct governed authoritative axioms: 19", report)
+        self.assertIn("Project-module closure governed axioms: 48", report)
+        self.assertIn("Pinned closure triple count: 14972", report)
+        self.assertIn("HermiT result: PASS", report)
+
 
 class ComsAuthorityMigrationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -886,6 +935,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "diff_report": self.root / "reports/coms-vs-pre-coms-legacy-diff.md",
             "disposition_report": self.root / "reports/coms-product-dispositions.json",
             "alignment_core": self.root / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+            "strict_bfo_mapping": self.root / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
         }
 
     @staticmethod
@@ -906,6 +956,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(
             checker.MAINTAINED_OUTPUTS["alignment_core"],
             REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+        )
+        self.assertEqual(
+            checker.MAINTAINED_OUTPUTS["strict_bfo_mapping"],
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
         )
 
     def test_legacy_ontology_is_the_comparison_baseline(self) -> None:
@@ -939,6 +993,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
+        strict_bfo_hash = checker.sha256_file(outputs["strict_bfo_mapping"])
         self.write(
             outputs["generation_report"],
             "\n".join(
@@ -955,6 +1010,8 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| product-disposition JSON SHA-256 | `{disposition_hash}` |",
                     "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
                     f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
+                    "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
+                    f"| strict-BFO Turtle SHA-256 | `{strict_bfo_hash}` |",
                 ]
             ),
         )
@@ -999,6 +1056,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
+        strict_bfo_hash = checker.sha256_file(outputs["strict_bfo_mapping"])
         self.write(
             outputs["generation_report"],
             "\n".join(
@@ -1015,6 +1073,8 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| product-disposition JSON SHA-256 | `{disposition_hash}` |",
                     "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
                     f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
+                    "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
+                    f"| strict-BFO Turtle SHA-256 | `{strict_bfo_hash}` |",
                 ]
             ),
         )
@@ -1068,6 +1128,77 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             )
             self.assertEqual(checker.main(["--check-only"]), 1)
 
+        run_generator.assert_not_called()
+        for path, content in expected.items():
+            self.assertEqual(path.read_bytes(), content)
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+
+    def test_stale_strict_bfo_hash_fails_check_only_without_rewriting_outputs(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"maintained-{name}\n")
+        hashes = {name: checker.sha256_file(path) for name, path in outputs.items()}
+        disposition_module_hash = checker.sha256_file(checker.DISPOSITION_MODULE)
+        modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
+        publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
+        self.write(
+            outputs["generation_report"],
+            "\n".join(
+                [
+                    "| workbook SHA-256 | `workbook-hash` |",
+                    "| generator SHA-256 | `generator-hash` |",
+                    f"| product-disposition module SHA-256 | `{disposition_module_hash}` |",
+                    f"| modular-products module SHA-256 | `{modular_products_module_hash}` |",
+                    f"| publication metadata SHA-256 | `{publication_metadata_hash}` |",
+                    "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
+                    "| maintained ontology path | `SSN2BFO.ttl` |",
+                    f"| generated ontology SHA-256 | `{hashes['candidate']}` |",
+                    "| maintained product-disposition path | `reports/coms-product-dispositions.json` |",
+                    f"| product-disposition JSON SHA-256 | `{hashes['disposition_report']}` |",
+                    "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
+                    f"| alignment-core Turtle SHA-256 | `{hashes['alignment_core']}` |",
+                    "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
+                    f"| strict-BFO Turtle SHA-256 | `{hashes['strict_bfo_mapping']}` |",
+                ]
+            ),
+        )
+        fake_disposition = SimpleNamespace(
+            input_hashes=SimpleNamespace(
+                workbook_sha256="workbook-hash",
+                generator_sha256="generator-hash",
+                row_identity_module_sha256=checker.sha256_file(checker.ROW_IDENTITY_MODULE),
+                disposition_module_sha256=disposition_module_hash,
+                publication_metadata_sha256=publication_metadata_hash,
+            ),
+            product_order=tuple(
+                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
+            ),
+        )
+        cache_dir = self.root / ".cache/coms"
+        run_generator = mock.Mock()
+        self.write(outputs["strict_bfo_mapping"], "modified maintained strict BFO mapping\n")
+        expected = {path: path.read_bytes() for path in outputs.values()}
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "run_generator", run_generator),
+            mock.patch.object(checker, "load_disposition_document", return_value=fake_disposition),
+            mock.patch.object(
+                checker,
+                "serialize_disposition_document",
+                return_value=outputs["disposition_report"].read_bytes(),
+            ),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            errors = checker.freshness_errors("workbook-hash", "generator-hash")
+            self.assertEqual(errors, ["strict-BFO hash differs from the generated report"])
+            self.assertNotIn("generated candidate hash differs from the generated report", errors)
+            self.assertEqual(checker.main(["--check-only"]), 1)
         run_generator.assert_not_called()
         for path, content in expected.items():
             self.assertEqual(path.read_bytes(), content)
@@ -1182,6 +1313,87 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertFalse(transaction_dirs[0].exists())
         self.assertEqual(list(cache_dir.glob("run-*")), [])
 
+    def test_first_successful_update_creates_initially_absent_strict_bfo_mapping(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {
+            name: path for name, path in outputs.items() if name != "strict_bfo_mapping"
+        }
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        self.assertFalse(outputs["strict_bfo_mapping"].exists())
+        expected_generated = {
+            name: f"new-{name}\n".encode("utf-8") for name in existing
+        }
+        strict_bytes = (
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
+        ).read_bytes()
+        ontology_iri = URIRef(
+            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
+        )
+        alignment_iri = URIRef(
+            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
+        )
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        validation_complete = False
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            self.assertFalse(outputs["strict_bfo_mapping"].exists())
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name, content in expected_generated.items():
+                paths[name].parent.mkdir(parents=True, exist_ok=True)
+                paths[name].write_bytes(content)
+            paths["strict_bfo_mapping"].parent.mkdir(parents=True, exist_ok=True)
+            paths["strict_bfo_mapping"].write_bytes(strict_bytes)
+            self.write(paths["summary"], "{}\n")
+
+        def fake_validate(paths: dict[str, Path], *_args, **_kwargs):
+            nonlocal validation_complete
+            self.assertFalse(outputs["strict_bfo_mapping"].exists())
+            graph = coms.Graph().parse(paths["strict_bfo_mapping"], format="turtle")
+            self.assertEqual(set(graph.subjects(RDF.type, OWL.Ontology)), {ontology_iri})
+            self.assertEqual(
+                set(graph.triples((None, OWL.imports, None))),
+                {(ontology_iri, OWL.imports, alignment_iri)},
+            )
+            self.assertEqual(len(graph), 127)
+            validation_complete = True
+            return {}
+
+        production_replace = checker.replace_outputs_atomically
+
+        def observe_replace(paths: dict[str, Path], transaction_dir: Path, log: list[str]) -> None:
+            self.assertTrue(validation_complete)
+            self.assertFalse(outputs["strict_bfo_mapping"].exists())
+            production_replace(paths, transaction_dir, log)
+            self.assertTrue(outputs["strict_bfo_mapping"].exists())
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["missing strict BFO mapping"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", side_effect=fake_validate),
+            mock.patch.object(checker, "git_diff_check"),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "replace_outputs_atomically", side_effect=observe_replace),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 0)
+        for name, content in expected_generated.items():
+            self.assertEqual(outputs[name].read_bytes(), content)
+        self.assertEqual(outputs["strict_bfo_mapping"].read_bytes(), strict_bytes)
+        self.assertTrue(all(path.is_file() for path in outputs.values()))
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+
     def test_temporary_validation_precedes_atomic_root_replacement(self) -> None:
         outputs = self.maintained_outputs()
         for name, path in outputs.items():
@@ -1217,7 +1429,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
 
         self.assertEqual(outputs["candidate"].read_text(encoding="utf-8"), "new-candidate\n")
 
-    def test_check_only_preserves_all_six_outputs_and_workbook(self) -> None:
+    def test_check_only_preserves_all_seven_outputs_and_workbook(self) -> None:
         outputs = self.maintained_outputs()
         workbook = self.root / "mappings/SSN2BFO-COMS.xlsx"
         self.write(workbook, "workbook-bytes\n")
@@ -1375,6 +1587,55 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
 
+    def test_rollback_removes_new_strict_bfo_when_it_was_initially_absent(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {
+            name: path for name, path in outputs.items() if name != "strict_bfo_mapping"
+        }
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in existing.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"new-{name}\n")
+            self.write(paths["summary"], "{}\n")
+
+        diff_checks = 0
+
+        def fail_post_update(_log: list[str], _label: str) -> None:
+            nonlocal diff_checks
+            diff_checks += 1
+            if diff_checks == 2:
+                raise checker.CheckFailure("post-update failure")
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", return_value={}),
+            mock.patch.object(checker, "git_diff_check", side_effect=fail_post_update),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+        self.assertEqual(diff_checks, 2)
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertFalse(outputs["strict_bfo_mapping"].exists())
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
     def test_written_malformed_disposition_fails_before_replacement(self) -> None:
         outputs = self.maintained_outputs()
         for name, path in outputs.items():
@@ -1517,6 +1778,120 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         ):
             self.assertEqual(checker.main([]), 1)
 
+        self.assertEqual(len(observed_candidates), 1)
+        self.assertIn(b"[", observed_candidates[0])
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
+    def test_written_malformed_strict_bfo_fails_before_replacement(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        observed_candidates: list[bytes] = []
+        disposition_source = REPO_ROOT / "reports/coms-product-dispositions.json"
+        disposition = checker.load_disposition_document(disposition_source)
+        disposition_bytes = disposition_source.read_bytes()
+        alignment_bytes = (
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
+        ).read_bytes()
+        workbook_hash = disposition.input_hashes.workbook_sha256
+        generator_hash = disposition.input_hashes.generator_sha256
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"temporary-{name}\n")
+            paths["disposition_report"].write_bytes(disposition_bytes)
+            paths["alignment_core"].write_bytes(alignment_bytes)
+            malformed_strict = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
+            paths["strict_bfo_mapping"].write_bytes(malformed_strict)
+            self.write(
+                paths["summary"],
+                json.dumps(
+                    {
+                        "status": "PASS",
+                        "workbook_sha256": workbook_hash,
+                        "generator_sha256": generator_hash,
+                        "product_disposition_report_sha256": checker.sha256_file(paths["disposition_report"]),
+                        "product_dispositions": {
+                            field: getattr(disposition.summary, field)
+                            for field in disposition.summary.__dataclass_fields__
+                        },
+                        "alignment_core_sha256": checker.sha256_file(paths["alignment_core"]),
+                        "modular_products_module_sha256": checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE),
+                        "alignment_core": {
+                            "product_key": "alignment_core",
+                            "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
+                            "governed_axiom_count": 29,
+                            "logical_triple_count": 53,
+                            "ontology_header_triple_count": 1,
+                            "total_triple_count": 54,
+                            "domain_axiom_count": 15,
+                            "range_axiom_count": 14,
+                            "named_target_count": 26,
+                            "union_target_count": 3,
+                            "hermit_return_code": 0,
+                            "hermit_result": "PASS",
+                            "named_unsat_count": 0,
+                        },
+                        "strict_bfo_mapping_sha256": checker.sha256_file(paths["strict_bfo_mapping"]),
+                        "strict_bfo_mapping": {
+                            "product_key": "strict_bfo_mapping",
+                            "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
+                            "governed_axiom_count": 19,
+                            "logical_triple_count": 125,
+                            "ontology_header_triple_count": 2,
+                            "import_triple_count": 1,
+                            "total_triple_count": 127,
+                            "subclass_axiom_count": 3,
+                            "equivalent_class_axiom_count": 3,
+                            "direct_subproperty_axiom_count": 9,
+                            "property_chain_axiom_count": 2,
+                            "domain_axiom_count": 1,
+                            "range_axiom_count": 1,
+                            "union_expression_count": 6,
+                            "intersection_expression_count": 6,
+                            "existential_restriction_count": 6,
+                            "rdf_list_count": 14,
+                            "project_closure_governed_axiom_count": 48,
+                            "project_graph_triple_count": 181,
+                            "local_project_graph_triple_count": 180,
+                            "hermit_return_code": 0,
+                            "hermit_result": "PASS",
+                            "closure_triple_count": 14972,
+                            "named_unsat_count": 0,
+                        },
+                    }
+                )
+                + "\n",
+            )
+
+        original_parse = checker.Graph.parse
+
+        def observe_parse(graph, source=None, *args, **kwargs):
+            if source == checker.transaction_paths(transaction_dirs[0])["strict_bfo_mapping"]:
+                observed_candidates.append(Path(source).read_bytes())
+            return original_parse(graph, source, *args, **kwargs)
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value=workbook_hash),
+            mock.patch.object(checker, "compile_generator", return_value=generator_hash),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker.Graph, "parse", new=observe_parse),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
         self.assertEqual(len(observed_candidates), 1)
         self.assertIn(b"[", observed_candidates[0])
         for path, expected in before.items():

@@ -9,18 +9,20 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `febb8b58b4a701cead90697412a9721112c4e6dfd3af47d3c3a77c93754690e0` |
-| generator SHA-256 | `6e2897f5bbb49be748da66d9924dd220c0cba057758e033e6e219164be604c09` |
+| generator SHA-256 | `b5fe2f8986cff22849f30740581bc539c7c2cfaf8322e46e7e50d73fd5be4796` |
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
 | product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
-| modular-products module SHA-256 | `67b7da97b1218f72fa05afc72fa06cf0d1afe21cabac5c1e01144d327ade2226` |
+| modular-products module SHA-256 | `f0e77fabb7d1010d1825e33d8be0ab26669895192445cf8a0eb54c21688ced9a` |
 | publication metadata SHA-256 | `a25196f873bc849a0a5b33012c22312d3ea9e70504219c9e781e77e595993564` |
-| generation timestamp (UTC) | `2026-07-15T18:28:01+00:00` |
+| generation timestamp (UTC) | `2026-07-15T22:55:30+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
 | generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
 | maintained product-disposition path | `reports/coms-product-dispositions.json` |
-| product-disposition JSON SHA-256 | `55f9652b7a37556cb2558ea5a6084fefe0ba608431a1da8660eeb024a59eabc7` |
+| product-disposition JSON SHA-256 | `2de7b52bfc89f75da013489749236df0c8ebbec7e3c09fe58275aa7f7b55ff55` |
 | maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |
 | alignment-core Turtle SHA-256 | `95f71184b90224906b0ba703d0ea60fd2f8b993b3853b803c66b88b91ba0b01c` |
+| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |
+| strict-BFO Turtle SHA-256 | `15f080145c6803d174a00cf9e13c971925b40485049744dba6e0847093016ea7` |
 
 ## Workbook
 
@@ -307,6 +309,39 @@ This is the maintained authoritative development artifact at the approved produc
 - Source-closure HermiT result: PASS
 - Full publication metadata and formal release identity remain deferred.
 
+## Strict BFO Mapping
+
+This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.
+
+- Path: `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl`
+- Stable ontology IRI: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`
+- Direct governed authoritative axioms: 19
+- Subclass axioms: 3
+- Equivalent-class axioms: 3
+- Direct subproperty axioms: 9
+- Property-chain axioms: 2
+- Domain axioms: 1
+- Range axioms: 1
+- Logical RDF triples: 125
+- Ontology-header and import triples: 2
+- Total RDF triples: 127
+- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core`
+- Imported alignment-core governed axioms: 29
+- Project-module closure governed axioms: 48
+- Direct/alignment-core governed overlap: 0
+- CCO/RO and unexpected logical-vocabulary audit: PASS
+- Integrated-root and project-module canonical-axiom reconciliation: PASS
+- Deterministic serialization: PASS
+- Pinned merged CCO/BFO validation closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`, `imports/cco.ttl`
+- Pinned closure triple count: 14972
+- HermiT return code: 0
+- Reasoned output produced: yes
+- Named unsatisfiable classes: 0
+- HermiT result: PASS
+- The validation dependency `imports/cco.ttl` is not imported by the published strict graph and does not authorize CCO mappings or transformations.
+- The 57 CCO-bearing or mixed mappings remain deferred; no transformation or projection is implemented.
+- Full publication metadata and formal release identity remain deferred.
+
 ## Generated Ontology
 
 - Path: `SSN2BFO.ttl`
@@ -476,4 +511,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 3.76
+- Runtime seconds: 6.19
