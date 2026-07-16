@@ -36,6 +36,7 @@ COMPILE_COMMAND = [
     "tests/test_modular_products.py",
     "tests/test_strict_bfo_mapping.py",
     "tests/test_cco_extension.py",
+    "tests/test_bfo_projection.py",
     "tests/test_publication_metadata.py",
     "tools/workflow_check.py",
 ]
@@ -196,6 +197,7 @@ def mapping_change_scope(state: WorkflowState) -> None:
         "reports/coms-product-dispositions.json",
         "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+        "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
         "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     }
     unexpected = [
