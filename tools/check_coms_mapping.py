@@ -60,6 +60,7 @@ MAINTAINED_OUTPUTS = {
     "diff_report": REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
     "disposition_report": REPO_ROOT / "reports/coms-product-dispositions.json",
     "alignment_core": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+    "strict_bfo_mapping": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
 }
 
 METADATA_LABELS = {
@@ -75,6 +76,8 @@ METADATA_LABELS = {
     "product-disposition JSON SHA-256": "disposition_report_sha256",
     "maintained alignment-core path": "alignment_core_path",
     "alignment-core Turtle SHA-256": "alignment_core_sha256",
+    "maintained strict-BFO path": "strict_bfo_mapping_path",
+    "strict-BFO Turtle SHA-256": "strict_bfo_mapping_sha256",
 }
 
 
@@ -173,6 +176,7 @@ def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
         "diff_report": transaction_dir / "reports/coms-vs-pre-coms-legacy-diff.md",
         "disposition_report": transaction_dir / "reports/coms-product-dispositions.json",
         "alignment_core": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+        "strict_bfo_mapping": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
         "summary": transaction_dir / "summary.json",
         "hermit": transaction_dir / "hermit",
     }
@@ -193,6 +197,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         str(paths["disposition_report"]),
         "--alignment-core-output",
         str(paths["alignment_core"]),
+        "--strict-bfo-output",
+        str(paths["strict_bfo_mapping"]),
         "--coverage-report",
         str(paths["coverage_report"]),
         "--diff-report",
@@ -207,6 +213,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         relative(MAINTAINED_OUTPUTS["disposition_report"]),
         "--report-alignment-core-path",
         relative(MAINTAINED_OUTPUTS["alignment_core"]),
+        "--report-strict-bfo-path",
+        relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
         "--summary-json",
         str(paths["summary"]),
     ]
@@ -337,6 +345,75 @@ def validate_temporary_outputs(
         log,
     )
 
+    strict_path = paths["strict_bfo_mapping"]
+    strict_hash = sha256_file(strict_path)
+    strict_summary = summary.get("strict_bfo_mapping")
+    if not isinstance(strict_summary, dict):
+        raise CheckFailure("generator summary is missing strict-BFO results")
+    strict_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "strict_bfo_mapping"
+    )
+    expected_strict = {
+        "product_key": "strict_bfo_mapping",
+        "stable_ontology_iri": strict_metadata.stable_ontology_iri,
+        "governed_axiom_count": 19,
+        "logical_triple_count": 125,
+        "ontology_header_triple_count": 2,
+        "import_triple_count": 1,
+        "total_triple_count": 127,
+        "subclass_axiom_count": 3,
+        "equivalent_class_axiom_count": 3,
+        "direct_subproperty_axiom_count": 9,
+        "property_chain_axiom_count": 2,
+        "domain_axiom_count": 1,
+        "range_axiom_count": 1,
+        "union_expression_count": 6,
+        "intersection_expression_count": 6,
+        "existential_restriction_count": 6,
+        "rdf_list_count": 14,
+        "project_closure_governed_axiom_count": 48,
+        "project_graph_triple_count": 181,
+        "local_project_graph_triple_count": 180,
+        "hermit_return_code": 0,
+        "hermit_result": "PASS",
+        "closure_triple_count": 14972,
+        "named_unsat_count": 0,
+    }
+    for field, expected in expected_strict.items():
+        if strict_summary.get(field) != expected:
+            raise CheckFailure(
+                f"strict-BFO summary mismatch for {field}: "
+                f"expected {expected!r}, got {strict_summary.get(field)!r}"
+            )
+    if summary.get("strict_bfo_mapping_sha256") != strict_hash:
+        raise CheckFailure("strict-BFO hash does not match generator summary")
+    strict_graph = Graph()
+    try:
+        strict_graph.parse(strict_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"strict-BFO parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    strict_ontology_iri = URIRef(strict_metadata.stable_ontology_iri)
+    if set(strict_graph.subjects(RDF.type, OWL.Ontology)) != {strict_ontology_iri}:
+        raise CheckFailure("strict BFO mapping has an incorrect ontology declaration")
+    expected_import = URIRef(alignment_metadata.stable_ontology_iri)
+    if set(strict_graph.triples((None, OWL.imports, None))) != {
+        (strict_ontology_iri, OWL.imports, expected_import)
+    }:
+        raise CheckFailure("strict BFO mapping must import only the alignment core")
+    if len(strict_graph) != 127:
+        raise CheckFailure(
+            f"strict-BFO parsed triple count is {len(strict_graph)}, expected 127"
+        )
+    emit(
+        "Strict BFO mapping: PASS "
+        "(19 direct governed axioms; 125 logical triples; 127 total triples)",
+        log,
+    )
+
     emit("[5/11] Confirming maintained SPARQL source-term coverage checks ran", log)
     coverage = summary.get("source_term_coverage")
     if not isinstance(coverage, dict):
@@ -399,6 +476,8 @@ def validate_temporary_outputs(
         "disposition_report_sha256": disposition_hash,
         "alignment_core_path": relative(MAINTAINED_OUTPUTS["alignment_core"]),
         "alignment_core_sha256": alignment_hash,
+        "strict_bfo_mapping_path": relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
+        "strict_bfo_mapping_sha256": strict_hash,
     }
     for key, expected in expected_metadata.items():
         if metadata.get(key) != expected:
@@ -410,6 +489,7 @@ def validate_temporary_outputs(
         paths["coverage_report"],
         paths["diff_report"],
         paths["alignment_core"],
+        paths["strict_bfo_mapping"],
     ):
         assert_no_trailing_whitespace(path)
     return summary
@@ -479,6 +559,12 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         errors.append("alignment-core path differs from the generated report")
     if metadata.get("alignment_core_sha256") != alignment_hash:
         errors.append("alignment-core hash differs from the generated report")
+    strict_path = MAINTAINED_OUTPUTS["strict_bfo_mapping"]
+    strict_hash = sha256_file(strict_path)
+    if metadata.get("strict_bfo_mapping_path") != relative(strict_path):
+        errors.append("strict-BFO path differs from the generated report")
+    if metadata.get("strict_bfo_mapping_sha256") != strict_hash:
+        errors.append("strict-BFO hash differs from the generated report")
     try:
         disposition = load_disposition_document(disposition_path)
         publication_metadata = load_metadata(PUBLICATION_METADATA)
@@ -520,6 +606,7 @@ def output_differences(paths: dict[str, Path]) -> list[str]:
         "diff_report",
         "disposition_report",
         "alignment_core",
+        "strict_bfo_mapping",
     ):
         current = MAINTAINED_OUTPUTS[name]
         if not current.is_file() or current.read_bytes() != paths[name].read_bytes():
@@ -598,6 +685,9 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
         "alignment_core_path": summary.get("alignment_core_path"),
         "alignment_core_sha256": summary.get("alignment_core_sha256"),
         "alignment_core": summary.get("alignment_core"),
+        "strict_bfo_mapping_path": summary.get("strict_bfo_mapping_path"),
+        "strict_bfo_mapping_sha256": summary.get("strict_bfo_mapping_sha256"),
+        "strict_bfo_mapping": summary.get("strict_bfo_mapping"),
         "timestamp": utc_now(),
         "generated_ontology_triple_count": summary.get("generated_ontology_triple_count"),
         "candidate_closure_triple_count": summary.get("candidate_closure_triple_count"),

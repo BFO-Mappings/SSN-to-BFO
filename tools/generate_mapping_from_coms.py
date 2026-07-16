@@ -46,9 +46,12 @@ from modular_products import (
     ModularProductResult,
     build_alignment_core,
     build_fixed_source_closure,
+    build_fixed_validation_closure,
+    build_strict_bfo_mapping,
     select_product_axioms,
     serialize_modular_product,
     validate_alignment_core,
+    validate_strict_bfo_mapping,
 )
 from publication_metadata import PublicationMetadataError, load_metadata
 
@@ -128,6 +131,8 @@ SOURCE_IMPORTS = (
     Path("imports/ssn.ttl"),
     Path("imports/ssn-systems.ttl"),
 )
+
+BFO_VALIDATION_DEPENDENCY = Path("imports/cco.ttl")
 
 CANDIDATE_CLOSURE_INPUTS = (
     Path("imports/cco.ttl"),
@@ -1387,6 +1392,89 @@ def run_alignment_core_hermit(generated_path: Path, tmp_dir: Path) -> HermitResu
     )
 
 
+def run_strict_bfo_hermit(
+    generated_path: Path,
+    alignment_core_path: Path,
+    tmp_dir: Path,
+) -> HermitResult:
+    """Reason over the strict product and its explicit pinned validation closure."""
+
+    generated_graph = Graph()
+    generated_graph.parse(generated_path, format="turtle")
+    closure = build_fixed_validation_closure(
+        (generated_path.read_bytes(), alignment_core_path.read_bytes()),
+        (
+            REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
+            *(REPO_ROOT / path for path in SOURCE_IMPORTS),
+        ),
+        CLEANUP_TRIPLES,
+    )
+
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    graph_path = tmp_dir / "strict-bfo-pinned-merged-cco-bfo-closure.ttl"
+    reasoned_path = tmp_dir / "strict-bfo-pinned-merged-cco-bfo-closure-reasoned.ttl"
+    if reasoned_path.exists():
+        reasoned_path.unlink()
+    closure.serialize(destination=graph_path, format="turtle")
+
+    robot = shutil.which("robot")
+    if robot is None:
+        return HermitResult(
+            graph_path=graph_path,
+            reasoned_path=reasoned_path,
+            generated_triple_count=len(generated_graph),
+            closure_triple_count=len(closure),
+            return_code=None,
+            reasoned_output_produced=False,
+            owl_nothing_count=None,
+            unsat_classes=[],
+            robot_output="ROBOT executable not found on PATH.",
+            robot_path=None,
+        )
+
+    command = [
+        robot,
+        "reason",
+        "--reasoner",
+        "HermiT",
+        "--input",
+        str(graph_path),
+        "--output",
+        str(reasoned_path),
+    ]
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    output = "\n".join(part for part in (proc.stdout.strip(), proc.stderr.strip()) if part)
+    output_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
+    reasoned_output_produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
+    owl_nothing_count: int | None = None
+    inferred_unsats: set[URIRef] = set(output_unsats)
+    if reasoned_output_produced:
+        reasoned_graph = Graph()
+        bind_prefixes(reasoned_graph)
+        reasoned_graph.parse(reasoned_path, format="turtle")
+        inferred_unsats |= set(unsat_classes(reasoned_graph))
+        owl_nothing_count = len(inferred_unsats)
+
+    return HermitResult(
+        graph_path=graph_path,
+        reasoned_path=reasoned_path,
+        generated_triple_count=len(generated_graph),
+        closure_triple_count=len(closure),
+        return_code=proc.returncode,
+        reasoned_output_produced=reasoned_output_produced,
+        owl_nothing_count=owl_nothing_count,
+        unsat_classes=sorted(inferred_unsats, key=str),
+        robot_output=output,
+        robot_path=robot,
+    )
+
+
 def build_and_write_alignment_core(
     processed_rows: list[ProcessedRow],
     identity_audits: list[CanonicalRowAudit],
@@ -1429,6 +1517,66 @@ def build_and_write_alignment_core(
     if not hermit.passed:
         output_path.unlink(missing_ok=True)
         raise GenerationError("alignment-core fixed source closure is not HermiT-clean")
+    return result, hermit
+
+
+def build_and_write_strict_bfo_mapping(
+    processed_rows: list[ProcessedRow],
+    identity_audits: list[CanonicalRowAudit],
+    disposition_document: DispositionDocument,
+    integrated_graph: Graph,
+    alignment_core_result: ModularProductResult,
+    alignment_core_path: Path,
+    output_path: Path,
+    tmp_dir: Path,
+) -> tuple[ModularProductResult, HermitResult]:
+    """Build and validate the strict BFO development artifact and fixed closure."""
+
+    try:
+        metadata = load_metadata(PUBLICATION_METADATA)
+        canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
+        selected = select_product_axioms(
+            "strict_bfo_mapping",
+            canonical_rows,
+            identity_audits,
+            disposition_document,
+        )
+        alignment_selected = tuple(
+            axiom
+            for row in alignment_core_result.selected_rows
+            for axiom in row.axioms
+        )
+        result = build_strict_bfo_mapping(selected, metadata)
+        fixed_closure = build_fixed_validation_closure(
+            (result.serialized_bytes, alignment_core_result.serialized_bytes),
+            (
+                REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
+                *(REPO_ROOT / path for path in SOURCE_IMPORTS),
+            ),
+            CLEANUP_TRIPLES,
+        )
+        structural_issues = validate_strict_bfo_mapping(
+            result.serialized_bytes,
+            selected,
+            alignment_core_result.serialized_bytes,
+            alignment_selected,
+            metadata,
+            integrated_graph=integrated_graph,
+            fixed_semantic_closure=fixed_closure,
+        )
+        if structural_issues:
+            raise ModularProductError(structural_issues)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(serialize_modular_product(result))
+        hermit = run_strict_bfo_hermit(output_path, alignment_core_path, tmp_dir)
+    except (ModularProductError, PublicationMetadataError) as exc:
+        output_path.unlink(missing_ok=True)
+        raise GenerationError(str(exc)) from exc
+    if not hermit.passed:
+        output_path.unlink(missing_ok=True)
+        raise GenerationError(
+            "strict BFO mapping pinned merged CCO/BFO validation closure is not HermiT-clean"
+        )
     return result, hermit
 
 
@@ -1855,6 +2003,10 @@ def write_generation_report(
     alignment_core_path: Path | None = None,
     alignment_core_sha256: str = "unavailable",
     alignment_core_hermit: HermitResult | None = None,
+    strict_bfo_result: ModularProductResult | None = None,
+    strict_bfo_path: Path | None = None,
+    strict_bfo_sha256: str = "unavailable",
+    strict_bfo_hermit: HermitResult | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     error_lines = [f"- {error}" for error in errors] or ["- none"]
@@ -1888,6 +2040,8 @@ def write_generation_report(
         f"| product-disposition JSON SHA-256 | `{disposition_sha256}` |",
         f"| maintained alignment-core path | `{alignment_core_path or 'unavailable'}` |",
         f"| alignment-core Turtle SHA-256 | `{alignment_core_sha256}` |",
+        f"| maintained strict-BFO path | `{strict_bfo_path or 'unavailable'}` |",
+        f"| strict-BFO Turtle SHA-256 | `{strict_bfo_sha256}` |",
         "",
         "## Workbook",
         "",
@@ -2007,6 +2161,52 @@ def write_generation_report(
             "- Full publication metadata and formal release identity remain deferred.",
         ]
 
+    if strict_bfo_result is None:
+        strict_bfo_lines = [
+            "## Strict BFO Mapping",
+            "",
+            "- Generation and validation: unavailable",
+        ]
+    else:
+        closure_paths = ", ".join(
+            f"`{path}`"
+            for path in (*SOURCE_IMPORTS, BFO_VALIDATION_DEPENDENCY)
+        )
+        strict_bfo_lines = [
+            "## Strict BFO Mapping",
+            "",
+            "This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.",
+            "",
+            f"- Path: `{strict_bfo_path}`",
+            f"- Stable ontology IRI: `{strict_bfo_result.metadata.stable_ontology_iri}`",
+            f"- Direct governed authoritative axioms: {strict_bfo_result.governed_axiom_count}",
+            f"- Subclass axioms: {strict_bfo_result.subclass_axiom_count}",
+            f"- Equivalent-class axioms: {strict_bfo_result.equivalent_class_axiom_count}",
+            f"- Direct subproperty axioms: {strict_bfo_result.direct_subproperty_axiom_count}",
+            f"- Property-chain axioms: {strict_bfo_result.property_chain_axiom_count}",
+            f"- Domain axioms: {strict_bfo_result.domain_axiom_count}",
+            f"- Range axioms: {strict_bfo_result.range_axiom_count}",
+            f"- Logical RDF triples: {strict_bfo_result.logical_triple_count}",
+            f"- Ontology-header and import triples: {strict_bfo_result.ontology_header_triple_count}",
+            f"- Total RDF triples: {strict_bfo_result.total_triple_count}",
+            "- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core`",
+            "- Imported alignment-core governed axioms: 29",
+            "- Project-module closure governed axioms: 48",
+            "- Direct/alignment-core governed overlap: 0",
+            "- CCO/RO and unexpected logical-vocabulary audit: PASS",
+            "- Integrated-root and project-module canonical-axiom reconciliation: PASS",
+            "- Deterministic serialization: PASS",
+            f"- Pinned merged CCO/BFO validation closure: {closure_paths}",
+            f"- Pinned closure triple count: {'n/a' if strict_bfo_hermit is None else strict_bfo_hermit.closure_triple_count}",
+            f"- HermiT return code: {'n/a' if strict_bfo_hermit is None else strict_bfo_hermit.return_code}",
+            f"- Reasoned output produced: {'no' if strict_bfo_hermit is None else 'yes' if strict_bfo_hermit.reasoned_output_produced else 'no'}",
+            f"- Named unsatisfiable classes: {'n/a' if strict_bfo_hermit is None else len(strict_bfo_hermit.unsat_classes)}",
+            f"- HermiT result: {'FAIL' if strict_bfo_hermit is None else 'PASS' if strict_bfo_hermit.passed else 'FAIL'}",
+            "- The validation dependency `imports/cco.ttl` is not imported by the published strict graph and does not authorize CCO mappings or transformations.",
+            "- The 57 CCO-bearing or mixed mappings remain deferred; no transformation or projection is implemented.",
+            "- Full publication metadata and formal release identity remain deferred.",
+        ]
+
     lines.extend(
         [
             "",
@@ -2075,6 +2275,8 @@ def write_generation_report(
             *disposition_lines,
             "",
             *alignment_core_lines,
+            "",
+            *strict_bfo_lines,
             "",
             "## Generated Ontology",
             "",
@@ -2275,6 +2477,10 @@ def write_summary_json(
     alignment_core_path: Path | None = None,
     alignment_core_sha256: str = "unavailable",
     alignment_core_hermit: HermitResult | None = None,
+    strict_bfo_result: ModularProductResult | None = None,
+    strict_bfo_path: Path | None = None,
+    strict_bfo_sha256: str = "unavailable",
+    strict_bfo_hermit: HermitResult | None = None,
 ) -> None:
     payload = {
         "status": "PASS" if not errors else "FAIL",
@@ -2309,6 +2515,36 @@ def write_summary_json(
             "hermit_result": "FAIL" if alignment_core_hermit is None else "PASS" if alignment_core_hermit.passed else "FAIL",
             "closure_triple_count": None if alignment_core_hermit is None else alignment_core_hermit.closure_triple_count,
             "named_unsat_count": None if alignment_core_hermit is None else len(alignment_core_hermit.unsat_classes),
+        },
+        "strict_bfo_mapping_path": None if strict_bfo_path is None else str(strict_bfo_path),
+        "strict_bfo_mapping_sha256": strict_bfo_sha256,
+        "strict_bfo_mapping": None
+        if strict_bfo_result is None
+        else {
+            "product_key": strict_bfo_result.metadata.product_key,
+            "stable_ontology_iri": strict_bfo_result.metadata.stable_ontology_iri,
+            "governed_axiom_count": strict_bfo_result.governed_axiom_count,
+            "logical_triple_count": strict_bfo_result.logical_triple_count,
+            "ontology_header_triple_count": strict_bfo_result.ontology_header_triple_count,
+            "import_triple_count": strict_bfo_result.import_triple_count,
+            "total_triple_count": strict_bfo_result.total_triple_count,
+            "subclass_axiom_count": strict_bfo_result.subclass_axiom_count,
+            "equivalent_class_axiom_count": strict_bfo_result.equivalent_class_axiom_count,
+            "direct_subproperty_axiom_count": strict_bfo_result.direct_subproperty_axiom_count,
+            "property_chain_axiom_count": strict_bfo_result.property_chain_axiom_count,
+            "domain_axiom_count": strict_bfo_result.domain_axiom_count,
+            "range_axiom_count": strict_bfo_result.range_axiom_count,
+            "union_expression_count": strict_bfo_result.union_target_count,
+            "intersection_expression_count": strict_bfo_result.intersection_expression_count,
+            "existential_restriction_count": strict_bfo_result.existential_restriction_count,
+            "rdf_list_count": strict_bfo_result.rdf_list_count,
+            "project_closure_governed_axiom_count": 48,
+            "project_graph_triple_count": 181,
+            "local_project_graph_triple_count": 180,
+            "hermit_return_code": None if strict_bfo_hermit is None else strict_bfo_hermit.return_code,
+            "hermit_result": "FAIL" if strict_bfo_hermit is None else "PASS" if strict_bfo_hermit.passed else "FAIL",
+            "closure_triple_count": None if strict_bfo_hermit is None else strict_bfo_hermit.closure_triple_count,
+            "named_unsat_count": None if strict_bfo_hermit is None else len(strict_bfo_hermit.unsat_classes),
         },
         "worksheets_read": stats.worksheets_read,
         "active_axiom_rows": stats.active_axiom_rows,
@@ -2409,6 +2645,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Generated import-free SSN/SOSA alignment-core Turtle path.",
     )
     parser.add_argument(
+        "--strict-bfo-output",
+        required=True,
+        help="Generated strict SSN/SOSA-to-BFO mapping Turtle path.",
+    )
+    parser.add_argument(
         "--coverage-report",
         default="reports/coms-source-term-coverage.md",
         help="Source-term coverage report path.",
@@ -2440,6 +2681,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Alignment-core path displayed in reports. Defaults to the actual --alignment-core-output path.",
     )
     parser.add_argument(
+        "--report-strict-bfo-path",
+        help="Strict-BFO path displayed in reports. Defaults to the actual --strict-bfo-output path.",
+    )
+    parser.add_argument(
         "--summary-json",
         help="Optional machine-readable generation summary path.",
     )
@@ -2451,12 +2696,14 @@ def main(argv: list[str] | None = None) -> int:
     report_path = REPO_ROOT / args.report if not Path(args.report).is_absolute() else Path(args.report)
     disposition_report_path = REPO_ROOT / args.disposition_report if not Path(args.disposition_report).is_absolute() else Path(args.disposition_report)
     alignment_core_output_path = REPO_ROOT / args.alignment_core_output if not Path(args.alignment_core_output).is_absolute() else Path(args.alignment_core_output)
+    strict_bfo_output_path = REPO_ROOT / args.strict_bfo_output if not Path(args.strict_bfo_output).is_absolute() else Path(args.strict_bfo_output)
     coverage_report_path = REPO_ROOT / args.coverage_report if not Path(args.coverage_report).is_absolute() else Path(args.coverage_report)
     diff_report_path = REPO_ROOT / args.diff_report if not Path(args.diff_report).is_absolute() else Path(args.diff_report)
     report_workbook_path = Path(args.report_workbook_path) if args.report_workbook_path else input_path
     report_output_path = Path(args.report_output_path) if args.report_output_path else output_path
     report_disposition_path = Path(args.report_disposition_path) if args.report_disposition_path else disposition_report_path
     report_alignment_core_path = Path(args.report_alignment_core_path) if args.report_alignment_core_path else alignment_core_output_path
+    report_strict_bfo_path = Path(args.report_strict_bfo_path) if args.report_strict_bfo_path else strict_bfo_output_path
     summary_json_path = None
     if args.summary_json:
         summary_json_path = REPO_ROOT / args.summary_json if not Path(args.summary_json).is_absolute() else Path(args.summary_json)
@@ -2470,6 +2717,7 @@ def main(argv: list[str] | None = None) -> int:
     candidate_sha256 = "unavailable"
     disposition_sha256 = "unavailable"
     alignment_core_sha256 = "unavailable"
+    strict_bfo_sha256 = "unavailable"
 
     stats = WorkbookStats()
     resolver = Resolver()
@@ -2482,6 +2730,8 @@ def main(argv: list[str] | None = None) -> int:
     disposition_document: DispositionDocument | None = None
     alignment_core_result: ModularProductResult | None = None
     alignment_core_hermit: HermitResult | None = None
+    strict_bfo_result: ModularProductResult | None = None
+    strict_bfo_hermit: HermitResult | None = None
 
     try:
         rows, stats = read_workbook(input_path)
@@ -2513,6 +2763,17 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.tmp_dir) / "alignment-core",
         )
         alignment_core_sha256 = sha256_file(alignment_core_output_path)
+        strict_bfo_result, strict_bfo_hermit = build_and_write_strict_bfo_mapping(
+            processed,
+            identity_audits,
+            disposition_document,
+            graph,
+            alignment_core_result,
+            alignment_core_output_path,
+            strict_bfo_output_path,
+            Path(args.tmp_dir) / "strict-bfo",
+        )
+        strict_bfo_sha256 = sha256_file(strict_bfo_output_path)
         normalized_rows = normalized_axiom_rows(processed, graph)
         coverage = build_coverage(processed, [], coverage_report_path)
         graph.parse(output_path, format="turtle")
@@ -2556,6 +2817,10 @@ def main(argv: list[str] | None = None) -> int:
         alignment_core_path=report_alignment_core_path,
         alignment_core_sha256=alignment_core_sha256,
         alignment_core_hermit=alignment_core_hermit,
+        strict_bfo_result=strict_bfo_result,
+        strict_bfo_path=report_strict_bfo_path,
+        strict_bfo_sha256=strict_bfo_sha256,
+        strict_bfo_hermit=strict_bfo_hermit,
     )
     if summary_json_path is not None:
         write_summary_json(
@@ -2584,6 +2849,10 @@ def main(argv: list[str] | None = None) -> int:
             alignment_core_path=report_alignment_core_path,
             alignment_core_sha256=alignment_core_sha256,
             alignment_core_hermit=alignment_core_hermit,
+            strict_bfo_result=strict_bfo_result,
+            strict_bfo_path=report_strict_bfo_path,
+            strict_bfo_sha256=strict_bfo_sha256,
+            strict_bfo_hermit=strict_bfo_hermit,
         )
 
     print(f"Wrote {report_path}")
@@ -2597,6 +2866,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote {disposition_report_path}")
     if alignment_core_output_path.exists():
         print(f"Wrote {alignment_core_output_path}")
+    if strict_bfo_output_path.exists():
+        print(f"Wrote {strict_bfo_output_path}")
     print(f"Worksheets read: {', '.join(stats.worksheets_read) or 'none'}")
     print(f"Mapped rows: {stats.mapped_rows}")
     print(f"Blank mapping rows: {stats.blank_mapping_rows}")
@@ -2626,6 +2897,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Alignment-core SHA-256: {alignment_core_result.sha256}")
     if alignment_core_hermit is not None:
         print(f"Alignment-core source-closure HermiT: {'PASS' if alignment_core_hermit.passed else 'FAIL'}")
+    if strict_bfo_result is not None:
+        print(f"Strict-BFO governed axioms: {strict_bfo_result.governed_axiom_count}")
+        print(f"Strict-BFO logical triples: {strict_bfo_result.logical_triple_count}")
+        print(f"Strict-BFO total triples: {strict_bfo_result.total_triple_count}")
+        print(f"Strict-BFO SHA-256: {strict_bfo_result.sha256}")
+    if strict_bfo_hermit is not None:
+        print(
+            "Strict-BFO pinned merged CCO/BFO closure HermiT: "
+            f"{'PASS' if strict_bfo_hermit.passed else 'FAIL'}"
+        )
     if hermit is not None:
         print(f"Generated triple count: {hermit.generated_triple_count}")
         print(f"Candidate closure triple count: {hermit.closure_triple_count}")
