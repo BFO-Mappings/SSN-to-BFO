@@ -21,7 +21,12 @@ import generate_mapping_from_coms as coms  # noqa: E402
 import modular_products as modular  # noqa: E402
 from coms_row_identity import ExpressionNode, RowLocation  # noqa: E402
 from product_dispositions import ProductDisposition, load_disposition_document  # noqa: E402
-from publication_metadata import load_metadata  # noqa: E402
+from publication_metadata import (  # noqa: E402
+    load_metadata,
+    ontology_metadata_rdf_triples,
+    strip_emitted_ontology_header,
+    validate_emitted_ontology_metadata,
+)
 
 
 EXPECTED_ROW_IDS = frozenset(
@@ -264,7 +269,25 @@ class ModularProductTests(unittest.TestCase):
         self.assertEqual(list(graph.triples((None, OWL.imports, None))), [])
         self.assertEqual(self.result.governed_axiom_count, 29)
         self.assertEqual(self.result.logical_triple_count, 53)
-        self.assertEqual(len(graph), 54)
+        self.assertEqual(self.result.ontology_declaration_triple_count, 1)
+        self.assertEqual(self.result.import_triple_count, 0)
+        self.assertEqual(self.result.metadata_annotation_count, 7)
+        self.assertEqual(len(graph), 61)
+        self.assertEqual(
+            set(ontology_metadata_rdf_triples(self.metadata, "alignment_core")),
+            set(graph.triples((ontology, None, None)))
+            - {(ontology, RDF.type, OWL.Ontology)},
+        )
+        self.assertEqual(
+            validate_emitted_ontology_metadata(
+                graph, self.metadata, "alignment_core", ()
+            ),
+            (),
+        )
+        logical = strip_emitted_ontology_header(
+            graph, self.metadata, "alignment_core", ()
+        )
+        self.assertEqual(len(logical), 53)
         self.assertEqual(len(list(graph.triples((None, RDFS.domain, None)))), 15)
         self.assertEqual(len(list(graph.triples((None, RDFS.range, None)))), 14)
 
@@ -337,6 +360,18 @@ class ModularProductTests(unittest.TestCase):
         self.assertEqual(modular.serialize_modular_product(reverse), self.result.serialized_bytes)
         self.assertTrue(self.result.serialized_bytes.endswith(b"\n"))
         self.assertFalse(self.result.serialized_bytes.endswith(b"\n\n"))
+
+    def test_reordered_canonical_header_is_rejected_by_product_validator(self) -> None:
+        lines = self.result.serialized_bytes.splitlines()
+        label = next(i for i, line in enumerate(lines) if line.startswith(b"    rdfs:label "))
+        description = next(
+            i for i, line in enumerate(lines) if line.startswith(b"    dcterms:description ")
+        )
+        lines[label], lines[description] = lines[description], lines[label]
+        self.assertIn(
+            "NONCANONICAL_ONTOLOGY_HEADER",
+            self.validate_bytes(b"\n".join(lines) + b"\n"),
+        )
 
     def test_fresh_process_generation_is_byte_deterministic(self) -> None:
         code = (
@@ -413,6 +448,9 @@ class ModularProductTests(unittest.TestCase):
         )
         closure = modular.build_fixed_source_closure(self.result.serialized_bytes, paths)
         self.assertEqual(list(closure.triples((None, OWL.imports, None))), [])
+        for triple in coms.CLEANUP_TRIPLES:
+            closure.remove(triple)
+        self.assertEqual(len(closure), 1212)
         self.assertEqual(
             modular.validate_alignment_core(
                 self.result.serialized_bytes,

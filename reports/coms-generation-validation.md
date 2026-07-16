@@ -9,24 +9,24 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `febb8b58b4a701cead90697412a9721112c4e6dfd3af47d3c3a77c93754690e0` |
-| generator SHA-256 | `c27277bddc98d0ee84189a260b32805f3b0df73bba2068fd08a448b74e378cfd` |
+| generator SHA-256 | `f07691a85c6d1465a29d518e5b2ef47921cc03d4872cb55fd7bd7d53c38bb132` |
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
 | product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
-| modular-products module SHA-256 | `fe48deac6bc9d529ec058564f99da817d520fed03ce96bbcc4563d5a54b1da6d` |
+| modular-products module SHA-256 | `9a76a72faee266d8e70def06d5afd4237a8adb6155337002d0c0727604fd12a6` |
 | publication metadata SHA-256 | `fab670a686e002e6bc704cda75bf59c20dc5eaa8da78c94273c242021ccaf873` |
-| generation timestamp (UTC) | `2026-07-16T03:10:03+00:00` |
+| generation timestamp (UTC) | `2026-07-16T17:08:10+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
-| generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
+| generated ontology SHA-256 | `25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0` |
 | maintained product-disposition path | `reports/coms-product-dispositions.json` |
-| product-disposition JSON SHA-256 | `5a32d3205d93ef481b78a860507d296f1cf9b1a962dcfaedd84cc1380ad8c8a5` |
+| product-disposition JSON SHA-256 | `2e409800614a17e150b1ec119b4855c9391a286ad11bac1946408fb7c717e0a8` |
 | maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |
-| alignment-core Turtle SHA-256 | `95f71184b90224906b0ba703d0ea60fd2f8b993b3853b803c66b88b91ba0b01c` |
+| alignment-core Turtle SHA-256 | `17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770` |
 | maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |
-| strict-BFO Turtle SHA-256 | `15f080145c6803d174a00cf9e13c971925b40485049744dba6e0847093016ea7` |
+| strict-BFO Turtle SHA-256 | `676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af` |
 | maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |
-| BFO-projection Turtle SHA-256 | `7914e0afb6212df20e02686e1b11b71d109e0b81095ddf33ff120b01768cc71c` |
+| BFO-projection Turtle SHA-256 | `b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0` |
 | maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |
-| CCO-extension Turtle SHA-256 | `fe6986d79ec2f5f67553fbee1364fa98ebd7ba3205196f0368ac246646fcdf7c` |
+| CCO-extension Turtle SHA-256 | `fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf` |
 
 ## Workbook
 
@@ -300,18 +300,20 @@ This is the maintained authoritative development artifact at the approved produc
 - Named target expressions: 26
 - Union target expressions: 3
 - Logical RDF triples: 53
-- Ontology-header triples: 1
-- Total RDF triples: 54
-- Imports: 0
+- Ontology declaration triples: 1
+- Import triples: 0
+- Descriptive metadata annotations: 7
+- Total RDF triples: 61
 - BFO/CCO/RO and unexpected logical-vocabulary audit: PASS
 - Integrated-root canonical-axiom reconciliation: PASS
 - Deterministic serialization: PASS
 - Fixed local source closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`
+- Source-closure triple count: 1212
 - Source-closure HermiT return code: 0
 - Source-closure reasoned output produced: yes
 - Source-closure named unsatisfiable classes: 0
 - Source-closure HermiT result: PASS
-- Full publication metadata and formal release identity remain deferred.
+- Formal-release metadata and identity remain deferred.
 
 ## Strict BFO Mapping
 
@@ -327,8 +329,10 @@ This is the maintained authoritative development artifact at the approved produc
 - Domain axioms: 1
 - Range axioms: 1
 - Logical RDF triples: 125
-- Ontology-header and import triples: 2
-- Total RDF triples: 127
+- Ontology declaration triples: 1
+- Import triples: 1
+- Descriptive metadata annotations: 7
+- Total RDF triples: 134
 - Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core`
 - Imported alignment-core governed axioms: 29
 - Project-module closure governed axioms: 48
@@ -337,14 +341,14 @@ This is the maintained authoritative development artifact at the approved produc
 - Integrated-root and project-module canonical-axiom reconciliation: PASS
 - Deterministic serialization: PASS
 - Pinned merged CCO/BFO validation closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`, `imports/cco.ttl`
-- Pinned closure triple count: 14972
+- Pinned closure triple count: 14986
 - HermiT return code: 0
 - Reasoned output produced: yes
 - Named unsatisfiable classes: 0
 - HermiT result: PASS
 - The validation dependency `imports/cco.ttl` is not imported by the published strict graph and does not authorize CCO mappings or transformations.
 - The 57 CCO-bearing or mixed mappings remain deferred; no transformation or projection is implemented.
-- Full publication metadata and formal release identity remain deferred.
+- Formal-release metadata and identity remain deferred.
 
 ## BFO Projection
 
@@ -356,7 +360,8 @@ This is the maintained authoritative development artifact at the approved produc
 - Direct logical mapping triples: 0
 - Ontology declaration triples: 1
 - Import triples: 1
-- Total RDF triples: 2
+- Descriptive metadata annotations: 7
+- Total RDF triples: 9
 - Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`
 - Target-neutral provided transitively: 29
 - BFO-bearing provided through import: 19
@@ -365,13 +370,13 @@ This is the maintained authoritative development artifact at the approved produc
 - Imported strict-BFO governed axioms: 19
 - Transitively imported alignment-core governed axioms: 29
 - Project-module closure governed axioms: 48
-- Project graph triples retaining imports: 183
-- Import-stripped local project graph triples: 181
+- Project graph triples retaining imports: 204
+- Import-stripped local project graph triples: 202
 - Strict/alignment-core governed overlap: 0
 - CCO-extension governed axioms in projection closure: 0
 - Direct graph and integrated-root/project-module reconciliation: PASS
 - Deterministic serialization: PASS
-- Reused strict-BFO closure triple count: 14972
+- Reused strict-BFO closure triple count: 14986
 - Reused strict-BFO HermiT return code: 0
 - Reused strict-BFO reasoned output produced: yes
 - Reused strict-BFO named unsatisfiable classes: 0
@@ -380,7 +385,7 @@ This is the maintained authoritative development artifact at the approved produc
 - Zero direct projection axioms is intentional and complete for the current governed policy.
 - No transformation rule, weakened consequence, or projected axiom is approved.
 - Future direct projected axioms require governed transformation rules and proof obligations.
-- Full publication metadata and formal release identity remain deferred.
+- Formal-release metadata and identity remain deferred.
 
 ## CCO Extension
 
@@ -396,8 +401,10 @@ This is the maintained authoritative development artifact at the approved produc
 - Direct subproperty axioms: 16
 - Property-chain axioms: 3
 - Logical RDF triples: 934
-- Ontology-header and import triples: 2
-- Total RDF triples: 936
+- Ontology declaration triples: 1
+- Import triples: 1
+- Descriptive metadata annotations: 7
+- Total RDF triples: 943
 - Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`
 - Imported strict-BFO governed axioms: 19
 - Transitively imported alignment-core governed axioms: 29
@@ -407,19 +414,23 @@ This is the maintained authoritative development artifact at the approved produc
 - Integrated-root and project-module canonical-axiom reconciliation: PASS
 - Deterministic serialization: PASS
 - Pinned merged CCO/BFO validation closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`, `imports/cco.ttl`
-- Pinned closure triple count: 15907
+- Pinned closure triple count: 15928
 - HermiT return code: 0
 - Reasoned output produced: yes
 - Named unsatisfiable classes: 0
 - HermiT result: PASS
 - The validation dependency `imports/cco.ttl` is not imported by the published CCO-extension graph and is not mapping authority.
 - No transformation or weakened projection is implemented.
-- Full publication metadata and formal release identity remain deferred.
+- Formal-release metadata and identity remain deferred.
 
 ## Generated Ontology
 
 - Path: `SSN2BFO.ttl`
-- Generated ontology triple count: 1117
+- Ontology declaration triples: 1
+- Import triples: 4
+- Descriptive metadata annotations: 7
+- Governed/structural logical triples: 1112
+- Generated ontology triple count: 1124
 - `SSN2BFO.ttl` is generated from `mappings/SSN2BFO-COMS.xlsx` and must not be edited directly.
 - `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.
 
@@ -430,7 +441,7 @@ This is the maintained authoritative development artifact at the approved produc
 | ROBOT command | `robot` (resolved from `PATH`) |
 | candidate closure graph path | temporary validation artifact (`coms-candidate-full-closure.ttl`) |
 | reasoned output path | temporary validation artifact (`coms-candidate-full-closure-reasoned.ttl`) |
-| full candidate closure triple count | 15905 |
+| full candidate closure triple count | 15912 |
 | HermiT return code | 0 |
 | reasoned output produced | yes |
 | `owl:Nothing` count | 0 |
@@ -585,4 +596,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 9.23
+- Runtime seconds: 11.29

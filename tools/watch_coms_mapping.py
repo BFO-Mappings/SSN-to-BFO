@@ -81,6 +81,35 @@ def last_success_coverage_status() -> str | None:
     )
 
 
+def last_success_metadata_status() -> str | None:
+    try:
+        payload = json.loads(LAST_SUCCESS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    counts = [payload.get("generated_candidate_metadata_annotation_count")]
+    for product_key in (
+        "alignment_core",
+        "strict_bfo_mapping",
+        "bfo_projection",
+        "cco_extension",
+    ):
+        product = payload.get(product_key)
+        counts.append(
+            product.get("metadata_annotation_count")
+            if isinstance(product, dict)
+            else None
+        )
+    if any(value is None for value in counts):
+        return None
+    return "Development metadata annotations: " + ", ".join(
+        f"{key} {count}"
+        for key, count in zip(
+            ("integrated", "alignment core", "strict BFO", "BFO projection", "CCO extension"),
+            counts,
+        )
+    )
+
+
 def run_check(trigger: str, workbook_hash: str | None) -> bool:
     started = time.perf_counter()
     print(f"Detection time: {now_text()}", flush=True)
@@ -96,6 +125,9 @@ def run_check(trigger: str, workbook_hash: str | None) -> bool:
         coverage_status = last_success_coverage_status()
         if coverage_status is not None:
             print(coverage_status, flush=True)
+        metadata_status = last_success_metadata_status()
+        if metadata_status is not None:
+            print(metadata_status, flush=True)
     return passed
 
 

@@ -3,7 +3,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import inspect
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -12,8 +16,9 @@ from types import SimpleNamespace
 from unittest import mock
 
 import openpyxl
-from rdflib import BNode, Graph, RDF, RDFS, OWL, URIRef
+from rdflib import BNode, Graph, Literal, RDF, RDFS, OWL, URIRef
 from rdflib.collection import Collection
+from rdflib.compare import isomorphic
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +29,12 @@ import coms_row_identity as identity  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
 import modular_products as modular  # noqa: E402
 import product_dispositions as dispositions  # noqa: E402
-from publication_metadata import load_metadata  # noqa: E402
+from publication_metadata import (  # noqa: E402
+    load_metadata,
+    ontology_metadata_rdf_triples,
+    strip_emitted_ontology_header,
+    validate_emitted_ontology_metadata,
+)
 
 
 SUBJECT = "sosa:hasFeatureOfInterest"
@@ -44,6 +54,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory(prefix="coms-domain-range-test-")
         self.addCleanup(self.temp_dir.cleanup)
         self.root = Path(self.temp_dir.name)
+        self.metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
 
     @staticmethod
     def row_id_for(index: int) -> str:
@@ -86,7 +97,7 @@ class ComsDomainRangeTests(unittest.TestCase):
     def generate(self, rows: list[tuple[str, ...]], *, row_ids: list[str] | None = None):
         processed, stats = self.process(rows, row_ids=row_ids)
         output = self.root / "candidate.ttl"
-        graph = coms.generate_ontology(processed, output)
+        graph = coms.generate_ontology(processed, output, self.metadata)
         return graph, processed, stats
 
     def assert_generation_error(
@@ -196,6 +207,7 @@ class ComsDomainRangeTests(unittest.TestCase):
             processed,
             path,
             dispositions.RequiredInputHashes(*["0" * 64] * 5),
+            self.metadata,
         )
         self.assertEqual(document.summary.governed_row_count, 1)
         self.assertEqual(document.summary.authoritative_axiom_count, 1)
@@ -486,10 +498,10 @@ class ComsDomainRangeTests(unittest.TestCase):
         rows = [(SUBJECT, "rdfs:domain", "sosa:Observation")]
         first, _ = self.process(rows, row_ids=[self.row_id_for(1)])
         first_output = self.root / "first.ttl"
-        coms.generate_ontology(first, first_output)
+        coms.generate_ontology(first, first_output, self.metadata)
         second, _ = self.process(rows, row_ids=[self.row_id_for(2)])
         second_output = self.root / "second.ttl"
-        coms.generate_ontology(second, second_output)
+        coms.generate_ontology(second, second_output, self.metadata)
         self.assertEqual(first_output.read_bytes(), second_output.read_bytes())
 
     def test_generation_does_not_mutate_workbook(self) -> None:
@@ -499,7 +511,9 @@ class ComsDomainRangeTests(unittest.TestCase):
         before = workbook_path.read_bytes()
         workbook_rows, stats = coms.read_workbook(workbook_path)
         processed = coms.validate_and_process_rows(workbook_rows, coms.Resolver(), stats)
-        coms.generate_ontology(processed, self.root / "nonmutating.ttl")
+        coms.generate_ontology(
+            processed, self.root / "nonmutating.ttl", self.metadata
+        )
         self.assertEqual(before, workbook_path.read_bytes())
 
     def test_named_class_domain(self) -> None:
@@ -696,8 +710,8 @@ class ComsGenerationReportTests(unittest.TestCase):
         return coms.HermitResult(
             graph_path=self.root / "closure.ttl",
             reasoned_path=self.root / "reasoned.ttl",
-            generated_triple_count=1117,
-            closure_triple_count=15905,
+            generated_triple_count=1124,
+            closure_triple_count=15912,
             return_code=0 if available else None,
             reasoned_output_produced=available,
             owl_nothing_count=0 if available else None,
@@ -879,10 +893,13 @@ class ComsGenerationReportTests(unittest.TestCase):
             named_target_count=26,
             union_target_count=3,
             logical_triple_count=53,
-            ontology_header_triple_count=1,
-            total_triple_count=54,
+            ontology_declaration_triple_count=1,
+            import_triple_count=0,
+            metadata_annotation_count=7,
+            total_triple_count=61,
         )
         hermit = SimpleNamespace(
+            closure_triple_count=1212,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -905,7 +922,11 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Domain axioms: 15", report)
         self.assertIn("Range axioms: 14", report)
         self.assertIn("Logical RDF triples: 53", report)
-        self.assertIn("Total RDF triples: 54", report)
+        self.assertIn("Ontology declaration triples: 1", report)
+        self.assertIn("Import triples: 0", report)
+        self.assertIn("Descriptive metadata annotations: 7", report)
+        self.assertIn("Total RDF triples: 61", report)
+        self.assertIn("Source-closure triple count: 1212", report)
         self.assertIn("Source-closure HermiT result: PASS", report)
 
     def test_generation_report_includes_strict_bfo_results(self) -> None:
@@ -923,11 +944,13 @@ class ComsGenerationReportTests(unittest.TestCase):
             domain_axiom_count=1,
             range_axiom_count=1,
             logical_triple_count=125,
-            ontology_header_triple_count=2,
-            total_triple_count=127,
+            ontology_declaration_triple_count=1,
+            import_triple_count=1,
+            metadata_annotation_count=7,
+            total_triple_count=134,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=14972,
+            closure_triple_count=14986,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -942,7 +965,9 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("## Strict BFO Mapping", report)
         self.assertIn("Direct governed authoritative axioms: 19", report)
         self.assertIn("Project-module closure governed axioms: 48", report)
-        self.assertIn("Pinned closure triple count: 14972", report)
+        self.assertIn("Descriptive metadata annotations: 7", report)
+        self.assertIn("Total RDF triples: 134", report)
+        self.assertIn("Pinned closure triple count: 14986", report)
         self.assertIn("HermiT result: PASS", report)
 
     def test_generation_report_includes_cco_extension_results(self) -> None:
@@ -964,11 +989,13 @@ class ComsGenerationReportTests(unittest.TestCase):
             direct_subproperty_axiom_count=16,
             property_chain_axiom_count=3,
             logical_triple_count=934,
-            ontology_header_triple_count=2,
-            total_triple_count=936,
+            ontology_declaration_triple_count=1,
+            import_triple_count=1,
+            metadata_annotation_count=7,
+            total_triple_count=943,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=15907,
+            closure_triple_count=15928,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -985,7 +1012,9 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("CCO-bearing axioms: 25", report)
         self.assertIn("Mixed BFO/CCO axioms: 32", report)
         self.assertIn("Project-module closure governed axioms: 105", report)
-        self.assertIn("Pinned closure triple count: 15907", report)
+        self.assertIn("Descriptive metadata annotations: 7", report)
+        self.assertIn("Total RDF triples: 943", report)
+        self.assertIn("Pinned closure triple count: 15928", report)
 
     def test_generation_report_includes_import_only_bfo_projection_results(self) -> None:
         result = SimpleNamespace(
@@ -996,8 +1025,10 @@ class ComsGenerationReportTests(unittest.TestCase):
             ),
             governed_axiom_count=0,
             logical_triple_count=0,
+            ontology_declaration_triple_count=1,
             import_triple_count=1,
-            total_triple_count=2,
+            metadata_annotation_count=7,
+            total_triple_count=9,
         )
         reconciliation = modular.ProductDispositionReconciliation(
             product_key="bfo_projection",
@@ -1021,7 +1052,7 @@ class ComsGenerationReportTests(unittest.TestCase):
         reasoning = modular.ModularReasoningResult(
             source_product_key="strict_bfo_mapping",
             source_product_sha256="strict-bfo-hash",
-            closure_triple_count=14972,
+            closure_triple_count=14986,
             return_code=0,
             reasoned_output_produced=True,
             owl_nothing_count=0,
@@ -1041,9 +1072,10 @@ class ComsGenerationReportTests(unittest.TestCase):
         )
         self.assertIn("Direct governed projection axioms: 0", report)
         self.assertIn("Direct logical mapping triples: 0", report)
-        self.assertIn("Total RDF triples: 2", report)
+        self.assertIn("Descriptive metadata annotations: 7", report)
+        self.assertIn("Total RDF triples: 9", report)
         self.assertIn("Project-module closure governed axioms: 48", report)
-        self.assertIn("Reused strict-BFO closure triple count: 14972", report)
+        self.assertIn("Reused strict-BFO closure triple count: 14986", report)
         self.assertIn("Projection-specific HermiT invocation: none", report)
         self.assertIn("Zero direct projection axioms is intentional", report)
 
@@ -1073,7 +1105,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
 
     @staticmethod
-    def generated_cco_extension_bytes() -> bytes:
+    def generated_product_bytes(product_key: str) -> bytes:
         rows, stats = coms.read_workbook(REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx")
         processed = coms.validate_and_process_rows(rows, coms.Resolver(), stats)
         canonical_rows = tuple(
@@ -1085,14 +1117,37 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         )
         metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
         selected = modular.select_product_axioms(
-            "cco_extension", canonical_rows, audits, disposition
+            product_key, canonical_rows, audits, disposition
         )
-        return modular.build_cco_extension(selected, metadata).serialized_bytes
+        builders = {
+            "alignment_core": modular.build_alignment_core,
+            "strict_bfo_mapping": modular.build_strict_bfo_mapping,
+            "cco_extension": modular.build_cco_extension,
+        }
+        return builders[product_key](selected, metadata).serialized_bytes
+
+    @classmethod
+    def generated_cco_extension_bytes(cls) -> bytes:
+        return cls.generated_product_bytes("cco_extension")
 
     @staticmethod
     def generated_bfo_projection_bytes() -> bytes:
         metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
         return modular.build_bfo_projection((), metadata).serialized_bytes
+
+    @staticmethod
+    def reordered_root_import_bytes(canonical: bytes) -> bytes:
+        canonical_imports = (
+            b"    owl:imports sampling:,\n"
+            b"        ssn:,\n"
+        )
+        reordered_imports = (
+            b"    owl:imports ssn:,\n"
+            b"        sampling:,\n"
+        )
+        if canonical.count(canonical_imports) != 1:
+            raise AssertionError("canonical integrated-root import block is missing or duplicated")
+        return canonical.replace(canonical_imports, reordered_imports, 1)
 
     def test_root_ontology_is_the_maintained_output(self) -> None:
         self.assertEqual(checker.MAINTAINED_OUTPUTS["candidate"], REPO_ROOT / "SSN2BFO.ttl")
@@ -1120,6 +1175,121 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             checker.MAINTAINED_OUTPUTS["cco_extension"],
             REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         )
+
+    def test_maintained_root_has_exact_metadata_and_logical_partition(self) -> None:
+        maintained_path = REPO_ROOT / "SSN2BFO.ttl"
+        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
+        maintained_graph = Graph().parse(maintained_path, format="turtle")
+
+        self.assertEqual(
+            validate_emitted_ontology_metadata(
+                maintained_graph,
+                metadata,
+                "integrated",
+                checker.ROOT_ORDERED_IMPORTS,
+            ),
+            (),
+        )
+        self.assertEqual(len(maintained_graph), 1124)
+        logical_graph = strip_emitted_ontology_header(
+            maintained_graph,
+            metadata,
+            "integrated",
+            checker.ROOT_ORDERED_IMPORTS,
+        )
+        self.assertEqual(len(logical_graph), 1112)
+        self.assertNotEqual(
+            hashlib.sha256(maintained_path.read_bytes()).hexdigest(),
+            "fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16",
+        )
+
+        rows, stats = coms.read_workbook(REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx")
+        processed = coms.validate_and_process_rows(rows, coms.Resolver(), stats)
+        regenerated_path = self.root / "regenerated-root.ttl"
+        regenerated_graph = coms.generate_ontology(
+            processed,
+            regenerated_path,
+            metadata,
+            require_current_counts=True,
+        )
+        self.assertEqual(len(regenerated_graph), 1124)
+        self.assertEqual(regenerated_path.read_bytes(), maintained_path.read_bytes())
+        self.assertEqual(
+            hashlib.sha256(maintained_path.read_bytes()).hexdigest(),
+            "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+        )
+        governed_axiom_ids = {
+            f"sha256:{axiom.sha256}"
+            for item in processed
+            for axiom in item.identity_audit.authoritative_axioms
+        }
+        self.assertEqual(set(modular._canonical_graph_axioms(regenerated_graph)), governed_axiom_ids)
+        self.assertEqual(len(governed_axiom_ids), 105)
+
+    def test_integrated_root_bytes_are_explicit_and_repeatable_without_rdflib_serialization(self) -> None:
+        rows, stats = coms.read_workbook(REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx")
+        processed = coms.validate_and_process_rows(rows, coms.Resolver(), stats)
+        publication_metadata = load_metadata(
+            REPO_ROOT / "config/publication-metadata.toml"
+        )
+        first = self.root / "root-first.ttl"
+        second = self.root / "nested/root-second.ttl"
+        with mock.patch.object(
+            coms.Graph,
+            "serialize",
+            side_effect=AssertionError("RDFLib serialization must not determine maintained bytes"),
+        ) as serializer:
+            coms.generate_ontology(
+                processed, first, publication_metadata, require_current_counts=True
+            )
+            coms.generate_ontology(
+                processed, second, publication_metadata, require_current_counts=True
+            )
+        serializer.assert_not_called()
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+        self.assertEqual(
+            hashlib.sha256(first.read_bytes()).hexdigest(),
+            "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+        )
+        self.assertNotIn(".serialize(", inspect.getsource(coms._root_turtle_bytes))
+        self.assertNotIn(".serialize(", inspect.getsource(coms.generate_ontology))
+
+    def test_integrated_root_is_fresh_process_stable_across_hash_seeds_and_paths(self) -> None:
+        code = (
+            "from pathlib import Path; import hashlib,sys; "
+            "import generate_mapping_from_coms as g; "
+            "from publication_metadata import load_metadata; "
+            "rows,stats=g.read_workbook(Path('mappings/SSN2BFO-COMS.xlsx')); "
+            "processed=g.validate_and_process_rows(rows,g.Resolver(),stats); "
+            "output=Path(sys.argv[1]); "
+            "g.generate_ontology(processed,output,load_metadata(Path('config/publication-metadata.toml')),require_current_counts=True); "
+            "print(hashlib.sha256(output.read_bytes()).hexdigest())"
+        )
+        expected = "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0"
+        observed: dict[str, str] = {}
+        for seed in ("0", "1", "42", "random"):
+            with tempfile.TemporaryDirectory(prefix=f"root-seed-{seed}-") as directory:
+                output = Path(directory) / "different/path/SSN2BFO.ttl"
+                environment = dict(os.environ)
+                environment.update(
+                    {
+                        "PYTHONPATH": str(REPO_ROOT / "tools"),
+                        "PYTHONHASHSEED": seed,
+                        "LC_ALL": "C",
+                        "LANG": "C",
+                    }
+                )
+                process = subprocess.run(
+                    [sys.executable, "-c", code, str(output)],
+                    cwd=REPO_ROOT,
+                    env=environment,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=True,
+                )
+                observed[seed] = process.stdout.strip()
+        self.assertEqual(observed, {seed: expected for seed in observed})
 
     def test_legacy_ontology_is_the_comparison_baseline(self) -> None:
         generated_path = self.root / "generated.ttl"
@@ -1538,6 +1708,413 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), content)
         self.assertEqual(list(cache_dir.glob("run-*")), [])
 
+    def test_publication_metadata_source_hash_participates_in_freshness(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            source = checker.MAINTAINED_OUTPUTS[name]
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(source.read_bytes())
+        before = {path: path.read_bytes() for path in outputs.values()}
+        changed_metadata = self.root / "config/publication-metadata.toml"
+        changed_metadata.parent.mkdir(parents=True, exist_ok=True)
+        changed_metadata.write_text(
+            checker.PUBLICATION_METADATA.read_text(encoding="utf-8").replace(
+                'project_title = "SSN-to-BFO"',
+                'project_title = "SSN-to-BFO metadata freshness probe"',
+                1,
+            ),
+            encoding="utf-8",
+        )
+        workbook_hash = checker.sha256_file(checker.WORKBOOK)
+        generator_hash = checker.sha256_file(checker.GENERATOR)
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "PUBLICATION_METADATA", changed_metadata),
+        ):
+            errors = checker.freshness_errors(workbook_hash, generator_hash)
+        self.assertIn("publication metadata hash differs from the generated report", errors)
+        self.assertIn("product-disposition publication_metadata_sha256 is stale", errors)
+        self.assertEqual({path: path.read_bytes() for path in outputs.values()}, before)
+
+    def test_first_successful_metadata_migration_replaces_all_five_ttls_together(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"pre-metadata-{name}\n")
+        before = {path: path.read_bytes() for path in outputs.values()}
+        generated_ttls = {
+            "candidate": (REPO_ROOT / "SSN2BFO.ttl").read_bytes(),
+            "alignment_core": self.generated_product_bytes("alignment_core"),
+            "strict_bfo_mapping": self.generated_product_bytes("strict_bfo_mapping"),
+            "bfo_projection": self.generated_bfo_projection_bytes(),
+            "cco_extension": self.generated_cco_extension_bytes(),
+        }
+        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
+        expected_imports = {
+            "candidate": checker.ROOT_ORDERED_IMPORTS,
+            "alignment_core": (),
+            "strict_bfo_mapping": (
+                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
+            ),
+            "bfo_projection": (
+                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
+            ),
+            "cco_extension": (
+                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
+            ),
+        }
+        product_keys = {
+            "candidate": "integrated",
+            "alignment_core": "alignment_core",
+            "strict_bfo_mapping": "strict_bfo_mapping",
+            "bfo_projection": "bfo_projection",
+            "cco_extension": "cco_extension",
+        }
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        validated = False
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                paths[name].parent.mkdir(parents=True, exist_ok=True)
+                paths[name].write_bytes(
+                    generated_ttls.get(name, f"generated-{name}\n".encode("utf-8"))
+                )
+            self.write(paths["summary"], "{}\n")
+
+        def validate_metadata(paths: dict[str, Path], *_args, **_kwargs):
+            nonlocal validated
+            for name, product_key in product_keys.items():
+                graph = Graph().parse(paths[name], format="turtle")
+                checker.validate_product_metadata(
+                    graph,
+                    metadata,
+                    product_key,
+                    expected_imports[name],
+                )
+            validated = True
+            return {}
+
+        production_replace = checker.replace_outputs_atomically
+
+        def observe_replace(paths: dict[str, Path], transaction_dir: Path, log: list[str]) -> None:
+            self.assertTrue(validated)
+            self.assertEqual(
+                {path: path.read_bytes() for path in outputs.values()}, before
+            )
+            production_replace(paths, transaction_dir, log)
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["metadata migration"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", side_effect=validate_metadata),
+            mock.patch.object(checker, "git_diff_check"),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "replace_outputs_atomically", side_effect=observe_replace),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 0)
+        for name, content in generated_ttls.items():
+            self.assertEqual(outputs[name].read_bytes(), content)
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
+    def test_checker_rejects_noncanonical_headers_for_all_five_candidates(self) -> None:
+        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
+        canonical = {
+            "candidate": (REPO_ROOT / "SSN2BFO.ttl").read_bytes(),
+            "alignment_core": self.generated_product_bytes("alignment_core"),
+            "strict_bfo_mapping": self.generated_product_bytes("strict_bfo_mapping"),
+            "bfo_projection": self.generated_bfo_projection_bytes(),
+            "cco_extension": self.generated_cco_extension_bytes(),
+        }
+        product_keys = {
+            output_name: product_key
+            for output_name, product_key, *_rest in checker.SERIALIZED_HEADER_PRODUCTS
+        }
+        paths = {
+            name: self.root / "serialized-header-candidates" / f"{name}.ttl"
+            for name in canonical
+        }
+
+        for mutated_name in canonical:
+            with self.subTest(product=product_keys[mutated_name]):
+                for name, content in canonical.items():
+                    paths[name].parent.mkdir(parents=True, exist_ok=True)
+                    paths[name].write_bytes(content)
+                lines = canonical[mutated_name].splitlines()
+                label_index = next(
+                    index
+                    for index, line in enumerate(lines)
+                    if line.startswith(b"    rdfs:label ")
+                )
+                description_index = next(
+                    index
+                    for index, line in enumerate(lines)
+                    if line.startswith(b"    dcterms:description ")
+                )
+                lines[label_index], lines[description_index] = (
+                    lines[description_index],
+                    lines[label_index],
+                )
+                mutated = b"\n".join(lines) + b"\n"
+                paths[mutated_name].write_bytes(mutated)
+                self.assertTrue(
+                    isomorphic(
+                        Graph().parse(data=canonical[mutated_name].decode(), format="turtle"),
+                        Graph().parse(data=mutated.decode(), format="turtle"),
+                    )
+                )
+                with self.assertRaises(checker.CheckFailure) as raised:
+                    checker.validate_candidate_serialized_headers(paths, metadata)
+                self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", str(raised.exception))
+                self.assertIn(product_keys[mutated_name], str(raised.exception))
+
+    def test_checker_uses_generator_root_import_order_with_matching_turtle_terms(self) -> None:
+        expected_imports = (
+            "http://www.w3.org/ns/sosa/sampling/",
+            "http://www.w3.org/ns/ssn/",
+            "http://www.w3.org/ns/ssn/systems/",
+            "https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged",
+        )
+        self.assertIs(checker.ROOT_ORDERED_IMPORTS, coms.ROOT_ORDERED_IMPORTS)
+        self.assertFalse(hasattr(checker, "ROOT_IMPORTS"))
+        self.assertEqual(coms.ROOT_ORDERED_IMPORTS, expected_imports)
+        self.assertEqual(len(coms.ROOT_ORDERED_IMPORTS), 4)
+        self.assertEqual(len(coms.ROOT_IMPORT_TURTLE_TERMS), 4)
+
+        integrated = next(
+            value
+            for value in checker.SERIALIZED_HEADER_PRODUCTS
+            if value[1] == "integrated"
+        )
+        self.assertIs(integrated[2], coms.ROOT_ORDERED_IMPORTS)
+        self.assertIs(integrated[5], coms.ROOT_IMPORT_TURTLE_TERMS)
+
+        prefix_block = "\n".join(
+            f"@prefix {prefix}: <{namespace}> ."
+            for prefix, namespace in coms.ROOT_PREFIXES
+        )
+        for expected_iri, turtle_term in zip(
+            coms.ROOT_ORDERED_IMPORTS,
+            coms.ROOT_IMPORT_TURTLE_TERMS,
+            strict=True,
+        ):
+            with self.subTest(turtle_term=turtle_term):
+                graph = Graph().parse(
+                    data=(
+                        f"{prefix_block}\n"
+                        f"<urn:test:ontology> owl:imports {turtle_term} .\n"
+                    ),
+                    format="turtle",
+                )
+                self.assertEqual(
+                    tuple(str(value) for value in graph.objects(None, OWL.imports)),
+                    (expected_iri,),
+                )
+
+    def test_checker_rejects_reordered_integrated_root_imports(self) -> None:
+        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
+        canonical = {
+            "candidate": (REPO_ROOT / "SSN2BFO.ttl").read_bytes(),
+            "alignment_core": self.generated_product_bytes("alignment_core"),
+            "strict_bfo_mapping": self.generated_product_bytes("strict_bfo_mapping"),
+            "bfo_projection": self.generated_bfo_projection_bytes(),
+            "cco_extension": self.generated_cco_extension_bytes(),
+        }
+        paths = {
+            name: self.root / "reordered-root-imports" / f"{name}.ttl"
+            for name in canonical
+        }
+        for name, content in canonical.items():
+            paths[name].parent.mkdir(parents=True, exist_ok=True)
+            paths[name].write_bytes(content)
+
+        reordered = self.reordered_root_import_bytes(canonical["candidate"])
+        paths["candidate"].write_bytes(reordered)
+        self.assertTrue(
+            isomorphic(
+                Graph().parse(data=canonical["candidate"].decode(), format="turtle"),
+                Graph().parse(data=reordered.decode(), format="turtle"),
+            )
+        )
+        with self.assertRaises(checker.CheckFailure) as raised:
+            checker.validate_candidate_serialized_headers(paths, metadata)
+        self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", str(raised.exception))
+        self.assertIn("integrated", str(raised.exception))
+
+    def test_reordered_integrated_root_imports_block_all_nine_outputs(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(checker.MAINTAINED_OUTPUTS[name].read_bytes())
+        before = {path: path.read_bytes() for path in outputs.values()}
+        before_mtimes = {path: path.stat().st_mtime_ns for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms-reordered-root-imports"
+        transaction_dirs: list[Path] = []
+        production_run_generator = checker.run_generator
+        production_validate = checker.validate_temporary_outputs
+        workbook_hash = checker.sha256_file(checker.WORKBOOK)
+        generator_hash = checker.sha256_file(checker.GENERATOR)
+
+        def generate_then_reorder_imports(
+            paths: dict[str, Path], log: list[str]
+        ) -> None:
+            production_run_generator(paths, log)
+            transaction_dirs.append(paths["candidate"].parents[1])
+            canonical = paths["candidate"].read_bytes()
+            reordered = self.reordered_root_import_bytes(canonical)
+            self.assertTrue(
+                isomorphic(
+                    Graph().parse(data=canonical.decode(), format="turtle"),
+                    Graph().parse(data=reordered.decode(), format="turtle"),
+                )
+            )
+            old_hash = hashlib.sha256(canonical).hexdigest()
+            new_hash = hashlib.sha256(reordered).hexdigest()
+            paths["candidate"].write_bytes(reordered)
+            summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
+            summary["generated_candidate_sha256"] = new_hash
+            paths["summary"].write_text(
+                json.dumps(summary, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            report = paths["generation_report"].read_text(encoding="utf-8")
+            self.assertIn(old_hash, report)
+            paths["generation_report"].write_text(
+                report.replace(old_hash, new_hash),
+                encoding="utf-8",
+            )
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value=workbook_hash),
+            mock.patch.object(checker, "compile_generator", return_value=generator_hash),
+            mock.patch.object(checker, "freshness_errors", return_value=["metadata migration"]),
+            mock.patch.object(
+                checker, "run_generator", side_effect=generate_then_reorder_imports
+            ),
+            mock.patch.object(checker, "replace_outputs_atomically") as replace,
+        ):
+            self.assertIs(checker.validate_temporary_outputs, production_validate)
+            self.assertEqual(checker.main([]), 1)
+        replace.assert_not_called()
+        self.assertEqual(
+            {path: path.read_bytes() for path in outputs.values()},
+            before,
+        )
+        self.assertEqual(
+            {path: path.stat().st_mtime_ns for path in outputs.values()},
+            before_mtimes,
+        )
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+        failure_log = (cache_dir / "last-failure.log").read_text(encoding="utf-8")
+        self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", failure_log)
+
+    def test_reordered_header_blocks_all_nine_outputs_via_production_validation(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(checker.MAINTAINED_OUTPUTS[name].read_bytes())
+        before = {path: path.read_bytes() for path in outputs.values()}
+        before_mtimes = {path: path.stat().st_mtime_ns for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms-noncanonical-header"
+        transaction_dirs: list[Path] = []
+        production_run_generator = checker.run_generator
+        production_validate = checker.validate_temporary_outputs
+        workbook_hash = checker.sha256_file(checker.WORKBOOK)
+        generator_hash = checker.sha256_file(checker.GENERATOR)
+
+        def generate_then_reorder_header(
+            paths: dict[str, Path], log: list[str]
+        ) -> None:
+            production_run_generator(paths, log)
+            transaction_dirs.append(paths["candidate"].parents[1])
+            canonical = paths["alignment_core"].read_bytes()
+            lines = canonical.splitlines()
+            label_index = next(
+                index
+                for index, line in enumerate(lines)
+                if line.startswith(b"    rdfs:label ")
+            )
+            description_index = next(
+                index
+                for index, line in enumerate(lines)
+                if line.startswith(b"    dcterms:description ")
+            )
+            lines[label_index], lines[description_index] = (
+                lines[description_index],
+                lines[label_index],
+            )
+            reordered = b"\n".join(lines) + b"\n"
+            self.assertTrue(
+                isomorphic(
+                    Graph().parse(data=canonical.decode(), format="turtle"),
+                    Graph().parse(data=reordered.decode(), format="turtle"),
+                )
+            )
+            old_hash = hashlib.sha256(canonical).hexdigest()
+            new_hash = hashlib.sha256(reordered).hexdigest()
+            paths["alignment_core"].write_bytes(reordered)
+            summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
+            summary["alignment_core_sha256"] = new_hash
+            paths["summary"].write_text(
+                json.dumps(summary, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            report = paths["generation_report"].read_text(encoding="utf-8")
+            self.assertIn(old_hash, report)
+            paths["generation_report"].write_text(
+                report.replace(old_hash, new_hash),
+                encoding="utf-8",
+            )
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value=workbook_hash),
+            mock.patch.object(checker, "compile_generator", return_value=generator_hash),
+            mock.patch.object(checker, "freshness_errors", return_value=["metadata migration"]),
+            mock.patch.object(
+                checker, "run_generator", side_effect=generate_then_reorder_header
+            ),
+            mock.patch.object(checker, "replace_outputs_atomically") as replace,
+        ):
+            self.assertIs(checker.validate_temporary_outputs, production_validate)
+            self.assertEqual(checker.main([]), 1)
+        replace.assert_not_called()
+        self.assertEqual(
+            {path: path.read_bytes() for path in outputs.values()},
+            before,
+        )
+        self.assertEqual(
+            {path: path.stat().st_mtime_ns for path in outputs.values()},
+            before_mtimes,
+        )
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+        failure_log = (cache_dir / "last-failure.log").read_text(encoding="utf-8")
+        self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", failure_log)
+
     def test_first_successful_update_creates_initially_absent_bfo_projection(self) -> None:
         outputs = self.maintained_outputs()
         existing = {
@@ -1570,25 +2147,19 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             nonlocal validated
             self.assertFalse(outputs["bfo_projection"].exists())
             graph = coms.Graph().parse(paths["bfo_projection"], format="turtle")
+            metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
+            ontology = URIRef(
+                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
+            )
+            imported = URIRef(
+                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
+            )
             self.assertEqual(
                 set(graph),
                 {
-                    (
-                        URIRef(
-                            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
-                        ),
-                        RDF.type,
-                        OWL.Ontology,
-                    ),
-                    (
-                        URIRef(
-                            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
-                        ),
-                        OWL.imports,
-                        URIRef(
-                            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
-                        ),
-                    ),
+                    (ontology, RDF.type, OWL.Ontology),
+                    (ontology, OWL.imports, imported),
+                    *ontology_metadata_rdf_triples(metadata, "bfo_projection"),
                 },
             )
             validated = True
@@ -1639,7 +2210,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             events, ["generated", "validated", "replace-start", "replace-complete"]
         )
         self.assertEqual(outputs["bfo_projection"].read_bytes(), projection_bytes)
-        self.assertEqual(len(Graph().parse(outputs["bfo_projection"], format="turtle")), 2)
+        self.assertEqual(len(Graph().parse(outputs["bfo_projection"], format="turtle")), 9)
         self.assertTrue(all(path.is_file() for path in outputs.values()))
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
@@ -1660,10 +2231,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             name: f"new-{name}\n".encode("utf-8")
             for name in existing
         }
-        alignment_core_bytes = (
-            REPO_ROOT
-            / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
-        ).read_bytes()
+        alignment_core_bytes = self.generated_product_bytes("alignment_core")
         ontology_iri = URIRef(
             "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
         )
@@ -1693,7 +2261,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 set(graph.triples((None, RDFS.range, None)))
             )
             self.assertEqual(governed_axioms, 29)
-            self.assertEqual(len(graph), 54)
+            self.assertEqual(len(graph), 61)
             validation_complete = True
             events.append("validated")
             return {}
@@ -1748,7 +2316,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             + len(set(final_graph.triples((None, RDFS.range, None)))),
             29,
         )
-        self.assertEqual(len(final_graph), 54)
+        self.assertEqual(len(final_graph), 61)
         self.assertTrue(all(path.is_file() for path in outputs.values()))
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
@@ -1765,9 +2333,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         expected_generated = {
             name: f"new-{name}\n".encode("utf-8") for name in existing
         }
-        strict_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
-        ).read_bytes()
+        strict_bytes = self.generated_product_bytes("strict_bfo_mapping")
         ontology_iri = URIRef(
             "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
         )
@@ -1797,7 +2363,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 set(graph.triples((None, OWL.imports, None))),
                 {(ontology_iri, OWL.imports, alignment_iri)},
             )
-            self.assertEqual(len(graph), 127)
+            self.assertEqual(len(graph), 134)
             validation_complete = True
             return {}
 
@@ -1874,7 +2440,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 set(graph.triples((None, OWL.imports, None))),
                 {(ontology_iri, OWL.imports, strict_iri)},
             )
-            self.assertEqual(len(graph), 936)
+            self.assertEqual(len(graph), 943)
             validation_complete = True
             return {}
 
@@ -2317,6 +2883,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         cache_dir = self.root / ".cache/coms"
         transaction_dirs: list[Path] = []
         observed_candidates: list[bytes] = []
+        failures: list[str] = []
         disposition_source = REPO_ROOT / "reports/coms-product-dispositions.json"
         disposition = checker.load_disposition_document(disposition_source)
         disposition_bytes = disposition_source.read_bytes()
@@ -2330,6 +2897,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             paths["disposition_report"].write_bytes(disposition_bytes)
             malformed_core = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
             paths["alignment_core"].write_bytes(malformed_core)
+            observed_candidates.append(paths["alignment_core"].read_bytes())
             self.write(
                 paths["summary"],
                 json.dumps(
@@ -2357,8 +2925,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                             ),
                             "governed_axiom_count": 29,
                             "logical_triple_count": 53,
-                            "ontology_header_triple_count": 1,
-                            "total_triple_count": 54,
+                            "ontology_declaration_triple_count": 1,
+                            "import_triple_count": 0,
+                            "metadata_annotation_count": 7,
+                            "total_triple_count": 61,
                             "domain_axiom_count": 15,
                             "range_axiom_count": 14,
                             "named_target_count": 26,
@@ -2372,13 +2942,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 + "\n",
             )
 
-        original_parse = checker.Graph.parse
-
-        def observe_parse(graph, source=None, *args, **kwargs):
-            if source == checker.transaction_paths(transaction_dirs[0])["alignment_core"]:
-                observed_candidates.append(Path(source).read_bytes())
-            return original_parse(graph, source, *args, **kwargs)
-
         with (
             mock.patch.object(checker, "REPO_ROOT", self.root),
             mock.patch.object(checker, "CACHE_DIR", cache_dir),
@@ -2389,13 +2952,18 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             mock.patch.object(checker, "compile_generator", return_value=generator_hash),
             mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
             mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
-            mock.patch.object(checker.Graph, "parse", new=observe_parse),
-            mock.patch.object(checker, "write_failure_log"),
+            mock.patch.object(
+                checker,
+                "write_failure_log",
+                side_effect=lambda _mode, _log, exc: failures.append(str(exc)),
+            ),
         ):
             self.assertEqual(checker.main([]), 1)
 
         self.assertEqual(len(observed_candidates), 1)
         self.assertIn(b"[", observed_candidates[0])
+        self.assertIn("TURTLE_PARSE", failures[0])
+        self.assertIn("products.alignment_core.serialized_ontology", failures[0])
         for path, expected in before.items():
             self.assertEqual(path.read_bytes(), expected)
         self.assertEqual(len(transaction_dirs), 1)
@@ -2409,12 +2977,11 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         cache_dir = self.root / ".cache/coms"
         transaction_dirs: list[Path] = []
         observed_candidates: list[bytes] = []
+        failures: list[str] = []
         disposition_source = REPO_ROOT / "reports/coms-product-dispositions.json"
         disposition = checker.load_disposition_document(disposition_source)
         disposition_bytes = disposition_source.read_bytes()
-        alignment_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
-        ).read_bytes()
+        alignment_bytes = self.generated_product_bytes("alignment_core")
         workbook_hash = disposition.input_hashes.workbook_sha256
         generator_hash = disposition.input_hashes.generator_sha256
 
@@ -2426,6 +2993,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             paths["alignment_core"].write_bytes(alignment_bytes)
             malformed_strict = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
             paths["strict_bfo_mapping"].write_bytes(malformed_strict)
+            observed_candidates.append(paths["strict_bfo_mapping"].read_bytes())
             self.write(
                 paths["summary"],
                 json.dumps(
@@ -2445,8 +3013,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                             "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
                             "governed_axiom_count": 29,
                             "logical_triple_count": 53,
-                            "ontology_header_triple_count": 1,
-                            "total_triple_count": 54,
+                            "ontology_declaration_triple_count": 1,
+                            "import_triple_count": 0,
+                            "metadata_annotation_count": 7,
+                            "total_triple_count": 61,
                             "domain_axiom_count": 15,
                             "range_axiom_count": 14,
                             "named_target_count": 26,
@@ -2461,9 +3031,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                             "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
                             "governed_axiom_count": 19,
                             "logical_triple_count": 125,
-                            "ontology_header_triple_count": 2,
+                            "ontology_declaration_triple_count": 1,
                             "import_triple_count": 1,
-                            "total_triple_count": 127,
+                            "metadata_annotation_count": 7,
+                            "total_triple_count": 134,
                             "subclass_axiom_count": 3,
                             "equivalent_class_axiom_count": 3,
                             "direct_subproperty_axiom_count": 9,
@@ -2475,24 +3046,17 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                             "existential_restriction_count": 6,
                             "rdf_list_count": 14,
                             "project_closure_governed_axiom_count": 48,
-                            "project_graph_triple_count": 181,
-                            "local_project_graph_triple_count": 180,
+                            "project_graph_triple_count": 195,
+                            "local_project_graph_triple_count": 194,
                             "hermit_return_code": 0,
                             "hermit_result": "PASS",
-                            "closure_triple_count": 14972,
+                            "closure_triple_count": 14986,
                             "named_unsat_count": 0,
                         },
                     }
                 )
                 + "\n",
             )
-
-        original_parse = checker.Graph.parse
-
-        def observe_parse(graph, source=None, *args, **kwargs):
-            if source == checker.transaction_paths(transaction_dirs[0])["strict_bfo_mapping"]:
-                observed_candidates.append(Path(source).read_bytes())
-            return original_parse(graph, source, *args, **kwargs)
 
         with (
             mock.patch.object(checker, "REPO_ROOT", self.root),
@@ -2504,12 +3068,17 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             mock.patch.object(checker, "compile_generator", return_value=generator_hash),
             mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
             mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
-            mock.patch.object(checker.Graph, "parse", new=observe_parse),
-            mock.patch.object(checker, "write_failure_log"),
+            mock.patch.object(
+                checker,
+                "write_failure_log",
+                side_effect=lambda _mode, _log, exc: failures.append(str(exc)),
+            ),
         ):
             self.assertEqual(checker.main([]), 1)
         self.assertEqual(len(observed_candidates), 1)
         self.assertIn(b"[", observed_candidates[0])
+        self.assertIn("TURTLE_PARSE", failures[0])
+        self.assertIn("products.strict_bfo_mapping.serialized_ontology", failures[0])
         for path, expected in before.items():
             self.assertEqual(path.read_bytes(), expected)
         self.assertEqual(len(transaction_dirs), 1)
@@ -2537,20 +3106,14 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         core_selected = modular.select_product_axioms(
             "alignment_core", canonical_rows, audits, disposition
         )
-        strict_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
-        ).read_bytes()
-        core_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
-        ).read_bytes()
+        strict_bytes = self.generated_product_bytes("strict_bfo_mapping")
+        core_bytes = self.generated_product_bytes("alignment_core")
         valid = self.generated_bfo_projection_bytes()
         valid_text = valid.decode("utf-8")
         reasoning = modular.ModularReasoningResult(
             source_product_key="strict_bfo_mapping",
-            source_product_sha256=checker.sha256_file(
-                REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
-            ),
-            closure_triple_count=14972,
+            source_product_sha256=hashlib.sha256(strict_bytes).hexdigest(),
+            closure_triple_count=14986,
             return_code=0,
             reasoned_output_produced=True,
             owl_nothing_count=0,
@@ -2658,15 +3221,12 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         cache_dir = self.root / ".cache/coms"
         transaction_dirs: list[Path] = []
         observed_candidates: list[bytes] = []
+        failures: list[str] = []
         disposition_source = REPO_ROOT / "reports/coms-product-dispositions.json"
         disposition = checker.load_disposition_document(disposition_source)
         disposition_bytes = disposition_source.read_bytes()
-        alignment_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
-        ).read_bytes()
-        strict_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
-        ).read_bytes()
+        alignment_bytes = self.generated_product_bytes("alignment_core")
+        strict_bytes = self.generated_product_bytes("strict_bfo_mapping")
         projection_bytes = self.generated_bfo_projection_bytes()
         workbook_hash = disposition.input_hashes.workbook_sha256
         generator_hash = disposition.input_hashes.generator_sha256
@@ -2681,6 +3241,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             paths["bfo_projection"].write_bytes(projection_bytes)
             malformed_cco = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
             paths["cco_extension"].write_bytes(malformed_cco)
+            observed_candidates.append(paths["cco_extension"].read_bytes())
             summary = {
                 "status": "PASS",
                 "workbook_sha256": workbook_hash,
@@ -2701,8 +3262,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
                     "governed_axiom_count": 29,
                     "logical_triple_count": 53,
-                    "ontology_header_triple_count": 1,
-                    "total_triple_count": 54,
+                    "ontology_declaration_triple_count": 1,
+                    "import_triple_count": 0,
+                    "metadata_annotation_count": 7,
+                    "total_triple_count": 61,
                     "domain_axiom_count": 15,
                     "range_axiom_count": 14,
                     "named_target_count": 26,
@@ -2719,9 +3282,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
                     "governed_axiom_count": 19,
                     "logical_triple_count": 125,
-                    "ontology_header_triple_count": 2,
+                    "ontology_declaration_triple_count": 1,
                     "import_triple_count": 1,
-                    "total_triple_count": 127,
+                    "metadata_annotation_count": 7,
+                    "total_triple_count": 134,
                     "subclass_axiom_count": 3,
                     "equivalent_class_axiom_count": 3,
                     "direct_subproperty_axiom_count": 9,
@@ -2733,11 +3297,11 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "existential_restriction_count": 6,
                     "rdf_list_count": 14,
                     "project_closure_governed_axiom_count": 48,
-                    "project_graph_triple_count": 181,
-                    "local_project_graph_triple_count": 180,
+                    "project_graph_triple_count": 195,
+                    "local_project_graph_triple_count": 194,
                     "hermit_return_code": 0,
                     "hermit_result": "PASS",
-                    "closure_triple_count": 14972,
+                    "closure_triple_count": 14986,
                     "named_unsat_count": 0,
                 },
                 "bfo_projection_sha256": checker.sha256_file(
@@ -2750,18 +3314,19 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "logical_triple_count": 0,
                     "ontology_declaration_triple_count": 1,
                     "import_triple_count": 1,
-                    "total_triple_count": 2,
+                    "metadata_annotation_count": 7,
+                    "total_triple_count": 9,
                     "provided_transitively_count": 29,
                     "provided_through_import_count": 19,
                     "deferred_no_transformation_rule_count": 57,
                     "project_closure_governed_axiom_count": 48,
-                    "project_graph_triple_count": 183,
-                    "local_project_graph_triple_count": 181,
+                    "project_graph_triple_count": 204,
+                    "local_project_graph_triple_count": 202,
                     "reasoning_reused_from": "strict_bfo_mapping",
                     "reasoning_source_sha256": checker.sha256_file(
                         paths["strict_bfo_mapping"]
                     ),
-                    "reasoning_closure_triple_count": 14972,
+                    "reasoning_closure_triple_count": 14986,
                     "reasoning_return_code": 0,
                     "reasoned_output_produced": True,
                     "named_unsat_count": 0,
@@ -2775,9 +3340,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "cco_bearing_axiom_count": 25,
                     "mixed_bfo_cco_axiom_count": 32,
                     "logical_triple_count": 934,
-                    "ontology_header_triple_count": 2,
+                    "ontology_declaration_triple_count": 1,
                     "import_triple_count": 1,
-                    "total_triple_count": 936,
+                    "metadata_annotation_count": 7,
+                    "total_triple_count": 943,
                     "subclass_axiom_count": 31,
                     "equivalent_class_axiom_count": 7,
                     "direct_subproperty_axiom_count": 16,
@@ -2787,22 +3353,15 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "existential_restriction_count": 95,
                     "rdf_list_count": 96,
                     "project_closure_governed_axiom_count": 105,
-                    "project_graph_triple_count": 1117,
-                    "local_project_graph_triple_count": 1115,
+                    "project_graph_triple_count": 1138,
+                    "local_project_graph_triple_count": 1136,
                     "hermit_return_code": 0,
                     "hermit_result": "PASS",
-                    "closure_triple_count": 15907,
+                    "closure_triple_count": 15928,
                     "named_unsat_count": 0,
                 },
             }
             self.write(paths["summary"], json.dumps(summary) + "\n")
-
-        original_parse = checker.Graph.parse
-
-        def observe_parse(graph, source=None, *args, **kwargs):
-            if source == checker.transaction_paths(transaction_dirs[0])["cco_extension"]:
-                observed_candidates.append(Path(source).read_bytes())
-            return original_parse(graph, source, *args, **kwargs)
 
         with (
             mock.patch.object(checker, "REPO_ROOT", self.root),
@@ -2814,12 +3373,17 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             mock.patch.object(checker, "compile_generator", return_value=generator_hash),
             mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
             mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
-            mock.patch.object(checker.Graph, "parse", new=observe_parse),
-            mock.patch.object(checker, "write_failure_log"),
+            mock.patch.object(
+                checker,
+                "write_failure_log",
+                side_effect=lambda _mode, _log, exc: failures.append(str(exc)),
+            ),
         ):
             self.assertEqual(checker.main([]), 1)
         self.assertEqual(len(observed_candidates), 1)
         self.assertIn(b"[", observed_candidates[0])
+        self.assertIn("TURTLE_PARSE", failures[0])
+        self.assertIn("products.cco_extension.serialized_ontology", failures[0])
         for path, expected in before.items():
             self.assertEqual(path.read_bytes(), expected)
         self.assertEqual(len(transaction_dirs), 1)

@@ -20,10 +20,15 @@ import generate_mapping_from_coms as coms  # noqa: E402
 import modular_products as modular  # noqa: E402
 from coms_row_identity import RowLocation  # noqa: E402
 from product_dispositions import ProductDisposition, load_disposition_document  # noqa: E402
-from publication_metadata import load_metadata  # noqa: E402
+from publication_metadata import (  # noqa: E402
+    load_metadata,
+    ontology_metadata_rdf_triples,
+    strip_emitted_ontology_header,
+    validate_emitted_ontology_metadata,
+)
 
 
-EXPECTED_SHA256 = "7914e0afb6212df20e02686e1b11b71d109e0b81095ddf33ff120b01768cc71c"
+EXPECTED_SHA256 = "b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0"
 PROJECTION_IRI = URIRef(
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
 )
@@ -61,17 +66,17 @@ class BfoProjectionTests(unittest.TestCase):
             cls.audits,
             cls.disposition,
         )
-        cls.strict_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
-        ).read_bytes()
-        cls.core_bytes = (
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
-        ).read_bytes()
+        cls.strict_result = modular.build_strict_bfo_mapping(
+            cls.strict_selected, cls.metadata
+        )
+        cls.core_result = modular.build_alignment_core(cls.core_selected, cls.metadata)
+        cls.strict_bytes = cls.strict_result.serialized_bytes
+        cls.core_bytes = cls.core_result.serialized_bytes
         cls.root_graph = Graph().parse(REPO_ROOT / "SSN2BFO.ttl", format="turtle")
         cls.reasoning = modular.ModularReasoningResult(
             source_product_key="strict_bfo_mapping",
             source_product_sha256=hashlib.sha256(cls.strict_bytes).hexdigest(),
-            closure_triple_count=14972,
+            closure_triple_count=14986,
             return_code=0,
             reasoned_output_produced=True,
             owl_nothing_count=0,
@@ -320,20 +325,43 @@ class BfoProjectionTests(unittest.TestCase):
             modular.build_bfo_projection((self.strict_selected[0],), self.metadata)
         self.assertEqual(self.error_codes(raised.exception), {"UNAPPROVED_PROJECTION_AXIOM"})
 
-    def test_direct_graph_has_only_the_governed_header_and_import(self) -> None:
+    def test_direct_graph_has_only_governed_metadata_header_and_import(self) -> None:
         graph = Graph().parse(
             data=self.result.serialized_bytes.decode("utf-8"), format="turtle"
         )
-        self.assertEqual(len(graph), 2)
+        self.assertEqual(len(graph), 9)
         self.assertEqual(self.result.governed_axiom_count, 0)
         self.assertEqual(self.result.logical_triple_count, 0)
+        self.assertEqual(self.result.ontology_declaration_triple_count, 1)
         self.assertEqual(self.result.import_triple_count, 1)
+        self.assertEqual(self.result.metadata_annotation_count, 7)
         self.assertEqual(
             set(graph),
             {
                 (PROJECTION_IRI, RDF.type, OWL.Ontology),
                 (PROJECTION_IRI, OWL.imports, STRICT_IRI),
+                *ontology_metadata_rdf_triples(self.metadata, "bfo_projection"),
             },
+        )
+        self.assertEqual(
+            validate_emitted_ontology_metadata(
+                graph,
+                self.metadata,
+                "bfo_projection",
+                (str(STRICT_IRI),),
+            ),
+            (),
+        )
+        self.assertEqual(
+            len(
+                strip_emitted_ontology_header(
+                    graph,
+                    self.metadata,
+                    "bfo_projection",
+                    (str(STRICT_IRI),),
+                )
+            ),
+            0,
         )
         self.assertFalse(any(isinstance(value, BNode) for value in graph.all_nodes()))
         text = self.result.serialized_bytes.decode("utf-8")
@@ -407,11 +435,11 @@ class BfoProjectionTests(unittest.TestCase):
             & {value.axiom_id for value in self.core_selected},
             set(),
         )
-        self.assertEqual(len(project), 183)
+        self.assertEqual(len(project), 204)
         self.assertEqual(len(list(project.triples((None, OWL.imports, None)))), 2)
         for triple in list(project.triples((None, OWL.imports, None))):
             project.remove(triple)
-        self.assertEqual(len(project), 181)
+        self.assertEqual(len(project), 202)
         self.assertFalse(
             any(
                 isinstance(value, URIRef)
@@ -471,23 +499,36 @@ print(hashlib.sha256(data).hexdigest())
         )
         self.assertEqual(completed.stdout.strip(), EXPECTED_SHA256)
 
+    def test_reordered_canonical_header_is_rejected_by_product_validator(self) -> None:
+        lines = self.result.serialized_bytes.splitlines()
+        label = next(i for i, line in enumerate(lines) if line.startswith(b"    rdfs:label "))
+        description = next(
+            i for i, line in enumerate(lines) if line.startswith(b"    dcterms:description ")
+        )
+        lines[label], lines[description] = lines[description], lines[label]
+        codes = {value.code for value in self.validate(b"\n".join(lines) + b"\n")}
+        self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", codes)
+
     def test_existing_module_bytes_remain_protected(self) -> None:
         self.assertEqual(
             hashlib.sha256(self.core_bytes).hexdigest(),
-            "95f71184b90224906b0ba703d0ea60fd2f8b993b3853b803c66b88b91ba0b01c",
+            "17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770",
         )
         self.assertEqual(
             hashlib.sha256(self.strict_bytes).hexdigest(),
-            "15f080145c6803d174a00cf9e13c971925b40485049744dba6e0847093016ea7",
+            "676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af",
         )
         self.assertEqual(
-            hashlib.sha256(
-                (
-                    REPO_ROOT
-                    / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl"
-                ).read_bytes()
-            ).hexdigest(),
-            "fe6986d79ec2f5f67553fbee1364fa98ebd7ba3205196f0368ac246646fcdf7c",
+            modular.build_cco_extension(
+                modular.select_product_axioms(
+                    "cco_extension",
+                    self.canonical_rows,
+                    self.audits,
+                    self.disposition,
+                ),
+                self.metadata,
+            ).sha256,
+            "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
         )
 
 

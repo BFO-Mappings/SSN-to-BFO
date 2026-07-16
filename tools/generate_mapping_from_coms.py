@@ -54,6 +54,7 @@ from modular_products import (
     build_fixed_validation_closure,
     build_strict_bfo_mapping,
     reconcile_product_axioms,
+    render_authoritative_axiom_lines,
     select_product_axioms,
     serialize_modular_product,
     validate_alignment_core,
@@ -61,7 +62,15 @@ from modular_products import (
     validate_cco_extension,
     validate_strict_bfo_mapping,
 )
-from publication_metadata import PublicationMetadataError, load_metadata
+from publication_metadata import (
+    METADATA_PREFIXES,
+    PublicationMetadata,
+    PublicationMetadataError,
+    render_ontology_header_bytes,
+    strip_emitted_ontology_header,
+    load_metadata,
+    validate_serialized_ontology_header,
+)
 
 try:
     import openpyxl
@@ -71,6 +80,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guar
 try:
     from rdflib import BNode, Graph, Literal, Namespace, RDF, RDFS, OWL, URIRef
     from rdflib.collection import Collection
+    from rdflib.compare import isomorphic
     from rdflib.namespace import XSD
 except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guard
     raise SystemExit("Missing dependency: rdflib is required to generate and validate RDF.") from exc
@@ -123,6 +133,12 @@ PREFIXES = {
     "ssn": str(SSN),
     "ssn-system": str(SSN_SYSTEM),
 }
+ROOT_ONTOLOGY_DECLARATION_COUNT = 1
+ROOT_IMPORT_COUNT = 4
+ROOT_METADATA_ANNOTATION_COUNT = 7
+ROOT_LOGICAL_TRIPLE_COUNT = 1112
+ROOT_TOTAL_TRIPLE_COUNT = 1124
+ROOT_FIXED_CLOSURE_TRIPLE_COUNT = 15912
 
 PREFIX_FILES = {
     "bfo": Path("imports/cco.ttl"),
@@ -964,14 +980,23 @@ def build_and_write_disposition_report(
     processed_rows: list[ProcessedRow],
     path: Path,
     input_hashes: RequiredInputHashes,
+    publication_metadata: PublicationMetadata,
 ) -> tuple[DispositionDocument, list[DispositionRowInput]]:
     try:
-        metadata = load_metadata(PUBLICATION_METADATA)
         row_inputs = [disposition_input_for_processed_row(item) for item in processed_rows]
-        document = build_disposition_document(row_inputs, metadata, input_hashes)
+        document = build_disposition_document(
+            row_inputs,
+            publication_metadata,
+            input_hashes,
+        )
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(serialize_disposition_document(document))
-        loaded, issues = validate_disposition_file(path, row_inputs, metadata, input_hashes)
+        loaded, issues = validate_disposition_file(
+            path,
+            row_inputs,
+            publication_metadata,
+            input_hashes,
+        )
     except (ProductDispositionError, PublicationMetadataError) as exc:
         raise GenerationError(str(exc)) from exc
     if issues:
@@ -1171,7 +1196,86 @@ def expr_to_rdf(graph: Graph, expr: Expr) -> URIRef | BNode:
     raise GenerationError(f"unsupported expression node {expr.kind!r}")
 
 
-def generate_ontology(processed_rows: list[ProcessedRow], output_path: Path) -> Graph:
+ROOT_PREFIX_ORDER = (
+    "bfo",
+    "cco",
+    "owl",
+    "rdf",
+    "rdfs",
+    "sampling",
+    "sosa",
+    "ssn",
+    "ssn-system",
+)
+ROOT_PREFIXES = (
+    *METADATA_PREFIXES,
+    *((prefix, PREFIXES[prefix]) for prefix in ROOT_PREFIX_ORDER),
+)
+ROOT_ORDERED_IMPORTS = tuple(sorted((str(value) for value in DIRECT_IMPORTS)))
+ROOT_IMPORT_TURTLE_TERMS = (
+    "sampling:",
+    "ssn:",
+    "ssn-system:",
+    "<https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged>",
+)
+
+
+def _root_turtle_bytes(
+    processed_rows: Iterable[ProcessedRow],
+    publication_metadata: PublicationMetadata,
+) -> bytes:
+    """Render maintained root bytes solely from governed structured inputs."""
+
+    rendered_axioms: list[tuple[tuple[str, str, str], tuple[str, ...]]] = []
+    for item in processed_rows:
+        if not item.predicate:
+            continue
+        audit = item.identity_audit
+        if audit is None or len(audit.authoritative_axioms) != 1:
+            raise GenerationError(
+                f"{item.row.diagnostic_id}: deterministic root rendering requires "
+                "exactly one audited authoritative axiom"
+            )
+        canonical_input = canonical_input_for_processed_row(item)
+        axiom_id = f"sha256:{audit.authoritative_axioms[0].sha256}"
+        try:
+            lines = render_authoritative_axiom_lines(canonical_input, axiom_id)
+        except ModularProductError as exc:
+            raise GenerationError(f"deterministic root rendering failed: {exc}") from exc
+        rendered_axioms.append(
+            (
+                (
+                    canonical_input.subject_iri,
+                    canonical_input.predicate_iri or "",
+                    axiom_id,
+                ),
+                lines,
+            )
+        )
+
+    header = render_ontology_header_bytes(
+        publication_metadata,
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+        generated_notice=GENERATED_NOTICE,
+        prefixes=ROOT_PREFIXES,
+        import_turtle_terms=ROOT_IMPORT_TURTLE_TERMS,
+    )
+    output = bytearray(header.rstrip(b"\n"))
+    for _, lines in sorted(rendered_axioms, key=lambda value: value[0]):
+        output.extend(b"\n\n")
+        output.extend("\n".join(lines).encode("utf-8"))
+    output.extend(b"\n")
+    return bytes(output)
+
+
+def generate_ontology(
+    processed_rows: list[ProcessedRow],
+    output_path: Path,
+    publication_metadata: PublicationMetadata,
+    *,
+    require_current_counts: bool = False,
+) -> Graph:
     graph = Graph()
     bind_prefixes(graph)
     graph.add((ONTOLOGY_IRI, RDF.type, OWL.Ontology))
@@ -1193,10 +1297,57 @@ def generate_ontology(processed_rows: list[ProcessedRow], output_path: Path) -> 
         else:
             raise GenerationError(f"{item.row.diagnostic_id}: processed row has no target")
 
+    logical_before_metadata = Graph()
+    header_triples = {
+        (ONTOLOGY_IRI, RDF.type, OWL.Ontology),
+        *((ONTOLOGY_IRI, OWL.imports, value) for value in DIRECT_IMPORTS),
+    }
+    for triple in graph:
+        if triple not in header_triples:
+            logical_before_metadata.add(triple)
+
+    serialized = _root_turtle_bytes(processed_rows, publication_metadata)
+    parsed = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
+    expected_imports = ROOT_ORDERED_IMPORTS
+    metadata_issues = validate_serialized_ontology_header(
+        serialized,
+        publication_metadata,
+        "integrated",
+        expected_imports,
+        generated_notice=GENERATED_NOTICE,
+        prefixes=ROOT_PREFIXES,
+        import_turtle_terms=ROOT_IMPORT_TURTLE_TERMS,
+    )
+    if metadata_issues:
+        raise GenerationError(
+            "integrated-root metadata validation failed: "
+            + " | ".join(
+                f"ERROR [{value.code}] {value.field}: {value.message}"
+                for value in metadata_issues
+            )
+        )
+    logical_after_metadata = strip_emitted_ontology_header(
+        parsed,
+        publication_metadata,
+        "integrated",
+        expected_imports,
+    )
+    if require_current_counts and len(logical_after_metadata) != ROOT_LOGICAL_TRIPLE_COUNT:
+        raise GenerationError(
+            "integrated-root logical triple count mismatch: "
+            f"expected {ROOT_LOGICAL_TRIPLE_COUNT}, got {len(logical_after_metadata)}"
+        )
+    if not isomorphic(logical_before_metadata, logical_after_metadata):
+        raise GenerationError("integrated-root logical graph changed during metadata emission")
+    if require_current_counts and len(parsed) != ROOT_TOTAL_TRIPLE_COUNT:
+        raise GenerationError(
+            f"integrated-root total triple count mismatch: expected {ROOT_TOTAL_TRIPLE_COUNT}, "
+            f"got {len(parsed)}"
+        )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    turtle = graph.serialize(format="turtle").rstrip() + "\n"
-    output_path.write_text(f"{GENERATED_NOTICE}\n\n{turtle}", encoding="utf-8")
-    return graph
+    output_path.write_bytes(serialized)
+    return parsed
 
 
 def normalized_axiom_rows(processed_rows: list[ProcessedRow], graph: Graph) -> list[NormalizedRow]:
@@ -1575,6 +1726,7 @@ def build_and_write_alignment_core(
     processed_rows: list[ProcessedRow],
     identity_audits: list[CanonicalRowAudit],
     disposition_document: DispositionDocument,
+    publication_metadata: PublicationMetadata,
     integrated_graph: Graph,
     output_path: Path,
     tmp_dir: Path,
@@ -1582,7 +1734,6 @@ def build_and_write_alignment_core(
     """Build and fully validate the candidate alignment-core development artifact."""
 
     try:
-        metadata = load_metadata(PUBLICATION_METADATA)
         canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
         selected = select_product_axioms(
             "alignment_core",
@@ -1590,7 +1741,7 @@ def build_and_write_alignment_core(
             identity_audits,
             disposition_document,
         )
-        result = build_alignment_core(selected, metadata)
+        result = build_alignment_core(selected, publication_metadata)
         closure = build_fixed_source_closure(
             result.serialized_bytes,
             (REPO_ROOT / path for path in SOURCE_IMPORTS),
@@ -1598,7 +1749,7 @@ def build_and_write_alignment_core(
         structural_issues = validate_alignment_core(
             result.serialized_bytes,
             selected,
-            metadata,
+            publication_metadata,
             fixed_source_closure=closure,
             integrated_graph=integrated_graph,
         )
@@ -1620,6 +1771,7 @@ def build_and_write_strict_bfo_mapping(
     processed_rows: list[ProcessedRow],
     identity_audits: list[CanonicalRowAudit],
     disposition_document: DispositionDocument,
+    publication_metadata: PublicationMetadata,
     integrated_graph: Graph,
     alignment_core_result: ModularProductResult,
     alignment_core_path: Path,
@@ -1629,7 +1781,6 @@ def build_and_write_strict_bfo_mapping(
     """Build and validate the strict BFO development artifact and fixed closure."""
 
     try:
-        metadata = load_metadata(PUBLICATION_METADATA)
         canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
         selected = select_product_axioms(
             "strict_bfo_mapping",
@@ -1642,7 +1793,7 @@ def build_and_write_strict_bfo_mapping(
             for row in alignment_core_result.selected_rows
             for axiom in row.axioms
         )
-        result = build_strict_bfo_mapping(selected, metadata)
+        result = build_strict_bfo_mapping(selected, publication_metadata)
         fixed_closure = build_fixed_validation_closure(
             (result.serialized_bytes, alignment_core_result.serialized_bytes),
             (
@@ -1656,7 +1807,7 @@ def build_and_write_strict_bfo_mapping(
             selected,
             alignment_core_result.serialized_bytes,
             alignment_selected,
-            metadata,
+            publication_metadata,
             integrated_graph=integrated_graph,
             fixed_semantic_closure=fixed_closure,
         )
@@ -1680,6 +1831,7 @@ def build_and_write_bfo_projection(
     processed_rows: list[ProcessedRow],
     identity_audits: list[CanonicalRowAudit],
     disposition_document: DispositionDocument,
+    publication_metadata: PublicationMetadata,
     integrated_graph: Graph,
     alignment_core_result: ModularProductResult,
     strict_bfo_result: ModularProductResult,
@@ -1693,7 +1845,6 @@ def build_and_write_bfo_projection(
     """Build the import-only projection after exact disposition reconciliation."""
 
     try:
-        metadata = load_metadata(PUBLICATION_METADATA)
         canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
         reconciliation = reconcile_product_axioms(
             BFO_PROJECTION_KEY,
@@ -1720,7 +1871,10 @@ def build_and_write_bfo_projection(
             owl_nothing_count=strict_bfo_hermit.owl_nothing_count,
             named_unsatisfiable_count=len(strict_bfo_hermit.unsat_classes),
         )
-        result = build_bfo_projection(reconciliation.selected_axioms, metadata)
+        result = build_bfo_projection(
+            reconciliation.selected_axioms,
+            publication_metadata,
+        )
         structural_issues = validate_bfo_projection(
             result.serialized_bytes,
             reconciliation,
@@ -1728,7 +1882,7 @@ def build_and_write_bfo_projection(
             strict_selected,
             alignment_core_result.serialized_bytes,
             alignment_selected,
-            metadata,
+            publication_metadata,
             integrated_graph=integrated_graph,
             strict_reasoning_result=reasoning_result,
         )
@@ -1746,6 +1900,7 @@ def build_and_write_cco_extension(
     processed_rows: list[ProcessedRow],
     identity_audits: list[CanonicalRowAudit],
     disposition_document: DispositionDocument,
+    publication_metadata: PublicationMetadata,
     integrated_graph: Graph,
     alignment_core_result: ModularProductResult,
     alignment_core_path: Path,
@@ -1757,7 +1912,6 @@ def build_and_write_cco_extension(
     """Build and validate the CCO-extension development artifact and closure."""
 
     try:
-        metadata = load_metadata(PUBLICATION_METADATA)
         canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
         selected = select_product_axioms(
             "cco_extension",
@@ -1775,7 +1929,7 @@ def build_and_write_cco_extension(
             for row in strict_bfo_result.selected_rows
             for axiom in row.axioms
         )
-        result = build_cco_extension(selected, metadata)
+        result = build_cco_extension(selected, publication_metadata)
         source_graph = Graph()
         for path in SOURCE_IMPORTS:
             source_graph.parse(REPO_ROOT / path, format="turtle")
@@ -1802,7 +1956,7 @@ def build_and_write_cco_extension(
             strict_selected,
             alignment_core_result.serialized_bytes,
             alignment_selected,
-            metadata,
+            publication_metadata,
             integrated_graph=integrated_graph,
             fixed_semantic_closure=fixed_closure,
             source_dependency_graph=source_graph,
@@ -2409,18 +2563,20 @@ def write_generation_report(
             f"- Named target expressions: {alignment_core_result.named_target_count}",
             f"- Union target expressions: {alignment_core_result.union_target_count}",
             f"- Logical RDF triples: {alignment_core_result.logical_triple_count}",
-            f"- Ontology-header triples: {alignment_core_result.ontology_header_triple_count}",
+            f"- Ontology declaration triples: {alignment_core_result.ontology_declaration_triple_count}",
+            f"- Import triples: {alignment_core_result.import_triple_count}",
+            f"- Descriptive metadata annotations: {alignment_core_result.metadata_annotation_count}",
             f"- Total RDF triples: {alignment_core_result.total_triple_count}",
-            "- Imports: 0",
             "- BFO/CCO/RO and unexpected logical-vocabulary audit: PASS",
             "- Integrated-root canonical-axiom reconciliation: PASS",
             "- Deterministic serialization: PASS",
             f"- Fixed local source closure: {source_paths}",
+            f"- Source-closure triple count: {'n/a' if alignment_core_hermit is None else alignment_core_hermit.closure_triple_count}",
             f"- Source-closure HermiT return code: {'n/a' if alignment_core_hermit is None else alignment_core_hermit.return_code}",
             f"- Source-closure reasoned output produced: {'no' if alignment_core_hermit is None else 'yes' if alignment_core_hermit.reasoned_output_produced else 'no'}",
             f"- Source-closure named unsatisfiable classes: {'n/a' if alignment_core_hermit is None else len(alignment_core_hermit.unsat_classes)}",
             f"- Source-closure HermiT result: {'FAIL' if alignment_core_hermit is None else 'PASS' if alignment_core_hermit.passed else 'FAIL'}",
-            "- Full publication metadata and formal release identity remain deferred.",
+            "- Formal-release metadata and identity remain deferred.",
         ]
 
     if strict_bfo_result is None:
@@ -2449,7 +2605,9 @@ def write_generation_report(
             f"- Domain axioms: {strict_bfo_result.domain_axiom_count}",
             f"- Range axioms: {strict_bfo_result.range_axiom_count}",
             f"- Logical RDF triples: {strict_bfo_result.logical_triple_count}",
-            f"- Ontology-header and import triples: {strict_bfo_result.ontology_header_triple_count}",
+            f"- Ontology declaration triples: {strict_bfo_result.ontology_declaration_triple_count}",
+            f"- Import triples: {strict_bfo_result.import_triple_count}",
+            f"- Descriptive metadata annotations: {strict_bfo_result.metadata_annotation_count}",
             f"- Total RDF triples: {strict_bfo_result.total_triple_count}",
             "- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core`",
             "- Imported alignment-core governed axioms: 29",
@@ -2466,7 +2624,7 @@ def write_generation_report(
             f"- HermiT result: {'FAIL' if strict_bfo_hermit is None else 'PASS' if strict_bfo_hermit.passed else 'FAIL'}",
             "- The validation dependency `imports/cco.ttl` is not imported by the published strict graph and does not authorize CCO mappings or transformations.",
             "- The 57 CCO-bearing or mixed mappings remain deferred; no transformation or projection is implemented.",
-            "- Full publication metadata and formal release identity remain deferred.",
+            "- Formal-release metadata and identity remain deferred.",
         ]
 
     if bfo_projection_result is None or bfo_projection_reconciliation is None:
@@ -2489,8 +2647,9 @@ def write_generation_report(
             f"- Stable ontology IRI: `{bfo_projection_result.metadata.stable_ontology_iri}`",
             f"- Direct governed projection axioms: {bfo_projection_result.governed_axiom_count}",
             f"- Direct logical mapping triples: {bfo_projection_result.logical_triple_count}",
-            "- Ontology declaration triples: 1",
+            f"- Ontology declaration triples: {bfo_projection_result.ontology_declaration_triple_count}",
             f"- Import triples: {bfo_projection_result.import_triple_count}",
+            f"- Descriptive metadata annotations: {bfo_projection_result.metadata_annotation_count}",
             f"- Total RDF triples: {bfo_projection_result.total_triple_count}",
             "- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`",
             f"- Target-neutral provided transitively: {totals.get(('target_neutral', 'provided_transitively', None), 0)}",
@@ -2500,8 +2659,8 @@ def write_generation_report(
             "- Imported strict-BFO governed axioms: 19",
             "- Transitively imported alignment-core governed axioms: 29",
             "- Project-module closure governed axioms: 48",
-            "- Project graph triples retaining imports: 183",
-            "- Import-stripped local project graph triples: 181",
+            "- Project graph triples retaining imports: 204",
+            "- Import-stripped local project graph triples: 202",
             "- Strict/alignment-core governed overlap: 0",
             "- CCO-extension governed axioms in projection closure: 0",
             "- Direct graph and integrated-root/project-module reconciliation: PASS",
@@ -2515,7 +2674,7 @@ def write_generation_report(
             "- Zero direct projection axioms is intentional and complete for the current governed policy.",
             "- No transformation rule, weakened consequence, or projected axiom is approved.",
             "- Future direct projected axioms require governed transformation rules and proof obligations.",
-            "- Full publication metadata and formal release identity remain deferred.",
+            "- Formal-release metadata and identity remain deferred.",
         ]
 
     if cco_extension_result is None:
@@ -2555,7 +2714,9 @@ def write_generation_report(
             f"- Direct subproperty axioms: {cco_extension_result.direct_subproperty_axiom_count}",
             f"- Property-chain axioms: {cco_extension_result.property_chain_axiom_count}",
             f"- Logical RDF triples: {cco_extension_result.logical_triple_count}",
-            f"- Ontology-header and import triples: {cco_extension_result.ontology_header_triple_count}",
+            f"- Ontology declaration triples: {cco_extension_result.ontology_declaration_triple_count}",
+            f"- Import triples: {cco_extension_result.import_triple_count}",
+            f"- Descriptive metadata annotations: {cco_extension_result.metadata_annotation_count}",
             f"- Total RDF triples: {cco_extension_result.total_triple_count}",
             "- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`",
             "- Imported strict-BFO governed axioms: 19",
@@ -2573,7 +2734,7 @@ def write_generation_report(
             f"- HermiT result: {'FAIL' if cco_extension_hermit is None else 'PASS' if cco_extension_hermit.passed else 'FAIL'}",
             "- The validation dependency `imports/cco.ttl` is not imported by the published CCO-extension graph and is not mapping authority.",
             "- No transformation or weakened projection is implemented.",
-            "- Full publication metadata and formal release identity remain deferred.",
+            "- Formal-release metadata and identity remain deferred.",
         ]
 
     lines.extend(
@@ -2654,6 +2815,10 @@ def write_generation_report(
             "## Generated Ontology",
             "",
             f"- Path: `{output_path}`",
+            f"- Ontology declaration triples: {ROOT_ONTOLOGY_DECLARATION_COUNT}",
+            f"- Import triples: {ROOT_IMPORT_COUNT}",
+            f"- Descriptive metadata annotations: {ROOT_METADATA_ANNOTATION_COUNT}",
+            f"- Governed/structural logical triples: {ROOT_LOGICAL_TRIPLE_COUNT}",
             f"- Generated ontology triple count: {'n/a' if hermit is None else hermit.generated_triple_count}",
             f"- `{output_path}` is generated from `mappings/SSN2BFO-COMS.xlsx` and must not be edited directly.",
             "- `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.",
@@ -2876,6 +3041,10 @@ def write_summary_json(
         "publication_metadata_sha256": publication_metadata_sha256,
         "generation_timestamp": generation_timestamp,
         "generated_candidate_sha256": candidate_sha256,
+        "generated_candidate_ontology_declaration_triple_count": ROOT_ONTOLOGY_DECLARATION_COUNT,
+        "generated_candidate_import_triple_count": ROOT_IMPORT_COUNT,
+        "generated_candidate_metadata_annotation_count": ROOT_METADATA_ANNOTATION_COUNT,
+        "generated_candidate_logical_triple_count": ROOT_LOGICAL_TRIPLE_COUNT,
         "product_disposition_report_path": None if disposition_path is None else str(disposition_path),
         "product_disposition_report_sha256": disposition_sha256,
         "alignment_core_path": None if alignment_core_path is None else str(alignment_core_path),
@@ -2887,7 +3056,9 @@ def write_summary_json(
             "stable_ontology_iri": alignment_core_result.metadata.stable_ontology_iri,
             "governed_axiom_count": alignment_core_result.governed_axiom_count,
             "logical_triple_count": alignment_core_result.logical_triple_count,
-            "ontology_header_triple_count": alignment_core_result.ontology_header_triple_count,
+            "ontology_declaration_triple_count": alignment_core_result.ontology_declaration_triple_count,
+            "import_triple_count": alignment_core_result.import_triple_count,
+            "metadata_annotation_count": alignment_core_result.metadata_annotation_count,
             "total_triple_count": alignment_core_result.total_triple_count,
             "domain_axiom_count": alignment_core_result.domain_axiom_count,
             "range_axiom_count": alignment_core_result.range_axiom_count,
@@ -2907,8 +3078,9 @@ def write_summary_json(
             "stable_ontology_iri": strict_bfo_result.metadata.stable_ontology_iri,
             "governed_axiom_count": strict_bfo_result.governed_axiom_count,
             "logical_triple_count": strict_bfo_result.logical_triple_count,
-            "ontology_header_triple_count": strict_bfo_result.ontology_header_triple_count,
+            "ontology_declaration_triple_count": strict_bfo_result.ontology_declaration_triple_count,
             "import_triple_count": strict_bfo_result.import_triple_count,
+            "metadata_annotation_count": strict_bfo_result.metadata_annotation_count,
             "total_triple_count": strict_bfo_result.total_triple_count,
             "subclass_axiom_count": strict_bfo_result.subclass_axiom_count,
             "equivalent_class_axiom_count": strict_bfo_result.equivalent_class_axiom_count,
@@ -2921,8 +3093,8 @@ def write_summary_json(
             "existential_restriction_count": strict_bfo_result.existential_restriction_count,
             "rdf_list_count": strict_bfo_result.rdf_list_count,
             "project_closure_governed_axiom_count": 48,
-            "project_graph_triple_count": 181,
-            "local_project_graph_triple_count": 180,
+            "project_graph_triple_count": 195,
+            "local_project_graph_triple_count": 194,
             "hermit_return_code": None if strict_bfo_hermit is None else strict_bfo_hermit.return_code,
             "hermit_result": "FAIL" if strict_bfo_hermit is None else "PASS" if strict_bfo_hermit.passed else "FAIL",
             "closure_triple_count": None if strict_bfo_hermit is None else strict_bfo_hermit.closure_triple_count,
@@ -2937,15 +3109,16 @@ def write_summary_json(
             "stable_ontology_iri": bfo_projection_result.metadata.stable_ontology_iri,
             "governed_axiom_count": bfo_projection_result.governed_axiom_count,
             "logical_triple_count": bfo_projection_result.logical_triple_count,
-            "ontology_declaration_triple_count": 1,
+            "ontology_declaration_triple_count": bfo_projection_result.ontology_declaration_triple_count,
             "import_triple_count": bfo_projection_result.import_triple_count,
+            "metadata_annotation_count": bfo_projection_result.metadata_annotation_count,
             "total_triple_count": bfo_projection_result.total_triple_count,
             "provided_transitively_count": 29,
             "provided_through_import_count": 19,
             "deferred_no_transformation_rule_count": 57,
             "project_closure_governed_axiom_count": 48,
-            "project_graph_triple_count": 183,
-            "local_project_graph_triple_count": 181,
+            "project_graph_triple_count": 204,
+            "local_project_graph_triple_count": 202,
             "reasoning_reused_from": None
             if bfo_projection_reasoning is None
             else bfo_projection_reasoning.source_product_key,
@@ -2985,8 +3158,9 @@ def write_summary_json(
                 for axiom in row.axioms
             ),
             "logical_triple_count": cco_extension_result.logical_triple_count,
-            "ontology_header_triple_count": cco_extension_result.ontology_header_triple_count,
+            "ontology_declaration_triple_count": cco_extension_result.ontology_declaration_triple_count,
             "import_triple_count": cco_extension_result.import_triple_count,
+            "metadata_annotation_count": cco_extension_result.metadata_annotation_count,
             "total_triple_count": cco_extension_result.total_triple_count,
             "subclass_axiom_count": cco_extension_result.subclass_axiom_count,
             "equivalent_class_axiom_count": cco_extension_result.equivalent_class_axiom_count,
@@ -2997,8 +3171,8 @@ def write_summary_json(
             "existential_restriction_count": cco_extension_result.existential_restriction_count,
             "rdf_list_count": cco_extension_result.rdf_list_count,
             "project_closure_governed_axiom_count": 105,
-            "project_graph_triple_count": 1117,
-            "local_project_graph_triple_count": 1115,
+            "project_graph_triple_count": 1138,
+            "local_project_graph_triple_count": 1136,
             "hermit_return_code": None if cco_extension_hermit is None else cco_extension_hermit.return_code,
             "hermit_result": "FAIL" if cco_extension_hermit is None else "PASS" if cco_extension_hermit.passed else "FAIL",
             "closure_triple_count": None if cco_extension_hermit is None else cco_extension_hermit.closure_triple_count,
@@ -3221,6 +3395,7 @@ def main(argv: list[str] | None = None) -> int:
     cco_extension_hermit: HermitResult | None = None
 
     try:
+        publication_metadata = load_metadata(PUBLICATION_METADATA)
         rows, stats = read_workbook(input_path)
         processed = validate_and_process_rows(rows, resolver, stats)
         identity_audits = [
@@ -3238,13 +3413,20 @@ def main(argv: list[str] | None = None) -> int:
                 disposition_module_sha256=disposition_module_sha256,
                 publication_metadata_sha256=publication_metadata_sha256,
             ),
+            publication_metadata,
         )
         disposition_sha256 = sha256_file(disposition_report_path)
-        graph = generate_ontology(processed, output_path)
+        graph = generate_ontology(
+            processed,
+            output_path,
+            publication_metadata,
+            require_current_counts=True,
+        )
         alignment_core_result, alignment_core_hermit = build_and_write_alignment_core(
             processed,
             identity_audits,
             disposition_document,
+            publication_metadata,
             graph,
             alignment_core_output_path,
             Path(args.tmp_dir) / "alignment-core",
@@ -3254,6 +3436,7 @@ def main(argv: list[str] | None = None) -> int:
             processed,
             identity_audits,
             disposition_document,
+            publication_metadata,
             graph,
             alignment_core_result,
             alignment_core_output_path,
@@ -3269,6 +3452,7 @@ def main(argv: list[str] | None = None) -> int:
             processed,
             identity_audits,
             disposition_document,
+            publication_metadata,
             graph,
             alignment_core_result,
             strict_bfo_result,
@@ -3280,6 +3464,7 @@ def main(argv: list[str] | None = None) -> int:
             processed,
             identity_audits,
             disposition_document,
+            publication_metadata,
             graph,
             alignment_core_result,
             alignment_core_output_path,

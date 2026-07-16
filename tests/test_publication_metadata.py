@@ -10,13 +10,19 @@ import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr
+from dataclasses import FrozenInstanceError
 from pathlib import Path
+
+from rdflib import Graph, Literal, RDF, RDFS, OWL, URIRef
+from rdflib.compare import isomorphic
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import check_publication_metadata as checker  # noqa: E402
+import generate_mapping_from_coms as coms  # noqa: E402
+import modular_products as modular  # noqa: E402
 import publication_metadata as metadata  # noqa: E402
 
 
@@ -318,6 +324,446 @@ class ConfigurationTests(MetadataTestCase):
         second = metadata.load_metadata(self.write(render_toml(), "second.toml"))
         self.assertEqual(first, second)
         self.assertEqual(tuple(product.key for product in first.products), metadata.PRODUCT_ORDER)
+
+
+class OntologyMetadataEmissionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.loaded = metadata.load_metadata(ACTUAL_CONFIG)
+
+    def graph_for(self, product_key: str, imports: tuple[str, ...] = ()) -> Graph:
+        product = next(value for value in self.loaded.products if value.key == product_key)
+        ontology = URIRef(product.stable_ontology_iri)
+        graph = Graph()
+        graph.add((ontology, RDF.type, OWL.Ontology))
+        for imported in imports:
+            graph.add((ontology, OWL.imports, URIRef(imported)))
+        for triple in metadata.ontology_metadata_rdf_triples(self.loaded, product_key):
+            graph.add(triple)
+        return graph
+
+    @staticmethod
+    def serialization_parameters(product_key: str):
+        if product_key == "integrated":
+            return (
+                coms.ROOT_ORDERED_IMPORTS,
+                coms.GENERATED_NOTICE,
+                coms.ROOT_PREFIXES,
+                coms.ROOT_IMPORT_TURTLE_TERMS,
+            )
+        imports = {
+            "alignment_core": (),
+            "strict_bfo_mapping": (modular.ALIGNMENT_CORE_IMPORT_IRI,),
+            "bfo_projection": (modular.STRICT_BFO_IMPORT_IRI,),
+            "cco_extension": (modular.STRICT_BFO_IMPORT_IRI,),
+        }[product_key]
+        prefixes = {
+            "alignment_core": modular.PREFIXES,
+            "strict_bfo_mapping": modular.STRICT_BFO_PREFIXES,
+            "bfo_projection": modular.BFO_PROJECTION_PREFIXES,
+            "cco_extension": modular.CCO_EXTENSION_PREFIXES,
+        }[product_key]
+        return imports, modular.GENERATED_NOTICE, prefixes, None
+
+    def serialized_issues(self, value: bytes, product_key: str):
+        imports, notice, prefixes, import_terms = self.serialization_parameters(product_key)
+        return metadata.validate_serialized_ontology_header(
+            value,
+            self.loaded,
+            product_key,
+            imports,
+            generated_notice=notice,
+            prefixes=prefixes,
+            import_turtle_terms=import_terms,
+        )
+
+    def test_exact_ordered_seven_metadata_triples_for_every_product(self) -> None:
+        expected_predicates = (
+            str(RDFS.label),
+            metadata.DCTERMS_NAMESPACE + "description",
+            metadata.DCTERMS_NAMESPACE + "type",
+            PUBLICATION_VALUES["development_status_property_iri"],
+            metadata.DCTERMS_NAMESPACE + "license",
+            str(RDFS.seeAlso),
+            str(RDFS.comment),
+        )
+        expected_kinds = (
+            metadata.LANGUAGE_LITERAL,
+            metadata.LANGUAGE_LITERAL,
+            metadata.IRI_OBJECT,
+            metadata.IRI_OBJECT,
+            metadata.IRI_OBJECT,
+            metadata.IRI_OBJECT,
+            metadata.LANGUAGE_LITERAL,
+        )
+        for product in self.loaded.products:
+            with self.subTest(product=product.key):
+                values = metadata.ontology_metadata_triples(self.loaded, product.key)
+                self.assertIsInstance(values, tuple)
+                self.assertEqual(len(values), 7)
+                self.assertEqual(tuple(value.predicate_iri for value in values), expected_predicates)
+                self.assertEqual(tuple(value.object_kind for value in values), expected_kinds)
+                self.assertEqual({value.product_key for value in values}, {product.key})
+                self.assertEqual({value.ontology_iri for value in values}, {product.stable_ontology_iri})
+                self.assertEqual(values[0].value, product.label)
+                self.assertEqual(values[1].value, product.description)
+                self.assertEqual(values[2].value, product.product_type_iri)
+                self.assertEqual(values[3].value, PUBLICATION_VALUES["development_status_iri"])
+                self.assertEqual(values[4].value, PUBLICATION_VALUES["license_iri"])
+                self.assertEqual(values[5].value, PUBLICATION_VALUES["repository_iri"])
+                self.assertEqual(values[6].value, PUBLICATION_VALUES["generated_warning"])
+                self.assertEqual(
+                    tuple(value.language for value in values),
+                    ("en", "en", None, None, None, None, "en"),
+                )
+
+    def test_metadata_rendering_is_deterministic_and_immutable(self) -> None:
+        first = metadata.ontology_metadata_triples(self.loaded, "integrated")
+        second = metadata.ontology_metadata_triples(self.loaded, "integrated")
+        self.assertEqual(first, second)
+        self.assertEqual(
+            tuple(value.object_turtle for value in first),
+            tuple(value.object_turtle for value in second),
+        )
+        with self.assertRaises(FrozenInstanceError):
+            first[0].value = "changed"  # type: ignore[misc]
+
+    def test_rdf_terms_preserve_exact_iri_and_language_kinds(self) -> None:
+        triples = metadata.ontology_metadata_rdf_triples(self.loaded, "integrated")
+        objects = tuple(value[2] for value in triples)
+        for index in (0, 1, 6):
+            self.assertIsInstance(objects[index], Literal)
+            self.assertEqual(objects[index].language, "en")
+            self.assertIsNone(objects[index].datatype)
+        for index in (2, 3, 4, 5):
+            self.assertIsInstance(objects[index], URIRef)
+
+    def test_exact_metadata_validation_accepts_each_product(self) -> None:
+        imports = {
+            "integrated": (
+                "http://www.w3.org/ns/ssn/",
+                "http://www.w3.org/ns/sosa/sampling/",
+                "http://www.w3.org/ns/ssn/systems/",
+                "https://www.commoncoreontologies.org/2024-11-06/CommonCoreOntologiesMerged",
+            ),
+            "alignment_core": (),
+            "strict_bfo_mapping": (
+                POLICY_PRODUCTS["alignment_core"]["stable_ontology_iri"],
+            ),
+            "bfo_projection": (
+                POLICY_PRODUCTS["strict_bfo_mapping"]["stable_ontology_iri"],
+            ),
+            "cco_extension": (
+                POLICY_PRODUCTS["strict_bfo_mapping"]["stable_ontology_iri"],
+            ),
+        }
+        for product_key, expected_imports in imports.items():
+            with self.subTest(product=product_key):
+                graph = self.graph_for(product_key, expected_imports)
+                self.assertEqual(
+                    metadata.validate_emitted_ontology_metadata(
+                        graph, self.loaded, product_key, expected_imports
+                    ),
+                    (),
+                )
+                self.assertEqual(
+                    len(
+                        metadata.strip_emitted_ontology_header(
+                            graph, self.loaded, product_key, expected_imports
+                        )
+                    ),
+                    0,
+                )
+
+    def test_validation_rejects_missing_extra_wrong_duplicate_and_misplaced_metadata(self) -> None:
+        product_key = "alignment_core"
+        product = next(value for value in self.loaded.products if value.key == product_key)
+        ontology = URIRef(product.stable_ontology_iri)
+        expected = metadata.ontology_metadata_rdf_triples(self.loaded, product_key)
+        mutations: dict[str, tuple[Graph, str]] = {}
+
+        missing = self.graph_for(product_key)
+        missing.remove(expected[0])
+        mutations["missing"] = (missing, "ONTOLOGY_METADATA_MISMATCH")
+
+        extra = self.graph_for(product_key)
+        extra.add((ontology, URIRef("https://example.org/unapproved"), Literal("extra")))
+        mutations["extra"] = (extra, "UNAPPROVED_ONTOLOGY_METADATA")
+
+        wrong = self.graph_for(product_key)
+        wrong.remove(expected[0])
+        wrong.add((ontology, RDFS.label, Literal("Wrong", lang="en")))
+        mutations["wrong"] = (wrong, "ONTOLOGY_METADATA_MISMATCH")
+
+        duplicate = self.graph_for(product_key)
+        duplicate.add((ontology, RDFS.label, Literal(product.label, lang="fr")))
+        mutations["duplicate"] = (duplicate, "ONTOLOGY_METADATA_MISMATCH")
+
+        misplaced = self.graph_for(product_key)
+        misplaced.add((URIRef("https://example.org/other"), RDFS.label, Literal("Other", lang="en")))
+        mutations["misplaced"] = (misplaced, "MISPLACED_ONTOLOGY_METADATA")
+
+        for name, (graph, expected_code) in mutations.items():
+            with self.subTest(case=name):
+                issues = metadata.validate_emitted_ontology_metadata(
+                    graph, self.loaded, product_key, ()
+                )
+                self.assertIn(expected_code, {issue.code for issue in issues})
+
+    def test_validation_rejects_malformed_term_kinds_languages_and_release_fields(self) -> None:
+        product_key = "alignment_core"
+        product = next(value for value in self.loaded.products if value.key == product_key)
+        ontology = URIRef(product.stable_ontology_iri)
+        expected = metadata.ontology_metadata_rdf_triples(self.loaded, product_key)
+        mutations: dict[str, tuple[Graph, str]] = {}
+
+        literal_for_iri = self.graph_for(product_key)
+        literal_for_iri.remove(expected[2])
+        literal_for_iri.add((ontology, expected[2][1], Literal(product.product_type_iri)))
+        mutations["literal_for_iri"] = (literal_for_iri, "ONTOLOGY_METADATA_MISMATCH")
+
+        iri_for_literal = self.graph_for(product_key)
+        iri_for_literal.remove(expected[0])
+        iri_for_literal.add((ontology, RDFS.label, URIRef("https://example.org/label")))
+        mutations["iri_for_literal"] = (iri_for_literal, "ONTOLOGY_METADATA_MISMATCH")
+
+        missing_language = self.graph_for(product_key)
+        missing_language.remove(expected[1])
+        missing_language.add((ontology, expected[1][1], Literal(product.description)))
+        mutations["missing_language"] = (missing_language, "ONTOLOGY_METADATA_MISMATCH")
+
+        release_only = self.graph_for(product_key)
+        release_only.add((ontology, OWL.versionIRI, URIRef("https://example.org/release")))
+        mutations["release_only"] = (release_only, "RELEASE_METADATA_IN_DEVELOPMENT")
+
+        controlled_declaration = self.graph_for(product_key)
+        controlled_declaration.add((URIRef(product.product_type_iri), RDF.type, OWL.Class))
+        mutations["controlled_declaration"] = (
+            controlled_declaration,
+            "CONTROLLED_IRI_DECLARATION",
+        )
+
+        for name, (graph, expected_code) in mutations.items():
+            with self.subTest(case=name):
+                issues = metadata.validate_emitted_ontology_metadata(
+                    graph, self.loaded, product_key, ()
+                )
+                self.assertIn(expected_code, {issue.code for issue in issues})
+
+    def test_graph_validator_rejects_complete_governed_negative_matrix(self) -> None:
+        product_key = "alignment_core"
+        product = next(value for value in self.loaded.products if value.key == product_key)
+        ontology = URIRef(product.stable_ontology_iri)
+        expected = metadata.ontology_metadata_rdf_triples(self.loaded, product_key)
+        cases: dict[str, tuple[Graph, str]] = {}
+
+        wrong_subject = self.graph_for(product_key)
+        wrong_subject.remove((ontology, RDF.type, OWL.Ontology))
+        wrong_subject.add((URIRef("https://example.org/wrong"), RDF.type, OWL.Ontology))
+        cases["wrong ontology subject"] = (wrong_subject, "ONTOLOGY_DECLARATION_MISMATCH")
+
+        missing_declaration = self.graph_for(product_key)
+        missing_declaration.remove((ontology, RDF.type, OWL.Ontology))
+        cases["missing ontology declaration"] = (
+            missing_declaration,
+            "ONTOLOGY_DECLARATION_MISMATCH",
+        )
+
+        wrong_values = (
+            ("status", 3, URIRef("https://example.org/status")),
+            ("license", 4, URIRef("https://example.org/license")),
+            ("repository", 5, URIRef("https://example.org/repository")),
+            ("warning", 6, Literal("Wrong generated warning", lang="en")),
+        )
+        for name, index, replacement in wrong_values:
+            graph = self.graph_for(product_key)
+            graph.remove(expected[index])
+            graph.add((ontology, expected[index][1], replacement))
+            cases[f"wrong {name} value"] = (graph, "ONTOLOGY_METADATA_MISMATCH")
+
+        for name, controlled_iri in (
+            ("authority status declaration", self.loaded.publication.development_status_iri),
+            ("product type declaration", product.product_type_iri),
+        ):
+            graph = self.graph_for(product_key)
+            graph.add((URIRef(controlled_iri), RDF.type, OWL.NamedIndividual))
+            cases[name] = (graph, "CONTROLLED_IRI_DECLARATION")
+
+        unapproved_values = (
+            ("local filesystem path", "sourcePath", "/tmp/generated.ttl"),
+            ("dependency path", "dependencyPath", "imports/cco.ttl"),
+            ("hash", "sha256", "0" * 64),
+            ("Git tag", "gitTag", "v2026-07-16"),
+            ("commit", "commit", "deadbeef"),
+            ("date", "date", "2026-07-16"),
+        )
+        for name, local_name, value in unapproved_values:
+            graph = self.graph_for(product_key)
+            graph.add((ontology, URIRef(f"https://example.org/{local_name}"), Literal(value)))
+            cases[name] = (graph, "UNAPPROVED_ONTOLOGY_METADATA")
+
+        release_values = (
+            ("dcterms issued", URIRef(metadata.DCTERMS_NAMESPACE + "issued"), Literal("2026-07-16")),
+            ("version IRI", OWL.versionIRI, URIRef("https://example.org/release")),
+            ("version info", OWL.versionInfo, Literal("v2026-07-16")),
+        )
+        for name, predicate, value in release_values:
+            graph = self.graph_for(product_key)
+            graph.add((ontology, predicate, value))
+            cases[name] = (graph, "RELEASE_METADATA_IN_DEVELOPMENT")
+
+        for name, (graph, expected_code) in cases.items():
+            with self.subTest(case=name):
+                issues = metadata.validate_emitted_ontology_metadata(
+                    graph, self.loaded, product_key, ()
+                )
+                self.assertIn(expected_code, {issue.code for issue in issues})
+
+    def test_canonical_serialized_header_is_shared_by_all_five_products(self) -> None:
+        for product in self.loaded.products:
+            with self.subTest(product=product.key):
+                imports, notice, prefixes, import_terms = self.serialization_parameters(product.key)
+                artifact = (REPO_ROOT / product.path).read_bytes()
+                expected = metadata.render_ontology_header_bytes(
+                    self.loaded,
+                    product.key,
+                    imports,
+                    generated_notice=notice,
+                    prefixes=prefixes,
+                    import_turtle_terms=import_terms,
+                )
+                self.assertTrue(artifact.startswith(expected))
+                self.assertEqual(self.serialized_issues(artifact, product.key), ())
+
+    def test_missing_final_newline_is_noncanonical_but_parseable(self) -> None:
+        artifact = (REPO_ROOT / "SSN2BFO.ttl").read_bytes()
+        self.assertTrue(artifact.endswith(b"\n"))
+        candidate = artifact[:-1]
+        self.assertTrue(
+            isomorphic(
+                Graph().parse(data=artifact.decode(), format="turtle"),
+                Graph().parse(data=candidate.decode(), format="turtle"),
+            )
+        )
+        self.assertIn(
+            "NONCANONICAL_ONTOLOGY_HEADER",
+            {issue.code for issue in self.serialized_issues(candidate, "integrated")},
+        )
+
+    def test_extra_header_logical_boundary_newline_is_noncanonical_but_parseable(self) -> None:
+        product_key = "integrated"
+        artifact = (REPO_ROOT / "SSN2BFO.ttl").read_bytes()
+        imports, notice, prefixes, import_terms = self.serialization_parameters(product_key)
+        header = metadata.render_ontology_header_bytes(
+            self.loaded,
+            product_key,
+            imports,
+            generated_notice=notice,
+            prefixes=prefixes,
+            import_turtle_terms=import_terms,
+        )
+        canonical_boundary = header + b"\n"
+        self.assertTrue(artifact.startswith(canonical_boundary))
+        candidate = header + b"\n\n" + artifact[len(canonical_boundary) :]
+        self.assertTrue(
+            isomorphic(
+                Graph().parse(data=artifact.decode(), format="turtle"),
+                Graph().parse(data=candidate.decode(), format="turtle"),
+            )
+        )
+        self.assertIn(
+            "NONCANONICAL_ONTOLOGY_HEADER",
+            {issue.code for issue in self.serialized_issues(candidate, product_key)},
+        )
+
+    def test_semantically_equivalent_reordered_headers_are_noncanonical(self) -> None:
+        for product in self.loaded.products:
+            with self.subTest(product=product.key):
+                artifact = (REPO_ROOT / product.path).read_bytes()
+                lines = artifact.splitlines()
+                label_index = next(
+                    index for index, line in enumerate(lines) if line.startswith(b"    rdfs:label ")
+                )
+                description_index = next(
+                    index
+                    for index, line in enumerate(lines)
+                    if line.startswith(b"    dcterms:description ")
+                )
+                lines[label_index], lines[description_index] = (
+                    lines[description_index],
+                    lines[label_index],
+                )
+                reordered = b"\n".join(lines) + b"\n"
+                self.assertTrue(
+                    isomorphic(
+                        Graph().parse(data=artifact.decode(), format="turtle"),
+                        Graph().parse(data=reordered.decode(), format="turtle"),
+                    )
+                )
+                self.assertIn(
+                    "NONCANONICAL_ONTOLOGY_HEADER",
+                    {issue.code for issue in self.serialized_issues(reordered, product.key)},
+                )
+
+    def test_other_header_order_import_prefix_and_literal_variants_are_rejected(self) -> None:
+        root = (REPO_ROOT / "SSN2BFO.ttl").read_bytes()
+        header_lines = (
+            b"    dcterms:description ",
+            b"    dcterms:type ",
+            b"    adms:status ",
+            b"    dcterms:license ",
+            b"    rdfs:seeAlso ",
+            b"    rdfs:comment ",
+        )
+        for prefix in header_lines:
+            with self.subTest(reordered_predicate=prefix.decode().strip()):
+                lines = root.splitlines()
+                index = next(i for i, line in enumerate(lines) if line.startswith(prefix))
+                lines[index - 1], lines[index] = lines[index], lines[index - 1]
+                candidate = b"\n".join(lines) + b"\n"
+                self.assertIn(
+                    "NONCANONICAL_ONTOLOGY_HEADER",
+                    {issue.code for issue in self.serialized_issues(candidate, "integrated")},
+                )
+
+        reordered_imports = root.replace(b"        ssn:,\n        ssn-system:,", b"        ssn-system:,\n        ssn:,")
+        self.assertIn(
+            "NONCANONICAL_ONTOLOGY_HEADER",
+            {issue.code for issue in self.serialized_issues(reordered_imports, "integrated")},
+        )
+
+        projection = (REPO_ROOT / POLICY_PRODUCTS["bfo_projection"]["path"]).read_bytes()
+        missing_prefix = projection.replace(
+            b"@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n",
+            b"",
+            1,
+        )
+        noncanonical_language = projection.replace(b'"@en', b'"@EN', 1)
+        label_line = next(
+            line for line in projection.splitlines() if line.startswith(b"    rdfs:label ")
+        )
+        literal_value = label_line.split(b"rdfs:label ", 1)[1].removesuffix(b" ;")
+        noncanonical_literal = projection.replace(
+            literal_value,
+            b'"""' + literal_value[1:-4] + b'"""@en',
+            1,
+        )
+        for name, candidate in (
+            ("missing canonical prefix", missing_prefix),
+            ("noncanonical language tag", noncanonical_language),
+            ("noncanonical literal", noncanonical_literal),
+        ):
+            with self.subTest(case=name):
+                self.assertIn(
+                    "NONCANONICAL_ONTOLOGY_HEADER",
+                    {issue.code for issue in self.serialized_issues(candidate, "bfo_projection")},
+                )
+
+        malformed = projection.replace(label_line, b'    rdfs:label "unterminated@en ;', 1)
+        self.assertIn(
+            "TURTLE_PARSE",
+            {issue.code for issue in self.serialized_issues(malformed, "bfo_projection")},
+        )
 
 
 class IdentitySafetyTests(MetadataTestCase):

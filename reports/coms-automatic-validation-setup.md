@@ -51,7 +51,9 @@ make coms-status
 
 Development validation checks the governed license, repository, generated warning, `adms:status` predicate, and maintained-authoritative-development status without claiming a formal release identity. The existing release identifier and version-IRI helpers remain separately testable, but formal release metadata is not stored in the maintained development TOML.
 
-The COMS freshness transaction hashes the metadata source, so a metadata edit makes generated evidence stale until the normal transaction succeeds. Schema-2 values are validated governance only in this change: ontology RDF metadata emission remains deferred to the next implementation PR, and all maintained TTL bytes must remain unchanged.
+The COMS freshness transaction hashes the metadata source, so a metadata edit makes all generated evidence stale until the normal transaction succeeds. The transaction loads schema-2 metadata once and deterministically emits the same ordered seven-predicate development metadata model in the integrated root and all four modules: `rdfs:label`, `dcterms:description`, `dcterms:type`, `adms:status`, `dcterms:license`, `rdfs:seeAlso`, and `rdfs:comment`. Exact RDF term kinds, `@en` tags, ontology subjects, imports, and the absence of release-only fields are validated before publication.
+
+Direct triple partitions are checked independently: integrated `1 + 4 + 7 + 1112 = 1124`, alignment core `1 + 0 + 7 + 53 = 61`, strict BFO `1 + 1 + 7 + 125 = 134`, import-only BFO projection `1 + 1 + 7 + 0 = 9`, and CCO extension `1 + 1 + 7 + 934 = 943`, where the terms are ontology declaration, imports, metadata annotations, and governed/structural logical triples. Metadata-adjusted closure counts are 1,212 for alignment core, 14,986 for strict BFO, 204/202 for the projection project graph, 1,138/1,136 for the CCO project graph, 15,928 for the CCO fixed closure, and 15,912 for the integrated fixed closure.
 
 ## Mapping And Property-Typing Rows
 
@@ -77,16 +79,16 @@ Each complete check:
 3. Runs the existing generator against temporary outputs.
 4. Uses the generator's established validation for allowed predicates, source and target resolution, class/property compatibility, exact label-to-IRI resolution, Manchester expressions, domain/range property typing, property chains, duplicates, contradictions, and explicit blank mappings.
 5. Runs the maintained SPARQL source inventory and unmapped-term coverage queries.
-6. Parses the temporary generated candidate.
+6. Parses the temporary generated candidate and validates its exact seven development annotations separately from its 1 declaration, 4 imports, and 1,112 logical triples.
 7. Builds the full local candidate closure from CCO, SOSA, SOSA Sampling, SSN, SSN Systems, and the generated candidate.
 8. Applies the established import and SOSA functional/inverse-functional cleanup.
 9. Runs HermiT and requires zero `owl:Nothing` and zero unexpected named unsatisfiable classes.
 10. Requires all generated reports and validates hash-based source metadata.
 11. Derives and reconciles all per-product row and canonical-axiom dispositions, including target-vocabulary categories and canonical JSON serialization.
-12. Generates and validates the import-free 29-axiom SSN/SOSA alignment core, including root reconciliation and a fixed local source-ontology HermiT closure.
-13. Generates and validates the 19-axiom strict BFO mapping, its sole alignment-core import, the 48-axiom project-module closure, and the explicit network-free pinned merged CCO/BFO HermiT closure.
-14. Generates and validates the 57-axiom CCO extension, its sole strict-BFO import, the complete 105-axiom project-module closure, and the explicit network-free pinned merged CCO/BFO HermiT closure.
-15. Reconciles all 105 BFO-projection dispositions, generates the intentional zero-direct-axiom import-only module, validates its 48-axiom strict/core project closure, and reuses the same-transaction strict-BFO reasoning result after exact closure-equivalence validation.
+12. Generates and validates the import-free 29-axiom SSN/SOSA alignment core, its exact seven annotations, root reconciliation, and a 1,212-triple fixed local source-ontology HermiT closure.
+13. Generates and validates the 19-axiom strict BFO mapping, its exact seven annotations, sole alignment-core import, 48-axiom project-module closure, and 14,986-triple network-free pinned merged CCO/BFO HermiT closure.
+14. Generates and validates the 57-axiom CCO extension, its exact seven annotations, sole strict-BFO import, complete 105-axiom project-module closure, and 15,928-triple network-free pinned merged CCO/BFO HermiT closure.
+15. Reconciles all 105 BFO-projection dispositions, generates the intentional zero-direct-axiom import-only module with exactly seven annotations, validates its 48-axiom strict/core project closure, and reuses the same-transaction strict-BFO reasoning result after exact closure-equivalence validation.
 16. Runs `git diff --check`.
 
 The generated validation report records the workbook SHA-256, generator-file SHA-256, UTC generation timestamp, maintained ontology path, and generated ontology SHA-256. Freshness never relies on timestamps alone.

@@ -21,7 +21,12 @@ import generate_mapping_from_coms as coms  # noqa: E402
 import modular_products as modular  # noqa: E402
 from coms_row_identity import RowLocation  # noqa: E402
 from product_dispositions import ProductDisposition, load_disposition_document  # noqa: E402
-from publication_metadata import load_metadata  # noqa: E402
+from publication_metadata import (  # noqa: E402
+    load_metadata,
+    ontology_metadata_rdf_triples,
+    strip_emitted_ontology_header,
+    validate_emitted_ontology_metadata,
+)
 
 
 EXPECTED_INVENTORY = tuple(
@@ -321,7 +326,38 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertEqual(set(graph.subjects(RDF.type, OWL.Ontology)), {ontology})
         self.assertEqual(set(graph.triples((None, OWL.imports, None))), {(ontology, OWL.imports, strict)})
         self.assertEqual(self.cco_result.logical_triple_count, 934)
-        self.assertEqual(len(graph), 936)
+        self.assertEqual(self.cco_result.ontology_declaration_triple_count, 1)
+        self.assertEqual(self.cco_result.import_triple_count, 1)
+        self.assertEqual(self.cco_result.metadata_annotation_count, 7)
+        self.assertEqual(len(graph), 943)
+        self.assertEqual(
+            set(ontology_metadata_rdf_triples(self.metadata, "cco_extension")),
+            set(graph.triples((ontology, None, None)))
+            - {
+                (ontology, RDF.type, OWL.Ontology),
+                (ontology, OWL.imports, strict),
+            },
+        )
+        self.assertEqual(
+            validate_emitted_ontology_metadata(
+                graph,
+                self.metadata,
+                "cco_extension",
+                (str(strict),),
+            ),
+            (),
+        )
+        self.assertEqual(
+            len(
+                strip_emitted_ontology_header(
+                    graph,
+                    self.metadata,
+                    "cco_extension",
+                    (str(strict),),
+                )
+            ),
+            934,
+        )
         self.assertEqual(len(set(graph.subjects(OWL.unionOf, None))), 7)
         self.assertEqual(len(set(graph.subjects(OWL.intersectionOf, None))), 86)
         self.assertEqual(len(set(graph.subjects(OWL.someValuesFrom, None))), 95)
@@ -370,12 +406,28 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertTrue(self.cco_result.serialized_bytes.endswith(b"\n"))
         self.assertFalse(self.cco_result.serialized_bytes.endswith(b"\n\n"))
         self.assertEqual(
+            self.cco_result.sha256,
+            "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
+        )
+        self.assertEqual(
             hashlib.sha256(self.core_result.serialized_bytes).hexdigest(),
-            "95f71184b90224906b0ba703d0ea60fd2f8b993b3853b803c66b88b91ba0b01c",
+            "17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770",
         )
         self.assertEqual(
             hashlib.sha256(self.strict_result.serialized_bytes).hexdigest(),
-            "15f080145c6803d174a00cf9e13c971925b40485049744dba6e0847093016ea7",
+            "676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af",
+        )
+
+    def test_reordered_canonical_header_is_rejected_by_product_validator(self) -> None:
+        lines = self.cco_result.serialized_bytes.splitlines()
+        label = next(i for i, line in enumerate(lines) if line.startswith(b"    rdfs:label "))
+        description = next(
+            i for i, line in enumerate(lines) if line.startswith(b"    dcterms:description ")
+        )
+        lines[label], lines[description] = lines[description], lines[label]
+        self.assertIn(
+            "NONCANONICAL_ONTOLOGY_HEADER",
+            self.validate_bytes(b"\n".join(lines) + b"\n"),
         )
 
     def test_fresh_process_generation_is_byte_deterministic(self) -> None:
@@ -420,11 +472,11 @@ class CcoExtensionTests(unittest.TestCase):
         graph = Graph().parse(data=self.cco_result.serialized_bytes.decode(), format="turtle")
         graph.parse(data=self.strict_result.serialized_bytes.decode(), format="turtle")
         graph.parse(data=self.core_result.serialized_bytes.decode(), format="turtle")
-        self.assertEqual(len(graph), 1117)
+        self.assertEqual(len(graph), 1138)
         for triple in list(graph.triples((None, OWL.imports, None))):
             graph.remove(triple)
-        self.assertEqual(len(graph), 1115)
-        self.assertEqual(len(self.fixed_closure), 15907)
+        self.assertEqual(len(graph), 1136)
+        self.assertEqual(len(self.fixed_closure), 15928)
         self.assertFalse(any(True for _ in self.fixed_closure.triples((None, OWL.imports, None))))
 
     def test_pinned_closure_hermit_is_clean(self) -> None:
@@ -442,7 +494,7 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertTrue(result.passed, result.robot_output)
         self.assertEqual(result.return_code, 0)
         self.assertTrue(result.reasoned_output_produced)
-        self.assertEqual(result.closure_triple_count, 15907)
+        self.assertEqual(result.closure_triple_count, 15928)
         self.assertEqual(result.unsat_classes, [])
 
 
