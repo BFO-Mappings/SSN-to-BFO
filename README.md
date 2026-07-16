@@ -49,13 +49,19 @@ The development artifact has only its governed stable ontology IRI and ontology 
 
 `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` is the maintained authoritative development artifact for the 19 unchanged BFO-bearing governed COMS axioms. It imports only the alignment core, so the locally resolved project-module closure contains 48 governed axioms: 19 direct strict-BFO axioms plus 29 target-neutral core axioms. The 57 CCO-bearing or mixed mappings remain explicitly deferred because no transformation or weakened projection is approved.
 
-The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. Full publication metadata, formal release identity, the BFO projection, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
+The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. Full publication metadata, formal release identity, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
+
+### BFO projection
+
+`releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` is a maintained authoritative development artifact that imports only the strict BFO mapping. It intentionally asserts zero direct projection axioms because no CCO-to-BFO transformation or weakened-consequence rule is approved. Its locally resolved project-module closure is therefore exactly the 48 governed axioms already provided by strict BFO and the alignment core: 19 through import and 29 transitively.
+
+The direct two-triple graph contains only its ontology declaration and strict-BFO import. It contains no source, BFO, CCO, or RO logical mapping content and is not an incomplete serialization. The generator reconciles all 105 product dispositions, leaving 25 CCO-bearing and 32 mixed axioms explicitly deferred, then reuses the same-transaction strict-BFO pinned merged CCO/BFO reasoning result only after proving exact closure equivalence. Future direct projection axioms require governed transformation rules and proof obligations. Full publication metadata and formal release identity remain deferred. Run `make check-bfo-projection` for the focused tests and shared nonmutating nine-output transaction.
 
 ### CCO extension
 
 `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` is the maintained authoritative development artifact for 57 unchanged governed COMS axioms: 25 CCO-bearing and 32 mixed BFO/CCO axioms. It imports only the strict BFO mapping, whose alignment-core import completes a 105-axiom project-module closure without directly duplicating either imported layer.
 
-The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. Full publication metadata, formal release identity, the BFO projection, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating eight-output transaction.
+The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. Full publication metadata, formal release identity, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
 
 ## Validation environment
 
@@ -142,7 +148,7 @@ make -C src artifacts
 
 `unmapped` is scaffolded but disabled by default. It exits successfully with a message until real source imports and final source namespace configuration are added.
 
-Generated build artifacts are ignored by Git. Release-file BFO projection from CCO mappings is not implemented. Root spreadsheets and the root `imports/` directory remain preserved; `SSN2BFO.ttl` is a maintained generated artifact.
+Generated build artifacts are ignored by Git. The maintained BFO-projection module is import-only; projected or weakened mapping content from CCO mappings is not implemented. Root spreadsheets and the root `imports/` directory remain preserved; `SSN2BFO.ttl` is a maintained generated artifact.
 
 ## Current SSN/SOSA CCO mapping and BFO-only projection
 

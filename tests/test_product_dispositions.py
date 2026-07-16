@@ -672,14 +672,30 @@ class ProductDispositionTests(unittest.TestCase):
                     code,
                 )
 
-    def test_disposition_build_does_not_require_unimplemented_bfo_projection_ttl(self) -> None:
+    def test_disposition_build_does_not_read_modular_ttl_mapping_authorities(self) -> None:
         products = {product.key: product for product in self.metadata.products}
-        self.assertTrue((REPO_ROOT / products["alignment_core"].path).is_file())
-        self.assertTrue((REPO_ROOT / products["strict_bfo_mapping"].path).is_file())
-        self.assertTrue((REPO_ROOT / products["cco_extension"].path).is_file())
-        self.assertFalse((REPO_ROOT / products["bfo_projection"].path).is_file())
+        modular_paths = {
+            (REPO_ROOT / products[key].path).resolve()
+            for key in (
+                "alignment_core",
+                "strict_bfo_mapping",
+                "bfo_projection",
+                "cco_extension",
+            )
+        }
+        original_open = Path.open
 
-        self.assertEqual(self.build(row_input()).summary.governed_row_count, 1)
+        def reject_modular_read(path: Path, *args, **kwargs):
+            if path.resolve() in modular_paths:
+                raise AssertionError(f"disposition construction read modular TTL {path}")
+            return original_open(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "open", new=reject_modular_read):
+            document = self.build(row_input())
+
+        self.assertEqual(document.summary.governed_row_count, 1)
+        self.assertEqual(document.summary.authoritative_axiom_count, 1)
+        self.assertEqual(document.product_order, tuple(products))
 
 
 if __name__ == "__main__":
