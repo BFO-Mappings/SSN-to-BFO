@@ -25,6 +25,7 @@ MAINTAINED_OUTPUTS = (
     REPO_ROOT / "reports/coms-product-dispositions.json",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 )
 POLL_SECONDS = 1.0
 DEBOUNCE_SECONDS = 1.5

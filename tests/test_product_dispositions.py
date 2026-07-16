@@ -672,16 +672,12 @@ class ProductDispositionTests(unittest.TestCase):
                     code,
                 )
 
-    def test_disposition_build_does_not_require_remaining_unimplemented_modular_ttl_files(self) -> None:
+    def test_disposition_build_does_not_require_unimplemented_bfo_projection_ttl(self) -> None:
         products = {product.key: product for product in self.metadata.products}
         self.assertTrue((REPO_ROOT / products["alignment_core"].path).is_file())
         self.assertTrue((REPO_ROOT / products["strict_bfo_mapping"].path).is_file())
-        for product_key in (
-            "bfo_projection",
-            "cco_extension",
-        ):
-            with self.subTest(product_key=product_key):
-                self.assertFalse((REPO_ROOT / products[product_key].path).is_file())
+        self.assertTrue((REPO_ROOT / products["cco_extension"].path).is_file())
+        self.assertFalse((REPO_ROOT / products["bfo_projection"].path).is_file())
 
         self.assertEqual(self.build(row_input()).summary.governed_row_count, 1)
 

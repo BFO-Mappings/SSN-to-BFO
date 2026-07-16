@@ -22,6 +22,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import check_coms_mapping as checker  # noqa: E402
 import coms_row_identity as identity  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
+import modular_products as modular  # noqa: E402
 import product_dispositions as dispositions  # noqa: E402
 from publication_metadata import load_metadata  # noqa: E402
 
@@ -120,6 +121,8 @@ class ComsDomainRangeTests(unittest.TestCase):
                 str(self.root / "alignment-core.ttl"),
                 "--strict-bfo-output",
                 str(self.root / "strict-bfo.ttl"),
+                "--cco-extension-output",
+                str(self.root / "cco-extension.ttl"),
                 "--coverage-report",
                 str(self.root / "coverage.md"),
                 "--diff-report",
@@ -142,6 +145,7 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertFalse(disposition_path.exists())
         self.assertFalse((self.root / "alignment-core.ttl").exists())
         self.assertFalse((self.root / "strict-bfo.ttl").exists())
+        self.assertFalse((self.root / "cco-extension.ttl").exists())
         self.assertTrue(report_path.is_file())
         report = report_path.read_text(encoding="utf-8")
         self.assertIn("| overall status | FAIL |", report)
@@ -711,6 +715,8 @@ class ComsGenerationReportTests(unittest.TestCase):
         alignment_core_hermit: object | None = None,
         strict_bfo_result: object | None = None,
         strict_bfo_hermit: object | None = None,
+        cco_extension_result: object | None = None,
+        cco_extension_hermit: object | None = None,
     ) -> str:
         path = self.root / f"{name}.md"
         coms.write_generation_report(
@@ -749,6 +755,12 @@ class ComsGenerationReportTests(unittest.TestCase):
             ),
             strict_bfo_sha256="strict-bfo-hash",
             strict_bfo_hermit=strict_bfo_hermit,
+            cco_extension_result=cco_extension_result,
+            cco_extension_path=Path(
+                "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl"
+            ),
+            cco_extension_sha256="cco-extension-hash",
+            cco_extension_hermit=cco_extension_hermit,
         )
         return path.read_text(encoding="utf-8")
 
@@ -920,6 +932,48 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Pinned closure triple count: 14972", report)
         self.assertIn("HermiT result: PASS", report)
 
+    def test_generation_report_includes_cco_extension_results(self) -> None:
+        selected = tuple(
+            SimpleNamespace(target_category="cco_bearing") for _ in range(25)
+        ) + tuple(
+            SimpleNamespace(target_category="mixed_bfo_cco") for _ in range(32)
+        )
+        result = SimpleNamespace(
+            metadata=SimpleNamespace(
+                stable_ontology_iri=(
+                    "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension"
+                )
+            ),
+            selected_rows=(SimpleNamespace(axioms=selected),),
+            governed_axiom_count=57,
+            subclass_axiom_count=31,
+            equivalent_class_axiom_count=7,
+            direct_subproperty_axiom_count=16,
+            property_chain_axiom_count=3,
+            logical_triple_count=934,
+            ontology_header_triple_count=2,
+            total_triple_count=936,
+        )
+        hermit = SimpleNamespace(
+            closure_triple_count=15907,
+            return_code=0,
+            reasoned_output_produced=True,
+            unsat_classes=[],
+            passed=True,
+        )
+        report = self.render_report(
+            "cco-extension",
+            "/opt/robot",
+            cco_extension_result=result,
+            cco_extension_hermit=hermit,
+        )
+        self.assertIn("## CCO Extension", report)
+        self.assertIn("Direct governed authoritative axioms: 57", report)
+        self.assertIn("CCO-bearing axioms: 25", report)
+        self.assertIn("Mixed BFO/CCO axioms: 32", report)
+        self.assertIn("Project-module closure governed axioms: 105", report)
+        self.assertIn("Pinned closure triple count: 15907", report)
+
 
 class ComsAuthorityMigrationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -936,12 +990,30 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "disposition_report": self.root / "reports/coms-product-dispositions.json",
             "alignment_core": self.root / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
             "strict_bfo_mapping": self.root / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+            "cco_extension": self.root / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         }
 
     @staticmethod
     def write(path: Path, content: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
+
+    @staticmethod
+    def generated_cco_extension_bytes() -> bytes:
+        rows, stats = coms.read_workbook(REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx")
+        processed = coms.validate_and_process_rows(rows, coms.Resolver(), stats)
+        canonical_rows = tuple(
+            coms.canonical_input_for_processed_row(row) for row in processed
+        )
+        audits = tuple(row.identity_audit for row in processed)
+        disposition = checker.load_disposition_document(
+            REPO_ROOT / "reports/coms-product-dispositions.json"
+        )
+        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
+        selected = modular.select_product_axioms(
+            "cco_extension", canonical_rows, audits, disposition
+        )
+        return modular.build_cco_extension(selected, metadata).serialized_bytes
 
     def test_root_ontology_is_the_maintained_output(self) -> None:
         self.assertEqual(checker.MAINTAINED_OUTPUTS["candidate"], REPO_ROOT / "SSN2BFO.ttl")
@@ -960,6 +1032,10 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(
             checker.MAINTAINED_OUTPUTS["strict_bfo_mapping"],
             REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+        )
+        self.assertEqual(
+            checker.MAINTAINED_OUTPUTS["cco_extension"],
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         )
 
     def test_legacy_ontology_is_the_comparison_baseline(self) -> None:
@@ -994,6 +1070,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
         strict_bfo_hash = checker.sha256_file(outputs["strict_bfo_mapping"])
+        cco_extension_hash = checker.sha256_file(outputs["cco_extension"])
         self.write(
             outputs["generation_report"],
             "\n".join(
@@ -1012,6 +1089,8 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{strict_bfo_hash}` |",
+                    "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
+                    f"| CCO-extension Turtle SHA-256 | `{cco_extension_hash}` |",
                 ]
             ),
         )
@@ -1057,6 +1136,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
         strict_bfo_hash = checker.sha256_file(outputs["strict_bfo_mapping"])
+        cco_extension_hash = checker.sha256_file(outputs["cco_extension"])
         self.write(
             outputs["generation_report"],
             "\n".join(
@@ -1075,6 +1155,8 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{strict_bfo_hash}` |",
+                    "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
+                    f"| CCO-extension Turtle SHA-256 | `{cco_extension_hash}` |",
                 ]
             ),
         )
@@ -1159,6 +1241,8 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{hashes['alignment_core']}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{hashes['strict_bfo_mapping']}` |",
+                    "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
+                    f"| CCO-extension Turtle SHA-256 | `{hashes['cco_extension']}` |",
                 ]
             ),
         )
@@ -1197,6 +1281,79 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         ):
             errors = checker.freshness_errors("workbook-hash", "generator-hash")
             self.assertEqual(errors, ["strict-BFO hash differs from the generated report"])
+            self.assertNotIn("generated candidate hash differs from the generated report", errors)
+            self.assertEqual(checker.main(["--check-only"]), 1)
+        run_generator.assert_not_called()
+        for path, content in expected.items():
+            self.assertEqual(path.read_bytes(), content)
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+
+    def test_stale_cco_extension_hash_fails_check_only_without_rewriting_outputs(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"maintained-{name}\n")
+        hashes = {name: checker.sha256_file(path) for name, path in outputs.items()}
+        disposition_module_hash = checker.sha256_file(checker.DISPOSITION_MODULE)
+        modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
+        publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
+        self.write(
+            outputs["generation_report"],
+            "\n".join(
+                [
+                    "| workbook SHA-256 | `workbook-hash` |",
+                    "| generator SHA-256 | `generator-hash` |",
+                    f"| product-disposition module SHA-256 | `{disposition_module_hash}` |",
+                    f"| modular-products module SHA-256 | `{modular_products_module_hash}` |",
+                    f"| publication metadata SHA-256 | `{publication_metadata_hash}` |",
+                    "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
+                    "| maintained ontology path | `SSN2BFO.ttl` |",
+                    f"| generated ontology SHA-256 | `{hashes['candidate']}` |",
+                    "| maintained product-disposition path | `reports/coms-product-dispositions.json` |",
+                    f"| product-disposition JSON SHA-256 | `{hashes['disposition_report']}` |",
+                    "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
+                    f"| alignment-core Turtle SHA-256 | `{hashes['alignment_core']}` |",
+                    "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
+                    f"| strict-BFO Turtle SHA-256 | `{hashes['strict_bfo_mapping']}` |",
+                    "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
+                    f"| CCO-extension Turtle SHA-256 | `{hashes['cco_extension']}` |",
+                ]
+            ),
+        )
+        fake_disposition = SimpleNamespace(
+            input_hashes=SimpleNamespace(
+                workbook_sha256="workbook-hash",
+                generator_sha256="generator-hash",
+                row_identity_module_sha256=checker.sha256_file(checker.ROW_IDENTITY_MODULE),
+                disposition_module_sha256=disposition_module_hash,
+                publication_metadata_sha256=publication_metadata_hash,
+            ),
+            product_order=tuple(
+                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
+            ),
+        )
+        self.write(outputs["cco_extension"], "modified maintained CCO extension\n")
+        expected = {path: path.read_bytes() for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms"
+        run_generator = mock.Mock()
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "run_generator", run_generator),
+            mock.patch.object(checker, "load_disposition_document", return_value=fake_disposition),
+            mock.patch.object(
+                checker,
+                "serialize_disposition_document",
+                return_value=outputs["disposition_report"].read_bytes(),
+            ),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            errors = checker.freshness_errors("workbook-hash", "generator-hash")
+            self.assertEqual(errors, ["CCO-extension hash differs from the generated report"])
             self.assertNotIn("generated candidate hash differs from the generated report", errors)
             self.assertEqual(checker.main(["--check-only"]), 1)
         run_generator.assert_not_called()
@@ -1394,6 +1551,83 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertFalse(transaction_dirs[0].exists())
         self.assertEqual(list(cache_dir.glob("run-*")), [])
 
+    def test_first_successful_update_creates_initially_absent_cco_extension(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {name: path for name, path in outputs.items() if name != "cco_extension"}
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        self.assertFalse(outputs["cco_extension"].exists())
+        expected_generated = {
+            name: f"new-{name}\n".encode("utf-8") for name in existing
+        }
+        cco_bytes = self.generated_cco_extension_bytes()
+        ontology_iri = URIRef(
+            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension"
+        )
+        strict_iri = URIRef(
+            "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
+        )
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        validation_complete = False
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            self.assertFalse(outputs["cco_extension"].exists())
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name, content in expected_generated.items():
+                paths[name].parent.mkdir(parents=True, exist_ok=True)
+                paths[name].write_bytes(content)
+            paths["cco_extension"].parent.mkdir(parents=True, exist_ok=True)
+            paths["cco_extension"].write_bytes(cco_bytes)
+            self.write(paths["summary"], "{}\n")
+
+        def fake_validate(paths: dict[str, Path], *_args, **_kwargs):
+            nonlocal validation_complete
+            self.assertFalse(outputs["cco_extension"].exists())
+            graph = coms.Graph().parse(paths["cco_extension"], format="turtle")
+            self.assertEqual(set(graph.subjects(RDF.type, OWL.Ontology)), {ontology_iri})
+            self.assertEqual(
+                set(graph.triples((None, OWL.imports, None))),
+                {(ontology_iri, OWL.imports, strict_iri)},
+            )
+            self.assertEqual(len(graph), 936)
+            validation_complete = True
+            return {}
+
+        production_replace = checker.replace_outputs_atomically
+
+        def observe_replace(paths: dict[str, Path], transaction_dir: Path, log: list[str]) -> None:
+            self.assertTrue(validation_complete)
+            self.assertFalse(outputs["cco_extension"].exists())
+            production_replace(paths, transaction_dir, log)
+            self.assertTrue(outputs["cco_extension"].exists())
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["missing CCO extension"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", side_effect=fake_validate),
+            mock.patch.object(checker, "git_diff_check"),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "replace_outputs_atomically", side_effect=observe_replace),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 0)
+        for name, content in expected_generated.items():
+            self.assertEqual(outputs[name].read_bytes(), content)
+        self.assertEqual(outputs["cco_extension"].read_bytes(), cco_bytes)
+        self.assertTrue(all(path.is_file() for path in outputs.values()))
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+        self.assertEqual(list(cache_dir.glob("run-*")), [])
+
     def test_temporary_validation_precedes_atomic_root_replacement(self) -> None:
         outputs = self.maintained_outputs()
         for name, path in outputs.items():
@@ -1429,7 +1663,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
 
         self.assertEqual(outputs["candidate"].read_text(encoding="utf-8"), "new-candidate\n")
 
-    def test_check_only_preserves_all_seven_outputs_and_workbook(self) -> None:
+    def test_check_only_preserves_all_eight_outputs_and_workbook(self) -> None:
         outputs = self.maintained_outputs()
         workbook = self.root / "mappings/SSN2BFO-COMS.xlsx"
         self.write(workbook, "workbook-bytes\n")
@@ -1633,6 +1867,53 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         for path, expected in before.items():
             self.assertEqual(path.read_bytes(), expected)
         self.assertFalse(outputs["strict_bfo_mapping"].exists())
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
+    def test_rollback_removes_new_cco_extension_when_it_was_initially_absent(self) -> None:
+        outputs = self.maintained_outputs()
+        existing = {name: path for name, path in outputs.items() if name != "cco_extension"}
+        for name, path in existing.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in existing.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"new-{name}\n")
+            self.write(paths["summary"], "{}\n")
+
+        diff_checks = 0
+
+        def fail_post_update(_log: list[str], _label: str) -> None:
+            nonlocal diff_checks
+            diff_checks += 1
+            if diff_checks == 2:
+                raise checker.CheckFailure("post-update failure")
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
+            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker, "validate_temporary_outputs", return_value={}),
+            mock.patch.object(checker, "git_diff_check", side_effect=fail_post_update),
+            mock.patch.object(checker, "output_differences", return_value=list(outputs)),
+            mock.patch.object(checker, "record_success"),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+        self.assertEqual(diff_checks, 2)
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertFalse(outputs["cco_extension"].exists())
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
 
@@ -1875,6 +2156,152 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
 
         def observe_parse(graph, source=None, *args, **kwargs):
             if source == checker.transaction_paths(transaction_dirs[0])["strict_bfo_mapping"]:
+                observed_candidates.append(Path(source).read_bytes())
+            return original_parse(graph, source, *args, **kwargs)
+
+        with (
+            mock.patch.object(checker, "REPO_ROOT", self.root),
+            mock.patch.object(checker, "CACHE_DIR", cache_dir),
+            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
+            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
+            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
+            mock.patch.object(checker, "verify_workbook", return_value=workbook_hash),
+            mock.patch.object(checker, "compile_generator", return_value=generator_hash),
+            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
+            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
+            mock.patch.object(checker.Graph, "parse", new=observe_parse),
+            mock.patch.object(checker, "write_failure_log"),
+        ):
+            self.assertEqual(checker.main([]), 1)
+        self.assertEqual(len(observed_candidates), 1)
+        self.assertIn(b"[", observed_candidates[0])
+        for path, expected in before.items():
+            self.assertEqual(path.read_bytes(), expected)
+        self.assertEqual(len(transaction_dirs), 1)
+        self.assertFalse(transaction_dirs[0].exists())
+
+    def test_written_malformed_cco_extension_fails_before_replacement(self) -> None:
+        outputs = self.maintained_outputs()
+        for name, path in outputs.items():
+            self.write(path, f"old-{name}\n")
+        before = {path: path.read_bytes() for path in outputs.values()}
+        cache_dir = self.root / ".cache/coms"
+        transaction_dirs: list[Path] = []
+        observed_candidates: list[bytes] = []
+        disposition_source = REPO_ROOT / "reports/coms-product-dispositions.json"
+        disposition = checker.load_disposition_document(disposition_source)
+        disposition_bytes = disposition_source.read_bytes()
+        alignment_bytes = (
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
+        ).read_bytes()
+        strict_bytes = (
+            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
+        ).read_bytes()
+        workbook_hash = disposition.input_hashes.workbook_sha256
+        generator_hash = disposition.input_hashes.generator_sha256
+
+        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
+            transaction_dirs.append(paths["candidate"].parents[1])
+            for name in outputs:
+                self.write(paths[name], f"temporary-{name}\n")
+            paths["disposition_report"].write_bytes(disposition_bytes)
+            paths["alignment_core"].write_bytes(alignment_bytes)
+            paths["strict_bfo_mapping"].write_bytes(strict_bytes)
+            malformed_cco = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
+            paths["cco_extension"].write_bytes(malformed_cco)
+            summary = {
+                "status": "PASS",
+                "workbook_sha256": workbook_hash,
+                "generator_sha256": generator_hash,
+                "product_disposition_report_sha256": checker.sha256_file(
+                    paths["disposition_report"]
+                ),
+                "product_dispositions": {
+                    field: getattr(disposition.summary, field)
+                    for field in disposition.summary.__dataclass_fields__
+                },
+                "alignment_core_sha256": checker.sha256_file(paths["alignment_core"]),
+                "modular_products_module_sha256": checker.sha256_file(
+                    checker.MODULAR_PRODUCTS_MODULE
+                ),
+                "alignment_core": {
+                    "product_key": "alignment_core",
+                    "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
+                    "governed_axiom_count": 29,
+                    "logical_triple_count": 53,
+                    "ontology_header_triple_count": 1,
+                    "total_triple_count": 54,
+                    "domain_axiom_count": 15,
+                    "range_axiom_count": 14,
+                    "named_target_count": 26,
+                    "union_target_count": 3,
+                    "hermit_return_code": 0,
+                    "hermit_result": "PASS",
+                    "named_unsat_count": 0,
+                },
+                "strict_bfo_mapping_sha256": checker.sha256_file(
+                    paths["strict_bfo_mapping"]
+                ),
+                "strict_bfo_mapping": {
+                    "product_key": "strict_bfo_mapping",
+                    "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
+                    "governed_axiom_count": 19,
+                    "logical_triple_count": 125,
+                    "ontology_header_triple_count": 2,
+                    "import_triple_count": 1,
+                    "total_triple_count": 127,
+                    "subclass_axiom_count": 3,
+                    "equivalent_class_axiom_count": 3,
+                    "direct_subproperty_axiom_count": 9,
+                    "property_chain_axiom_count": 2,
+                    "domain_axiom_count": 1,
+                    "range_axiom_count": 1,
+                    "union_expression_count": 6,
+                    "intersection_expression_count": 6,
+                    "existential_restriction_count": 6,
+                    "rdf_list_count": 14,
+                    "project_closure_governed_axiom_count": 48,
+                    "project_graph_triple_count": 181,
+                    "local_project_graph_triple_count": 180,
+                    "hermit_return_code": 0,
+                    "hermit_result": "PASS",
+                    "closure_triple_count": 14972,
+                    "named_unsat_count": 0,
+                },
+                "cco_extension_sha256": checker.sha256_file(paths["cco_extension"]),
+                "cco_extension": {
+                    "product_key": "cco_extension",
+                    "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension",
+                    "governed_axiom_count": 57,
+                    "cco_bearing_axiom_count": 25,
+                    "mixed_bfo_cco_axiom_count": 32,
+                    "logical_triple_count": 934,
+                    "ontology_header_triple_count": 2,
+                    "import_triple_count": 1,
+                    "total_triple_count": 936,
+                    "subclass_axiom_count": 31,
+                    "equivalent_class_axiom_count": 7,
+                    "direct_subproperty_axiom_count": 16,
+                    "property_chain_axiom_count": 3,
+                    "union_expression_count": 7,
+                    "intersection_expression_count": 86,
+                    "existential_restriction_count": 95,
+                    "rdf_list_count": 96,
+                    "project_closure_governed_axiom_count": 105,
+                    "project_graph_triple_count": 1117,
+                    "local_project_graph_triple_count": 1115,
+                    "hermit_return_code": 0,
+                    "hermit_result": "PASS",
+                    "closure_triple_count": 15907,
+                    "named_unsat_count": 0,
+                },
+            }
+            self.write(paths["summary"], json.dumps(summary) + "\n")
+
+        original_parse = checker.Graph.parse
+
+        def observe_parse(graph, source=None, *args, **kwargs):
+            if source == checker.transaction_paths(transaction_dirs[0])["cco_extension"]:
                 observed_candidates.append(Path(source).read_bytes())
             return original_parse(graph, source, *args, **kwargs)
 

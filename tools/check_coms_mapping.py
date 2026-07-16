@@ -61,6 +61,7 @@ MAINTAINED_OUTPUTS = {
     "disposition_report": REPO_ROOT / "reports/coms-product-dispositions.json",
     "alignment_core": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "strict_bfo_mapping": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+    "cco_extension": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 }
 
 METADATA_LABELS = {
@@ -78,6 +79,8 @@ METADATA_LABELS = {
     "alignment-core Turtle SHA-256": "alignment_core_sha256",
     "maintained strict-BFO path": "strict_bfo_mapping_path",
     "strict-BFO Turtle SHA-256": "strict_bfo_mapping_sha256",
+    "maintained CCO-extension path": "cco_extension_path",
+    "CCO-extension Turtle SHA-256": "cco_extension_sha256",
 }
 
 
@@ -177,6 +180,7 @@ def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
         "disposition_report": transaction_dir / "reports/coms-product-dispositions.json",
         "alignment_core": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         "strict_bfo_mapping": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+        "cco_extension": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         "summary": transaction_dir / "summary.json",
         "hermit": transaction_dir / "hermit",
     }
@@ -199,6 +203,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         str(paths["alignment_core"]),
         "--strict-bfo-output",
         str(paths["strict_bfo_mapping"]),
+        "--cco-extension-output",
+        str(paths["cco_extension"]),
         "--coverage-report",
         str(paths["coverage_report"]),
         "--diff-report",
@@ -215,6 +221,8 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         relative(MAINTAINED_OUTPUTS["alignment_core"]),
         "--report-strict-bfo-path",
         relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
+        "--report-cco-extension-path",
+        relative(MAINTAINED_OUTPUTS["cco_extension"]),
         "--summary-json",
         str(paths["summary"]),
     ]
@@ -414,6 +422,75 @@ def validate_temporary_outputs(
         log,
     )
 
+    cco_path = paths["cco_extension"]
+    cco_hash = sha256_file(cco_path)
+    cco_summary = summary.get("cco_extension")
+    if not isinstance(cco_summary, dict):
+        raise CheckFailure("generator summary is missing CCO-extension results")
+    cco_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "cco_extension"
+    )
+    expected_cco = {
+        "product_key": "cco_extension",
+        "stable_ontology_iri": cco_metadata.stable_ontology_iri,
+        "governed_axiom_count": 57,
+        "cco_bearing_axiom_count": 25,
+        "mixed_bfo_cco_axiom_count": 32,
+        "logical_triple_count": 934,
+        "ontology_header_triple_count": 2,
+        "import_triple_count": 1,
+        "total_triple_count": 936,
+        "subclass_axiom_count": 31,
+        "equivalent_class_axiom_count": 7,
+        "direct_subproperty_axiom_count": 16,
+        "property_chain_axiom_count": 3,
+        "union_expression_count": 7,
+        "intersection_expression_count": 86,
+        "existential_restriction_count": 95,
+        "rdf_list_count": 96,
+        "project_closure_governed_axiom_count": 105,
+        "project_graph_triple_count": 1117,
+        "local_project_graph_triple_count": 1115,
+        "hermit_return_code": 0,
+        "hermit_result": "PASS",
+        "closure_triple_count": 15907,
+        "named_unsat_count": 0,
+    }
+    for field, expected in expected_cco.items():
+        if cco_summary.get(field) != expected:
+            raise CheckFailure(
+                f"CCO-extension summary mismatch for {field}: "
+                f"expected {expected!r}, got {cco_summary.get(field)!r}"
+            )
+    if summary.get("cco_extension_sha256") != cco_hash:
+        raise CheckFailure("CCO-extension hash does not match generator summary")
+    cco_graph = Graph()
+    try:
+        cco_graph.parse(cco_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"CCO-extension parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    cco_ontology_iri = URIRef(cco_metadata.stable_ontology_iri)
+    if set(cco_graph.subjects(RDF.type, OWL.Ontology)) != {cco_ontology_iri}:
+        raise CheckFailure("CCO extension has an incorrect ontology declaration")
+    expected_cco_import = URIRef(strict_metadata.stable_ontology_iri)
+    if set(cco_graph.triples((None, OWL.imports, None))) != {
+        (cco_ontology_iri, OWL.imports, expected_cco_import)
+    }:
+        raise CheckFailure("CCO extension must import only the strict BFO mapping")
+    if len(cco_graph) != 936:
+        raise CheckFailure(
+            f"CCO-extension parsed triple count is {len(cco_graph)}, expected 936"
+        )
+    emit(
+        "CCO extension: PASS "
+        "(57 direct governed axioms; 934 logical triples; 936 total triples)",
+        log,
+    )
+
     emit("[5/11] Confirming maintained SPARQL source-term coverage checks ran", log)
     coverage = summary.get("source_term_coverage")
     if not isinstance(coverage, dict):
@@ -478,6 +555,8 @@ def validate_temporary_outputs(
         "alignment_core_sha256": alignment_hash,
         "strict_bfo_mapping_path": relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
         "strict_bfo_mapping_sha256": strict_hash,
+        "cco_extension_path": relative(MAINTAINED_OUTPUTS["cco_extension"]),
+        "cco_extension_sha256": cco_hash,
     }
     for key, expected in expected_metadata.items():
         if metadata.get(key) != expected:
@@ -490,6 +569,7 @@ def validate_temporary_outputs(
         paths["diff_report"],
         paths["alignment_core"],
         paths["strict_bfo_mapping"],
+        paths["cco_extension"],
     ):
         assert_no_trailing_whitespace(path)
     return summary
@@ -565,6 +645,12 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         errors.append("strict-BFO path differs from the generated report")
     if metadata.get("strict_bfo_mapping_sha256") != strict_hash:
         errors.append("strict-BFO hash differs from the generated report")
+    cco_path = MAINTAINED_OUTPUTS["cco_extension"]
+    cco_hash = sha256_file(cco_path)
+    if metadata.get("cco_extension_path") != relative(cco_path):
+        errors.append("CCO-extension path differs from the generated report")
+    if metadata.get("cco_extension_sha256") != cco_hash:
+        errors.append("CCO-extension hash differs from the generated report")
     try:
         disposition = load_disposition_document(disposition_path)
         publication_metadata = load_metadata(PUBLICATION_METADATA)
@@ -607,6 +693,7 @@ def output_differences(paths: dict[str, Path]) -> list[str]:
         "disposition_report",
         "alignment_core",
         "strict_bfo_mapping",
+        "cco_extension",
     ):
         current = MAINTAINED_OUTPUTS[name]
         if not current.is_file() or current.read_bytes() != paths[name].read_bytes():
@@ -688,6 +775,9 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
         "strict_bfo_mapping_path": summary.get("strict_bfo_mapping_path"),
         "strict_bfo_mapping_sha256": summary.get("strict_bfo_mapping_sha256"),
         "strict_bfo_mapping": summary.get("strict_bfo_mapping"),
+        "cco_extension_path": summary.get("cco_extension_path"),
+        "cco_extension_sha256": summary.get("cco_extension_sha256"),
+        "cco_extension": summary.get("cco_extension"),
         "timestamp": utc_now(),
         "generated_ontology_triple_count": summary.get("generated_ontology_triple_count"),
         "candidate_closure_triple_count": summary.get("candidate_closure_triple_count"),
