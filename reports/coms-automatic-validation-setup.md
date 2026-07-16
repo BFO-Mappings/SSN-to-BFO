@@ -77,7 +77,8 @@ Each complete check:
 11. Derives and reconciles all per-product row and canonical-axiom dispositions, including target-vocabulary categories and canonical JSON serialization.
 12. Generates and validates the import-free 29-axiom SSN/SOSA alignment core, including root reconciliation and a fixed local source-ontology HermiT closure.
 13. Generates and validates the 19-axiom strict BFO mapping, its sole alignment-core import, the 48-axiom project-module closure, and the explicit network-free pinned merged CCO/BFO HermiT closure.
-14. Runs `git diff --check`.
+14. Generates and validates the 57-axiom CCO extension, its sole strict-BFO import, the complete 105-axiom project-module closure, and the explicit network-free pinned merged CCO/BFO HermiT closure.
+15. Runs `git diff --check`.
 
 The generated validation report records the workbook SHA-256, generator-file SHA-256, UTC generation timestamp, maintained ontology path, and generated ontology SHA-256. Freshness never relies on timestamps alone.
 
@@ -92,10 +93,11 @@ Generation and validation happen under `.cache/coms/`. The maintained files are 
 - `reports/coms-product-dispositions.json`
 - `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl`
 - `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl`
+- `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl`
 
 Each replacement is atomic. If any check fails, the maintained last-known-good files remain unchanged. A post-replacement whitespace failure also triggers rollback from temporary backups.
 
-The product-disposition JSON is generated evidence rather than an editable mapping source. The alignment core and strict BFO mapping are maintained authoritative development artifacts, not frozen formal releases. The strict graph imports only the alignment core; `imports/cco.ttl` is used solely in the pinned merged CCO/BFO validation closure and is not a published strict-product import. All artifacts are published in one seven-output transaction, so no maintained output can become newer or older than its disposition accounting or selected modular content.
+The product-disposition JSON is generated evidence rather than an editable mapping source. The alignment core, strict BFO mapping, and CCO extension are maintained authoritative development artifacts, not frozen formal releases. The strict graph imports only the alignment core, and the CCO extension imports only the strict graph. `imports/cco.ttl` is used solely in pinned merged CCO/BFO validation closures and is not a published modular-product import. All artifacts are published in one eight-output transaction, so no maintained output can become newer or older than its disposition accounting or selected modular content.
 
 `SSN2BFO.ttl` is the authoritative generated publication artifact. `mappings/SSN2BFO-COMS.xlsx` is its sole editable mapping source, and `legacy/SSN2BFO-pre-COMS.ttl` is used only as the frozen informational comparison baseline.
 

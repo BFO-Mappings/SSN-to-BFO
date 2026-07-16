@@ -71,6 +71,7 @@ def compile_check() -> StepResult:
             "tests/test_product_dispositions.py",
             "tests/test_modular_products.py",
             "tests/test_strict_bfo_mapping.py",
+            "tests/test_cco_extension.py",
             "tests/test_publication_metadata.py",
         ],
     )
@@ -187,6 +188,22 @@ def main() -> int:
                     "tests",
                     "-p",
                     "test_strict_bfo_mapping.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "CCO-extension modular-product focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_cco_extension.py",
                 ],
             )
         )

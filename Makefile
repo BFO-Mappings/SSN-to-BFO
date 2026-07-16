@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-publication-metadata watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -35,6 +35,7 @@ compile:
 		tests/test_product_dispositions.py \
 		tests/test_modular_products.py \
 		tests/test_strict_bfo_mapping.py \
+		tests/test_cco_extension.py \
 		tests/test_publication_metadata.py \
 		tools/workflow_check.py
 
@@ -60,6 +61,10 @@ check-alignment-core:
 
 check-strict-bfo-mapping:
 	python -m unittest discover -s tests -p 'test_strict_bfo_mapping.py'
+	python tools/check_coms_mapping.py --check-only
+
+check-cco-extension:
+	python -m unittest discover -s tests -p 'test_cco_extension.py'
 	python tools/check_coms_mapping.py --check-only
 
 watch-coms:
