@@ -500,7 +500,9 @@ The five product records remain in canonical order and govern the existing path,
 
 The product-type IRIs are controlled `dcterms:type` values. They do not require declaration triples or a separate vocabulary ontology. The development authority status uses `adms:status` with the governed maintained-authoritative-development IRI. Descriptions remain lifecycle-neutral and do not repeat that status.
 
-Schema version 2 governs and validates these values but does not yet emit them as RDF. The next metadata-emission implementation must generate RDF transactionally from the TOML rather than hand-editing products, and it must preserve every governed logical axiom set and the approved import graph byte-for-byte except for the newly approved annotation triples.
+Schema version 2 governs, validates, and transactionally emits exactly seven development annotations on each maintained ontology subject, in canonical order: `rdfs:label`, `dcterms:description`, `dcterms:type`, `adms:status`, `dcterms:license`, `rdfs:seeAlso`, and `rdfs:comment`. Labels, descriptions, and warnings are language-tagged with the governed default `en`; product type, status, license, and repository objects are IRIs. The integrated and modular emitters consume one shared immutable metadata model loaded once per nine-output transaction. The exact metadata set is validated separately from declarations, imports, and governed/structural logical triples.
+
+Development serialization is deterministic and preserves the existing generated-file Turtle comments in addition to the machine-readable warning. Metadata prefix and ontology-header ordering are explicit, and stripping the ontology declaration, approved project imports, and exact seven annotations must reproduce the governed logical graph. Metadata is never counted as a governed axiom, mapping triple, structural expression triple, projection axiom, or copied declaration.
 
 Creator and contributor governance, ORCIDs, agents, provenance, source and dependency identities, local validation paths, dependency hashes, workbook or generator provenance, release identifiers and dates, Git tags, commit bindings, artifact hashes, manifests, and formal-release RDF remain deferred. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
 
@@ -740,7 +742,7 @@ No implementation step may change the COMS workbook merely to simplify product g
 - [ ] No row or complex expression is silently omitted or flattened.
 - [ ] Formal releases use `YYYY-MM-DD` or `YYYY-MM-DD.N`, matching `v<version>` tags, and immutable version IRIs under `http://www.sks.ai/SSN2BFO/releases/<version>/`.
 - [ ] No version IRI is reused for different bytes.
-- [ ] Metadata is generated from `config/publication-metadata.toml`, parsed with Python 3.12 `tomllib`, and is not hand-edited into products.
+- [x] Development metadata is generated from `config/publication-metadata.toml`, parsed with standard-library `tomllib`, and is not hand-edited into products.
 - [ ] Development generation does not claim an immutable release version IRI.
 - [ ] Every production file strictly parses and contains its asserted axioms; annotation-only pseudo-mappings fail validation.
 - [ ] Product-specific vocabulary and import audits pass.

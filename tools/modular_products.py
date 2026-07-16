@@ -30,7 +30,14 @@ from product_dispositions import (
     classify_target_category,
     derive_product_dispositions,
 )
-from publication_metadata import ProductMetadata, PublicationMetadata
+from publication_metadata import (
+    METADATA_PREFIXES,
+    ProductMetadata,
+    PublicationMetadata,
+    render_ontology_header_bytes,
+    strip_emitted_ontology_header,
+    validate_serialized_ontology_header,
+)
 
 
 ALIGNMENT_CORE_KEY = "alignment_core"
@@ -38,7 +45,8 @@ ALIGNMENT_CORE_AXIOM_COUNT = 29
 ALIGNMENT_CORE_DOMAIN_COUNT = 15
 ALIGNMENT_CORE_RANGE_COUNT = 14
 ALIGNMENT_CORE_LOGICAL_TRIPLE_COUNT = 53
-ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT = 54
+ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT = 61
+ALIGNMENT_CORE_FIXED_CLOSURE_TRIPLE_COUNT = 1212
 ALIGNMENT_CORE_NAMED_TARGET_COUNT = 26
 ALIGNMENT_CORE_UNION_TARGET_COUNT = 3
 
@@ -51,15 +59,15 @@ STRICT_BFO_PROPERTY_CHAIN_COUNT = 2
 STRICT_BFO_DOMAIN_COUNT = 1
 STRICT_BFO_RANGE_COUNT = 1
 STRICT_BFO_LOGICAL_TRIPLE_COUNT = 125
-STRICT_BFO_TOTAL_TRIPLE_COUNT = 127
+STRICT_BFO_TOTAL_TRIPLE_COUNT = 134
 STRICT_BFO_UNION_COUNT = 6
 STRICT_BFO_INTERSECTION_COUNT = 6
 STRICT_BFO_EXISTENTIAL_COUNT = 6
 STRICT_BFO_RDF_LIST_COUNT = 14
 STRICT_BFO_PROJECT_CLOSURE_AXIOM_COUNT = 48
-STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT = 181
-STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 180
-STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14972
+STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT = 195
+STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 194
+STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14986
 ALIGNMENT_CORE_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
 )
@@ -75,7 +83,7 @@ CCO_EXTENSION_PROPERTY_CHAIN_COUNT = 3
 CCO_EXTENSION_DOMAIN_COUNT = 0
 CCO_EXTENSION_RANGE_COUNT = 0
 CCO_EXTENSION_LOGICAL_TRIPLE_COUNT = 934
-CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 936
+CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 943
 CCO_EXTENSION_NAMED_TARGET_COUNT = 20
 CCO_EXTENSION_COMPLEX_TARGET_COUNT = 37
 CCO_EXTENSION_UNION_COUNT = 7
@@ -86,9 +94,9 @@ CCO_EXTENSION_SOURCE_TERM_COUNT = 61
 CCO_EXTENSION_CCO_TERM_COUNT = 42
 CCO_EXTENSION_BFO_TERM_COUNT = 18
 CCO_EXTENSION_PROJECT_CLOSURE_AXIOM_COUNT = 105
-CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1117
-CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1115
-CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15907
+CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1138
+CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1136
+CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15928
 STRICT_BFO_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
 )
@@ -114,6 +122,7 @@ CCO_NAMESPACE = "https://www.commoncoreontologies.org/"
 RO_NAMESPACE = "http://purl.obolibrary.org/obo/RO_"
 
 PREFIXES = (
+    *METADATA_PREFIXES,
     ("owl", str(OWL)),
     ("rdf", str(RDF)),
     ("rdfs", str(RDFS)),
@@ -131,13 +140,15 @@ CCO_EXTENSION_PREFIXES = (
 BFO_PROJECTION_KEY = "bfo_projection"
 BFO_PROJECTION_AXIOM_COUNT = 0
 BFO_PROJECTION_LOGICAL_TRIPLE_COUNT = 0
-BFO_PROJECTION_TOTAL_TRIPLE_COUNT = 2
+BFO_PROJECTION_TOTAL_TRIPLE_COUNT = 9
 BFO_PROJECTION_PROJECT_CLOSURE_AXIOM_COUNT = 48
-BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT = 183
-BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 181
+BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT = 204
+BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 202
 BFO_PROJECTION_PREFIXES = (
+    *METADATA_PREFIXES,
     ("owl", str(OWL)),
     ("rdf", str(RDF)),
+    ("rdfs", str(RDFS)),
 )
 
 
@@ -307,7 +318,8 @@ class ModularProductResult:
     serialized_bytes: bytes
     governed_axiom_count: int
     logical_triple_count: int
-    ontology_header_triple_count: int
+    ontology_declaration_triple_count: int
+    metadata_annotation_count: int
     total_triple_count: int
     domain_axiom_count: int
     range_axiom_count: int
@@ -733,53 +745,61 @@ def _expression_turtle(
     )
 
 
-def _axiom_turtle(value: SelectedProductAxiom) -> list[str]:
-    row = value.canonical_input
+def render_authoritative_axiom_lines(
+    row: CanonicalRowInput,
+    axiom_id: str,
+) -> tuple[str, ...]:
+    """Render one governed authoritative axiom without an RDF serializer."""
+
     if row.predicate_iri is None:
-        raise ModularProductError([issue("MISSING_PREDICATE", "selected axiom lacks predicate", row_id=value.row_id, axiom_id=value.axiom_id)])
+        raise ModularProductError(
+            [issue("MISSING_PREDICATE", "selected axiom lacks predicate", row_id=row.row_id, axiom_id=axiom_id)]
+        )
     predicate = PREDICATE_QNAMES.get(row.predicate_iri)
     if predicate is None:
-        raise ModularProductError([issue("UNSUPPORTED_PREDICATE", f"unsupported predicate {row.predicate_iri}", row_id=value.row_id, axiom_id=value.axiom_id)])
+        raise ModularProductError(
+            [issue("UNSUPPORTED_PREDICATE", f"unsupported predicate {row.predicate_iri}", row_id=row.row_id, axiom_id=axiom_id)]
+        )
     if row.expression is not None:
-        target, structural = _expression_turtle(row.expression, value.axiom_id, "target")
-        return [f"{_iri(row.subject_iri)} {predicate} {target} .", *structural]
+        target, structural = _expression_turtle(row.expression, axiom_id, "target")
+        return tuple([f"{_iri(row.subject_iri)} {predicate} {target} .", *structural])
     if row.target_property_iri is not None:
-        return [f"{_iri(row.subject_iri)} {predicate} {_iri(row.target_property_iri)} ."]
+        return (f"{_iri(row.subject_iri)} {predicate} {_iri(row.target_property_iri)} .",)
     if row.property_chain:
-        list_nodes = [_bnode(value.axiom_id, f"chain_list_{index}") for index in range(len(row.property_chain))]
+        list_nodes = [_bnode(axiom_id, f"chain_list_{index}") for index in range(len(row.property_chain))]
         lines = [f"{_iri(row.subject_iri)} {predicate} {list_nodes[0]} ."]
         for index, member in enumerate(row.property_chain):
             rest = list_nodes[index + 1] if index + 1 < len(list_nodes) else "rdf:nil"
             lines.append(f"{list_nodes[index]} rdf:first {_iri(member)} .")
             lines.append(f"{list_nodes[index]} rdf:rest {rest} .")
-        return lines
-    raise ModularProductError([issue("MISSING_TARGET", "selected axiom lacks a structured target", row_id=value.row_id, axiom_id=value.axiom_id)])
+        return tuple(lines)
+    raise ModularProductError(
+        [issue("MISSING_TARGET", "selected axiom lacks a structured target", row_id=row.row_id, axiom_id=axiom_id)]
+    )
+
+
+def _axiom_turtle(value: SelectedProductAxiom) -> list[str]:
+    return list(render_authoritative_axiom_lines(value.canonical_input, value.axiom_id))
 
 
 def _turtle_bytes(
+    publication_metadata: PublicationMetadata,
     metadata: ModularProductMetadata,
     selected: tuple[SelectedProductAxiom, ...],
     *,
     imports: tuple[str, ...] = (),
     prefixes: tuple[tuple[str, str], ...] = PREFIXES,
 ) -> bytes:
-    lines = [GENERATED_NOTICE, ""]
-    lines.extend(f"@prefix {prefix}: <{namespace}> ." for prefix, namespace in prefixes)
-    if imports:
-        lines.extend(
-            [
-                "",
-                f"<{metadata.stable_ontology_iri}> rdf:type owl:Ontology ;",
-                *[
-                    f"    owl:imports <{import_iri}>"
-                    + (" ;" if index + 1 < len(imports) else " .")
-                    for index, import_iri in enumerate(imports)
-                ],
-                "",
-            ]
-        )
-    else:
-        lines.extend(["", f"<{metadata.stable_ontology_iri}> rdf:type owl:Ontology .", ""])
+    header = render_ontology_header_bytes(
+        publication_metadata,
+        metadata.product_key,
+        imports,
+        generated_notice=GENERATED_NOTICE,
+        prefixes=prefixes,
+    )
+    lines = header.decode("utf-8").rstrip("\n").splitlines()
+    if selected:
+        lines.append("")
     for index, value in enumerate(sorted(selected, key=lambda item: item.axiom_id)):
         lines.extend(_axiom_turtle(value))
         if index + 1 < len(selected):
@@ -845,16 +865,17 @@ def build_alignment_core(
         issues.append(issue("TARGET_CATEGORY_MISMATCH", "all alignment-core axioms must be target-neutral"))
     if issues:
         raise ModularProductError(issues)
-    serialized = _turtle_bytes(metadata, selected)
+    serialized = _turtle_bytes(publication_metadata, metadata, selected)
     graph = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
-    logical_count = len(graph) - 1
+    logical_count = ALIGNMENT_CORE_LOGICAL_TRIPLE_COUNT
     return ModularProductResult(
         metadata=metadata,
         selected_rows=_selected_rows(selected),
         serialized_bytes=serialized,
         governed_axiom_count=len(selected),
         logical_triple_count=logical_count,
-        ontology_header_triple_count=1,
+        ontology_declaration_triple_count=1,
+        metadata_annotation_count=7,
         total_triple_count=len(graph),
         domain_axiom_count=domains,
         range_axiom_count=ranges,
@@ -947,6 +968,7 @@ def build_strict_bfo_mapping(
         raise ModularProductError(issues)
 
     serialized = _turtle_bytes(
+        publication_metadata,
         metadata,
         selected,
         imports=(ALIGNMENT_CORE_IMPORT_IRI,),
@@ -958,8 +980,9 @@ def build_strict_bfo_mapping(
         selected_rows=_selected_rows(selected),
         serialized_bytes=serialized,
         governed_axiom_count=len(selected),
-        logical_triple_count=len(graph) - 2,
-        ontology_header_triple_count=2,
+        logical_triple_count=STRICT_BFO_LOGICAL_TRIPLE_COUNT,
+        ontology_declaration_triple_count=1,
+        metadata_annotation_count=7,
         total_triple_count=len(graph),
         domain_axiom_count=domains,
         range_axiom_count=ranges,
@@ -994,6 +1017,7 @@ def build_bfo_projection(
         )
 
     serialized = _turtle_bytes(
+        publication_metadata,
         metadata,
         (),
         imports=(STRICT_BFO_IMPORT_IRI,),
@@ -1006,7 +1030,8 @@ def build_bfo_projection(
         serialized_bytes=serialized,
         governed_axiom_count=0,
         logical_triple_count=0,
-        ontology_header_triple_count=2,
+        ontology_declaration_triple_count=1,
+        metadata_annotation_count=7,
         total_triple_count=len(graph),
         domain_axiom_count=0,
         range_axiom_count=0,
@@ -1142,6 +1167,7 @@ def build_cco_extension(
         raise ModularProductError(issues)
 
     serialized = _turtle_bytes(
+        publication_metadata,
         metadata,
         selected,
         imports=(STRICT_BFO_IMPORT_IRI,),
@@ -1153,8 +1179,9 @@ def build_cco_extension(
         selected_rows=_selected_rows(selected),
         serialized_bytes=serialized,
         governed_axiom_count=len(selected),
-        logical_triple_count=len(graph) - 2,
-        ontology_header_triple_count=2,
+        logical_triple_count=CCO_EXTENSION_LOGICAL_TRIPLE_COUNT,
+        ontology_declaration_triple_count=1,
+        metadata_annotation_count=7,
         total_triple_count=len(graph),
         domain_axiom_count=domains,
         range_axiom_count=ranges,
@@ -1174,6 +1201,27 @@ def build_cco_extension(
 
 def serialize_modular_product(result: ModularProductResult) -> bytes:
     return result.serialized_bytes
+
+
+def _metadata_validation_issues(
+    _graph: Graph,
+    serialized_bytes: bytes,
+    publication_metadata: PublicationMetadata,
+    product_key: str,
+    expected_imports: tuple[str, ...],
+    prefixes: tuple[tuple[str, str], ...],
+) -> tuple[ModularProductValidationIssue, ...]:
+    return tuple(
+        issue(value.code, value.message, field=value.field)
+        for value in validate_serialized_ontology_header(
+            serialized_bytes,
+            publication_metadata,
+            product_key,
+            expected_imports,
+            generated_notice=GENERATED_NOTICE,
+            prefixes=prefixes,
+        )
+    )
 
 
 def _canonical_graph_expression(graph: Graph, node: URIRef | BNode) -> str:
@@ -1290,6 +1338,16 @@ def validate_alignment_core(
     if serialized_bytes != expected.serialized_bytes:
         issues.append(issue("NONDETERMINISTIC_SERIALIZATION", "bytes differ from canonical modular-product serialization"))
     ontology_iri = URIRef(metadata.stable_ontology_iri)
+    issues.extend(
+        _metadata_validation_issues(
+            graph,
+            serialized_bytes,
+            publication_metadata,
+            ALIGNMENT_CORE_KEY,
+            (),
+            PREFIXES,
+        )
+    )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
     if declarations != {ontology_iri}:
         issues.append(issue("ONTOLOGY_DECLARATION_MISMATCH", f"expected only {ontology_iri}, got {sorted(map(str, declarations))}"))
@@ -1297,11 +1355,18 @@ def validate_alignment_core(
     if imports:
         issues.append(issue("PROHIBITED_IMPORT", f"expected zero owl:imports triples, got {len(imports)}"))
     if len(graph) != ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT:
-        issues.append(issue("TOTAL_TRIPLE_COUNT_MISMATCH", f"expected 54, got {len(graph)}"))
-    logical_graph = Graph()
-    for triple in graph:
-        if triple != (ontology_iri, RDF.type, OWL.Ontology):
-            logical_graph.add(triple)
+        issues.append(
+            issue(
+                "TOTAL_TRIPLE_COUNT_MISMATCH",
+                f"expected {ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT}, got {len(graph)}",
+            )
+        )
+    logical_graph = strip_emitted_ontology_header(
+        graph,
+        publication_metadata,
+        ALIGNMENT_CORE_KEY,
+        (),
+    )
     if len(logical_graph) != ALIGNMENT_CORE_LOGICAL_TRIPLE_COUNT:
         issues.append(issue("LOGICAL_TRIPLE_COUNT_MISMATCH", f"expected 53, got {len(logical_graph)}"))
 
@@ -1394,6 +1459,16 @@ def validate_strict_bfo_mapping(
         )
     ontology_iri = URIRef(metadata.stable_ontology_iri)
     expected_import = URIRef(ALIGNMENT_CORE_IMPORT_IRI)
+    issues.extend(
+        _metadata_validation_issues(
+            graph,
+            serialized_bytes,
+            publication_metadata,
+            STRICT_BFO_MAPPING_KEY,
+            (ALIGNMENT_CORE_IMPORT_IRI,),
+            STRICT_BFO_PREFIXES,
+        )
+    )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
     if declarations != {ontology_iri}:
         issues.append(
@@ -1419,14 +1494,12 @@ def validate_strict_bfo_mapping(
             )
         )
 
-    header = {
-        (ontology_iri, RDF.type, OWL.Ontology),
-        (ontology_iri, OWL.imports, expected_import),
-    }
-    logical_graph = Graph()
-    for triple in graph:
-        if triple not in header:
-            logical_graph.add(triple)
+    logical_graph = strip_emitted_ontology_header(
+        graph,
+        publication_metadata,
+        STRICT_BFO_MAPPING_KEY,
+        (ALIGNMENT_CORE_IMPORT_IRI,),
+    )
     if len(logical_graph) != STRICT_BFO_LOGICAL_TRIPLE_COUNT:
         issues.append(
             issue(
@@ -1708,10 +1781,16 @@ def validate_bfo_projection(
 
     ontology_iri = URIRef(metadata.stable_ontology_iri)
     expected_import = URIRef(STRICT_BFO_IMPORT_IRI)
-    expected_header = {
-        (ontology_iri, RDF.type, OWL.Ontology),
-        (ontology_iri, OWL.imports, expected_import),
-    }
+    issues.extend(
+        _metadata_validation_issues(
+            graph,
+            serialized_bytes,
+            publication_metadata,
+            BFO_PROJECTION_KEY,
+            (STRICT_BFO_IMPORT_IRI,),
+            BFO_PROJECTION_PREFIXES,
+        )
+    )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
     if declarations != {ontology_iri}:
         issues.append(
@@ -1736,10 +1815,12 @@ def validate_bfo_projection(
                 f"expected {BFO_PROJECTION_TOTAL_TRIPLE_COUNT}, got {len(graph)}",
             )
         )
-    logical_graph = Graph()
-    for triple in graph:
-        if triple not in expected_header:
-            logical_graph.add(triple)
+    logical_graph = strip_emitted_ontology_header(
+        graph,
+        publication_metadata,
+        BFO_PROJECTION_KEY,
+        (STRICT_BFO_IMPORT_IRI,),
+    )
     if len(logical_graph) != BFO_PROJECTION_LOGICAL_TRIPLE_COUNT:
         issues.append(
             issue(
@@ -1762,18 +1843,11 @@ def validate_bfo_projection(
         True for _ in graph.triples((None, RDF.rest, None))
     ):
         issues.append(issue("UNEXPECTED_RDF_LIST", "BFO projection must not contain RDF lists"))
-    allowed_direct_iris = {
-        str(ontology_iri),
-        str(expected_import),
-        str(RDF.type),
-        str(OWL.Ontology),
-        str(OWL.imports),
-    }
     unexpected_direct_iris = sorted(
         {
             str(value)
-            for value in graph.all_nodes()
-            if isinstance(value, URIRef) and str(value) not in allowed_direct_iris
+            for value in logical_graph.all_nodes()
+            if isinstance(value, URIRef)
         }
     )
     if unexpected_direct_iris:
@@ -2025,6 +2099,16 @@ def validate_cco_extension(
         )
     ontology_iri = URIRef(metadata.stable_ontology_iri)
     expected_import = URIRef(STRICT_BFO_IMPORT_IRI)
+    issues.extend(
+        _metadata_validation_issues(
+            graph,
+            serialized_bytes,
+            publication_metadata,
+            CCO_EXTENSION_KEY,
+            (STRICT_BFO_IMPORT_IRI,),
+            CCO_EXTENSION_PREFIXES,
+        )
+    )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
     if declarations != {ontology_iri}:
         issues.append(
@@ -2050,14 +2134,12 @@ def validate_cco_extension(
             )
         )
 
-    header = {
-        (ontology_iri, RDF.type, OWL.Ontology),
-        (ontology_iri, OWL.imports, expected_import),
-    }
-    logical_graph = Graph()
-    for triple in graph:
-        if triple not in header:
-            logical_graph.add(triple)
+    logical_graph = strip_emitted_ontology_header(
+        graph,
+        publication_metadata,
+        CCO_EXTENSION_KEY,
+        (STRICT_BFO_IMPORT_IRI,),
+    )
     if len(logical_graph) != CCO_EXTENSION_LOGICAL_TRIPLE_COUNT:
         issues.append(
             issue(

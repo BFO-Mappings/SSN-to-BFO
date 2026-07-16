@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import ipaddress
+import json
 import re
 import tomllib
 import unicodedata
@@ -12,6 +13,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import urlsplit
+
+from rdflib import Graph, Literal, RDF, RDFS, OWL, URIRef
 
 
 SCHEMA_VERSION = 2
@@ -48,6 +51,33 @@ GIT_TAG_PATTERN = re.compile(
     r"v(?P<release>[0-9]{4}-[0-9]{2}-[0-9]{2}(?:\.[1-9][0-9]*)?)\Z"
 )
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
+LANGUAGE_LITERAL = "language_literal"
+IRI_OBJECT = "iri"
+RDF_TYPE_IRI = str(RDF.type)
+OWL_ONTOLOGY_IRI = str(OWL.Ontology)
+OWL_IMPORTS_IRI = str(OWL.imports)
+DCTERMS_NAMESPACE = "http://purl.org/dc/terms/"
+ADMS_NAMESPACE = "http://www.w3.org/ns/adms#"
+METADATA_PREFIXES = (
+    ("adms", ADMS_NAMESPACE),
+    ("dcterms", DCTERMS_NAMESPACE),
+)
+METADATA_PREDICATE_QNAMES = {
+    str(RDFS.label): "rdfs:label",
+    DCTERMS_NAMESPACE + "description": "dcterms:description",
+    DCTERMS_NAMESPACE + "type": "dcterms:type",
+    ADMS_NAMESPACE + "status": "adms:status",
+    DCTERMS_NAMESPACE + "license": "dcterms:license",
+    str(RDFS.seeAlso): "rdfs:seeAlso",
+    str(RDFS.comment): "rdfs:comment",
+}
+RELEASE_ONLY_PREDICATES = frozenset(
+    {
+        str(OWL.versionIRI),
+        str(OWL.versionInfo),
+        DCTERMS_NAMESPACE + "issued",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -104,6 +134,33 @@ class ValidationIssue:
     message: str
 
 
+@dataclass(frozen=True)
+class OntologyMetadataTriple:
+    """One ordered governed ontology annotation for deterministic emission."""
+
+    product_key: str
+    ontology_iri: str
+    predicate_iri: str
+    object_kind: str
+    value: str
+    language: str | None = None
+
+    @property
+    def predicate_turtle(self) -> str:
+        return METADATA_PREDICATE_QNAMES.get(
+            self.predicate_iri,
+            f"<{self.predicate_iri}>",
+        )
+
+    @property
+    def object_turtle(self) -> str:
+        if self.object_kind == IRI_OBJECT:
+            return f"<{self.value}>"
+        if self.object_kind == LANGUAGE_LITERAL and self.language is not None:
+            return json.dumps(self.value, ensure_ascii=False) + f"@{self.language}"
+        raise ValueError(f"unsupported ontology metadata object kind {self.object_kind!r}")
+
+
 class PublicationMetadataError(ValueError):
     """One or more deterministic publication-metadata validation failures."""
 
@@ -118,6 +175,346 @@ def format_issue(issue: ValidationIssue) -> str:
 
 def _issue(code: str, field: str, message: str) -> ValidationIssue:
     return ValidationIssue(code=code, field=field, message=message)
+
+
+def _product(metadata: PublicationMetadata, product_key: str) -> ProductPublicationMetadata:
+    for product in metadata.products:
+        if product.key == product_key:
+            return product
+    raise PublicationMetadataError(
+        [_issue("UNKNOWN_PRODUCT", f"products.{product_key}", "product is not governed")]
+    )
+
+
+def ontology_metadata_triples(
+    metadata: PublicationMetadata,
+    product_key: str,
+) -> tuple[OntologyMetadataTriple, ...]:
+    """Return the exact seven development annotations in governed predicate order."""
+
+    product = _product(metadata, product_key)
+    publication = metadata.publication
+    subject = product.stable_ontology_iri
+    language = publication.default_language
+    return (
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            str(RDFS.label),
+            LANGUAGE_LITERAL,
+            product.label,
+            language,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            DCTERMS_NAMESPACE + "description",
+            LANGUAGE_LITERAL,
+            product.description,
+            language,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            DCTERMS_NAMESPACE + "type",
+            IRI_OBJECT,
+            product.product_type_iri,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            publication.development_status_property_iri,
+            IRI_OBJECT,
+            publication.development_status_iri,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            DCTERMS_NAMESPACE + "license",
+            IRI_OBJECT,
+            publication.license_iri,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            str(RDFS.seeAlso),
+            IRI_OBJECT,
+            publication.repository_iri,
+        ),
+        OntologyMetadataTriple(
+            product_key,
+            subject,
+            str(RDFS.comment),
+            LANGUAGE_LITERAL,
+            publication.generated_warning,
+            language,
+        ),
+    )
+
+
+def ontology_metadata_rdf_triples(
+    metadata: PublicationMetadata,
+    product_key: str,
+) -> tuple[tuple[URIRef, URIRef, URIRef | Literal], ...]:
+    """Convert governed metadata to immutable RDF terms without changing order."""
+
+    converted: list[tuple[URIRef, URIRef, URIRef | Literal]] = []
+    for value in ontology_metadata_triples(metadata, product_key):
+        target: URIRef | Literal
+        if value.object_kind == IRI_OBJECT:
+            target = URIRef(value.value)
+        else:
+            target = Literal(value.value, lang=value.language)
+        converted.append(
+            (URIRef(value.ontology_iri), URIRef(value.predicate_iri), target)
+        )
+    return tuple(converted)
+
+
+def render_ontology_header_bytes(
+    metadata: PublicationMetadata,
+    product_key: str,
+    imports: tuple[str, ...],
+    *,
+    generated_notice: str,
+    prefixes: tuple[tuple[str, str], ...],
+    import_turtle_terms: tuple[str, ...] | None = None,
+) -> bytes:
+    """Render the canonical generated preamble and ontology statement."""
+
+    product = _product(metadata, product_key)
+    if import_turtle_terms is None:
+        import_turtle_terms = tuple(f"<{value}>" for value in imports)
+    if len(import_turtle_terms) != len(imports):
+        raise PublicationMetadataError(
+            [
+                _issue(
+                    "IMPORT_RENDERING_MISMATCH",
+                    f"products.{product_key}.imports",
+                    "each governed import must have exactly one Turtle rendering",
+                )
+            ]
+        )
+
+    lines = [generated_notice, ""]
+    lines.extend(f"@prefix {prefix}: <{namespace}> ." for prefix, namespace in prefixes)
+    lines.extend(["", f"<{product.stable_ontology_iri}> a owl:Ontology ;"])
+    for value in ontology_metadata_triples(metadata, product_key):
+        lines.append(f"    {value.predicate_turtle} {value.object_turtle} ;")
+
+    if not import_turtle_terms:
+        lines[-1] = lines[-1][:-2] + " ."
+    elif len(import_turtle_terms) == 1:
+        lines.append(f"    owl:imports {import_turtle_terms[0]} .")
+    else:
+        lines.append(f"    owl:imports {import_turtle_terms[0]},")
+        lines.extend(f"        {value}," for value in import_turtle_terms[1:-1])
+        lines.append(f"        {import_turtle_terms[-1]} .")
+    return ("\n".join(lines).rstrip() + "\n").encode("utf-8")
+
+
+def validate_serialized_ontology_header(
+    serialized_bytes: bytes,
+    metadata: PublicationMetadata,
+    product_key: str,
+    expected_imports: tuple[str, ...],
+    *,
+    generated_notice: str,
+    prefixes: tuple[tuple[str, str], ...],
+    import_turtle_terms: tuple[str, ...] | None = None,
+    mode: str = "development",
+) -> tuple[ValidationIssue, ...]:
+    """Strictly parse and validate graph semantics plus canonical header bytes."""
+
+    try:
+        text = serialized_bytes.decode("utf-8")
+        graph = Graph().parse(data=text, format="turtle")
+    except Exception as exc:
+        return (
+            _issue(
+                "TURTLE_PARSE",
+                f"products.{product_key}.serialized_ontology",
+                f"cannot strictly parse UTF-8 Turtle: {type(exc).__name__}: {exc}",
+            ),
+        )
+
+    issues = list(
+        validate_emitted_ontology_metadata(
+            graph,
+            metadata,
+            product_key,
+            expected_imports,
+            mode=mode,
+        )
+    )
+    expected_header = render_ontology_header_bytes(
+        metadata,
+        product_key,
+        expected_imports,
+        generated_notice=generated_notice,
+        prefixes=prefixes,
+        import_turtle_terms=import_turtle_terms,
+    )
+    remainder = serialized_bytes[len(expected_header) :] if serialized_bytes.startswith(expected_header) else None
+    canonical_boundary = remainder == b"" or (
+        remainder is not None
+        and remainder.startswith(b"\n")
+        and not remainder.startswith(b"\n\n")
+    )
+    canonical_final_newline = serialized_bytes.endswith(b"\n") and not serialized_bytes.endswith(b"\n\n")
+    if remainder is None or not canonical_boundary or not canonical_final_newline:
+        issues.append(
+            _issue(
+                "NONCANONICAL_ONTOLOGY_HEADER",
+                f"products.{product_key}.serialized_ontology_header",
+                "generated preamble and ontology header differ from canonical byte rendering",
+            )
+        )
+    return tuple(sorted(set(issues), key=lambda value: (value.code, value.field, value.message)))
+
+
+def strip_emitted_ontology_header(
+    graph: Graph,
+    metadata: PublicationMetadata,
+    product_key: str,
+    expected_imports: tuple[str, ...],
+) -> Graph:
+    """Return a copy containing only governed/structural logical content."""
+
+    product = _product(metadata, product_key)
+    ontology = URIRef(product.stable_ontology_iri)
+    removed = {
+        (ontology, RDF.type, OWL.Ontology),
+        *((ontology, OWL.imports, URIRef(value)) for value in expected_imports),
+        *ontology_metadata_rdf_triples(metadata, product_key),
+    }
+    result = Graph()
+    for triple in graph:
+        if triple not in removed:
+            result.add(triple)
+    return result
+
+
+def validate_emitted_ontology_metadata(
+    graph: Graph,
+    metadata: PublicationMetadata,
+    product_key: str,
+    expected_imports: tuple[str, ...],
+    mode: str = "development",
+) -> tuple[ValidationIssue, ...]:
+    """Validate exact ontology identity, imports, and governed development metadata."""
+
+    issues: list[ValidationIssue] = []
+    if mode != "development":
+        return (
+            _issue(
+                "UNSUPPORTED_METADATA_MODE",
+                "ontology_metadata.mode",
+                "only development metadata emission is implemented",
+            ),
+        )
+
+    product = _product(metadata, product_key)
+    ontology = URIRef(product.stable_ontology_iri)
+    declarations = set(graph.triples((None, RDF.type, OWL.Ontology)))
+    expected_declaration = {(ontology, RDF.type, OWL.Ontology)}
+    if declarations != expected_declaration:
+        issues.append(
+            _issue(
+                "ONTOLOGY_DECLARATION_MISMATCH",
+                f"products.{product_key}.stable_ontology_iri",
+                f"expected {sorted(map(str, expected_declaration))}, got "
+                f"{sorted(map(str, declarations))}",
+            )
+        )
+
+    imports = set(graph.triples((None, OWL.imports, None)))
+    expected_import_triples = {
+        (ontology, OWL.imports, URIRef(value)) for value in expected_imports
+    }
+    if imports != expected_import_triples:
+        issues.append(
+            _issue(
+                "IMPORT_POLICY_MISMATCH",
+                f"products.{product_key}.imports",
+                f"expected {sorted(map(str, expected_import_triples))}, got "
+                f"{sorted(map(str, imports))}",
+            )
+        )
+
+    expected_metadata = ontology_metadata_rdf_triples(metadata, product_key)
+    expected_by_predicate = {
+        predicate: triple for triple in expected_metadata for predicate in (triple[1],)
+    }
+    governed_predicates = set(expected_by_predicate)
+    for predicate, expected in expected_by_predicate.items():
+        observed = set(graph.triples((None, predicate, None)))
+        if observed != {expected}:
+            issues.append(
+                _issue(
+                    "ONTOLOGY_METADATA_MISMATCH",
+                    f"products.{product_key}.{predicate}",
+                    f"expected {expected!r}, got {sorted(map(repr, observed))}",
+                )
+            )
+
+    allowed_subject_triples = {
+        *expected_declaration,
+        *expected_import_triples,
+        *expected_metadata,
+    }
+    extra_subject_triples = set(graph.triples((ontology, None, None))) - allowed_subject_triples
+    if extra_subject_triples:
+        issues.append(
+            _issue(
+                "UNAPPROVED_ONTOLOGY_METADATA",
+                f"products.{product_key}.ontology_subject",
+                "ontology subject contains unapproved triples: "
+                + ", ".join(sorted(map(repr, extra_subject_triples))),
+            )
+        )
+
+    for predicate in governed_predicates:
+        misplaced = {
+            triple
+            for triple in graph.triples((None, predicate, None))
+            if triple[0] != ontology
+        }
+        if misplaced:
+            issues.append(
+                _issue(
+                    "MISPLACED_ONTOLOGY_METADATA",
+                    f"products.{product_key}.{predicate}",
+                    "metadata occurs on a non-ontology subject",
+                )
+            )
+
+    for predicate_iri in RELEASE_ONLY_PREDICATES:
+        triples = set(graph.triples((None, URIRef(predicate_iri), None)))
+        if triples:
+            issues.append(
+                _issue(
+                    "RELEASE_METADATA_IN_DEVELOPMENT",
+                    f"products.{product_key}.{predicate_iri}",
+                    "formal-release metadata is prohibited in development output",
+                )
+            )
+
+    controlled_iris = (
+        URIRef(product.product_type_iri),
+        URIRef(metadata.publication.development_status_iri),
+    )
+    for controlled in controlled_iris:
+        if any(True for _ in graph.triples((controlled, RDF.type, None))):
+            issues.append(
+                _issue(
+                    "CONTROLLED_IRI_DECLARATION",
+                    f"products.{product_key}.controlled_iri",
+                    f"declaration triples for {controlled} are prohibited",
+                )
+            )
+
+    return tuple(sorted(set(issues), key=lambda value: (value.code, value.field, value.message)))
 
 
 def _table(

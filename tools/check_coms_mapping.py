@@ -28,7 +28,28 @@ from product_dispositions import (
     load_disposition_document,
     serialize_disposition_document,
 )
-from publication_metadata import PublicationMetadataError, load_metadata
+from generate_mapping_from_coms import (
+    GENERATED_NOTICE as ROOT_GENERATED_NOTICE,
+    ROOT_IMPORT_TURTLE_TERMS,
+    ROOT_ORDERED_IMPORTS,
+    ROOT_PREFIXES,
+)
+from modular_products import (
+    ALIGNMENT_CORE_IMPORT_IRI,
+    BFO_PROJECTION_PREFIXES,
+    CCO_EXTENSION_PREFIXES,
+    GENERATED_NOTICE as MODULAR_GENERATED_NOTICE,
+    PREFIXES as ALIGNMENT_CORE_PREFIXES,
+    STRICT_BFO_IMPORT_IRI,
+    STRICT_BFO_PREFIXES,
+)
+from publication_metadata import (
+    PublicationMetadataError,
+    load_metadata,
+    strip_emitted_ontology_header,
+    validate_emitted_ontology_metadata,
+    validate_serialized_ontology_header,
+)
 
 try:
     import openpyxl
@@ -64,6 +85,49 @@ MAINTAINED_OUTPUTS = {
     "bfo_projection": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "cco_extension": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 }
+
+SERIALIZED_HEADER_PRODUCTS = (
+    (
+        "candidate",
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+        ROOT_GENERATED_NOTICE,
+        ROOT_PREFIXES,
+        ROOT_IMPORT_TURTLE_TERMS,
+    ),
+    (
+        "alignment_core",
+        "alignment_core",
+        (),
+        MODULAR_GENERATED_NOTICE,
+        ALIGNMENT_CORE_PREFIXES,
+        None,
+    ),
+    (
+        "strict_bfo_mapping",
+        "strict_bfo_mapping",
+        (ALIGNMENT_CORE_IMPORT_IRI,),
+        MODULAR_GENERATED_NOTICE,
+        STRICT_BFO_PREFIXES,
+        None,
+    ),
+    (
+        "bfo_projection",
+        "bfo_projection",
+        (STRICT_BFO_IMPORT_IRI,),
+        MODULAR_GENERATED_NOTICE,
+        BFO_PROJECTION_PREFIXES,
+        None,
+    ),
+    (
+        "cco_extension",
+        "cco_extension",
+        (STRICT_BFO_IMPORT_IRI,),
+        MODULAR_GENERATED_NOTICE,
+        CCO_EXTENSION_PREFIXES,
+        None,
+    ),
+)
 
 METADATA_LABELS = {
     "workbook SHA-256": "workbook_sha256",
@@ -113,6 +177,62 @@ def sha256_file(path: Path) -> str:
 def emit(message: str, log: list[str]) -> None:
     print(message, flush=True)
     log.append(message)
+
+
+def validate_product_metadata(
+    graph: Graph,
+    publication_metadata: object,
+    product_key: str,
+    expected_imports: tuple[str, ...],
+) -> None:
+    issues = validate_emitted_ontology_metadata(
+        graph,
+        publication_metadata,
+        product_key,
+        expected_imports,
+    )
+    if issues:
+        raise CheckFailure(
+            f"{product_key} publication metadata validation failed: "
+            + " | ".join(
+                f"ERROR [{issue.code}] {issue.field}: {issue.message}"
+                for issue in issues
+            )
+        )
+
+
+def validate_candidate_serialized_headers(
+    paths: dict[str, Path],
+    publication_metadata: object,
+) -> None:
+    issues = []
+    for (
+        output_name,
+        product_key,
+        expected_imports,
+        generated_notice,
+        prefixes,
+        import_turtle_terms,
+    ) in SERIALIZED_HEADER_PRODUCTS:
+        issues.extend(
+            validate_serialized_ontology_header(
+                paths[output_name].read_bytes(),
+                publication_metadata,
+                product_key,
+                expected_imports,
+                generated_notice=generated_notice,
+                prefixes=prefixes,
+                import_turtle_terms=import_turtle_terms,
+            )
+        )
+    if issues:
+        raise CheckFailure(
+            "serialized ontology header validation failed: "
+            + " | ".join(
+                f"ERROR [{issue.code}] {issue.field}: {issue.message}"
+                for issue in issues
+            )
+        )
 
 
 def verify_workbook(log: list[str]) -> str:
@@ -278,6 +398,7 @@ def validate_temporary_outputs(
         raise CheckFailure(f"product-disposition validation failed: {exc}") from exc
     if paths["disposition_report"].read_bytes() != serialize_disposition_document(disposition):
         raise CheckFailure("product-disposition JSON is not canonically serialized")
+    validate_candidate_serialized_headers(paths, publication_metadata)
     expected_disposition_hashes = {
         "workbook_sha256": workbook_hash,
         "generator_sha256": generator_hash,
@@ -322,8 +443,10 @@ def validate_temporary_outputs(
         "stable_ontology_iri": alignment_metadata.stable_ontology_iri,
         "governed_axiom_count": 29,
         "logical_triple_count": 53,
-        "ontology_header_triple_count": 1,
-        "total_triple_count": 54,
+        "ontology_declaration_triple_count": 1,
+        "import_triple_count": 0,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 61,
         "domain_axiom_count": 15,
         "range_axiom_count": 14,
         "named_target_count": 26,
@@ -349,15 +472,18 @@ def validate_temporary_outputs(
         raise CheckFailure(
             f"alignment-core parse failed: {type(exc).__name__}: {exc}"
         ) from exc
-    ontology_iri = URIRef(alignment_metadata.stable_ontology_iri)
-    if set(alignment_graph.subjects(RDF.type, OWL.Ontology)) != {ontology_iri}:
-        raise CheckFailure("alignment core has an incorrect ontology declaration")
-    if any(True for _ in alignment_graph.triples((None, OWL.imports, None))):
-        raise CheckFailure("alignment core must not contain owl:imports")
-    if len(alignment_graph) != 54:
-        raise CheckFailure(f"alignment-core parsed triple count is {len(alignment_graph)}, expected 54")
+    validate_product_metadata(alignment_graph, publication_metadata, "alignment_core", ())
+    alignment_logical = strip_emitted_ontology_header(
+        alignment_graph, publication_metadata, "alignment_core", ()
+    )
+    if len(alignment_logical) != 53 or len(alignment_graph) != 61:
+        raise CheckFailure(
+            "alignment-core triple partition mismatch: expected 1 declaration, "
+            f"0 imports, 7 metadata, 53 logical, 61 total; got {len(alignment_graph)} total"
+        )
     emit(
-        "Alignment core: PASS (29 governed axioms; 53 logical triples; 54 total triples)",
+        "Alignment core: PASS (1 declaration; 0 imports; 7 metadata; "
+        "29 governed axioms; 53 logical triples; 61 total triples)",
         log,
     )
 
@@ -376,9 +502,10 @@ def validate_temporary_outputs(
         "stable_ontology_iri": strict_metadata.stable_ontology_iri,
         "governed_axiom_count": 19,
         "logical_triple_count": 125,
-        "ontology_header_triple_count": 2,
+        "ontology_declaration_triple_count": 1,
         "import_triple_count": 1,
-        "total_triple_count": 127,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 134,
         "subclass_axiom_count": 3,
         "equivalent_class_axiom_count": 3,
         "direct_subproperty_axiom_count": 9,
@@ -390,11 +517,11 @@ def validate_temporary_outputs(
         "existential_restriction_count": 6,
         "rdf_list_count": 14,
         "project_closure_governed_axiom_count": 48,
-        "project_graph_triple_count": 181,
-        "local_project_graph_triple_count": 180,
+        "project_graph_triple_count": 195,
+        "local_project_graph_triple_count": 194,
         "hermit_return_code": 0,
         "hermit_result": "PASS",
-        "closure_triple_count": 14972,
+        "closure_triple_count": 14986,
         "named_unsat_count": 0,
     }
     for field, expected in expected_strict.items():
@@ -413,20 +540,28 @@ def validate_temporary_outputs(
             f"strict-BFO parse failed: {type(exc).__name__}: {exc}"
         ) from exc
     strict_ontology_iri = URIRef(strict_metadata.stable_ontology_iri)
-    if set(strict_graph.subjects(RDF.type, OWL.Ontology)) != {strict_ontology_iri}:
-        raise CheckFailure("strict BFO mapping has an incorrect ontology declaration")
     expected_import = URIRef(alignment_metadata.stable_ontology_iri)
-    if set(strict_graph.triples((None, OWL.imports, None))) != {
-        (strict_ontology_iri, OWL.imports, expected_import)
-    }:
-        raise CheckFailure("strict BFO mapping must import only the alignment core")
-    if len(strict_graph) != 127:
+    validate_product_metadata(
+        strict_graph,
+        publication_metadata,
+        "strict_bfo_mapping",
+        (str(expected_import),),
+    )
+    strict_logical = strip_emitted_ontology_header(
+        strict_graph,
+        publication_metadata,
+        "strict_bfo_mapping",
+        (str(expected_import),),
+    )
+    if len(strict_logical) != 125 or len(strict_graph) != 134:
         raise CheckFailure(
-            f"strict-BFO parsed triple count is {len(strict_graph)}, expected 127"
+            "strict-BFO triple partition mismatch: expected 1 declaration, 1 import, "
+            f"7 metadata, 125 logical, 134 total; got {len(strict_graph)} total"
         )
     emit(
         "Strict BFO mapping: PASS "
-        "(19 direct governed axioms; 125 logical triples; 127 total triples)",
+        "(1 declaration; 1 import; 7 metadata; 19 direct governed axioms; "
+        "125 logical triples; 134 total triples)",
         log,
     )
 
@@ -447,16 +582,17 @@ def validate_temporary_outputs(
         "logical_triple_count": 0,
         "ontology_declaration_triple_count": 1,
         "import_triple_count": 1,
-        "total_triple_count": 2,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 9,
         "provided_transitively_count": 29,
         "provided_through_import_count": 19,
         "deferred_no_transformation_rule_count": 57,
         "project_closure_governed_axiom_count": 48,
-        "project_graph_triple_count": 183,
-        "local_project_graph_triple_count": 181,
+        "project_graph_triple_count": 204,
+        "local_project_graph_triple_count": 202,
         "reasoning_reused_from": "strict_bfo_mapping",
         "reasoning_source_sha256": strict_hash,
-        "reasoning_closure_triple_count": 14972,
+        "reasoning_closure_triple_count": 14986,
         "reasoning_return_code": 0,
         "reasoned_output_produced": True,
         "named_unsat_count": 0,
@@ -478,21 +614,27 @@ def validate_temporary_outputs(
             f"BFO-projection parse failed: {type(exc).__name__}: {exc}"
         ) from exc
     projection_ontology_iri = URIRef(projection_metadata.stable_ontology_iri)
-    if set(projection_graph.subjects(RDF.type, OWL.Ontology)) != {
-        projection_ontology_iri
-    }:
-        raise CheckFailure("BFO projection has an incorrect ontology declaration")
-    if set(projection_graph.triples((None, OWL.imports, None))) != {
-        (projection_ontology_iri, OWL.imports, strict_ontology_iri)
-    }:
-        raise CheckFailure("BFO projection must import only the strict BFO mapping")
-    if len(projection_graph) != 2:
+    validate_product_metadata(
+        projection_graph,
+        publication_metadata,
+        "bfo_projection",
+        (str(strict_ontology_iri),),
+    )
+    projection_logical = strip_emitted_ontology_header(
+        projection_graph,
+        publication_metadata,
+        "bfo_projection",
+        (str(strict_ontology_iri),),
+    )
+    if len(projection_logical) != 0 or len(projection_graph) != 9:
         raise CheckFailure(
-            f"BFO-projection parsed triple count is {len(projection_graph)}, expected 2"
+            "BFO-projection triple partition mismatch: expected 1 declaration, "
+            f"1 import, 7 metadata, 0 logical, 9 total; got {len(projection_graph)} total"
         )
     emit(
         "BFO projection: PASS "
-        "(0 direct governed axioms; 0 logical triples; 2 total triples; "
+        "(1 declaration; 1 import; 7 metadata; 0 direct governed axioms; "
+        "0 logical triples; 9 total triples; "
         "strict reasoning reused)",
         log,
     )
@@ -514,9 +656,10 @@ def validate_temporary_outputs(
         "cco_bearing_axiom_count": 25,
         "mixed_bfo_cco_axiom_count": 32,
         "logical_triple_count": 934,
-        "ontology_header_triple_count": 2,
+        "ontology_declaration_triple_count": 1,
         "import_triple_count": 1,
-        "total_triple_count": 936,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 943,
         "subclass_axiom_count": 31,
         "equivalent_class_axiom_count": 7,
         "direct_subproperty_axiom_count": 16,
@@ -526,11 +669,11 @@ def validate_temporary_outputs(
         "existential_restriction_count": 95,
         "rdf_list_count": 96,
         "project_closure_governed_axiom_count": 105,
-        "project_graph_triple_count": 1117,
-        "local_project_graph_triple_count": 1115,
+        "project_graph_triple_count": 1138,
+        "local_project_graph_triple_count": 1136,
         "hermit_return_code": 0,
         "hermit_result": "PASS",
-        "closure_triple_count": 15907,
+        "closure_triple_count": 15928,
         "named_unsat_count": 0,
     }
     for field, expected in expected_cco.items():
@@ -549,20 +692,28 @@ def validate_temporary_outputs(
             f"CCO-extension parse failed: {type(exc).__name__}: {exc}"
         ) from exc
     cco_ontology_iri = URIRef(cco_metadata.stable_ontology_iri)
-    if set(cco_graph.subjects(RDF.type, OWL.Ontology)) != {cco_ontology_iri}:
-        raise CheckFailure("CCO extension has an incorrect ontology declaration")
     expected_cco_import = URIRef(strict_metadata.stable_ontology_iri)
-    if set(cco_graph.triples((None, OWL.imports, None))) != {
-        (cco_ontology_iri, OWL.imports, expected_cco_import)
-    }:
-        raise CheckFailure("CCO extension must import only the strict BFO mapping")
-    if len(cco_graph) != 936:
+    validate_product_metadata(
+        cco_graph,
+        publication_metadata,
+        "cco_extension",
+        (str(expected_cco_import),),
+    )
+    cco_logical = strip_emitted_ontology_header(
+        cco_graph,
+        publication_metadata,
+        "cco_extension",
+        (str(expected_cco_import),),
+    )
+    if len(cco_logical) != 934 or len(cco_graph) != 943:
         raise CheckFailure(
-            f"CCO-extension parsed triple count is {len(cco_graph)}, expected 936"
+            "CCO-extension triple partition mismatch: expected 1 declaration, "
+            f"1 import, 7 metadata, 934 logical, 943 total; got {len(cco_graph)} total"
         )
     emit(
         "CCO extension: PASS "
-        "(57 direct governed axioms; 934 logical triples; 936 total triples)",
+        "(1 declaration; 1 import; 7 metadata; 57 direct governed axioms; "
+        "934 logical triples; 943 total triples)",
         log,
     )
 
@@ -593,10 +744,43 @@ def validate_temporary_outputs(
         raise CheckFailure(
             f"generated triple-count mismatch: parsed {len(graph)}, summary recorded {expected_triples}"
         )
+    root_partition = {
+        "generated_candidate_ontology_declaration_triple_count": 1,
+        "generated_candidate_import_triple_count": 4,
+        "generated_candidate_metadata_annotation_count": 7,
+        "generated_candidate_logical_triple_count": 1112,
+    }
+    for field, expected in root_partition.items():
+        if summary.get(field) != expected:
+            raise CheckFailure(
+                f"integrated-root summary mismatch for {field}: expected {expected}, "
+                f"got {summary.get(field)!r}"
+            )
+    validate_product_metadata(
+        graph,
+        publication_metadata,
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+    )
+    root_logical = strip_emitted_ontology_header(
+        graph,
+        publication_metadata,
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+    )
+    if len(root_logical) != 1112 or len(graph) != 1124:
+        raise CheckFailure(
+            "integrated-root triple partition mismatch: expected 1 declaration, "
+            f"4 imports, 7 metadata, 1112 logical, 1124 total; got {len(graph)} total"
+        )
     candidate_hash = sha256_file(paths["candidate"])
     if summary.get("generated_candidate_sha256") != candidate_hash:
         raise CheckFailure("generated candidate hash does not match generator summary")
-    emit(f"Generated candidate parse: PASS ({len(graph)} triples)", log)
+    emit(
+        "Generated candidate parse: PASS "
+        f"(1 declaration; 4 imports; 7 metadata; 1112 logical; {len(graph)} total)",
+        log,
+    )
 
     emit("[7-9/11] Confirming candidate closure cleanup and HermiT result", log)
     if summary.get("hermit_return_code") != 0 or summary.get("hermit_result") != "PASS":
@@ -608,6 +792,11 @@ def validate_temporary_outputs(
         raise CheckFailure(f"candidate closure has owl:Nothing count {summary.get('owl_nothing_count')}")
     if summary.get("named_unsat_count") != 0 or summary.get("named_unsat_set"):
         raise CheckFailure(f"candidate closure has named unsatisfiable classes: {summary.get('named_unsat_set')}")
+    if summary.get("candidate_closure_triple_count") != 15912:
+        raise CheckFailure(
+            "candidate closure triple-count mismatch: expected 15912, got "
+            f"{summary.get('candidate_closure_triple_count')!r}"
+        )
     emit(
         "Candidate HermiT: PASS "
         f"({summary.get('candidate_closure_triple_count')} closure triples; no named unsats)",
@@ -868,6 +1057,18 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
         "cco_extension": summary.get("cco_extension"),
         "timestamp": utc_now(),
         "generated_ontology_triple_count": summary.get("generated_ontology_triple_count"),
+        "generated_candidate_ontology_declaration_triple_count": summary.get(
+            "generated_candidate_ontology_declaration_triple_count"
+        ),
+        "generated_candidate_import_triple_count": summary.get(
+            "generated_candidate_import_triple_count"
+        ),
+        "generated_candidate_metadata_annotation_count": summary.get(
+            "generated_candidate_metadata_annotation_count"
+        ),
+        "generated_candidate_logical_triple_count": summary.get(
+            "generated_candidate_logical_triple_count"
+        ),
         "candidate_closure_triple_count": summary.get("candidate_closure_triple_count"),
         "hermit_result": summary.get("hermit_result"),
         "source_term_counts": {
