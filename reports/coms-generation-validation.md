@@ -13,12 +13,12 @@ Freshness is determined from content hashes, not file timestamps.
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
 | product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
 | modular-products module SHA-256 | `fe48deac6bc9d529ec058564f99da817d520fed03ce96bbcc4563d5a54b1da6d` |
-| publication metadata SHA-256 | `a25196f873bc849a0a5b33012c22312d3ea9e70504219c9e781e77e595993564` |
-| generation timestamp (UTC) | `2026-07-16T01:47:35+00:00` |
+| publication metadata SHA-256 | `fab670a686e002e6bc704cda75bf59c20dc5eaa8da78c94273c242021ccaf873` |
+| generation timestamp (UTC) | `2026-07-16T03:10:03+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
 | generated ontology SHA-256 | `fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16` |
 | maintained product-disposition path | `reports/coms-product-dispositions.json` |
-| product-disposition JSON SHA-256 | `3ab0d1fabd40c0b274b42c53788210a57f8c7d3d4a4fcaa34a63eaa3d54de542` |
+| product-disposition JSON SHA-256 | `5a32d3205d93ef481b78a860507d296f1cf9b1a962dcfaedd84cc1380ad8c8a5` |
 | maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |
 | alignment-core Turtle SHA-256 | `95f71184b90224906b0ba703d0ea60fd2f8b993b3853b803c66b88b91ba0b01c` |
 | maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |
@@ -585,4 +585,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 9.27
+- Runtime seconds: 9.23

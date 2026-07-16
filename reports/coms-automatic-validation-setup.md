@@ -45,6 +45,14 @@ Current local status is available with:
 make coms-status
 ```
 
+## Publication Metadata
+
+`config/publication-metadata.toml` is the sole governed publication-metadata source. Schema version 2 validates the exact approved global values and the canonical five-product order, paths, ontology IRIs, release suffixes, labels, descriptions, and product-type IRIs. The loader rejects missing or unknown tables and fields, unsafe paths, malformed IRIs, duplicate identities, noncanonical text, and deferred creator, contributor, provenance, dependency, hash, tag, commit, and release-date fields.
+
+Development validation checks the governed license, repository, generated warning, `adms:status` predicate, and maintained-authoritative-development status without claiming a formal release identity. The existing release identifier and version-IRI helpers remain separately testable, but formal release metadata is not stored in the maintained development TOML.
+
+The COMS freshness transaction hashes the metadata source, so a metadata edit makes generated evidence stale until the normal transaction succeeds. Schema-2 values are validated governance only in this change: ontology RDF metadata emission remains deferred to the next implementation PR, and all maintained TTL bytes must remain unchanged.
+
 ## Mapping And Property-Typing Rows
 
 Mapping rows use class or relation-mapping predicates such as `rdfs:subClassOf`, `owl:equivalentClass`, `rdfs:subPropertyOf`, `owl:equivalentProperty`, and `owl:propertyChainAxiom`. These rows determine whether a source class or object property is counted as mapped by the source-term coverage report.

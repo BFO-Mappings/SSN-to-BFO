@@ -5,7 +5,7 @@
   "generator_sha256": "c27277bddc98d0ee84189a260b32805f3b0df73bba2068fd08a448b74e378cfd",
   "row_identity_module_sha256": "9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425",
   "disposition_module_sha256": "987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8",
-  "publication_metadata_sha256": "a25196f873bc849a0a5b33012c22312d3ea9e70504219c9e781e77e595993564",
+  "publication_metadata_sha256": "fab670a686e002e6bc704cda75bf59c20dc5eaa8da78c94273c242021ccaf873",
   "product_order": [
     "integrated",
     "alignment_core",

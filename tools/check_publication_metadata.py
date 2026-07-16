@@ -117,12 +117,36 @@ def main(
     print(f"Metadata file: {display_path(metadata_path)}", file=output)
     print(f"Metadata SHA-256: {metadata_sha256}", file=output)
     print(f"Schema version: {metadata.schema_version}", file=output)
+    print(f"Project title: {metadata.publication.project_title}", file=output)
+    print(f"Default language: {metadata.publication.default_language}", file=output)
+    print(f"Release IRI base: {metadata.publication.release_iri_base}", file=output)
+    print(f"License IRI: {metadata.publication.license_iri}", file=output)
+    print(f"Repository IRI: {metadata.publication.repository_iri}", file=output)
+    print(f"Generated warning: {metadata.publication.generated_warning}", file=output)
+    print(
+        "Development status property IRI: "
+        f"{metadata.publication.development_status_property_iri}",
+        file=output,
+    )
+    print(
+        f"Development status IRI: {metadata.publication.development_status_iri}",
+        file=output,
+    )
     print(f"Canonical product count: {len(metadata.products)}", file=output)
+    print(
+        "Canonical product order: "
+        + ", ".join(product.key for product in metadata.products),
+        file=output,
+    )
 
     for product in metadata.products:
         print(f"Product: {product.key}", file=output)
         print(f"  path: {product.path}", file=output)
         print(f"  stable ontology IRI: {product.stable_ontology_iri}", file=output)
+        print(f"  release suffix: {product.release_iri_suffix}", file=output)
+        print(f"  label: {product.label}", file=output)
+        print(f"  description: {product.description}", file=output)
+        print(f"  product-type IRI: {product.product_type_iri}", file=output)
 
     if release_context is None:
         print("Immutable release version IRI: not claimed in development mode.", file=output)

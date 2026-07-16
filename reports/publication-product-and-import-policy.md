@@ -6,11 +6,11 @@ Adopt four generated modular products alongside, not in place of, the independen
 
 | Product | File | Stable ontology IRI | Authority and lifecycle status |
 |---|---|---|---|
-| Integrated authoritative product | `SSN2BFO.ttl` | `http://www.sks.ai/SSN2BFO/` | **Authoritative; production.** It remains the complete standalone integrated publication and must not become an import wrapper. |
-| Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core` | **Approved production module; implementation pending.** It contains the 29 target-neutral governed axioms. |
-| Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping` | **Approved production module; implementation pending.** It contains the 19 current BFO-bearing axioms unchanged and only future strict/lossless BFO mappings. |
-| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection` | **Approved production module; implementation pending.** It adds only approved weaker but sound BFO consequences and imports the strict BFO mapping. |
-| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension` | **Approved production module; implementation pending.** It adds the 25 CCO-bearing and 32 mixed BFO/CCO axioms and imports the strict BFO mapping. |
+| Integrated authoritative product | `SSN2BFO.ttl` | `http://www.sks.ai/SSN2BFO/` | **Maintained authoritative development artifact.** It remains the complete standalone integrated publication and must not become an import wrapper. |
+| Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core` | **Maintained authoritative development artifact.** It contains the 29 target-neutral governed axioms. |
+| Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping` | **Maintained authoritative development artifact.** It contains the 19 current BFO-bearing axioms unchanged. |
+| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection` | **Maintained authoritative development artifact.** It is the designated product for approved weaker but sound BFO consequences, imports the strict BFO mapping, and currently asserts no direct projection axiom. |
+| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension` | **Maintained authoritative development artifact.** It adds the 25 CCO-bearing and 32 mixed BFO/CCO axioms and imports the strict BFO mapping. |
 | Current simple BFO projection | `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-generated.ttl` | None | **Review-only; publication workflow to be retired.** It is not the approved BFO projection product. |
 | RO module | No approved path | None | **Deferred.** It remains outside the approved product set pending a focused applicability review. |
 | `sosa-next` modules | Existing `releases/sosa-next/` placeholders | None approved | **Inactive lifecycle scaffolding.** They remain outside current generation, CI, release, and completeness accounting. |
@@ -201,16 +201,18 @@ Policy:
 
 Policy:
 
-- Generate it from COMS plus approved, machine-governed transformation rules.
+- Generate it from COMS dispositions plus approved, machine-governed transformation rules.
 - Import only the strict BFO mapping.
-- Add only approved weaker but sound BFO consequences derived from richer CCO-bearing or mixed mappings.
+- Treat it as the designated product for approved weaker but sound BFO consequences derived from richer CCO-bearing or mixed mappings.
+- No direct projection axiom is currently approved, so the maintained product is intentionally import-only and policy-complete.
+- Add no transformed or weakened consequence unless a later governed transformation rule and its proof obligations are approved.
 - Prohibit CCO and RO IRIs in its added logical axioms.
 - Trace every added assertion to the stable COMS row identifier and authoritative source expression.
 - Identify each added assertion explicitly as a weakened projection, never as an equivalence-preserving or strict mapping.
 - Record pinned dependency identities, transformation rule, logical justification, and positive/negative regression tests.
 - Assert each projected axiom as an actual OWL/RDF axiom; annotations alone do not create a projection.
 
-Its import closure contains the alignment core, every strict BFO mapping, and every approved weakened BFO consequence. It therefore supplies the complete BFO consumer result without contaminating the strict BFO mapping with weaker assertions.
+Its current import closure contains the alignment core and every strict BFO mapping. Because no direct projection axiom is approved, it currently adds no weakened BFO consequence; this zero-direct-axiom state is intentional rather than incomplete serialization.
 
 A later release process may materialize this import closure as one standalone consumer file. Such a file is a generated packaging artifact, not a new mapping authority or independently editable product source.
 
@@ -473,42 +475,42 @@ Formal release generation:
 
 ### Governed metadata source
 
-Adopt `config/publication-metadata.toml` as the maintained metadata source. Python 3.12 standard-library `tomllib` must parse it.
+`config/publication-metadata.toml` is the sole governed and editable publication-metadata source. Schema version 2 is parsed with standard-library `tomllib`, rejects unknown keys, and governs these global values:
 
-It must govern:
+| Field | Governed value |
+|---|---|
+| Project title | `SSN-to-BFO` |
+| Default language | `en` |
+| Release IRI base | `http://www.sks.ai/SSN2BFO/releases` |
+| License IRI | `https://creativecommons.org/publicdomain/zero/1.0/` |
+| Repository IRI | `https://github.com/BFO-Mappings/SSN-to-BFO` |
+| Generated warning | `Generated from governed COMS and publication metadata; do not edit this ontology directly.` |
+| Development authority-status predicate | `http://www.w3.org/ns/adms#status` |
+| Development authority-status value | `http://www.sks.ai/SSN2BFO/authority-status/maintained-authoritative-development` |
 
-- stable product IRIs;
-- product labels and product types;
-- release identifier and date in release mode;
-- CC0 license IRI;
-- repository IRI;
-- contributors and identifiers;
-- source ontology identities and versions;
-- BFO and CCO dependency identities and versions;
-- provenance;
-- publication links.
+The five product records remain in canonical order and govern the existing path, stable ontology IRI, release suffix, and these publication values:
 
-Contributor metadata must not be inferred automatically from Git authors.
+| Product | Label | Lifecycle-neutral description | Product-type IRI |
+|---|---|---|---|
+| Integrated | SSN-to-BFO Integrated Mapping | Directly asserts the complete governed COMS axiom set for the SSN/SOSA alignment with BFO and CCO. | `http://www.sks.ai/SSN2BFO/product-type/integrated` |
+| Alignment core | SSN/SOSA Alignment Core | Directly asserts the governed target-neutral SSN/SOSA alignment axioms shared by the modular products and imports no ontology. | `http://www.sks.ai/SSN2BFO/product-type/alignment-core` |
+| Strict BFO mapping | SSN/SOSA Strict BFO Mapping | Directly asserts governed BFO-bearing axioms without weakening and imports the SSN/SOSA alignment core. | `http://www.sks.ai/SSN2BFO/product-type/strict-bfo-mapping` |
+| BFO projection | SSN/SOSA BFO Projection | Imports the strict BFO mapping and is the designated product for approved weaker but sound BFO consequences; no direct projection axiom is currently approved. | `http://www.sks.ai/SSN2BFO/product-type/bfo-projection` |
+| CCO extension | SSN/SOSA CCO Extension | Directly asserts governed CCO-bearing and mixed BFO/CCO axioms unchanged and imports the strict BFO mapping. | `http://www.sks.ai/SSN2BFO/product-type/cco-extension` |
 
-Every production product must eventually include generated:
+The product-type IRIs are controlled `dcterms:type` values. They do not require declaration triples or a separate vocabulary ontology. The development authority status uses `adms:status` with the governed maintained-authoritative-development IRI. Descriptions remain lifecycle-neutral and do not repeat that status.
 
-- `owl:Ontology` declaration;
-- `rdfs:label`;
-- stable ontology IRI;
-- `owl:versionIRI` in formal release mode;
-- `owl:versionInfo`;
-- `dcterms:license`;
-- `dcterms:issued` for formal releases;
-- contributor/creator metadata;
-- provenance;
-- source and target version identities;
-- repository link;
-- generated-file warning prohibiting direct edits;
-- explicit product type and authority status.
+Schema version 2 governs and validates these values but does not yet emit them as RDF. The next metadata-emission implementation must generate RDF transactionally from the TOML rather than hand-editing products, and it must preserve every governed logical axiom set and the approved import graph byte-for-byte except for the newly approved annotation triples.
 
-BFO projection metadata must explicitly state that the product contains weaker consequences and is not the strict BFO mapping.
+Creator and contributor governance, ORCIDs, agents, provenance, source and dependency identities, local validation paths, dependency hashes, workbook or generator provenance, release identifiers and dates, Git tags, commit bindings, artifact hashes, manifests, and formal-release RDF remain deferred. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
 
-Metadata must be generated transactionally from the governed source and must not be hand-edited into products. It must not turn annotation-only records into pseudo-mappings.
+Development artifacts use stable ontology IRIs and the governed development authority status. They do not claim `owl:versionIRI`, `owl:versionInfo`, `dcterms:issued`, a release date, a Git tag, or frozen artifact identity. Formal release context remains a separate, explicit operation using the approved release identifier and version-IRI helpers.
+
+### License scope
+
+The CC0 dedication applies only to project-authored content directly asserted in the generated products. It does not apply to ontology content obtained through imports, referenced as a dependency, or used only for validation; those third-party resources retain their own notices and terms.
+
+Annotating a project ontology with the governed CC0 IRI does not relicense its import closure or any validation dependency.
 
 Formal release reproducibility must connect:
 
