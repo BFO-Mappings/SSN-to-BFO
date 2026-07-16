@@ -7,12 +7,14 @@ import hashlib
 import ipaddress
 import re
 import tomllib
+import unicodedata
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import urlsplit
 
 
+SCHEMA_VERSION = 2
 PRODUCT_ORDER = (
     "integrated",
     "alignment_core",
@@ -21,8 +23,24 @@ PRODUCT_ORDER = (
     "cco_extension",
 )
 TOP_LEVEL_FIELDS = ("schema_version", "publication", "products")
-PUBLICATION_FIELDS = ("release_iri_base",)
-PRODUCT_FIELDS = ("path", "stable_ontology_iri", "release_iri_suffix")
+PUBLICATION_FIELDS = (
+    "project_title",
+    "default_language",
+    "release_iri_base",
+    "license_iri",
+    "repository_iri",
+    "generated_warning",
+    "development_status_property_iri",
+    "development_status_iri",
+)
+PRODUCT_FIELDS = (
+    "path",
+    "stable_ontology_iri",
+    "release_iri_suffix",
+    "label",
+    "description",
+    "product_type_iri",
+)
 RELEASE_IDENTIFIER_PATTERN = re.compile(
     r"(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})(?:\.(?P<sequence>[1-9][0-9]*))?\Z"
 )
@@ -33,19 +51,44 @@ SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 
 
 @dataclass(frozen=True)
-class ProductMetadata:
+class PublicationSettings:
+    project_title: str
+    default_language: str
+    release_iri_base: str
+    license_iri: str
+    repository_iri: str
+    generated_warning: str
+    development_status_property_iri: str
+    development_status_iri: str
+
+
+@dataclass(frozen=True)
+class ProductPublicationMetadata:
     key: str
     path: str
     stable_ontology_iri: str
     release_iri_suffix: str
+    label: str
+    description: str
+    product_type_iri: str
     release_iri_base: str
+
+
+# Compatibility name retained for existing generator and modular-product imports.
+ProductMetadata = ProductPublicationMetadata
 
 
 @dataclass(frozen=True)
 class PublicationMetadata:
     schema_version: int
-    release_iri_base: str
-    products: tuple[ProductMetadata, ...]
+    publication: PublicationSettings
+    products: tuple[ProductPublicationMetadata, ...]
+
+    @property
+    def release_iri_base(self) -> str:
+        """Compatibility accessor for the schema-1 public API."""
+
+        return self.publication.release_iri_base
 
 
 @dataclass(frozen=True)
@@ -101,7 +144,23 @@ def _string(value: object, field: str, issues: list[ValidationIssue]) -> str | N
     if not value or not value.strip():
         issues.append(_issue("EMPTY_STRING", field, "value must be nonempty"))
         return None
+    issues.extend(_text_form_issues(value, field))
     return value
+
+
+def _text_form_issues(value: str, field: str) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    if unicodedata.normalize("NFC", value) != value:
+        issues.append(_issue("NON_NFC_TEXT", field, "value must be Unicode NFC-normalized"))
+    if any(unicodedata.category(character) == "Cc" for character in value):
+        issues.append(
+            _issue(
+                "CONTROL_CHARACTER",
+                field,
+                "value must not contain control characters or span multiple lines",
+            )
+        )
+    return tuple(issues)
 
 
 def _path_issue(value: str) -> str | None:
@@ -162,7 +221,12 @@ def _valid_hostname(value: str | None) -> bool:
     return all(label_pattern.fullmatch(label) is not None for label in hostname.split("."))
 
 
-def _absolute_http_iri_issue(value: str, *, allow_trailing_slash: bool) -> str | None:
+def _absolute_http_iri_issue(
+    value: str,
+    *,
+    allow_trailing_slash: bool,
+    allow_fragment: bool = False,
+) -> str | None:
     if any(character.isspace() for character in value):
         return "must not contain whitespace"
     if "\\" in value:
@@ -175,17 +239,23 @@ def _absolute_http_iri_issue(value: str, *, allow_trailing_slash: bool) -> str |
         return "must be a valid absolute HTTP IRI"
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         return "must be an absolute HTTP IRI"
+    if parsed.username is not None or parsed.password is not None:
+        return "must not contain user information"
     if not _valid_hostname(hostname):
         return "must include a nonempty valid hostname"
-    if "?" in value or "#" in value:
-        return "must not contain a query string or fragment"
-    if not allow_trailing_slash and value.endswith("/"):
+    if parsed.query or "?" in value:
+        return "must not contain a query string"
+    if (parsed.fragment or "#" in value) and not allow_fragment:
+        return "must not contain a fragment"
+    if not allow_trailing_slash and parsed.path.endswith("/"):
         return "must not end with '/'"
+    if any(segment in {".", ".."} for segment in parsed.path.split("/")):
+        return "must not contain '.' or '..' path segments"
     return None
 
 
 def _duplicate_issues(
-    products: tuple[ProductMetadata, ...],
+    products: tuple[ProductPublicationMetadata, ...],
     attribute: str,
     code: str,
     label: str,
@@ -210,33 +280,115 @@ def _duplicate_issues(
     return issues
 
 
+def _iri_validation(
+    value: str,
+    field: str,
+    code: str,
+    issues: list[ValidationIssue],
+    *,
+    allow_trailing_slash: bool,
+    allow_fragment: bool = False,
+) -> None:
+    problem = _absolute_http_iri_issue(
+        value,
+        allow_trailing_slash=allow_trailing_slash,
+        allow_fragment=allow_fragment,
+    )
+    if problem:
+        issues.append(_issue(code, field, problem))
+
+
 def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, ...]:
     """Return semantic issues in deterministic policy order."""
 
     issues: list[ValidationIssue] = []
     if type(metadata.schema_version) is not int:
-        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 1"))
-    elif metadata.schema_version != 1:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 1"))
+        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 2"))
+    elif metadata.schema_version != SCHEMA_VERSION:
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 2"))
 
-    release_base = metadata.release_iri_base
-    if not isinstance(release_base, str):
-        issues.append(_issue("WRONG_TYPE", "publication.release_iri_base", "expected a string"))
-    elif not release_base or not release_base.strip():
-        issues.append(_issue("EMPTY_STRING", "publication.release_iri_base", "value must be nonempty"))
-    else:
-        problem = _absolute_http_iri_issue(release_base, allow_trailing_slash=False)
-        if problem:
-            issues.append(_issue("INVALID_RELEASE_BASE", "publication.release_iri_base", problem))
+    publication = metadata.publication
+    for attribute in PUBLICATION_FIELDS:
+        value = getattr(publication, attribute)
+        if not isinstance(value, str):
+            issues.append(_issue("WRONG_TYPE", f"publication.{attribute}", "expected a string"))
+        elif not value or not value.strip():
+            issues.append(_issue("EMPTY_STRING", f"publication.{attribute}", "value must be nonempty"))
+        else:
+            issues.extend(_text_form_issues(value, f"publication.{attribute}"))
+    if publication.default_language != "en":
+        issues.append(
+            _issue(
+                "UNSUPPORTED_LANGUAGE",
+                "publication.default_language",
+                "schema version 2 requires the exact language code 'en'",
+            )
+        )
+    if (
+        isinstance(publication.generated_warning, str)
+        and publication.generated_warning.strip()
+        and publication.generated_warning
+        != " ".join(publication.generated_warning.split())
+    ):
+        issues.append(
+            _issue(
+                "NONCANONICAL_WHITESPACE",
+                "publication.generated_warning",
+                "warning must be one logical literal with normalized whitespace",
+            )
+        )
+    publication_iris = (
+        (
+            publication.release_iri_base,
+            "publication.release_iri_base",
+            "INVALID_RELEASE_BASE",
+            False,
+            False,
+        ),
+        (
+            publication.license_iri,
+            "publication.license_iri",
+            "INVALID_LICENSE_IRI",
+            True,
+            False,
+        ),
+        (
+            publication.repository_iri,
+            "publication.repository_iri",
+            "INVALID_REPOSITORY_IRI",
+            False,
+            False,
+        ),
+        (
+            publication.development_status_property_iri,
+            "publication.development_status_property_iri",
+            "INVALID_STATUS_PROPERTY_IRI",
+            False,
+            True,
+        ),
+        (
+            publication.development_status_iri,
+            "publication.development_status_iri",
+            "INVALID_STATUS_IRI",
+            False,
+            False,
+        ),
+    )
+    for value, field, code, allow_trailing_slash, allow_fragment in publication_iris:
+        if isinstance(value, str) and value.strip():
+            _iri_validation(
+                value,
+                field,
+                code,
+                issues,
+                allow_trailing_slash=allow_trailing_slash,
+                allow_fragment=allow_fragment,
+            )
 
     keys = tuple(product.key for product in metadata.products)
     if set(keys) != set(PRODUCT_ORDER) or len(keys) != len(PRODUCT_ORDER):
         issues.append(
-            _issue(
-                "PRODUCT_SET",
-                "products",
-                "expected exactly: " + ", ".join(PRODUCT_ORDER),
-            )
+            _issue("PRODUCT_SET", "products", "expected exactly: " + ", ".join(PRODUCT_ORDER))
         )
     elif keys != PRODUCT_ORDER:
         issues.append(_issue("PRODUCT_ORDER", "products", "products are not in canonical order"))
@@ -249,28 +401,41 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
                 issues.append(_issue("WRONG_TYPE", f"{prefix}.{attribute}", "expected a string"))
             elif not value or not value.strip():
                 issues.append(_issue("EMPTY_STRING", f"{prefix}.{attribute}", "value must be nonempty"))
-        if isinstance(product.path, str) and product.path.strip():
-            problem = _path_issue(product.path)
-            if problem:
-                issues.append(_issue("UNSAFE_PRODUCT_PATH", f"{prefix}.path", problem))
-        if isinstance(product.stable_ontology_iri, str) and product.stable_ontology_iri.strip():
-            problem = _absolute_http_iri_issue(
-                product.stable_ontology_iri,
-                allow_trailing_slash=True,
-            )
-            if problem:
-                issues.append(_issue("INVALID_STABLE_IRI", f"{prefix}.stable_ontology_iri", problem))
-        if isinstance(product.release_iri_suffix, str) and product.release_iri_suffix.strip():
-            problem = _suffix_issue(product.release_iri_suffix)
-            if problem:
-                issues.append(_issue("UNSAFE_RELEASE_SUFFIX", f"{prefix}.release_iri_suffix", problem))
-        if product.release_iri_base != metadata.release_iri_base:
+            else:
+                issues.extend(_text_form_issues(value, f"{prefix}.{attribute}"))
+        if product.release_iri_base != publication.release_iri_base:
             issues.append(
                 _issue(
                     "RELEASE_BASE_MISMATCH",
                     f"{prefix}.release_iri_base",
                     "product release base differs from publication release base",
                 )
+            )
+        if isinstance(product.path, str) and product.path.strip():
+            problem = _path_issue(product.path)
+            if problem:
+                issues.append(_issue("UNSAFE_PRODUCT_PATH", f"{prefix}.path", problem))
+        if isinstance(product.release_iri_suffix, str) and product.release_iri_suffix.strip():
+            problem = _suffix_issue(product.release_iri_suffix)
+            if problem:
+                issues.append(
+                    _issue("UNSAFE_RELEASE_SUFFIX", f"{prefix}.release_iri_suffix", problem)
+                )
+        if isinstance(product.stable_ontology_iri, str) and product.stable_ontology_iri.strip():
+            _iri_validation(
+                product.stable_ontology_iri,
+                f"{prefix}.stable_ontology_iri",
+                "INVALID_STABLE_IRI",
+                issues,
+                allow_trailing_slash=True,
+            )
+        if isinstance(product.product_type_iri, str) and product.product_type_iri.strip():
+            _iri_validation(
+                product.product_type_iri,
+                f"{prefix}.product_type_iri",
+                "INVALID_PRODUCT_TYPE_IRI",
+                issues,
+                allow_trailing_slash=False,
             )
 
     issues.extend(_duplicate_issues(metadata.products, "path", "DUPLICATE_PATH", "path"))
@@ -290,11 +455,19 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
             "release IRI suffix",
         )
     )
+    issues.extend(
+        _duplicate_issues(
+            metadata.products,
+            "product_type_iri",
+            "DUPLICATE_PRODUCT_TYPE_IRI",
+            "product-type IRI",
+        )
+    )
     return tuple(issues)
 
 
 def load_metadata(path: str | Path) -> PublicationMetadata:
-    """Load UTF-8 TOML and return validated metadata in canonical order."""
+    """Load UTF-8 TOML and return validated schema-2 metadata."""
 
     source = Path(path)
     try:
@@ -311,35 +484,34 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
 
     issues: list[ValidationIssue] = []
     top = _table(raw, "metadata", TOP_LEVEL_FIELDS, issues)
-
     schema_version = top.get("schema_version")
     if type(schema_version) is not int:
         if "schema_version" in top:
-            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 1"))
-    elif schema_version != 1:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 1"))
+            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 2"))
+    elif schema_version != SCHEMA_VERSION:
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 2"))
 
-    publication = (
+    publication_table = (
         _table(top["publication"], "publication", PUBLICATION_FIELDS, issues)
         if "publication" in top
         else {}
     )
-    release_base = (
-        _string(
-            publication["release_iri_base"],
-            "publication.release_iri_base",
-            issues,
-        )
-        if "release_iri_base" in publication
-        else None
-    )
+    publication_values = {
+        field: _string(publication_table[field], f"publication.{field}", issues)
+        for field in PUBLICATION_FIELDS
+        if field in publication_table
+    }
 
     products_table = (
         _table(top["products"], "products", PRODUCT_ORDER, issues)
         if "products" in top
         else {}
     )
-    products: list[ProductMetadata] = []
+    if set(products_table) == set(PRODUCT_ORDER) and tuple(products_table) != PRODUCT_ORDER:
+        issues.append(_issue("PRODUCT_ORDER", "products", "products are not in canonical order"))
+
+    release_base = publication_values.get("release_iri_base")
+    products: list[ProductPublicationMetadata] = []
     for key in PRODUCT_ORDER:
         if key not in products_table:
             continue
@@ -349,36 +521,21 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
             PRODUCT_FIELDS,
             issues,
         )
-        path_value = (
-            _string(product_table["path"], f"products.{key}.path", issues)
-            if "path" in product_table
-            else None
-        )
-        stable_iri = (
-            _string(
-                product_table["stable_ontology_iri"],
-                f"products.{key}.stable_ontology_iri",
-                issues,
-            )
-            if "stable_ontology_iri" in product_table
-            else None
-        )
-        suffix = (
-            _string(
-                product_table["release_iri_suffix"],
-                f"products.{key}.release_iri_suffix",
-                issues,
-            )
-            if "release_iri_suffix" in product_table
-            else None
-        )
-        if path_value is not None and stable_iri is not None and suffix is not None and release_base:
+        values = {
+            field: _string(product_table[field], f"products.{key}.{field}", issues)
+            for field in PRODUCT_FIELDS
+            if field in product_table
+        }
+        if all(values.get(field) is not None for field in PRODUCT_FIELDS) and release_base:
             products.append(
-                ProductMetadata(
+                ProductPublicationMetadata(
                     key=key,
-                    path=path_value,
-                    stable_ontology_iri=stable_iri,
-                    release_iri_suffix=suffix,
+                    path=values["path"],
+                    stable_ontology_iri=values["stable_ontology_iri"],
+                    release_iri_suffix=values["release_iri_suffix"],
+                    label=values["label"],
+                    description=values["description"],
+                    product_type_iri=values["product_type_iri"],
                     release_iri_base=release_base,
                 )
             )
@@ -386,9 +543,12 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
     if issues:
         raise PublicationMetadataError(issues)
 
+    publication = PublicationSettings(
+        **{field: publication_values[field] for field in PUBLICATION_FIELDS}
+    )
     metadata = PublicationMetadata(
         schema_version=schema_version,
-        release_iri_base=release_base,
+        publication=publication,
         products=tuple(products),
     )
     semantic_issues = validate_metadata(metadata)

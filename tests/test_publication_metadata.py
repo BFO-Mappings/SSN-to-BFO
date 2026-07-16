@@ -22,31 +22,78 @@ import publication_metadata as metadata  # noqa: E402
 
 ACTUAL_CONFIG = REPO_ROOT / "config/publication-metadata.toml"
 RELEASE_BASE = "http://www.sks.ai/SSN2BFO/releases"
+PUBLICATION_VALUES = {
+    "project_title": "SSN-to-BFO",
+    "default_language": "en",
+    "release_iri_base": RELEASE_BASE,
+    "license_iri": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "repository_iri": "https://github.com/BFO-Mappings/SSN-to-BFO",
+    "generated_warning": (
+        "Generated from governed COMS and publication metadata; "
+        "do not edit this ontology directly."
+    ),
+    "development_status_property_iri": "http://www.w3.org/ns/adms#status",
+    "development_status_iri": (
+        "http://www.sks.ai/SSN2BFO/authority-status/"
+        "maintained-authoritative-development"
+    ),
+}
 POLICY_PRODUCTS = {
     "integrated": {
         "path": "SSN2BFO.ttl",
         "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/",
         "release_iri_suffix": "integrated",
+        "label": "SSN-to-BFO Integrated Mapping",
+        "description": (
+            "Directly asserts the complete governed COMS axiom set for the "
+            "SSN/SOSA alignment with BFO and CCO."
+        ),
+        "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/integrated",
     },
     "alignment_core": {
         "path": "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
         "release_iri_suffix": "current-ssn-sosa/alignment-core",
+        "label": "SSN/SOSA Alignment Core",
+        "description": (
+            "Directly asserts the governed target-neutral SSN/SOSA alignment axioms "
+            "shared by the modular products and imports no ontology."
+        ),
+        "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/alignment-core",
     },
     "strict_bfo_mapping": {
         "path": "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
         "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
         "release_iri_suffix": "current-ssn-sosa/bfo-mapping",
+        "label": "SSN/SOSA Strict BFO Mapping",
+        "description": (
+            "Directly asserts governed BFO-bearing axioms without weakening and "
+            "imports the SSN/SOSA alignment core."
+        ),
+        "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/strict-bfo-mapping",
     },
     "bfo_projection": {
         "path": "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
         "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection",
         "release_iri_suffix": "current-ssn-sosa/bfo-projection",
+        "label": "SSN/SOSA BFO Projection",
+        "description": (
+            "Imports the strict BFO mapping and is the designated product for approved "
+            "weaker but sound BFO consequences; no direct projection axiom is currently "
+            "approved."
+        ),
+        "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/bfo-projection",
     },
     "cco_extension": {
         "path": "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension",
         "release_iri_suffix": "current-ssn-sosa/cco-extension",
+        "label": "SSN/SOSA CCO Extension",
+        "description": (
+            "Directly asserts governed CCO-bearing and mixed BFO/CCO axioms unchanged "
+            "and imports the strict BFO mapping."
+        ),
+        "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/cco-extension",
     },
 }
 
@@ -56,16 +103,22 @@ def render_toml(
     product_order: tuple[str, ...] = metadata.PRODUCT_ORDER,
     omit_products: frozenset[str] = frozenset(),
     omit_fields: frozenset[tuple[str, str]] = frozenset(),
+    omit_publication_fields: frozenset[str] = frozenset(),
     raw_overrides: dict[tuple[str, str], str] | None = None,
+    publication_raw_overrides: dict[str, str] | None = None,
     release_base_raw: str | None = None,
-    schema_raw: str = "1",
+    schema_raw: str = "2",
 ) -> str:
     overrides = raw_overrides or {}
+    publication_overrides = publication_raw_overrides or {}
+    if release_base_raw is not None:
+        publication_overrides["release_iri_base"] = release_base_raw
     lines = [f"schema_version = {schema_raw}", "", "[publication]"]
-    lines.append(
-        "release_iri_base = "
-        + (release_base_raw if release_base_raw is not None else json.dumps(RELEASE_BASE))
-    )
+    for field in metadata.PUBLICATION_FIELDS:
+        if field in omit_publication_fields:
+            continue
+        raw = publication_overrides.get(field, json.dumps(PUBLICATION_VALUES[field], ensure_ascii=False))
+        lines.append(f"{field} = {raw}")
     for key in product_order:
         if key in omit_products:
             continue
@@ -75,13 +128,16 @@ def render_toml(
                 "path": f"releases/{key}.ttl",
                 "stable_ontology_iri": f"http://example.org/{key}",
                 "release_iri_suffix": key,
+                "label": f"Synthetic {key}",
+                "description": f"Synthetic description for {key}.",
+                "product_type_iri": f"http://example.org/product-type/{key}",
             },
         )
         lines.extend(["", f"[products.{key}]"])
         for field in metadata.PRODUCT_FIELDS:
             if (key, field) in omit_fields:
                 continue
-            raw = overrides.get((key, field), json.dumps(values[field]))
+            raw = overrides.get((key, field), json.dumps(values[field], ensure_ascii=False))
             lines.append(f"{field} = {raw}")
     return "\n".join(lines) + "\n"
 
@@ -113,33 +169,62 @@ class MetadataTestCase(unittest.TestCase):
 class ConfigurationTests(MetadataTestCase):
     def test_actual_repository_config_passes(self) -> None:
         loaded = metadata.load_metadata(ACTUAL_CONFIG)
-        self.assertEqual(loaded.schema_version, 1)
+        self.assertEqual(loaded.schema_version, 2)
         self.assertEqual(tuple(product.key for product in loaded.products), metadata.PRODUCT_ORDER)
+
+    def test_minimal_complete_schema_2_document_passes(self) -> None:
+        loaded = metadata.load_metadata(self.write(render_toml()))
+        self.assertEqual(loaded.schema_version, 2)
+        self.assertEqual(len(loaded.products), 5)
 
     def test_actual_config_is_locked_to_approved_policy_values(self) -> None:
         loaded = metadata.load_metadata(ACTUAL_CONFIG)
+        observed_publication = {
+            field: getattr(loaded.publication, field)
+            for field in metadata.PUBLICATION_FIELDS
+        }
+        self.assertEqual(observed_publication, PUBLICATION_VALUES)
         self.assertEqual(loaded.release_iri_base, RELEASE_BASE)
         observed = {
             product.key: {
-                "path": product.path,
-                "stable_ontology_iri": product.stable_ontology_iri,
-                "release_iri_suffix": product.release_iri_suffix,
+                field: getattr(product, field)
+                for field in metadata.PRODUCT_FIELDS
             }
             for product in loaded.products
         }
         self.assertEqual(observed, POLICY_PRODUCTS)
 
+    def test_actual_config_has_no_deferred_tables_or_fields(self) -> None:
+        text = ACTUAL_CONFIG.read_text(encoding="utf-8")
+        for prohibited in (
+            "agent",
+            "creator",
+            "contributor",
+            "dependency",
+            "provenance",
+            "wasDerivedFrom",
+            "release_identifier",
+            "release_date",
+            "git_tag",
+            "commit",
+            "sha256",
+            "versionIRI",
+            "versionInfo",
+            "issued",
+        ):
+            self.assertNotIn(prohibited, text)
+
     def test_malformed_toml(self) -> None:
         self.assert_issue("schema_version =\n", "TOML_PARSE")
 
     def test_missing_top_level_field(self) -> None:
-        content = render_toml().replace("schema_version = 1\n\n", "")
+        content = render_toml().replace("schema_version = 2\n\n", "")
         self.assert_issue(content, "MISSING_FIELD", "metadata.schema_version")
 
     def test_unknown_top_level_field(self) -> None:
         content = render_toml().replace(
-            "schema_version = 1\n",
-            "schema_version = 1\nunknown = true\n",
+            "schema_version = 2\n",
+            "schema_version = 2\nunknown = true\n",
         )
         self.assert_issue(content, "UNKNOWN_FIELD", "metadata.unknown")
 
@@ -149,6 +234,23 @@ class ConfigurationTests(MetadataTestCase):
             "[publication]\nunknown = true\n",
         )
         self.assert_issue(content, "UNKNOWN_FIELD", "publication.unknown")
+
+    def test_missing_publication_table(self) -> None:
+        content = render_toml()
+        start = content.index("[publication]\n")
+        end = content.index("\n[products.integrated]")
+        self.assert_issue(
+            content[:start] + content[end + 1 :],
+            "MISSING_FIELD",
+            "metadata.publication",
+        )
+
+    def test_missing_publication_field(self) -> None:
+        self.assert_issue(
+            render_toml(omit_publication_fields=frozenset({"license_iri"})),
+            "MISSING_FIELD",
+            "publication.license_iri",
+        )
 
     def test_missing_product(self) -> None:
         self.assert_issue(
@@ -195,14 +297,27 @@ class ConfigurationTests(MetadataTestCase):
     def test_boolean_schema_version_is_rejected(self) -> None:
         self.assert_issue(render_toml(schema_raw="true"), "WRONG_TYPE", "schema_version")
 
-    def test_wrong_schema_version(self) -> None:
-        self.assert_issue(render_toml(schema_raw="2"), "SCHEMA_VERSION", "schema_version")
+    def test_schema_1_and_unknown_schema_are_rejected(self) -> None:
+        for value in ("1", "3"):
+            with self.subTest(value=value):
+                self.assert_issue(
+                    render_toml(schema_raw=value),
+                    "SCHEMA_VERSION",
+                    "schema_version",
+                )
 
-    def test_reordered_product_tables_return_canonical_order(self) -> None:
-        loaded = metadata.load_metadata(
-            self.write(render_toml(product_order=tuple(reversed(metadata.PRODUCT_ORDER))))
+    def test_reordered_product_tables_are_rejected(self) -> None:
+        self.assert_issue(
+            render_toml(product_order=tuple(reversed(metadata.PRODUCT_ORDER))),
+            "PRODUCT_ORDER",
+            "products",
         )
-        self.assertEqual(tuple(product.key for product in loaded.products), metadata.PRODUCT_ORDER)
+
+    def test_canonical_product_order_is_deterministic(self) -> None:
+        first = metadata.load_metadata(self.write(render_toml(), "first.toml"))
+        second = metadata.load_metadata(self.write(render_toml(), "second.toml"))
+        self.assertEqual(first, second)
+        self.assertEqual(tuple(product.key for product in first.products), metadata.PRODUCT_ORDER)
 
 
 class IdentitySafetyTests(MetadataTestCase):
@@ -228,6 +343,14 @@ class IdentitySafetyTests(MetadataTestCase):
             render_toml(raw_overrides={("alignment_core", "release_iri_suffix"): duplicate}),
             "DUPLICATE_RELEASE_SUFFIX",
             "products.alignment_core.release_iri_suffix",
+        )
+
+    def test_duplicate_product_type_iri(self) -> None:
+        duplicate = json.dumps(POLICY_PRODUCTS["integrated"]["product_type_iri"])
+        self.assert_issue(
+            render_toml(raw_overrides={("alignment_core", "product_type_iri"): duplicate}),
+            "DUPLICATE_PRODUCT_TYPE_IRI",
+            "products.alignment_core.product_type_iri",
         )
 
     def test_absolute_path(self) -> None:
@@ -334,8 +457,185 @@ class IdentitySafetyTests(MetadataTestCase):
                     "INVALID_STABLE_IRI",
                 )
 
+    def test_approved_trailing_slash_iris_pass(self) -> None:
+        loaded = metadata.load_metadata(self.write(render_toml()))
+        self.assertTrue(loaded.publication.license_iri.endswith("/"))
+        self.assertTrue(loaded.products[0].stable_ontology_iri.endswith("/"))
+
+    def test_global_and_product_iri_fields_reject_malformed_relative_and_local_values(self) -> None:
+        publication_cases = (
+            ("license_iri", "relative", "INVALID_LICENSE_IRI"),
+            ("repository_iri", "file:///tmp/repository", "INVALID_REPOSITORY_IRI"),
+            ("development_status_property_iri", "/tmp/status", "INVALID_STATUS_PROPERTY_IRI"),
+            ("development_status_iri", "C:/status", "INVALID_STATUS_IRI"),
+        )
+        for field, value, code in publication_cases:
+            with self.subTest(field=field, value=value):
+                self.assert_issue(
+                    render_toml(publication_raw_overrides={field: json.dumps(value)}),
+                    code,
+                    f"publication.{field}",
+                )
+        self.assert_issue(
+            render_toml(
+                raw_overrides={("integrated", "product_type_iri"): '"../product-type"'}
+            ),
+            "INVALID_PRODUCT_TYPE_IRI",
+            "products.integrated.product_type_iri",
+        )
+
+    def test_queries_and_unapproved_fragments_are_rejected(self) -> None:
+        for field in ("license_iri", "repository_iri", "development_status_iri"):
+            with self.subTest(field=field):
+                self.assert_issue(
+                    render_toml(
+                        publication_raw_overrides={
+                            field: json.dumps("https://example.org/value?query=1")
+                        }
+                    ),
+                    {
+                        "license_iri": "INVALID_LICENSE_IRI",
+                        "repository_iri": "INVALID_REPOSITORY_IRI",
+                        "development_status_iri": "INVALID_STATUS_IRI",
+                    }[field],
+                )
+        self.assert_issue(
+            render_toml(
+                raw_overrides={
+                    ("integrated", "product_type_iri"): '"https://example.org/type#value"'
+                }
+            ),
+            "INVALID_PRODUCT_TYPE_IRI",
+        )
+
+    def test_blank_labels_and_descriptions_are_rejected(self) -> None:
+        for field in ("label", "description"):
+            with self.subTest(field=field):
+                self.assert_issue(
+                    render_toml(raw_overrides={("integrated", field): '"   "'}),
+                    "EMPTY_STRING",
+                    f"products.integrated.{field}",
+                )
+
+    def test_nfc_text_passes_and_decomposed_text_is_rejected(self) -> None:
+        normalized = render_toml(
+            raw_overrides={("integrated", "label"): json.dumps("Caf\u00e9", ensure_ascii=False)}
+        )
+        loaded = metadata.load_metadata(self.write(normalized))
+        self.assertEqual(loaded.products[0].label, "Caf\u00e9")
+        for field in ("label", "description"):
+            with self.subTest(field=field):
+                self.assert_issue(
+                    render_toml(
+                        raw_overrides={
+                            ("integrated", field): json.dumps("Cafe\u0301", ensure_ascii=False)
+                        }
+                    ),
+                    "NON_NFC_TEXT",
+                    f"products.integrated.{field}",
+                )
+
+    def test_control_characters_and_multiline_warning_are_rejected(self) -> None:
+        self.assert_issue(
+            render_toml(raw_overrides={("integrated", "label"): '"bad\\u0001label"'}),
+            "CONTROL_CHARACTER",
+            "products.integrated.label",
+        )
+        self.assert_issue(
+            render_toml(
+                publication_raw_overrides={
+                    "generated_warning": '"""Generated warning\ncontinued."""'
+                }
+            ),
+            "CONTROL_CHARACTER",
+            "publication.generated_warning",
+        )
+
+    def test_noncanonical_warning_whitespace_is_rejected(self) -> None:
+        self.assert_issue(
+            render_toml(
+                publication_raw_overrides={
+                    "generated_warning": '"Generated  warning with extra spacing."'
+                }
+            ),
+            "NONCANONICAL_WHITESPACE",
+            "publication.generated_warning",
+        )
+
+    def test_language_other_than_en_is_rejected(self) -> None:
+        self.assert_issue(
+            render_toml(publication_raw_overrides={"default_language": '"fr"'}),
+            "UNSUPPORTED_LANGUAGE",
+            "publication.default_language",
+        )
+
+    def test_deferred_tables_and_fields_are_rejected(self) -> None:
+        top_level_tables = ("agents", "dependencies")
+        for table in top_level_tables:
+            with self.subTest(table=table):
+                self.assert_issue(
+                    render_toml() + f"\n[{table}]\nvalue = \"deferred\"\n",
+                    "UNKNOWN_FIELD",
+                    f"metadata.{table}",
+                )
+        deferred_publication_fields = (
+            "creator",
+            "contributor",
+            "provenance",
+            "release_identifier",
+            "owl_version_iri",
+            "owl_version_info",
+            "dcterms_issued",
+            "release_date",
+            "git_tag",
+            "commit",
+            "artifact_sha256",
+        )
+        for field in deferred_publication_fields:
+            with self.subTest(field=field):
+                content = render_toml().replace(
+                    "[publication]\n",
+                    f"[publication]\n{field} = \"deferred\"\n",
+                )
+                self.assert_issue(content, "UNKNOWN_FIELD", f"publication.{field}")
+
 
 class DevelopmentModeTests(MetadataTestCase):
+    def test_development_output_is_deterministic_and_reports_exact_schema_2_values(self) -> None:
+        first = io.StringIO()
+        second = io.StringIO()
+        self.assertEqual(checker.main([], stdout=first), 0)
+        self.assertEqual(checker.main([], stdout=second), 0)
+        self.assertEqual(first.getvalue(), second.getvalue())
+
+        rendered = first.getvalue()
+        expected_lines = (
+            "Schema version: 2",
+            f"Project title: {PUBLICATION_VALUES['project_title']}",
+            f"Default language: {PUBLICATION_VALUES['default_language']}",
+            f"Release IRI base: {PUBLICATION_VALUES['release_iri_base']}",
+            f"License IRI: {PUBLICATION_VALUES['license_iri']}",
+            f"Repository IRI: {PUBLICATION_VALUES['repository_iri']}",
+            f"Generated warning: {PUBLICATION_VALUES['generated_warning']}",
+            (
+                "Development status property IRI: "
+                f"{PUBLICATION_VALUES['development_status_property_iri']}"
+            ),
+            f"Development status IRI: {PUBLICATION_VALUES['development_status_iri']}",
+            "Canonical product count: 5",
+            "Canonical product order: " + ", ".join(metadata.PRODUCT_ORDER),
+        )
+        for line in expected_lines:
+            self.assertIn(line + "\n", rendered)
+        for key, values in POLICY_PRODUCTS.items():
+            self.assertIn(f"Product: {key}\n", rendered)
+            self.assertIn(f"  path: {values['path']}\n", rendered)
+            self.assertIn(f"  stable ontology IRI: {values['stable_ontology_iri']}\n", rendered)
+            self.assertIn(f"  release suffix: {values['release_iri_suffix']}\n", rendered)
+            self.assertIn(f"  label: {values['label']}\n", rendered)
+            self.assertIn(f"  description: {values['description']}\n", rendered)
+            self.assertIn(f"  product-type IRI: {values['product_type_iri']}\n", rendered)
+
     def test_default_development_validation_passes_without_version_iris(self) -> None:
         output = io.StringIO()
         self.assertEqual(checker.main([], stdout=output), 0)
@@ -530,6 +830,18 @@ class ErrorAndCliTests(MetadataTestCase):
         self.assertEqual(code, 1)
         self.assertIn("ERROR [TOML_PARSE]", error.getvalue())
         self.assertNotIn("Traceback", error.getvalue())
+
+    def test_cli_unknown_field_returns_nonzero(self) -> None:
+        config = self.write(
+            render_toml().replace(
+                "[publication]\n",
+                "[publication]\ncreator = \"deferred\"\n",
+            )
+        )
+        error = io.StringIO()
+        code = checker.main(["--metadata", str(config)], stderr=error)
+        self.assertEqual(code, 1)
+        self.assertIn("ERROR [UNKNOWN_FIELD] publication.creator", error.getvalue())
 
     def test_cli_malformed_iris_are_structured(self) -> None:
         values = (
