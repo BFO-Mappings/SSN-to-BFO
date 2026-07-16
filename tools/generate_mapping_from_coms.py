@@ -66,11 +66,13 @@ from publication_metadata import (
     METADATA_PREFIXES,
     PublicationMetadata,
     PublicationMetadataError,
+    release_project_imports,
     render_ontology_header_bytes,
     strip_emitted_ontology_header,
     load_metadata,
     validate_serialized_ontology_header,
 )
+from release_context import FormalReleaseContext, validate_formal_release_context
 
 try:
     import openpyxl
@@ -138,7 +140,9 @@ ROOT_IMPORT_COUNT = 4
 ROOT_METADATA_ANNOTATION_COUNT = 7
 ROOT_LOGICAL_TRIPLE_COUNT = 1112
 ROOT_TOTAL_TRIPLE_COUNT = 1124
+ROOT_FORMAL_TOTAL_TRIPLE_COUNT = 1127
 ROOT_FIXED_CLOSURE_TRIPLE_COUNT = 15912
+ROOT_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15915
 
 PREFIX_FILES = {
     "bfo": Path("imports/cco.ttl"),
@@ -330,6 +334,31 @@ class HermitResult:
             and self.owl_nothing_count == 0
             and not self.unsat_classes
         )
+
+
+@dataclass(frozen=True)
+class RenderedOntologyProduct:
+    product_key: str
+    serialized_bytes: bytes
+    ontology_declaration_triple_count: int
+    import_triple_count: int
+    metadata_annotation_count: int
+    formal_metadata_annotation_count: int
+    logical_triple_count: int
+    total_triple_count: int
+    governed_axiom_count: int
+    sha256: str
+
+
+@dataclass(frozen=True)
+class FormalProductSet:
+    context: FormalReleaseContext
+    integrated: RenderedOntologyProduct
+    alignment_core: ModularProductResult
+    strict_bfo_mapping: ModularProductResult
+    bfo_projection: ModularProductResult
+    cco_extension: ModularProductResult
+    reconciliations: tuple[ProductDispositionReconciliation, ...]
 
 
 def robot_command_report_value(hermit: HermitResult | None) -> str:
@@ -1223,6 +1252,7 @@ ROOT_IMPORT_TURTLE_TERMS = (
 def _root_turtle_bytes(
     processed_rows: Iterable[ProcessedRow],
     publication_metadata: PublicationMetadata,
+    context: FormalReleaseContext | None = None,
 ) -> bytes:
     """Render maintained root bytes solely from governed structured inputs."""
 
@@ -1253,13 +1283,19 @@ def _root_turtle_bytes(
             )
         )
 
+    imports = (
+        release_project_imports(publication_metadata, "integrated", context)
+        if context
+        else ROOT_ORDERED_IMPORTS
+    )
     header = render_ontology_header_bytes(
         publication_metadata,
         "integrated",
-        ROOT_ORDERED_IMPORTS,
+        imports,
         generated_notice=GENERATED_NOTICE,
         prefixes=ROOT_PREFIXES,
         import_turtle_terms=ROOT_IMPORT_TURTLE_TERMS,
+        context=context,
     )
     output = bytearray(header.rstrip(b"\n"))
     for _, lines in sorted(rendered_axioms, key=lambda value: value[0]):
@@ -1267,6 +1303,186 @@ def _root_turtle_bytes(
         output.extend("\n".join(lines).encode("utf-8"))
     output.extend(b"\n")
     return bytes(output)
+
+
+def render_formal_product_set(
+    processed_rows: list[ProcessedRow],
+    identity_audits: Iterable[CanonicalRowAudit],
+    disposition_document: DispositionDocument,
+    publication_metadata: PublicationMetadata,
+    context: FormalReleaseContext,
+) -> FormalProductSet:
+    """Render all five formal products in memory from one governed input state."""
+
+    validated_context = validate_formal_release_context(context)
+    canonical_rows = tuple(
+        canonical_input_for_processed_row(item) for item in processed_rows
+    )
+    audits = tuple(identity_audits)
+    reconciliations = tuple(
+        reconcile_product_axioms(
+            product_key,
+            canonical_rows,
+            audits,
+            disposition_document,
+        )
+        for product_key in (
+            "alignment_core",
+            "strict_bfo_mapping",
+            "bfo_projection",
+            "cco_extension",
+        )
+    )
+    by_key = {value.product_key: value for value in reconciliations}
+
+    root_bytes = _root_turtle_bytes(
+        processed_rows,
+        publication_metadata,
+        validated_context,
+    )
+    root_graph = Graph().parse(data=root_bytes.decode("utf-8"), format="turtle")
+    root_imports = release_project_imports(
+        publication_metadata,
+        "integrated",
+        validated_context,
+    )
+    root_header_issues = validate_serialized_ontology_header(
+        root_bytes,
+        publication_metadata,
+        "integrated",
+        root_imports,
+        generated_notice=GENERATED_NOTICE,
+        prefixes=ROOT_PREFIXES,
+        import_turtle_terms=ROOT_IMPORT_TURTLE_TERMS,
+        mode="release",
+        context=validated_context,
+    )
+    if root_header_issues:
+        raise GenerationError(
+            "formal integrated-root metadata validation failed: "
+            + " | ".join(
+                f"ERROR [{value.code}] {value.field}: {value.message}"
+                for value in root_header_issues
+            )
+        )
+    root_logical = strip_emitted_ontology_header(
+        root_graph,
+        publication_metadata,
+        "integrated",
+        root_imports,
+        validated_context,
+    )
+    if len(root_logical) != ROOT_LOGICAL_TRIPLE_COUNT or len(root_graph) != ROOT_FORMAL_TOTAL_TRIPLE_COUNT:
+        raise GenerationError(
+            "formal integrated-root partition mismatch: "
+            f"logical={len(root_logical)} total={len(root_graph)}"
+        )
+
+    core = build_alignment_core(
+        by_key["alignment_core"].selected_axioms,
+        publication_metadata,
+        validated_context,
+    )
+    strict = build_strict_bfo_mapping(
+        by_key["strict_bfo_mapping"].selected_axioms,
+        publication_metadata,
+        validated_context,
+    )
+    projection = build_bfo_projection(
+        by_key["bfo_projection"].selected_axioms,
+        publication_metadata,
+        validated_context,
+    )
+    cco = build_cco_extension(
+        by_key["cco_extension"].selected_axioms,
+        publication_metadata,
+        validated_context,
+    )
+    expected_totals = {
+        "alignment_core": 64,
+        "strict_bfo_mapping": 137,
+        "bfo_projection": 12,
+        "cco_extension": 946,
+    }
+    for result in (core, strict, projection, cco):
+        expected_total = expected_totals[result.metadata.product_key]
+        if result.total_triple_count != expected_total:
+            raise GenerationError(
+                f"formal {result.metadata.product_key} total triple count mismatch: "
+                f"expected {expected_total}, got {result.total_triple_count}"
+            )
+
+    product_validation_issues = {
+        "alignment_core": validate_alignment_core(
+            core.serialized_bytes,
+            by_key["alignment_core"].selected_axioms,
+            publication_metadata,
+            integrated_graph=root_graph,
+            context=validated_context,
+        ),
+        "strict_bfo_mapping": validate_strict_bfo_mapping(
+            strict.serialized_bytes,
+            by_key["strict_bfo_mapping"].selected_axioms,
+            core.serialized_bytes,
+            by_key["alignment_core"].selected_axioms,
+            publication_metadata,
+            integrated_graph=root_graph,
+            context=validated_context,
+        ),
+        "bfo_projection": validate_bfo_projection(
+            projection.serialized_bytes,
+            by_key["bfo_projection"],
+            strict.serialized_bytes,
+            by_key["strict_bfo_mapping"].selected_axioms,
+            core.serialized_bytes,
+            by_key["alignment_core"].selected_axioms,
+            publication_metadata,
+            integrated_graph=root_graph,
+            context=validated_context,
+        ),
+        "cco_extension": validate_cco_extension(
+            cco.serialized_bytes,
+            by_key["cco_extension"].selected_axioms,
+            strict.serialized_bytes,
+            by_key["strict_bfo_mapping"].selected_axioms,
+            core.serialized_bytes,
+            by_key["alignment_core"].selected_axioms,
+            publication_metadata,
+            integrated_graph=root_graph,
+            context=validated_context,
+        ),
+    }
+    for product_key, issues in product_validation_issues.items():
+        if issues:
+            raise GenerationError(
+                f"formal {product_key} validation failed: "
+                + " | ".join(
+                    f"ERROR [{value.code}] {value.field}: {value.message}"
+                    for value in issues
+                )
+            )
+
+    integrated = RenderedOntologyProduct(
+        product_key="integrated",
+        serialized_bytes=root_bytes,
+        ontology_declaration_triple_count=1,
+        import_triple_count=4,
+        metadata_annotation_count=7,
+        formal_metadata_annotation_count=3,
+        logical_triple_count=ROOT_LOGICAL_TRIPLE_COUNT,
+        total_triple_count=len(root_graph),
+        governed_axiom_count=105,
+        sha256=hashlib.sha256(root_bytes).hexdigest(),
+    )
+    return FormalProductSet(
+        context=validated_context,
+        integrated=integrated,
+        alignment_core=core,
+        strict_bfo_mapping=strict,
+        bfo_projection=projection,
+        cco_extension=cco,
+        reconciliations=reconciliations,
+    )
 
 
 def generate_ontology(
@@ -1715,6 +1931,91 @@ def run_cco_extension_hermit(
         closure_triple_count=len(closure),
         return_code=proc.returncode,
         reasoned_output_produced=reasoned_output_produced,
+        owl_nothing_count=owl_nothing_count,
+        unsat_classes=sorted(inferred_unsats, key=str),
+        robot_output=output,
+        robot_path=robot,
+    )
+
+
+def run_bfo_projection_hermit(
+    generated_path: Path,
+    strict_bfo_path: Path,
+    alignment_core_path: Path,
+    tmp_dir: Path,
+) -> HermitResult:
+    """Independently reason over projection, strict, core, and pinned dependencies."""
+
+    generated_graph = Graph().parse(generated_path, format="turtle")
+    closure = build_fixed_validation_closure(
+        (
+            generated_path.read_bytes(),
+            strict_bfo_path.read_bytes(),
+            alignment_core_path.read_bytes(),
+        ),
+        (
+            REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
+            *(REPO_ROOT / path for path in SOURCE_IMPORTS),
+        ),
+        CLEANUP_TRIPLES,
+    )
+
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    graph_path = tmp_dir / "bfo-projection-pinned-merged-cco-bfo-closure.ttl"
+    reasoned_path = tmp_dir / "bfo-projection-pinned-merged-cco-bfo-closure-reasoned.ttl"
+    if reasoned_path.exists():
+        reasoned_path.unlink()
+    closure.serialize(destination=graph_path, format="turtle")
+
+    robot = shutil.which("robot")
+    if robot is None:
+        return HermitResult(
+            graph_path=graph_path,
+            reasoned_path=reasoned_path,
+            generated_triple_count=len(generated_graph),
+            closure_triple_count=len(closure),
+            return_code=None,
+            reasoned_output_produced=False,
+            owl_nothing_count=None,
+            unsat_classes=[],
+            robot_output="ROBOT executable not found on PATH.",
+            robot_path=None,
+        )
+
+    command = [
+        robot,
+        "reason",
+        "--reasoner",
+        "HermiT",
+        "--input",
+        str(graph_path),
+        "--output",
+        str(reasoned_path),
+    ]
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    output = "\n".join(
+        part for part in (proc.stdout.strip(), proc.stderr.strip()) if part
+    )
+    inferred_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
+    produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
+    owl_nothing_count: int | None = None
+    if produced:
+        reasoned_graph = Graph().parse(reasoned_path, format="turtle")
+        inferred_unsats |= set(unsat_classes(reasoned_graph))
+        owl_nothing_count = len(inferred_unsats)
+    return HermitResult(
+        graph_path=graph_path,
+        reasoned_path=reasoned_path,
+        generated_triple_count=len(generated_graph),
+        closure_triple_count=len(closure),
+        return_code=proc.returncode,
+        reasoned_output_produced=produced,
         owl_nothing_count=owl_nothing_count,
         unsat_classes=sorted(inferred_unsats, key=str),
         robot_output=output,

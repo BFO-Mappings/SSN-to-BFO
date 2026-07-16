@@ -10,13 +10,17 @@ from typing import TextIO
 
 from publication_metadata import (
     PublicationMetadataError,
-    ReleaseContext,
     ValidationIssue,
-    build_version_iri,
     format_issue,
     load_metadata,
+    release_version_iri,
     sha256_file,
-    validate_release_context,
+)
+from release_context import (
+    FormalReleaseContext,
+    FormalReleaseContextError,
+    format_issue as format_release_issue,
+    parse_formal_release_context,
 )
 
 
@@ -48,29 +52,32 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Publication metadata TOML path.",
     )
     parser.add_argument("--release-id", help="Formal release identifier (release mode only).")
+    parser.add_argument("--release-date", help="Formal release date (release mode only).")
     parser.add_argument("--git-tag", help="Intended Git tag (release mode only).")
+    parser.add_argument("--source-commit", help="Exact source commit (release mode only).")
     return parser.parse_args(argv)
 
 
-def validate_cli_context(args: argparse.Namespace) -> ReleaseContext | None:
+def validate_cli_context(args: argparse.Namespace) -> FormalReleaseContext | None:
+    values = (args.release_id, args.release_date, args.git_tag, args.source_commit)
     if args.mode == "development":
-        if args.release_id is not None or args.git_tag is not None:
+        if any(value is not None for value in values):
             raise PublicationMetadataError(
                 [
                     ValidationIssue(
                         code="DEVELOPMENT_RELEASE_ARGUMENT",
                         field="release_context",
-                        message="development mode does not accept --release-id or --git-tag",
+                        message=(
+                            "development mode does not accept --release-id, --release-date, "
+                            "--git-tag, or --source-commit"
+                        ),
                     )
                 ]
             )
         return None
 
-    missing = []
-    if args.release_id is None:
-        missing.append("--release-id")
-    if args.git_tag is None:
-        missing.append("--git-tag")
+    option_names = ("--release-id", "--release-date", "--git-tag", "--source-commit")
+    missing = [name for name, value in zip(option_names, values) if value is None]
     if missing:
         raise PublicationMetadataError(
             [
@@ -81,7 +88,7 @@ def validate_cli_context(args: argparse.Namespace) -> ReleaseContext | None:
                 )
             ]
         )
-    return validate_release_context(args.release_id, args.git_tag)
+    return parse_formal_release_context(*values)
 
 
 def main(
@@ -102,6 +109,10 @@ def main(
     except PublicationMetadataError as exc:
         for issue in exc.issues:
             print(format_issue(issue), file=error_output)
+        return 1
+    except FormalReleaseContextError as exc:
+        for issue in exc.issues:
+            print(format_release_issue(issue), file=error_output)
         return 1
     except OSError as exc:
         issue = ValidationIssue(
@@ -132,6 +143,10 @@ def main(
         f"Development status IRI: {metadata.publication.development_status_iri}",
         file=output,
     )
+    print(
+        f"Formal release status IRI: {metadata.publication.formal_release_status_iri}",
+        file=output,
+    )
     print(f"Canonical product count: {len(metadata.products)}", file=output)
     print(
         "Canonical product order: "
@@ -153,11 +168,18 @@ def main(
         return 0
 
     print(f"Release identifier: {release_context.release_identifier}", file=output)
+    print(f"Release date: {release_context.release_date}", file=output)
     print(f"Intended Git tag: {release_context.git_tag}", file=output)
+    print(f"Source commit: {release_context.source_commit}", file=output)
+    print(
+        "Release context classification: illustrative validation input only; "
+        "no formal artifact was built.",
+        file=output,
+    )
     for product in metadata.products:
         print(
             f"Version IRI [{product.key}]: "
-            f"{build_version_iri(product, release_context.release_identifier)}",
+            f"{release_version_iri(metadata, product.key, release_context)}",
             file=output,
         )
     print(

@@ -1,4 +1,4 @@
-schema_version = 2
+schema_version = 3
 
 [publication]
 project_title = "SSN-to-BFO"
@@ -9,6 +9,7 @@ repository_iri = "https://github.com/BFO-Mappings/SSN-to-BFO"
 generated_warning = "Generated from governed COMS and publication metadata; do not edit this ontology directly."
 development_status_property_iri = "http://www.w3.org/ns/adms#status"
 development_status_iri = "http://www.sks.ai/SSN2BFO/authority-status/maintained-authoritative-development"
+formal_release_status_iri = "http://www.sks.ai/SSN2BFO/authority-status/immutable-authoritative-release"
 
 [products.integrated]
 path = "SSN2BFO.ttl"

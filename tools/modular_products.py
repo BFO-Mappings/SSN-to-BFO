@@ -34,10 +34,12 @@ from publication_metadata import (
     METADATA_PREFIXES,
     ProductMetadata,
     PublicationMetadata,
+    release_project_imports,
     render_ontology_header_bytes,
     strip_emitted_ontology_header,
     validate_serialized_ontology_header,
 )
+from release_context import FormalReleaseContext
 
 
 ALIGNMENT_CORE_KEY = "alignment_core"
@@ -46,6 +48,7 @@ ALIGNMENT_CORE_DOMAIN_COUNT = 15
 ALIGNMENT_CORE_RANGE_COUNT = 14
 ALIGNMENT_CORE_LOGICAL_TRIPLE_COUNT = 53
 ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT = 61
+ALIGNMENT_CORE_FORMAL_TOTAL_TRIPLE_COUNT = 64
 ALIGNMENT_CORE_FIXED_CLOSURE_TRIPLE_COUNT = 1212
 ALIGNMENT_CORE_NAMED_TARGET_COUNT = 26
 ALIGNMENT_CORE_UNION_TARGET_COUNT = 3
@@ -60,6 +63,7 @@ STRICT_BFO_DOMAIN_COUNT = 1
 STRICT_BFO_RANGE_COUNT = 1
 STRICT_BFO_LOGICAL_TRIPLE_COUNT = 125
 STRICT_BFO_TOTAL_TRIPLE_COUNT = 134
+STRICT_BFO_FORMAL_TOTAL_TRIPLE_COUNT = 137
 STRICT_BFO_UNION_COUNT = 6
 STRICT_BFO_INTERSECTION_COUNT = 6
 STRICT_BFO_EXISTENTIAL_COUNT = 6
@@ -68,6 +72,9 @@ STRICT_BFO_PROJECT_CLOSURE_AXIOM_COUNT = 48
 STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT = 195
 STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 194
 STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14986
+STRICT_BFO_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 201
+STRICT_BFO_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 200
+STRICT_BFO_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 14992
 ALIGNMENT_CORE_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
 )
@@ -84,6 +91,7 @@ CCO_EXTENSION_DOMAIN_COUNT = 0
 CCO_EXTENSION_RANGE_COUNT = 0
 CCO_EXTENSION_LOGICAL_TRIPLE_COUNT = 934
 CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 943
+CCO_EXTENSION_FORMAL_TOTAL_TRIPLE_COUNT = 946
 CCO_EXTENSION_NAMED_TARGET_COUNT = 20
 CCO_EXTENSION_COMPLEX_TARGET_COUNT = 37
 CCO_EXTENSION_UNION_COUNT = 7
@@ -97,6 +105,9 @@ CCO_EXTENSION_PROJECT_CLOSURE_AXIOM_COUNT = 105
 CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1138
 CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1136
 CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15928
+CCO_EXTENSION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 1147
+CCO_EXTENSION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1145
+CCO_EXTENSION_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15937
 STRICT_BFO_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
 )
@@ -141,9 +152,12 @@ BFO_PROJECTION_KEY = "bfo_projection"
 BFO_PROJECTION_AXIOM_COUNT = 0
 BFO_PROJECTION_LOGICAL_TRIPLE_COUNT = 0
 BFO_PROJECTION_TOTAL_TRIPLE_COUNT = 9
+BFO_PROJECTION_FORMAL_TOTAL_TRIPLE_COUNT = 12
 BFO_PROJECTION_PROJECT_CLOSURE_AXIOM_COUNT = 48
 BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT = 204
 BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 202
+BFO_PROJECTION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 213
+BFO_PROJECTION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 211
 BFO_PROJECTION_PREFIXES = (
     *METADATA_PREFIXES,
     ("owl", str(OWL)),
@@ -320,6 +334,7 @@ class ModularProductResult:
     logical_triple_count: int
     ontology_declaration_triple_count: int
     metadata_annotation_count: int
+    formal_metadata_annotation_count: int
     total_triple_count: int
     domain_axiom_count: int
     range_axiom_count: int
@@ -789,6 +804,7 @@ def _turtle_bytes(
     *,
     imports: tuple[str, ...] = (),
     prefixes: tuple[tuple[str, str], ...] = PREFIXES,
+    context: FormalReleaseContext | None = None,
 ) -> bytes:
     header = render_ontology_header_bytes(
         publication_metadata,
@@ -796,6 +812,7 @@ def _turtle_bytes(
         imports,
         generated_notice=GENERATED_NOTICE,
         prefixes=prefixes,
+        context=context,
     )
     lines = header.decode("utf-8").rstrip("\n").splitlines()
     if selected:
@@ -833,6 +850,7 @@ def _expression_kind_count(expression: ExpressionNode | None, kind: str) -> int:
 def build_alignment_core(
     selected_axioms: Iterable[SelectedProductAxiom],
     publication_metadata: PublicationMetadata,
+    context: FormalReleaseContext | None = None,
 ) -> ModularProductResult:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     metadata = _product_metadata(publication_metadata, ALIGNMENT_CORE_KEY)
@@ -865,7 +883,14 @@ def build_alignment_core(
         issues.append(issue("TARGET_CATEGORY_MISMATCH", "all alignment-core axioms must be target-neutral"))
     if issues:
         raise ModularProductError(issues)
-    serialized = _turtle_bytes(publication_metadata, metadata, selected)
+    imports = release_project_imports(publication_metadata, ALIGNMENT_CORE_KEY, context) if context else ()
+    serialized = _turtle_bytes(
+        publication_metadata,
+        metadata,
+        selected,
+        imports=imports,
+        context=context,
+    )
     graph = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
     logical_count = ALIGNMENT_CORE_LOGICAL_TRIPLE_COUNT
     return ModularProductResult(
@@ -876,6 +901,7 @@ def build_alignment_core(
         logical_triple_count=logical_count,
         ontology_declaration_triple_count=1,
         metadata_annotation_count=7,
+        formal_metadata_annotation_count=3 if context else 0,
         total_triple_count=len(graph),
         domain_axiom_count=domains,
         range_axiom_count=ranges,
@@ -896,6 +922,7 @@ def build_alignment_core(
 def build_strict_bfo_mapping(
     selected_axioms: Iterable[SelectedProductAxiom],
     publication_metadata: PublicationMetadata,
+    context: FormalReleaseContext | None = None,
 ) -> ModularProductResult:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     metadata = _product_metadata(publication_metadata, STRICT_BFO_MAPPING_KEY)
@@ -967,12 +994,18 @@ def build_strict_bfo_mapping(
     if issues:
         raise ModularProductError(issues)
 
+    imports = (
+        release_project_imports(publication_metadata, STRICT_BFO_MAPPING_KEY, context)
+        if context
+        else (ALIGNMENT_CORE_IMPORT_IRI,)
+    )
     serialized = _turtle_bytes(
         publication_metadata,
         metadata,
         selected,
-        imports=(ALIGNMENT_CORE_IMPORT_IRI,),
+        imports=imports,
         prefixes=STRICT_BFO_PREFIXES,
+        context=context,
     )
     graph = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
     return ModularProductResult(
@@ -983,6 +1016,7 @@ def build_strict_bfo_mapping(
         logical_triple_count=STRICT_BFO_LOGICAL_TRIPLE_COUNT,
         ontology_declaration_triple_count=1,
         metadata_annotation_count=7,
+        formal_metadata_annotation_count=3 if context else 0,
         total_triple_count=len(graph),
         domain_axiom_count=domains,
         range_axiom_count=ranges,
@@ -1003,6 +1037,7 @@ def build_strict_bfo_mapping(
 def build_bfo_projection(
     selected_axioms: Iterable[SelectedProductAxiom],
     publication_metadata: PublicationMetadata,
+    context: FormalReleaseContext | None = None,
 ) -> ModularProductResult:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     metadata = _product_metadata(publication_metadata, BFO_PROJECTION_KEY)
@@ -1016,12 +1051,18 @@ def build_bfo_projection(
             ]
         )
 
+    imports = (
+        release_project_imports(publication_metadata, BFO_PROJECTION_KEY, context)
+        if context
+        else (STRICT_BFO_IMPORT_IRI,)
+    )
     serialized = _turtle_bytes(
         publication_metadata,
         metadata,
         (),
-        imports=(STRICT_BFO_IMPORT_IRI,),
+        imports=imports,
         prefixes=BFO_PROJECTION_PREFIXES,
+        context=context,
     )
     graph = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
     return ModularProductResult(
@@ -1032,6 +1073,7 @@ def build_bfo_projection(
         logical_triple_count=0,
         ontology_declaration_triple_count=1,
         metadata_annotation_count=7,
+        formal_metadata_annotation_count=3 if context else 0,
         total_triple_count=len(graph),
         domain_axiom_count=0,
         range_axiom_count=0,
@@ -1052,6 +1094,7 @@ def build_bfo_projection(
 def build_cco_extension(
     selected_axioms: Iterable[SelectedProductAxiom],
     publication_metadata: PublicationMetadata,
+    context: FormalReleaseContext | None = None,
 ) -> ModularProductResult:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     metadata = _product_metadata(publication_metadata, CCO_EXTENSION_KEY)
@@ -1166,12 +1209,18 @@ def build_cco_extension(
     if issues:
         raise ModularProductError(issues)
 
+    imports = (
+        release_project_imports(publication_metadata, CCO_EXTENSION_KEY, context)
+        if context
+        else (STRICT_BFO_IMPORT_IRI,)
+    )
     serialized = _turtle_bytes(
         publication_metadata,
         metadata,
         selected,
-        imports=(STRICT_BFO_IMPORT_IRI,),
+        imports=imports,
         prefixes=CCO_EXTENSION_PREFIXES,
+        context=context,
     )
     graph = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
     return ModularProductResult(
@@ -1182,6 +1231,7 @@ def build_cco_extension(
         logical_triple_count=CCO_EXTENSION_LOGICAL_TRIPLE_COUNT,
         ontology_declaration_triple_count=1,
         metadata_annotation_count=7,
+        formal_metadata_annotation_count=3 if context else 0,
         total_triple_count=len(graph),
         domain_axiom_count=domains,
         range_axiom_count=ranges,
@@ -1210,6 +1260,7 @@ def _metadata_validation_issues(
     product_key: str,
     expected_imports: tuple[str, ...],
     prefixes: tuple[tuple[str, str], ...],
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ModularProductValidationIssue, ...]:
     return tuple(
         issue(value.code, value.message, field=value.field)
@@ -1220,6 +1271,8 @@ def _metadata_validation_issues(
             expected_imports,
             generated_notice=GENERATED_NOTICE,
             prefixes=prefixes,
+            mode="release" if context else "development",
+            context=context,
         )
     )
 
@@ -1324,6 +1377,7 @@ def validate_alignment_core(
     publication_metadata: PublicationMetadata,
     fixed_source_closure: Graph | None = None,
     integrated_graph: Graph | None = None,
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ModularProductValidationIssue, ...]:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     metadata = _product_metadata(publication_metadata, ALIGNMENT_CORE_KEY)
@@ -1334,18 +1388,22 @@ def validate_alignment_core(
     except Exception as exc:
         return (issue("TURTLE_PARSE", f"cannot strictly parse UTF-8 Turtle: {exc}"),)
 
-    expected = build_alignment_core(selected, publication_metadata)
+    expected = build_alignment_core(selected, publication_metadata, context)
     if serialized_bytes != expected.serialized_bytes:
         issues.append(issue("NONDETERMINISTIC_SERIALIZATION", "bytes differ from canonical modular-product serialization"))
     ontology_iri = URIRef(metadata.stable_ontology_iri)
+    expected_imports = release_project_imports(
+        publication_metadata, ALIGNMENT_CORE_KEY, context
+    ) if context else ()
     issues.extend(
         _metadata_validation_issues(
             graph,
             serialized_bytes,
             publication_metadata,
             ALIGNMENT_CORE_KEY,
-            (),
+            expected_imports,
             PREFIXES,
+            context,
         )
     )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
@@ -1354,18 +1412,22 @@ def validate_alignment_core(
     imports = list(graph.triples((None, OWL.imports, None)))
     if imports:
         issues.append(issue("PROHIBITED_IMPORT", f"expected zero owl:imports triples, got {len(imports)}"))
-    if len(graph) != ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT:
+    expected_total = (
+        ALIGNMENT_CORE_FORMAL_TOTAL_TRIPLE_COUNT if context else ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT
+    )
+    if len(graph) != expected_total:
         issues.append(
             issue(
                 "TOTAL_TRIPLE_COUNT_MISMATCH",
-                f"expected {ALIGNMENT_CORE_TOTAL_TRIPLE_COUNT}, got {len(graph)}",
+                f"expected {expected_total}, got {len(graph)}",
             )
         )
     logical_graph = strip_emitted_ontology_header(
         graph,
         publication_metadata,
         ALIGNMENT_CORE_KEY,
-        (),
+        expected_imports,
+        context,
     )
     if len(logical_graph) != ALIGNMENT_CORE_LOGICAL_TRIPLE_COUNT:
         issues.append(issue("LOGICAL_TRIPLE_COUNT_MISMATCH", f"expected 53, got {len(logical_graph)}"))
@@ -1437,6 +1499,7 @@ def validate_strict_bfo_mapping(
     publication_metadata: PublicationMetadata,
     integrated_graph: Graph | None = None,
     fixed_semantic_closure: Graph | None = None,
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ModularProductValidationIssue, ...]:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     core_selected = tuple(
@@ -1449,7 +1512,7 @@ def validate_strict_bfo_mapping(
     except Exception as exc:
         return (issue("TURTLE_PARSE", f"cannot strictly parse UTF-8 Turtle: {exc}"),)
 
-    expected = build_strict_bfo_mapping(selected, publication_metadata)
+    expected = build_strict_bfo_mapping(selected, publication_metadata, context)
     if serialized_bytes != expected.serialized_bytes:
         issues.append(
             issue(
@@ -1458,15 +1521,21 @@ def validate_strict_bfo_mapping(
             )
         )
     ontology_iri = URIRef(metadata.stable_ontology_iri)
-    expected_import = URIRef(ALIGNMENT_CORE_IMPORT_IRI)
+    expected_import_values = (
+        release_project_imports(publication_metadata, STRICT_BFO_MAPPING_KEY, context)
+        if context
+        else (ALIGNMENT_CORE_IMPORT_IRI,)
+    )
+    expected_import = URIRef(expected_import_values[0])
     issues.extend(
         _metadata_validation_issues(
             graph,
             serialized_bytes,
             publication_metadata,
             STRICT_BFO_MAPPING_KEY,
-            (ALIGNMENT_CORE_IMPORT_IRI,),
+            expected_import_values,
             STRICT_BFO_PREFIXES,
+            context,
         )
     )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
@@ -1486,11 +1555,12 @@ def validate_strict_bfo_mapping(
                 f"expected only alignment-core import, got {sorted(map(str, imports))}",
             )
         )
-    if len(graph) != STRICT_BFO_TOTAL_TRIPLE_COUNT:
+    expected_total = STRICT_BFO_FORMAL_TOTAL_TRIPLE_COUNT if context else STRICT_BFO_TOTAL_TRIPLE_COUNT
+    if len(graph) != expected_total:
         issues.append(
             issue(
                 "TOTAL_TRIPLE_COUNT_MISMATCH",
-                f"expected {STRICT_BFO_TOTAL_TRIPLE_COUNT}, got {len(graph)}",
+                f"expected {expected_total}, got {len(graph)}",
             )
         )
 
@@ -1498,7 +1568,8 @@ def validate_strict_bfo_mapping(
         graph,
         publication_metadata,
         STRICT_BFO_MAPPING_KEY,
-        (ALIGNMENT_CORE_IMPORT_IRI,),
+        expected_import_values,
+        context,
     )
     if len(logical_graph) != STRICT_BFO_LOGICAL_TRIPLE_COUNT:
         issues.append(
@@ -1622,6 +1693,7 @@ def validate_strict_bfo_mapping(
         alignment_core_bytes,
         core_selected,
         publication_metadata,
+        context=context,
     )
     issues.extend(core_issues)
     try:
@@ -1665,20 +1737,30 @@ def validate_strict_bfo_mapping(
         project_graph.add(triple)
     for triple in core_graph:
         project_graph.add(triple)
-    if len(project_graph) != STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT:
+    expected_project_count = (
+        STRICT_BFO_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT
+        if context
+        else STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT
+    )
+    if len(project_graph) != expected_project_count:
         issues.append(
             issue(
                 "PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT}, got {len(project_graph)}",
+                f"expected {expected_project_count}, got {len(project_graph)}",
             )
         )
     for triple in list(project_graph.triples((None, OWL.imports, None))):
         project_graph.remove(triple)
-    if len(project_graph) != STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT:
+    expected_local_count = (
+        STRICT_BFO_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
+        if context
+        else STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
+    )
+    if len(project_graph) != expected_local_count:
         issues.append(
             issue(
                 "LOCAL_PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT}, "
+                f"expected {expected_local_count}, "
                 f"got {len(project_graph)}",
             )
         )
@@ -1713,11 +1795,16 @@ def validate_strict_bfo_mapping(
             issues.append(
                 issue("FIXED_CLOSURE_IMPORT", "fixed semantic closure retains imports")
             )
-        if len(fixed_semantic_closure) != STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT:
+        expected_fixed_count = (
+            STRICT_BFO_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT
+            if context
+            else STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT
+        )
+        if len(fixed_semantic_closure) != expected_fixed_count:
             issues.append(
                 issue(
                     "FIXED_CLOSURE_COUNT_MISMATCH",
-                    f"expected {STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT}, "
+                    f"expected {expected_fixed_count}, "
                     f"got {len(fixed_semantic_closure)}",
                 )
             )
@@ -1756,6 +1843,7 @@ def validate_bfo_projection(
     publication_metadata: PublicationMetadata,
     integrated_graph: Graph | None = None,
     strict_reasoning_result: ModularReasoningResult | None = None,
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ModularProductValidationIssue, ...]:
     strict_selected = tuple(
         sorted(strict_selected_axioms, key=lambda value: value.axiom_id)
@@ -1770,7 +1858,7 @@ def validate_bfo_projection(
     except Exception as exc:
         return (issue("TURTLE_PARSE", f"cannot strictly parse UTF-8 Turtle: {exc}"),)
 
-    expected = build_bfo_projection((), publication_metadata)
+    expected = build_bfo_projection((), publication_metadata, context)
     if serialized_bytes != expected.serialized_bytes:
         issues.append(
             issue(
@@ -1780,15 +1868,21 @@ def validate_bfo_projection(
         )
 
     ontology_iri = URIRef(metadata.stable_ontology_iri)
-    expected_import = URIRef(STRICT_BFO_IMPORT_IRI)
+    expected_import_values = (
+        release_project_imports(publication_metadata, BFO_PROJECTION_KEY, context)
+        if context
+        else (STRICT_BFO_IMPORT_IRI,)
+    )
+    expected_import = URIRef(expected_import_values[0])
     issues.extend(
         _metadata_validation_issues(
             graph,
             serialized_bytes,
             publication_metadata,
             BFO_PROJECTION_KEY,
-            (STRICT_BFO_IMPORT_IRI,),
+            expected_import_values,
             BFO_PROJECTION_PREFIXES,
+            context,
         )
     )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
@@ -1808,18 +1902,22 @@ def validate_bfo_projection(
                 f"expected only strict-BFO import, got {sorted(map(str, imports))}",
             )
         )
-    if len(graph) != BFO_PROJECTION_TOTAL_TRIPLE_COUNT:
+    expected_total = (
+        BFO_PROJECTION_FORMAL_TOTAL_TRIPLE_COUNT if context else BFO_PROJECTION_TOTAL_TRIPLE_COUNT
+    )
+    if len(graph) != expected_total:
         issues.append(
             issue(
                 "TOTAL_TRIPLE_COUNT_MISMATCH",
-                f"expected {BFO_PROJECTION_TOTAL_TRIPLE_COUNT}, got {len(graph)}",
+                f"expected {expected_total}, got {len(graph)}",
             )
         )
     logical_graph = strip_emitted_ontology_header(
         graph,
         publication_metadata,
         BFO_PROJECTION_KEY,
-        (STRICT_BFO_IMPORT_IRI,),
+        expected_import_values,
+        context,
     )
     if len(logical_graph) != BFO_PROJECTION_LOGICAL_TRIPLE_COUNT:
         issues.append(
@@ -1919,6 +2017,7 @@ def validate_bfo_projection(
                 core_selected,
                 publication_metadata,
                 integrated_graph=integrated_graph,
+                context=context,
             )
         )
     except ModularProductError as exc:
@@ -1974,11 +2073,16 @@ def validate_bfo_projection(
     for source_graph in (graph, strict_graph, core_graph):
         for triple in source_graph:
             project_graph.add(triple)
-    if len(project_graph) != BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT:
+    expected_project_count = (
+        BFO_PROJECTION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT
+        if context
+        else BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT
+    )
+    if len(project_graph) != expected_project_count:
         issues.append(
             issue(
                 "PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT}, "
+                f"expected {expected_project_count}, "
                 f"got {len(project_graph)}",
             )
         )
@@ -1998,24 +2102,36 @@ def validate_bfo_projection(
         )
     for triple in list(project_graph.triples((None, OWL.imports, None))):
         project_graph.remove(triple)
-    if len(project_graph) != BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT:
+    expected_local_count = (
+        BFO_PROJECTION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
+        if context
+        else BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
+    )
+    if len(project_graph) != expected_local_count:
         issues.append(
             issue(
                 "LOCAL_PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT}, "
+                f"expected {expected_local_count}, "
                 f"got {len(project_graph)}",
             )
         )
 
     strict_sha256 = hashlib.sha256(strict_bfo_bytes).hexdigest()
-    if strict_reasoning_result is None:
+    if context is not None and strict_reasoning_result is not None:
+        issues.append(
+            issue(
+                "FORMAL_PROJECTION_REASONING_REUSE",
+                "formal projection validation requires an independent projection closure result",
+            )
+        )
+    elif context is None and strict_reasoning_result is None:
         issues.append(
             issue(
                 "STRICT_REASONING_RESULT_MISSING",
                 "same-transaction strict-BFO reasoning result is required",
             )
         )
-    else:
+    elif context is None:
         if strict_reasoning_result.source_product_key != STRICT_BFO_MAPPING_KEY:
             issues.append(
                 issue(
@@ -2074,6 +2190,7 @@ def validate_cco_extension(
     fixed_semantic_closure: Graph | None = None,
     source_dependency_graph: Graph | None = None,
     merged_cco_bfo_dependency_graph: Graph | None = None,
+    context: FormalReleaseContext | None = None,
 ) -> tuple[ModularProductValidationIssue, ...]:
     selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
     strict_selected = tuple(
@@ -2089,7 +2206,7 @@ def validate_cco_extension(
     except Exception as exc:
         return (issue("TURTLE_PARSE", f"cannot strictly parse UTF-8 Turtle: {exc}"),)
 
-    expected = build_cco_extension(selected, publication_metadata)
+    expected = build_cco_extension(selected, publication_metadata, context)
     if serialized_bytes != expected.serialized_bytes:
         issues.append(
             issue(
@@ -2098,15 +2215,21 @@ def validate_cco_extension(
             )
         )
     ontology_iri = URIRef(metadata.stable_ontology_iri)
-    expected_import = URIRef(STRICT_BFO_IMPORT_IRI)
+    expected_import_values = (
+        release_project_imports(publication_metadata, CCO_EXTENSION_KEY, context)
+        if context
+        else (STRICT_BFO_IMPORT_IRI,)
+    )
+    expected_import = URIRef(expected_import_values[0])
     issues.extend(
         _metadata_validation_issues(
             graph,
             serialized_bytes,
             publication_metadata,
             CCO_EXTENSION_KEY,
-            (STRICT_BFO_IMPORT_IRI,),
+            expected_import_values,
             CCO_EXTENSION_PREFIXES,
+            context,
         )
     )
     declarations = set(graph.subjects(RDF.type, OWL.Ontology))
@@ -2126,11 +2249,12 @@ def validate_cco_extension(
                 f"expected only strict-BFO import, got {sorted(map(str, imports))}",
             )
         )
-    if len(graph) != CCO_EXTENSION_TOTAL_TRIPLE_COUNT:
+    expected_total = CCO_EXTENSION_FORMAL_TOTAL_TRIPLE_COUNT if context else CCO_EXTENSION_TOTAL_TRIPLE_COUNT
+    if len(graph) != expected_total:
         issues.append(
             issue(
                 "TOTAL_TRIPLE_COUNT_MISMATCH",
-                f"expected {CCO_EXTENSION_TOTAL_TRIPLE_COUNT}, got {len(graph)}",
+                f"expected {expected_total}, got {len(graph)}",
             )
         )
 
@@ -2138,7 +2262,8 @@ def validate_cco_extension(
         graph,
         publication_metadata,
         CCO_EXTENSION_KEY,
-        (STRICT_BFO_IMPORT_IRI,),
+        expected_import_values,
+        context,
     )
     if len(logical_graph) != CCO_EXTENSION_LOGICAL_TRIPLE_COUNT:
         issues.append(
@@ -2269,6 +2394,7 @@ def validate_cco_extension(
         alignment_core_bytes,
         core_selected,
         publication_metadata,
+        context=context,
     )
     issues.extend(strict_issues)
     try:
@@ -2328,21 +2454,31 @@ def validate_cco_extension(
     for product_graph in (graph, strict_graph, core_graph):
         for triple in product_graph:
             project_graph.add(triple)
-    if len(project_graph) != CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT:
+    expected_project_count = (
+        CCO_EXTENSION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT
+        if context
+        else CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT
+    )
+    if len(project_graph) != expected_project_count:
         issues.append(
             issue(
                 "PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT}, "
+                f"expected {expected_project_count}, "
                 f"got {len(project_graph)}",
             )
         )
     for triple in list(project_graph.triples((None, OWL.imports, None))):
         project_graph.remove(triple)
-    if len(project_graph) != CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT:
+    expected_local_count = (
+        CCO_EXTENSION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
+        if context
+        else CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
+    )
+    if len(project_graph) != expected_local_count:
         issues.append(
             issue(
                 "LOCAL_PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT}, "
+                f"expected {expected_local_count}, "
                 f"got {len(project_graph)}",
             )
         )
@@ -2452,11 +2588,16 @@ def validate_cco_extension(
             issues.append(
                 issue("FIXED_CLOSURE_IMPORT", "fixed semantic closure retains imports")
             )
-        if len(fixed_semantic_closure) != CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT:
+        expected_fixed_count = (
+            CCO_EXTENSION_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT
+            if context
+            else CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT
+        )
+        if len(fixed_semantic_closure) != expected_fixed_count:
             issues.append(
                 issue(
                     "FIXED_CLOSURE_COUNT_MISMATCH",
-                    f"expected {CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT}, "
+                    f"expected {expected_fixed_count}, "
                     f"got {len(fixed_semantic_closure)}",
                 )
             )
