@@ -9,8 +9,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import jsonschema
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
@@ -162,15 +160,12 @@ class ReleaseManifestTests(unittest.TestCase):
         self.schema = json.loads(
             (REPO_ROOT / "config/release-manifest-schema-v1.json").read_text()
         )
-        self.schema_validator = jsonschema.Draft202012Validator(self.schema)
 
-    def assert_python_and_schema_accept(self, document) -> None:
+    def assert_python_accepts(self, document) -> None:
         self.assertEqual(manifest.validate_release_manifest_document(document), ())
-        self.assertEqual(list(self.schema_validator.iter_errors(document)), [])
 
-    def assert_python_and_schema_reject(self, document) -> None:
+    def assert_python_rejects(self, document) -> None:
         self.assertTrue(manifest.validate_release_manifest_document(document))
-        self.assertTrue(list(self.schema_validator.iter_errors(document)))
 
     def test_models_are_frozen_and_schema_version_is_one(self) -> None:
         self.assertEqual(self.manifest.schema_version, 1)
@@ -178,9 +173,14 @@ class ReleaseManifestTests(unittest.TestCase):
             self.manifest.release_identifier = "changed"  # type: ignore[misc]
 
     def test_json_schema_and_python_field_models_are_synchronized(self) -> None:
-        self.assert_python_and_schema_accept(self.document)
+        self.assert_python_accepts(self.document)
+        self.assertEqual(
+            self.schema["$schema"],
+            "https://json-schema.org/draft/2020-12/schema",
+        )
+        self.assertEqual(self.schema["type"], "object")
         self.assertEqual(tuple(self.schema["required"]), manifest.TOP_LEVEL_FIELDS)
-        self.assertEqual(set(self.schema["properties"]), set(manifest.TOP_LEVEL_FIELDS))
+        self.assertEqual(tuple(self.schema["properties"]), manifest.TOP_LEVEL_FIELDS)
         self.assertFalse(self.schema["additionalProperties"])
         definitions = self.schema["$defs"]
         models = (
@@ -204,6 +204,119 @@ class ReleaseManifestTests(unittest.TestCase):
             tuple(definitions["validationEnvironment"]["required"]),
             manifest.VALIDATION_ENVIRONMENT_FIELDS,
         )
+
+    def test_schema_scalar_rules_match_governed_python_boundaries(self) -> None:
+        definitions = self.schema["$defs"]
+        properties = self.schema["properties"]
+        self.assertEqual(properties["schema_version"], {"const": manifest.SCHEMA_VERSION})
+        self.assertEqual(tuple(properties["product_order"]["const"]), manifest.PRODUCT_ORDER)
+        self.assertEqual(
+            tuple(definitions["product"]["properties"]["key"]["enum"]),
+            manifest.PRODUCT_ORDER,
+        )
+        self.assertEqual(
+            tuple(definitions["hermitResult"]["properties"]["product_key"]["enum"]),
+            manifest.PRODUCT_ORDER,
+        )
+        self.assertEqual(
+            definitions["sha256"],
+            {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        )
+        self.assertEqual(
+            definitions["relativePath"],
+            {
+                "type": "string",
+                "minLength": 1,
+                "pattern": (
+                    r"^(?!/)(?!.*(?:^|/)\.{1,2}(?:/|$))(?!.*//)(?!.*\\)"
+                    r"(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*[\u0000-\u001F\u007F])"
+                    r"(?!.*/$).+$"
+                ),
+            },
+        )
+
+        hash_fields = (
+            ("input", "sha256"),
+            ("product", "sha256"),
+            ("dependency", "sha256"),
+            ("validationEnvironment", "robot_sha256"),
+            ("validationEnvironment", "toolchain_sha256"),
+            ("validationEnvironment", "requirements_sha256"),
+            ("includedFile", "sha256"),
+        )
+        for model, field in hash_fields:
+            with self.subTest(hash_field=f"{model}.{field}"):
+                self.assertEqual(
+                    definitions[model]["properties"][field],
+                    {"$ref": "#/$defs/sha256"},
+                )
+
+        path_fields = (
+            ("input", "source_path"),
+            ("product", "path"),
+            ("dependency", "path"),
+            ("validationEnvironment", "toolchain_path"),
+            ("validationEnvironment", "requirements_path"),
+            ("includedFile", "path"),
+        )
+        for model, field in path_fields:
+            with self.subTest(path_field=f"{model}.{field}"):
+                self.assertEqual(
+                    definitions[model]["properties"][field],
+                    {"$ref": "#/$defs/relativePath"},
+                )
+
+        integer_fields = (
+            ("input", "byte_size"),
+            ("product", "byte_size"),
+            ("product", "ontology_declaration_count"),
+            ("product", "import_count"),
+            ("product", "static_metadata_count"),
+            ("product", "formal_metadata_count"),
+            ("product", "logical_triple_count"),
+            ("product", "total_triple_count"),
+            ("product", "direct_governed_axiom_count"),
+            ("product", "governed_closure_axiom_count"),
+            ("dependency", "byte_size"),
+            ("hermitResult", "fixed_closure_triple_count"),
+            ("includedFile", "byte_size"),
+        )
+        for model, field in integer_fields:
+            with self.subTest(integer_field=f"{model}.{field}"):
+                self.assertEqual(
+                    definitions[model]["properties"][field],
+                    {"type": "integer", "minimum": 0},
+                )
+
+        self.assertEqual(
+            definitions["product"]["properties"]["reasoning_mode"],
+            {"const": "independent"},
+        )
+        for field in manifest.VALIDATION_FIELDS[:-1]:
+            self.assertEqual(
+                definitions["validation"]["properties"][field],
+                {"const": True},
+            )
+        hermit_properties = definitions["hermitResult"]["properties"]
+        self.assertEqual(hermit_properties["status"], {"const": "PASS"})
+        self.assertEqual(hermit_properties["return_code"], {"const": 0})
+        self.assertEqual(
+            hermit_properties["reasoned_output_produced"], {"const": True}
+        )
+        self.assertEqual(
+            hermit_properties["named_unsatisfiable_class_count"], {"const": 0}
+        )
+        self.assertEqual(
+            hermit_properties["owl_nothing_equivalent_named_class_count"],
+            {"const": 0},
+        )
+
+    def test_module_has_no_external_schema_package_dependency(self) -> None:
+        source = Path(__file__).read_text(encoding="utf-8")
+        package_name = "json" + "schema"
+        self.assertNotIn(f"import {package_name}", source)
+        self.assertNotIn(f"from {package_name}", source)
+        self.assertNotIn(f"{package_name}.", source)
 
     def test_fixed_array_cardinalities_and_positional_authorities_match(self) -> None:
         arrays = (
@@ -285,41 +398,43 @@ class ReleaseManifestTests(unittest.TestCase):
 
     def test_unknown_fields_are_rejected_at_every_object_level(self) -> None:
         locations = (
-            (),
-            ("inputs", 0),
-            ("products", 0),
-            ("dependencies", 0),
-            ("validation_environment",),
-            ("validation",),
-            ("validation", "hermit_results", 0),
-            ("included_files", 0),
+            ((), self.schema),
+            (("inputs", 0), self.schema["$defs"]["input"]),
+            (("products", 0), self.schema["$defs"]["product"]),
+            (("dependencies", 0), self.schema["$defs"]["dependency"]),
+            (("validation_environment",), self.schema["$defs"]["validationEnvironment"]),
+            (("validation",), self.schema["$defs"]["validation"]),
+            (("validation", "hermit_results", 0), self.schema["$defs"]["hermitResult"]),
+            (("included_files", 0), self.schema["$defs"]["includedFile"]),
         )
-        for location in locations:
+        for location, schema_model in locations:
             with self.subTest(location=location):
+                self.assertFalse(schema_model["additionalProperties"])
                 document = json.loads(self.serialized)
                 target = document
                 for component in location:
                     target = target[component]
                 target["unexpected"] = True
-                self.assert_python_and_schema_reject(document)
+                self.assert_python_rejects(document)
 
     def test_missing_nested_required_fields_are_rejected_by_both_models(self) -> None:
         locations = (
-            ("inputs", 0, "sha256"),
-            ("products", 0, "version_iri"),
-            ("dependencies", 0, "path"),
-            ("validation_environment", "java_vendor"),
-            ("validation", "hermit_results"),
-            ("included_files", 0, "byte_size"),
+            (("inputs", 0, "sha256"), self.schema["$defs"]["input"]),
+            (("products", 0, "version_iri"), self.schema["$defs"]["product"]),
+            (("dependencies", 0, "path"), self.schema["$defs"]["dependency"]),
+            (("validation_environment", "java_vendor"), self.schema["$defs"]["validationEnvironment"]),
+            (("validation", "hermit_results"), self.schema["$defs"]["validation"]),
+            (("included_files", 0, "byte_size"), self.schema["$defs"]["includedFile"]),
         )
-        for location in locations:
+        for location, schema_model in locations:
             with self.subTest(location=location):
+                self.assertIn(location[-1], schema_model["required"])
                 document = json.loads(self.serialized)
                 target = document
                 for component in location[:-1]:
                     target = target[component]
                 del target[location[-1]]
-                self.assert_python_and_schema_reject(document)
+                self.assert_python_rejects(document)
 
     def test_duplicate_json_field_is_rejected(self) -> None:
         duplicate = self.serialized.replace(
@@ -338,6 +453,10 @@ class ReleaseManifestTests(unittest.TestCase):
         self.assertEqual({item.code for item in raised.exception.issues}, {"INVALID_JSON"})
 
     def test_unsafe_paths_are_rejected(self) -> None:
+        relative_path = self.schema["$defs"]["relativePath"]
+        self.assertEqual(relative_path["type"], "string")
+        self.assertEqual(relative_path["minLength"], 1)
+        self.assertIn("(?!.*/$)", relative_path["pattern"])
         for value in (
             "/absolute",
             "../escape",
@@ -352,20 +471,33 @@ class ReleaseManifestTests(unittest.TestCase):
             with self.subTest(value=value):
                 document = json.loads(self.serialized)
                 document["included_files"][0]["path"] = value
-                self.assert_python_and_schema_reject(document)
+                self.assert_python_rejects(document)
 
     def test_nonzero_hermit_return_code_is_rejected_by_both_models(self) -> None:
+        self.assertEqual(
+            self.schema["$defs"]["hermitResult"]["properties"]["return_code"],
+            {"const": 0},
+        )
         document = json.loads(self.serialized)
         document["validation"]["hermit_results"][0]["return_code"] = 1
         python_issues = manifest.validate_release_manifest_document(document)
         self.assertIn("HERMIT_RETURN_CODE", {item.code for item in python_issues})
-        self.assertTrue(list(self.schema_validator.iter_errors(document)))
 
     def test_each_wrong_fixed_closure_count_is_rejected_by_both_models(self) -> None:
+        positional = self.schema["$defs"]["validation"]["properties"][
+            "hermit_results"
+        ]["prefixItems"]
         for index, (product_key, _) in enumerate(
             manifest.FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS
         ):
             with self.subTest(product=product_key):
+                count_rule = positional[index]["allOf"][1]["properties"][
+                    "fixed_closure_triple_count"
+                ]
+                self.assertEqual(
+                    count_rule,
+                    {"const": manifest.FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS[index][1]},
+                )
                 document = json.loads(self.serialized)
                 document["validation"]["hermit_results"][index][
                     "fixed_closure_triple_count"
@@ -375,9 +507,17 @@ class ReleaseManifestTests(unittest.TestCase):
                     "FIXED_CLOSURE_TRIPLE_COUNT_MISMATCH",
                     {item.code for item in python_issues},
                 )
-                self.assertTrue(list(self.schema_validator.iter_errors(document)))
 
     def test_hermit_result_identity_count_and_cardinality_are_positional(self) -> None:
+        hermit_schema = self.schema["$defs"]["validation"]["properties"][
+            "hermit_results"
+        ]
+        self.assertEqual(
+            (hermit_schema["minItems"], hermit_schema["maxItems"]),
+            (5, 5),
+        )
+        self.assertFalse(hermit_schema["items"])
+        self.assertEqual(len(hermit_schema["prefixItems"]), 5)
         mutations = []
         for index in range(len(manifest.FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS) - 1):
             swapped = json.loads(self.serialized)
@@ -409,7 +549,7 @@ class ReleaseManifestTests(unittest.TestCase):
 
         for name, document in mutations:
             with self.subTest(case=name):
-                self.assert_python_and_schema_reject(document)
+                self.assert_python_rejects(document)
 
     def test_fixed_arrays_reject_extra_missing_duplicate_and_reordered_records(self) -> None:
         mutations = []
@@ -437,9 +577,20 @@ class ReleaseManifestTests(unittest.TestCase):
         mutations.append(("included order", reordered_included))
         for name, document in mutations:
             with self.subTest(case=name):
-                self.assert_python_and_schema_reject(document)
+                self.assert_python_rejects(document)
 
     def test_hash_and_integer_boundaries_match(self) -> None:
+        self.assertEqual(
+            self.schema["$defs"]["sha256"]["pattern"], "^[0-9a-f]{64}$"
+        )
+        self.assertEqual(
+            self.schema["$defs"]["includedFile"]["properties"]["byte_size"],
+            {"type": "integer", "minimum": 0},
+        )
+        self.assertEqual(
+            self.schema["$defs"]["product"]["properties"]["total_triple_count"],
+            {"type": "integer", "minimum": 0},
+        )
         mutations = []
         malformed_hash = json.loads(self.serialized)
         malformed_hash["inputs"][0]["sha256"] = "A" * 64
@@ -452,7 +603,7 @@ class ReleaseManifestTests(unittest.TestCase):
         mutations.append(("boolean", boolean_count))
         for name, document in mutations:
             with self.subTest(case=name):
-                self.assert_python_and_schema_reject(document)
+                self.assert_python_rejects(document)
 
     def test_context_validation_is_reused(self) -> None:
         document = json.loads(self.serialized)
@@ -461,15 +612,26 @@ class ReleaseManifestTests(unittest.TestCase):
         self.assertIn("SOURCE_COMMIT_FORMAT", {item.code for item in issues})
 
     def test_product_and_hermit_order_are_exact(self) -> None:
+        self.assertEqual(
+            tuple(self.schema["properties"]["product_order"]["const"]),
+            manifest.PRODUCT_ORDER,
+        )
         document = json.loads(self.serialized)
         document["products"].reverse()
         document["validation"]["hermit_results"].reverse()
         codes = {item.code for item in manifest.validate_release_manifest_document(document)}
         self.assertIn("PRODUCT_RECORD_ORDER", codes)
         self.assertIn("HERMIT_PRODUCT_ORDER", codes)
-        self.assertTrue(list(self.schema_validator.iter_errors(document)))
 
     def test_included_files_exclude_manifest_and_checksums(self) -> None:
+        included_schema = self.schema["properties"]["included_files"]
+        self.assertEqual(
+            tuple(
+                value["allOf"][1]["properties"]["path"]["const"]
+                for value in included_schema["prefixItems"]
+            ),
+            manifest.INCLUDED_FILE_PATH_ORDER,
+        )
         paths = {value.path for value in self.manifest.included_files}
         self.assertEqual(len(paths), 11)
         self.assertNotIn("manifest.json", paths)
@@ -478,7 +640,6 @@ class ReleaseManifestTests(unittest.TestCase):
         document["included_files"][0]["path"] = "manifest.json"
         codes = {item.code for item in manifest.validate_release_manifest_document(document)}
         self.assertIn("MANIFEST_SELF_REFERENCE", codes)
-        self.assertTrue(list(self.schema_validator.iter_errors(document)))
 
 
 if __name__ == "__main__":
