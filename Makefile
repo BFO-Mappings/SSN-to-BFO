@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	python tools/run_validation_suite.py
@@ -31,6 +31,9 @@ compile:
 		tools/publication_metadata.py \
 		tools/check_publication_metadata.py \
 		tools/release_context.py \
+		tools/release_manifest.py \
+		tools/build_release.py \
+		tools/check_release.py \
 		tests/test_generate_mapping_from_coms.py \
 		tests/test_coms_row_identity.py \
 		tests/test_product_dispositions.py \
@@ -41,6 +44,8 @@ compile:
 		tests/test_publication_metadata.py \
 		tests/test_release_context.py \
 		tests/test_release_rendering.py \
+		tests/test_release_manifest.py \
+		tests/test_build_release.py \
 		tools/workflow_check.py
 
 check-publication-metadata:
@@ -53,6 +58,12 @@ check-release-rendering:
 	python -m unittest discover -s tests -p 'test_publication_metadata.py'
 	python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
 	python -m unittest discover -s tests -p 'test_modular_products.py'
+
+check-release-package:
+	python -m unittest discover -s tests -p 'test_release_manifest.py'
+	python -m unittest discover -s tests -p 'test_build_release.py'
+	python -m unittest discover -s tests -p 'test_release_context.py'
+	python -m unittest discover -s tests -p 'test_release_rendering.py'
 
 check-coms:
 	python tools/check_coms_mapping.py
