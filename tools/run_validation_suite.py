@@ -67,6 +67,9 @@ def compile_check() -> StepResult:
             "tools/publication_metadata.py",
             "tools/check_publication_metadata.py",
             "tools/release_context.py",
+            "tools/release_manifest.py",
+            "tools/build_release.py",
+            "tools/check_release.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
@@ -77,6 +80,8 @@ def compile_check() -> StepResult:
             "tests/test_publication_metadata.py",
             "tests/test_release_context.py",
             "tests/test_release_rendering.py",
+            "tests/test_release_manifest.py",
+            "tests/test_build_release.py",
         ],
     )
 
@@ -272,6 +277,38 @@ def main() -> int:
                     "tests",
                     "-p",
                     "test_release_rendering.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Release manifest focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_release_manifest.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Release package build and validation focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_build_release.py",
                 ],
             )
         )

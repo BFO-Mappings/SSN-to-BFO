@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BFO-Mappings/SSN-to-BFO/blob/main/config/release-manifest-schema-v1.json",
+  "title": "SSN-to-BFO release manifest schema version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release_identifier",
+    "release_date",
+    "git_tag",
+    "source_commit",
+    "repository_iri",
+    "inputs",
+    "product_order",
+    "products",
+    "dependencies",
+    "validation_environment",
+    "validation",
+    "included_files"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "release_identifier": { "$ref": "#/$defs/releaseDate" },
+    "release_date": { "$ref": "#/$defs/releaseDate" },
+    "git_tag": { "type": "string", "pattern": "^v[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "source_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "repository_iri": { "$ref": "#/$defs/httpIri" },
+    "inputs": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "prefixItems": [
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "coms_workbook" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "publication_metadata" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "product_dispositions" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "release_notes" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "license" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_coms_row_identity" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_product_dispositions" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_publication_metadata" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_release_context" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_generate_mapping_from_coms" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_modular_products" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_release_manifest" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/input" }, { "properties": { "key": { "const": "module_build_release" } } }] }
+      ],
+      "items": false
+    },
+    "product_order": {
+      "const": [
+        "integrated",
+        "alignment_core",
+        "strict_bfo_mapping",
+        "bfo_projection",
+        "cco_extension"
+      ]
+    },
+    "products": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        { "allOf": [{ "$ref": "#/$defs/product" }, { "properties": { "key": { "const": "integrated" }, "imports": { "minItems": 4, "maxItems": 4 } } }] },
+        { "allOf": [{ "$ref": "#/$defs/product" }, { "properties": { "key": { "const": "alignment_core" }, "imports": { "maxItems": 0 } } }] },
+        { "allOf": [{ "$ref": "#/$defs/product" }, { "properties": { "key": { "const": "strict_bfo_mapping" }, "imports": { "minItems": 1, "maxItems": 1 } } }] },
+        { "allOf": [{ "$ref": "#/$defs/product" }, { "properties": { "key": { "const": "bfo_projection" }, "imports": { "minItems": 1, "maxItems": 1 } } }] },
+        { "allOf": [{ "$ref": "#/$defs/product" }, { "properties": { "key": { "const": "cco_extension" }, "imports": { "minItems": 1, "maxItems": 1 } } }] }
+      ],
+      "items": false
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        { "allOf": [{ "$ref": "#/$defs/dependency" }, { "properties": { "key": { "const": "sosa" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/dependency" }, { "properties": { "key": { "const": "sosa_sampling" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/dependency" }, { "properties": { "key": { "const": "ssn" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/dependency" }, { "properties": { "key": { "const": "ssn_systems" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/dependency" }, { "properties": { "key": { "const": "merged_cco_bfo" } } }] }
+      ],
+      "items": false
+    },
+    "validation_environment": { "$ref": "#/$defs/validationEnvironment" },
+    "validation": { "$ref": "#/$defs/validation" },
+    "included_files": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "prefixItems": [
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "LICENSE" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "RELEASE-NOTES.md" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "SSN2BFO.ttl" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "catalog-v001.xml" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "current-ssn-sosa/ssn-sosa-alignment-core.ttl" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "current-ssn-sosa/ssn-sosa-bfo-projection.ttl" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "current-ssn-sosa/ssn-sosa-cco-extension.ttl" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "evidence/coms-product-dispositions.json" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "sources/SSN2BFO-COMS.xlsx" } } }] },
+        { "allOf": [{ "$ref": "#/$defs/includedFile" }, { "properties": { "path": { "const": "sources/publication-metadata.toml" } } }] }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "releaseDate": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*[\\u0000-\\u001F\\u007F])(?!.*/$).+$"
+    },
+    "httpIri": {
+      "type": "string",
+      "pattern": "^https?://[^#]+$"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "source_path", "package_path", "sha256", "byte_size"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "source_path": { "$ref": "#/$defs/relativePath" },
+        "package_path": {
+          "oneOf": [
+            { "$ref": "#/$defs/relativePath" },
+            { "type": "null" }
+          ]
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "byte_size": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "path",
+        "stable_ontology_iri",
+        "version_iri",
+        "imports",
+        "sha256",
+        "byte_size",
+        "ontology_declaration_count",
+        "import_count",
+        "static_metadata_count",
+        "formal_metadata_count",
+        "logical_triple_count",
+        "total_triple_count",
+        "direct_governed_axiom_count",
+        "governed_closure_axiom_count",
+        "reasoning_mode"
+      ],
+      "properties": {
+        "key": { "enum": ["integrated", "alignment_core", "strict_bfo_mapping", "bfo_projection", "cco_extension"] },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "stable_ontology_iri": { "$ref": "#/$defs/httpIri" },
+        "version_iri": { "$ref": "#/$defs/httpIri" },
+        "imports": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/httpIri" },
+          "uniqueItems": true
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "byte_size": { "type": "integer", "minimum": 0 },
+        "ontology_declaration_count": { "type": "integer", "minimum": 0 },
+        "import_count": { "type": "integer", "minimum": 0 },
+        "static_metadata_count": { "type": "integer", "minimum": 0 },
+        "formal_metadata_count": { "type": "integer", "minimum": 0 },
+        "logical_triple_count": { "type": "integer", "minimum": 0 },
+        "total_triple_count": { "type": "integer", "minimum": 0 },
+        "direct_governed_axiom_count": { "type": "integer", "minimum": 0 },
+        "governed_closure_axiom_count": { "type": "integer", "minimum": 0 },
+        "reasoning_mode": { "const": "independent" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "role", "path", "ontology_iri", "version_iri", "sha256", "byte_size"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "ontology_iri": { "$ref": "#/$defs/httpIri" },
+        "version_iri": {
+          "oneOf": [
+            { "$ref": "#/$defs/httpIri" },
+            { "type": "null" }
+          ]
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "byte_size": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "validationEnvironment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python_implementation",
+        "python_version",
+        "java_vendor",
+        "java_version",
+        "java_vm_name",
+        "robot_artifact",
+        "robot_version",
+        "robot_sha256",
+        "toolchain_path",
+        "toolchain_sha256",
+        "requirements_path",
+        "requirements_sha256"
+      ],
+      "properties": {
+        "python_implementation": { "type": "string", "minLength": 1 },
+        "python_version": { "type": "string", "minLength": 1 },
+        "java_vendor": { "type": "string", "minLength": 1 },
+        "java_version": { "type": "string", "minLength": 1 },
+        "java_vm_name": { "type": "string", "minLength": 1 },
+        "robot_artifact": { "$ref": "#/$defs/httpIri" },
+        "robot_version": { "type": "string", "minLength": 1 },
+        "robot_sha256": { "$ref": "#/$defs/sha256" },
+        "toolchain_path": { "$ref": "#/$defs/relativePath" },
+        "toolchain_sha256": { "$ref": "#/$defs/sha256" },
+        "requirements_path": { "$ref": "#/$defs/relativePath" },
+        "requirements_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "hermitResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_key",
+        "status",
+        "fixed_closure_triple_count",
+        "return_code",
+        "reasoned_output_produced",
+        "named_unsatisfiable_class_count",
+        "owl_nothing_equivalent_named_class_count"
+      ],
+      "properties": {
+        "product_key": { "enum": ["integrated", "alignment_core", "strict_bfo_mapping", "bfo_projection", "cco_extension"] },
+        "status": { "const": "PASS" },
+        "fixed_closure_triple_count": { "type": "integer", "minimum": 0 },
+        "return_code": { "const": 0 },
+        "reasoned_output_produced": { "const": true },
+        "named_unsatisfiable_class_count": { "const": 0 },
+        "owl_nothing_equivalent_named_class_count": { "const": 0 }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strict_turtle_parsing",
+        "formal_metadata_validation",
+        "serialized_header_validation",
+        "governed_axiom_reconciliation",
+        "import_graph_validation",
+        "catalog_validation",
+        "checksum_validation",
+        "development_artifact_nonmutation",
+        "deterministic_package_rebuild",
+        "hermit_results"
+      ],
+      "properties": {
+        "strict_turtle_parsing": { "const": true },
+        "formal_metadata_validation": { "const": true },
+        "serialized_header_validation": { "const": true },
+        "governed_axiom_reconciliation": { "const": true },
+        "import_graph_validation": { "const": true },
+        "catalog_validation": { "const": true },
+        "checksum_validation": { "const": true },
+        "development_artifact_nonmutation": { "const": true },
+        "deterministic_package_rebuild": { "const": true },
+        "hermit_results": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "integrated" }, "fixed_closure_triple_count": { "const": 15915 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "alignment_core" }, "fixed_closure_triple_count": { "const": 1215 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "strict_bfo_mapping" }, "fixed_closure_triple_count": { "const": 14992 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "bfo_projection" }, "fixed_closure_triple_count": { "const": 15003 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "cco_extension" }, "fixed_closure_triple_count": { "const": 15937 } } }] }
+          ],
+          "items": false
+        }
+      }
+    },
+    "includedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "sha256", "byte_size"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "role": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "byte_size": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

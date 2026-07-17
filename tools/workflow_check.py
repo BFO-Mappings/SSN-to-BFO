@@ -31,6 +31,9 @@ COMPILE_COMMAND = [
     "tools/publication_metadata.py",
     "tools/check_publication_metadata.py",
     "tools/release_context.py",
+    "tools/release_manifest.py",
+    "tools/build_release.py",
+    "tools/check_release.py",
     "tests/test_generate_mapping_from_coms.py",
     "tests/test_coms_row_identity.py",
     "tests/test_product_dispositions.py",
@@ -41,6 +44,8 @@ COMPILE_COMMAND = [
     "tests/test_publication_metadata.py",
     "tests/test_release_context.py",
     "tests/test_release_rendering.py",
+    "tests/test_release_manifest.py",
+    "tests/test_build_release.py",
     "tools/workflow_check.py",
 ]
 VALIDATE_COMMAND = [PYTHON, "tools/run_validation_suite.py"]

@@ -49,19 +49,19 @@ Like every maintained ontology product, the development artifact emits the seven
 
 `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` is the maintained authoritative development artifact for the 19 unchanged BFO-bearing governed COMS axioms. It imports only the alignment core, so the locally resolved project-module closure contains 48 governed axioms: 19 direct strict-BFO axioms plus 29 target-neutral core axioms. The 57 CCO-bearing or mixed mappings remain explicitly deferred because no transformation or weakened projection is approved.
 
-The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. The graph emits the seven governed development annotations; formal package construction, an actual release identity, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
+The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. The graph emits the seven governed development annotations; actual release selection/publication and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
 
 ### BFO projection
 
 `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` is a maintained authoritative development artifact that imports only the strict BFO mapping. It intentionally asserts zero direct projection axioms because no CCO-to-BFO transformation or weakened-consequence rule is approved. Its locally resolved project-module closure is therefore exactly the 48 governed axioms already provided by strict BFO and the alignment core: 19 through import and 29 transitively.
 
-The direct nine-triple graph contains one ontology declaration, one strict-BFO import, and the seven governed development annotations; it contains zero logical mapping triples. It contains no source, BFO, CCO, or RO logical mapping content and is not an incomplete serialization. The BFO projection is the designated product for approved weaker but sound BFO consequences, but no direct projection axiom is currently approved. The generator reconciles all 105 product dispositions, leaving 25 CCO-bearing and 32 mixed axioms explicitly deferred, then reuses the same-transaction strict-BFO pinned merged CCO/BFO reasoning result only after proving exact closure equivalence. Future direct projection axioms require governed transformation rules and proof obligations. Formal package construction and an actual release identity remain deferred. Run `make check-bfo-projection` for the focused tests and shared nonmutating nine-output transaction.
+The direct nine-triple graph contains one ontology declaration, one strict-BFO import, and the seven governed development annotations; it contains zero logical mapping triples. It contains no source, BFO, CCO, or RO logical mapping content and is not an incomplete serialization. The BFO projection is the designated product for approved weaker but sound BFO consequences, but no direct projection axiom is currently approved. The generator reconciles all 105 product dispositions, leaving 25 CCO-bearing and 32 mixed axioms explicitly deferred, then reuses the same-transaction strict-BFO pinned merged CCO/BFO reasoning result only after proving exact closure equivalence. Future direct projection axioms require governed transformation rules and proof obligations. Actual release selection and publication remain deferred. Run `make check-bfo-projection` for the focused tests and shared nonmutating nine-output transaction.
 
 ### CCO extension
 
 `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` is the maintained authoritative development artifact for 57 unchanged governed COMS axioms: 25 CCO-bearing and 32 mixed BFO/CCO axioms. It imports only the strict BFO mapping, whose alignment-core import completes a 105-axiom project-module closure without directly duplicating either imported layer.
 
-The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. The graph emits the seven governed development annotations; formal package construction, an actual release identity, and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
+The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. The graph emits the seven governed development annotations; actual release selection/publication and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
 
 ## Validation environment
 
@@ -109,7 +109,30 @@ python tools/check_publication_metadata.py \
 
 Formal renderers preserve each stable ontology IRI as the `owl:Ontology` subject, replace the development status with the immutable-release status, and add exactly `owl:versionIRI`, plain `owl:versionInfo`, and `dcterms:issued` as `xsd:date`. Modular imports use same-release version IRIs; the integrated root retains its four external imports. `make check-release-rendering` proves deterministic bytes, logical-graph preservation, exact closure counts, and independent HermiT consistency for all five synthetic formal products.
 
-The formal APIs render in memory or isolated temporary test paths. No package builder, dated release directory, manifest, checksum file, archive, tag, or GitHub release exists yet, and no actual release identifier, date, or notes have been selected. Creator/contributor metadata, provenance and dependency RDF, commit/tag/hash RDF, package construction, tagging, and publication remain deferred.
+`tools/build_release.py` now builds a deterministic candidate package only at an explicit, absent output directory, and `tools/check_release.py validate --package-dir PATH` validates an existing package read-only. The builder requires an explicit release identifier, matching date and tag, full source-commit SHA, repository-relative approved notes file, and exact output directory; it never infers or overwrites them. Source-commit binding to a clean checkout is not implemented yet.
+
+The package has exactly 13 regular files:
+
+```text
+<release-id>/
+  LICENSE
+  RELEASE-NOTES.md
+  SHA256SUMS
+  SSN2BFO.ttl
+  catalog-v001.xml
+  current-ssn-sosa/ssn-sosa-alignment-core.ttl
+  current-ssn-sosa/ssn-sosa-bfo-mapping.ttl
+  current-ssn-sosa/ssn-sosa-bfo-projection.ttl
+  current-ssn-sosa/ssn-sosa-cco-extension.ttl
+  evidence/coms-product-dispositions.json
+  manifest.json
+  sources/SSN2BFO-COMS.xlsx
+  sources/publication-metadata.toml
+```
+
+Manifest schema version 1 records formal context, governed inputs and byte-affecting modules, product counts and hashes, pinned validation dependencies, stable toolchain evidence, independent validation outcomes, and the 11 non-manifest/non-checksum included files. `catalog-v001.xml` maps only the five immutable version IRIs to package-relative products. `SHA256SUMS` uses lowercase SHA-256, two spaces, and a normalized relative path for every regular file except itself; it includes `manifest.json`. External ontologies are not redistributed, so the package is offline-complete for project-module imports only.
+
+Run `make check-release-package` for the synthetic package gate. No actual release package or archive is committed, no actual release identifier/date/notes have been selected, and no tag or GitHub release has been created. Clean-checkout rehearsal, deterministic archive generation, tag readiness, placeholder cleanup, persistent IRI deployment, creator/contributor governance, and publication remain later work.
 
 The four new release files under `releases/` are placeholders until completed mapping content is inserted:
 

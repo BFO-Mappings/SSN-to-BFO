@@ -126,7 +126,7 @@ These defects do not argue against modular publication. They establish stronger 
 
 - This is an approved architecture policy, not implementation or a release-readiness declaration.
 - The 105-way partition is syntactic by vocabulary presence; it does not approve any particular CCO-to-BFO transformation.
-- No individual transformation rule, row disposition, release manifest, or catalog implementation is created here.
+- This original policy review did not itself implement transformation rules, row dispositions, a release manifest, or a catalog; current implementation status is recorded in the later sections below.
 - External registry, DOI, hosted-release, and branch-protection state were not examined.
 - Stable product identities, import structure, transformation categories, versioning, projection retirement, and `sosa-next` lifecycle are settled here; the remaining implementation choices are listed in section 11.
 
@@ -472,8 +472,16 @@ Formal release generation:
 - emits `owl:versionIRI`, plain language-neutral `owl:versionInfo`, and `dcterms:issued` typed as `xsd:date`;
 - uses same-release immutable project-module imports while preserving the integrated root's four external imports;
 - validates the complete product set;
-- freezes exact artifact bytes only in a later packaging operation; and
+- freezes exact candidate artifact bytes in an explicitly requested package operation; and
 - creates no Git tag in the current rendering implementation.
+
+### Candidate release package
+
+The deterministic package builder accepts only an explicit formal context, repository-relative approved release notes, and absent output directory. It builds and validates in a temporary sibling before atomic publication and never updates the nine maintained development outputs. The package is candidate tooling: it does not prove that the source commit matches a clean checkout and does not create an archive, Git tag, GitHub release, or deployed persistent IRI.
+
+A candidate package contains exactly 13 regular files: five formal ontology products, `catalog-v001.xml`, `manifest.json`, `SHA256SUMS`, `RELEASE-NOTES.md`, `LICENSE`, the COMS workbook, publication-metadata TOML, and product-disposition evidence. It contains no third-party ontology, development report, coverage report, legacy report, placeholder, source snapshot, archive, or inactive-track product. The package is offline-complete for its project-module imports; external integrated-root imports remain documented pinned dependencies and are not redistributed.
+
+Manifest schema version 1 uses canonical UTF-8 JSON and records the explicit formal context, governed inputs and byte-affecting modules, products, pinned dependencies, stable validation environment, computed validation outcomes, and 11 included files other than the manifest and checksum list. It does not hash itself or `SHA256SUMS`. The checksum list includes `manifest.json`, excludes only itself, and uses lowercase SHA-256 plus two spaces and a normalized relative path in lexicographic order. The canonical OASIS catalog maps only the five same-release immutable version IRIs to package-relative TTL files.
 
 ### Governed metadata source
 
@@ -509,9 +517,9 @@ With a complete validated formal context, the same renderer retains those seven 
 
 Development serialization is deterministic and preserves the existing generated-file Turtle comments in addition to the machine-readable warning. Metadata prefix and ontology-header ordering are explicit, and stripping the ontology declaration, approved project imports, and exact seven annotations must reproduce the governed logical graph. Metadata is never counted as a governed axiom, mapping triple, structural expression triple, projection axiom, or copied declaration.
 
-Creator and contributor governance, ORCIDs, agents, provenance RDF, source and dependency RDF, local validation paths, dependency hashes, workbook or generator provenance RDF, source-commit and tag RDF, artifact hashes, manifests, package construction, archives, tagging, and GitHub publication remain deferred. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
+Creator and contributor governance, ORCIDs, agents, provenance RDF, source and dependency RDF, local validation paths in RDF, workbook or generator provenance RDF, source-commit and tag RDF, clean-checkout source binding, deterministic archives, tagging, and GitHub publication remain deferred. Package manifests may record dependency and artifact hashes as non-RDF evidence. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
 
-Development artifacts use stable ontology IRIs and the governed development authority status. They do not claim `owl:versionIRI`, `owl:versionInfo`, `dcterms:issued`, a release date, a Git tag, or frozen artifact identity. Formal rendering is a separate explicit in-memory operation and does not alter the nine maintained development outputs. No actual release context has been selected and no release package builder exists yet.
+Development artifacts use stable ontology IRIs and the governed development authority status. They do not claim `owl:versionIRI`, `owl:versionInfo`, `dcterms:issued`, a release date, a Git tag, or frozen artifact identity. Formal rendering and candidate packaging are separate explicit operations and do not alter the nine maintained development outputs. No actual release context or notes have been selected, and no package has been committed or published.
 
 ### License scope
 
@@ -691,9 +699,9 @@ Implementation must still specify:
 1. Machine-readable product-disposition schema and governed file location.
 2. Stable COMS row-key mechanism resilient to worksheet row movement.
 3. Transformation-rule serialization and proof/result representation.
-4. Exact release-manifest schema and hash canonicalization.
+4. Clean-checkout source-commit binding and deterministic archive construction around the implemented manifest/package format.
 5. Multi-product temporary-generation, validation, atomic replacement, and rollback transaction design.
-6. Catalog format, locations, and stable/version IRI resolution mechanics.
+6. Persistent deployment and stable-IRI catalog migration beyond the package-local version-IRI catalog.
 7. Module-specific fixed HermiT closures and example suites.
 8. Canonical integrated-versus-modular semantic reconciliation.
 9. Placeholder rename/migration mechanics for tracked paths and downstream references.
