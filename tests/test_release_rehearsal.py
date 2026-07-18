@@ -15,6 +15,7 @@ import sys
 import tempfile
 import types
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -341,6 +342,19 @@ class ReleaseRehearsalTests(unittest.TestCase):
             if path.name == "__pycache__" or path.suffix in {".pyc", ".pyo"}
         }
 
+    def assert_owned_descriptors_closed(
+        self,
+        owned: validation_runner.OwnedTemporaryDirectory,
+        directory_fd: int,
+        marker_fd: int,
+    ) -> None:
+        self.assertEqual(owned.directory_fd, -1)
+        self.assertEqual(owned.marker_fd, -1)
+        with self.assertRaises(OSError):
+            os.fstat(directory_fd)
+        with self.assertRaises(OSError):
+            os.fstat(marker_fd)
+
     def test_validation_runner_preserves_preexisting_bytecode_and_isolates_child_compilation(self) -> None:
         before = self.create_preexisting_bytecode()
         before_paths = self.repository_bytecode_paths()
@@ -420,6 +434,8 @@ raise SystemExit(7)
     def test_validation_runner_refuses_replacement_directory_cleanup(self) -> None:
         with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
             owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
         shutil.rmtree(owned.path)
         owned.path.mkdir()
         sentinel = owned.path / "sentinel.bin"
@@ -428,11 +444,19 @@ raise SystemExit(7)
         self.assertEqual(errors, ("CLEANUP_FAILED external bytecode cache: owned path identity changed",))
         self.assertEqual(sentinel.read_bytes(), b"unrelated replacement directory\n")
         self.assertTrue(owned.path.is_dir())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(
+            validation_runner.cleanup_owned_temporary_directory(owned),
+            (validation_runner.OWNED_CACHE_IDENTITY_ERROR,),
+        )
+        self.assertEqual(sentinel.read_bytes(), b"unrelated replacement directory\n")
         shutil.rmtree(owned.path)
 
     def test_validation_runner_refuses_replacement_symlink_cleanup(self) -> None:
         with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
             owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
         shutil.rmtree(owned.path)
         target = self.root / "unrelated-bytecode-target"
         target.mkdir()
@@ -443,7 +467,203 @@ raise SystemExit(7)
         self.assertEqual(errors, ("CLEANUP_FAILED external bytecode cache: owned path identity changed",))
         self.assertTrue(owned.path.is_symlink())
         self.assertEqual(sentinel.read_bytes(), b"unrelated symlink target\n")
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
         owned.path.unlink()
+
+    def test_validation_runner_refuses_replacement_with_matching_superficial_metadata(self) -> None:
+        with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
+            owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        original_lstat = validation_runner.os.lstat
+        shutil.rmtree(owned.path)
+        owned.path.mkdir()
+        sentinel = owned.path / "sentinel.bin"
+        sentinel.write_bytes(b"matching superficial metadata replacement\n")
+        matching_metadata = types.SimpleNamespace(
+            st_dev=owned.device,
+            st_ino=owned.inode,
+            st_mode=owned.file_type | 0o700,
+        )
+
+        def superficial_lstat(path):
+            if Path(path) == owned.path:
+                return matching_metadata
+            return original_lstat(path)
+
+        with mock.patch.object(validation_runner.os, "lstat", side_effect=superficial_lstat):
+            errors = validation_runner.cleanup_owned_temporary_directory(owned)
+        self.assertEqual(errors, (validation_runner.OWNED_CACHE_IDENTITY_ERROR,))
+        self.assertEqual(sentinel.read_bytes(), b"matching superficial metadata replacement\n")
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        shutil.rmtree(owned.path)
+
+    def test_validation_runner_pins_original_inode_until_replacement_check_finishes(self) -> None:
+        with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
+            owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        pinned = os.fstat(directory_fd)
+        self.assertEqual((pinned.st_dev, pinned.st_ino), (owned.device, owned.inode))
+        shutil.rmtree(owned.path)
+        owned.path.mkdir()
+        sentinel = owned.path / "sentinel.bin"
+        sentinel.write_bytes(b"pinned original survives as an open descriptor\n")
+        still_pinned = os.fstat(owned.directory_fd)
+        self.assertEqual((still_pinned.st_dev, still_pinned.st_ino), (owned.device, owned.inode))
+        self.assertTrue(stat.S_ISDIR(still_pinned.st_mode))
+        self.assertTrue(owned.path.is_dir())
+        self.assertEqual(sentinel.read_bytes(), b"pinned original survives as an open descriptor\n")
+        errors = validation_runner.cleanup_owned_temporary_directory(owned)
+        self.assertEqual(errors, (validation_runner.OWNED_CACHE_IDENTITY_ERROR,))
+        self.assertTrue(owned.path.is_dir())
+        self.assertEqual(sentinel.read_bytes(), b"pinned original survives as an open descriptor\n")
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(
+            validation_runner.cleanup_owned_temporary_directory(owned),
+            (validation_runner.OWNED_CACHE_IDENTITY_ERROR,),
+        )
+        self.assertTrue(owned.path.is_dir())
+        self.assertEqual(sentinel.read_bytes(), b"pinned original survives as an open descriptor\n")
+        shutil.rmtree(owned.path)
+
+    def test_validation_runner_marker_mutations_fail_closed(self) -> None:
+        for case in ("missing", "directory", "symlink", "bytes", "identity", "mode"):
+            with self.subTest(case=case):
+                with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
+                    owned = validation_runner.validation_bytecode_cache()
+                directory_fd = owned.directory_fd
+                marker_fd = owned.marker_fd
+                marker = owned.path / owned.marker_name
+                sentinel = owned.path / "sentinel.bin"
+                sentinel.write_bytes((case + " marker mutation\n").encode("ascii"))
+                symlink_target: Path | None = None
+                if case == "missing":
+                    marker.unlink()
+                elif case == "directory":
+                    marker.unlink()
+                    marker.mkdir()
+                    (marker / "sentinel.bin").write_bytes(b"replacement marker directory\n")
+                elif case == "symlink":
+                    marker.unlink()
+                    symlink_target = self.root / f"{case}-marker-target"
+                    symlink_target.write_bytes(b"replacement marker symlink target\n")
+                    marker.symlink_to(symlink_target)
+                elif case == "bytes":
+                    marker.write_bytes(b"changed marker bytes\n")
+                    marker.chmod(0o600)
+                elif case == "identity":
+                    marker.unlink()
+                    marker.write_bytes(owned.marker_token)
+                    marker.chmod(0o600)
+                    owned = replace(owned, marker_inode=owned.marker_inode + 1)
+                elif case == "mode":
+                    marker.chmod(0o640)
+
+                errors = validation_runner.cleanup_owned_temporary_directory(owned)
+                self.assertEqual(errors, (validation_runner.OWNED_CACHE_IDENTITY_ERROR,))
+                self.assertEqual(sentinel.read_bytes(), (case + " marker mutation\n").encode("ascii"))
+                if case == "directory":
+                    self.assertEqual((marker / "sentinel.bin").read_bytes(), b"replacement marker directory\n")
+                if symlink_target is not None:
+                    self.assertTrue(marker.is_symlink())
+                    self.assertEqual(symlink_target.read_bytes(), b"replacement marker symlink target\n")
+                if case == "identity":
+                    self.assertEqual(marker.read_bytes(), owned.marker_token)
+                self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+                self.assertEqual(
+                    validation_runner.cleanup_owned_temporary_directory(owned),
+                    (validation_runner.OWNED_CACHE_IDENTITY_ERROR,),
+                )
+                self.assertEqual(sentinel.read_bytes(), (case + " marker mutation\n").encode("ascii"))
+                if case == "directory":
+                    self.assertEqual((marker / "sentinel.bin").read_bytes(), b"replacement marker directory\n")
+                if symlink_target is not None:
+                    self.assertTrue(marker.is_symlink())
+                    self.assertEqual(symlink_target.read_bytes(), b"replacement marker symlink target\n")
+                if case == "identity":
+                    self.assertEqual(marker.read_bytes(), owned.marker_token)
+                shutil.rmtree(owned.path)
+
+    def test_validation_runner_successfully_removes_marked_cache_and_closes_descriptors(self) -> None:
+        with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
+            owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        marker = owned.path / owned.marker_name
+        child = owned.path / "pycache/example.pyc"
+        child.parent.mkdir()
+        child.write_bytes(b"owned bytecode\n")
+        marker_info = os.lstat(marker)
+        self.assertTrue(stat.S_ISREG(marker_info.st_mode))
+        self.assertEqual(stat.S_IMODE(marker_info.st_mode), 0o600)
+        self.assertEqual(marker.read_bytes(), owned.marker_token)
+        self.assertFalse(os.get_inheritable(directory_fd))
+        self.assertFalse(os.get_inheritable(marker_fd))
+        self.assertEqual(validation_runner.cleanup_owned_temporary_directory(owned), ())
+        self.assertFalse(owned.path.exists())
+        self.assertFalse(marker.exists())
+        self.assertFalse(child.exists())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(validation_runner.cleanup_owned_temporary_directory(owned), ())
+
+    def test_validation_runner_preserves_primary_and_cleanup_failures(self) -> None:
+        with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
+            owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+
+        def fail_after_corrupting_marker(*args, **kwargs):
+            (owned.path / owned.marker_name).unlink()
+            return subprocess.CompletedProcess(args[0], 7)
+
+        with mock.patch.object(validation_runner, "REPO_ROOT", self.repository), mock.patch.object(
+            validation_runner,
+            "validation_bytecode_cache",
+            return_value=owned,
+        ), mock.patch.object(
+            validation_runner.subprocess,
+            "run",
+            side_effect=fail_after_corrupting_marker,
+        ):
+            result = validation_runner.run_command("primary plus cleanup failure", [sys.executable, "-c", "pass"])
+        self.assertFalse(result.passed)
+        self.assertEqual(
+            result.detail,
+            "FAIL (7); CLEANUP_FAILED external bytecode cache: owned path identity changed",
+        )
+        self.assertTrue(owned.path.is_dir())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        shutil.rmtree(owned.path)
+
+    def test_validation_runner_descriptors_are_not_inherited_by_children(self) -> None:
+        with mock.patch.object(validation_runner, "REPO_ROOT", self.repository):
+            owned = validation_runner.validation_bytecode_cache()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        environment = validation_runner.validation_child_environment(owned)
+        script = (
+            "import os, sys\n"
+            "for value in sys.argv[1:]:\n"
+            "    try:\n"
+            "        os.fstat(int(value))\n"
+            "    except OSError:\n"
+            "        continue\n"
+            "    raise SystemExit(7)\n"
+        )
+        child = subprocess.run(
+            [sys.executable, "-B", "-c", script, str(directory_fd), str(marker_fd)],
+            cwd=self.repository,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(child.returncode, 0, child.stdout + child.stderr)
+        self.assertFalse(os.get_inheritable(directory_fd))
+        self.assertFalse(os.get_inheritable(marker_fd))
+        self.assertEqual(validation_runner.cleanup_owned_temporary_directory(owned), ())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
 
     def test_validation_runner_compile_step_enforces_external_cache_environment(self) -> None:
         captured: dict[str, object] = {}

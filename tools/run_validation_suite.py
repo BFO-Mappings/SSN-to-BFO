@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import argparse
 import os
+import secrets
 import shlex
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -62,12 +63,30 @@ class StepResult:
     detail: str = ""
 
 
-@dataclass(frozen=True)
+OWNED_CACHE_MARKER = ".ssn-to-bfo-owned-validation-cache"
+OWNED_CACHE_IDENTITY_ERROR = "CLEANUP_FAILED external bytecode cache: owned path identity changed"
+
+
+@dataclass(eq=False)
 class OwnedTemporaryDirectory:
     path: Path
+    directory_fd: int = field(repr=False)
     device: int
     inode: int
     file_type: int
+    marker_name: str
+    marker_fd: int = field(repr=False)
+    marker_token: bytes = field(repr=False)
+    marker_device: int
+    marker_inode: int
+    marker_file_type: int
+    cleanup_result: tuple[str, ...] | None = None
+
+    def __copy__(self):
+        raise TypeError("owned temporary directories cannot be copied")
+
+    def __deepcopy__(self, memo):
+        raise TypeError("owned temporary directories cannot be copied")
 
 
 def command_text(command: list[str]) -> str:
@@ -105,46 +124,229 @@ def parse_ttl_check() -> StepResult:
 def external_temporary_directory(prefix: str) -> OwnedTemporaryDirectory:
     """Create a temporary directory that cannot be nested in this repository."""
 
+    required_flags = ("O_DIRECTORY", "O_CLOEXEC", "O_NOFOLLOW")
+    if any(not hasattr(os, name) for name in required_flags):
+        raise RuntimeError("platform cannot pin an owned external bytecode cache directory")
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | os.O_NOFOLLOW
+    marker_flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW
     candidates = (Path("/tmp"), Path(tempfile.gettempdir()))
     for candidate in candidates:
+        path: Path | None = None
+        directory_fd = -1
+        marker_fd = -1
+        complete = False
         try:
             parent = candidate.resolve()
             parent.relative_to(REPO_ROOT)
         except ValueError:
             if parent.is_dir() and not parent.is_symlink():
-                path = Path(tempfile.mkdtemp(prefix=prefix, dir=parent))
-                info = os.lstat(path)
-                if not stat.S_ISDIR(info.st_mode):
+                try:
+                    path = Path(tempfile.mkdtemp(prefix=prefix, dir=parent))
+                    directory_fd = os.open(path, directory_flags)
+                    os.set_inheritable(directory_fd, False)
+                    path_info = os.lstat(path)
+                    directory_info = os.fstat(directory_fd)
+                    path_identity = (
+                        path_info.st_dev,
+                        path_info.st_ino,
+                        stat.S_IFMT(path_info.st_mode),
+                    )
+                    directory_identity = (
+                        directory_info.st_dev,
+                        directory_info.st_ino,
+                        stat.S_IFMT(directory_info.st_mode),
+                    )
+                    if (
+                        path_identity != directory_identity
+                        or directory_identity[2] != stat.S_IFDIR
+                        or os.get_inheritable(directory_fd)
+                    ):
+                        raise RuntimeError("external temporary path is not a pinned real directory")
+
+                    marker_token = secrets.token_bytes(32)
+                    marker_fd = os.open(
+                        OWNED_CACHE_MARKER,
+                        marker_flags,
+                        0o600,
+                        dir_fd=directory_fd,
+                    )
+                    os.set_inheritable(marker_fd, False)
+                    os.fchmod(marker_fd, 0o600)
+                    remaining = memoryview(marker_token)
+                    while remaining:
+                        written = os.write(marker_fd, remaining)
+                        if written <= 0:
+                            raise OSError("unable to write owned-cache marker")
+                        remaining = remaining[written:]
+                    marker_info = os.fstat(marker_fd)
+                    if (
+                        not stat.S_ISREG(marker_info.st_mode)
+                        or stat.S_IMODE(marker_info.st_mode) != 0o600
+                        or os.get_inheritable(marker_fd)
+                    ):
+                        raise RuntimeError("owned-cache marker is not a private regular file")
+                    owned = OwnedTemporaryDirectory(
+                        path=path,
+                        directory_fd=directory_fd,
+                        device=directory_info.st_dev,
+                        inode=directory_info.st_ino,
+                        file_type=stat.S_IFMT(directory_info.st_mode),
+                        marker_name=OWNED_CACHE_MARKER,
+                        marker_fd=marker_fd,
+                        marker_token=marker_token,
+                        marker_device=marker_info.st_dev,
+                        marker_inode=marker_info.st_ino,
+                        marker_file_type=stat.S_IFMT(marker_info.st_mode),
+                    )
+                    complete = True
+                    return owned
+                except OSError:
+                    pass
+                finally:
+                    if not complete:
+                        if marker_fd >= 0:
+                            os.close(marker_fd)
+                        if path is not None and directory_fd >= 0:
+                            try:
+                                path_info = os.lstat(path)
+                                directory_info = os.fstat(directory_fd)
+                                if (
+                                    (path_info.st_dev, path_info.st_ino, stat.S_IFMT(path_info.st_mode))
+                                    == (
+                                        directory_info.st_dev,
+                                        directory_info.st_ino,
+                                        stat.S_IFMT(directory_info.st_mode),
+                                    )
+                                    and stat.S_ISDIR(path_info.st_mode)
+                                    and shutil.rmtree.avoids_symlink_attacks
+                                ):
+                                    shutil.rmtree(path)
+                            except OSError:
+                                pass
+                            os.close(directory_fd)
+                        elif path is not None:
+                            try:
+                                os.rmdir(path)
+                            except OSError:
+                                pass
+                if path is not None and os.path.lexists(path):
                     raise RuntimeError("external temporary path is not a directory")
-                return OwnedTemporaryDirectory(
-                    path=path,
-                    device=info.st_dev,
-                    inode=info.st_ino,
-                    file_type=stat.S_IFMT(info.st_mode),
-                )
         except OSError:
             continue
     raise RuntimeError("no external temporary directory is available for Python bytecode")
 
 
 def cleanup_owned_temporary_directory(owned: OwnedTemporaryDirectory) -> tuple[str, ...]:
-    """Remove one identity-owned directory without following a replacement path."""
+    """Remove one pinned, marked directory once without following replacements."""
 
+    if owned.cleanup_result is not None:
+        return owned.cleanup_result
+    result: tuple[str, ...] = (OWNED_CACHE_IDENTITY_ERROR,)
     try:
-        info = os.lstat(owned.path)
-    except OSError as exc:
-        return (f"CLEANUP_FAILED external bytecode cache: {exc.strerror}",)
-    identity = (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode))
-    expected = (owned.device, owned.inode, owned.file_type)
-    if identity != expected:
-        return ("CLEANUP_FAILED external bytecode cache: owned path identity changed",)
-    if not stat.S_ISDIR(info.st_mode):
-        return ("CLEANUP_FAILED external bytecode cache: owned path is not a directory",)
-    try:
+        if owned.directory_fd < 0:
+            return result
+        if owned.marker_fd < 0:
+            return result
+        directory_info = os.fstat(owned.directory_fd)
+        path_info = os.lstat(owned.path)
+        expected_directory = (owned.device, owned.inode, owned.file_type)
+        descriptor_identity = (
+            directory_info.st_dev,
+            directory_info.st_ino,
+            stat.S_IFMT(directory_info.st_mode),
+        )
+        path_identity = (
+            path_info.st_dev,
+            path_info.st_ino,
+            stat.S_IFMT(path_info.st_mode),
+        )
+        if (
+            descriptor_identity != expected_directory
+            or path_identity != descriptor_identity
+            or descriptor_identity[2] != stat.S_IFDIR
+        ):
+            return result
+
+        expected_marker = (
+            owned.marker_device,
+            owned.marker_inode,
+            owned.marker_file_type,
+        )
+        marker_descriptor_info = os.fstat(owned.marker_fd)
+        marker_info = os.stat(
+            owned.marker_name,
+            dir_fd=owned.directory_fd,
+            follow_symlinks=False,
+        )
+        marker_path_info = os.lstat(owned.path / owned.marker_name)
+        marker_identity = (
+            marker_info.st_dev,
+            marker_info.st_ino,
+            stat.S_IFMT(marker_info.st_mode),
+        )
+        marker_path_identity = (
+            marker_path_info.st_dev,
+            marker_path_info.st_ino,
+            stat.S_IFMT(marker_path_info.st_mode),
+        )
+        marker_descriptor_identity = (
+            marker_descriptor_info.st_dev,
+            marker_descriptor_info.st_ino,
+            stat.S_IFMT(marker_descriptor_info.st_mode),
+        )
+        if (
+            marker_descriptor_identity != expected_marker
+            or marker_identity != expected_marker
+            or marker_path_identity != expected_marker
+            or marker_identity[2] != stat.S_IFREG
+            or stat.S_IMODE(marker_descriptor_info.st_mode) != 0o600
+            or stat.S_IMODE(marker_info.st_mode) != 0o600
+            or stat.S_IMODE(marker_path_info.st_mode) != 0o600
+            or os.get_inheritable(owned.marker_fd)
+        ):
+            return result
+
+        os.lseek(owned.marker_fd, 0, os.SEEK_SET)
+        marker_bytes = bytearray()
+        while len(marker_bytes) <= len(owned.marker_token):
+            chunk = os.read(
+                owned.marker_fd,
+                len(owned.marker_token) + 1 - len(marker_bytes),
+            )
+            if not chunk:
+                break
+            marker_bytes.extend(chunk)
+        if bytes(marker_bytes) != owned.marker_token:
+            return result
+
+        if not shutil.rmtree.avoids_symlink_attacks:
+            return result
+        # Python's portable rmtree API cannot remove the root directory by its
+        # already-open descriptor. Its symlink-resistant implementation is used
+        # only after descriptor, pathname, and private-marker agreement, and the
+        # pinned descriptor remains open until recursive deletion completes.
         shutil.rmtree(owned.path)
-    except OSError as exc:
-        return (f"CLEANUP_FAILED external bytecode cache: {exc.strerror}",)
-    return ()
+        result = ()
+    except OSError:
+        result = (OWNED_CACHE_IDENTITY_ERROR,)
+    finally:
+        close_failed = False
+        if owned.marker_fd >= 0:
+            try:
+                os.close(owned.marker_fd)
+            except OSError:
+                close_failed = True
+            owned.marker_fd = -1
+        if owned.directory_fd >= 0:
+            try:
+                os.close(owned.directory_fd)
+            except OSError:
+                close_failed = True
+            owned.directory_fd = -1
+        if close_failed and not result:
+            result = ("CLEANUP_FAILED external bytecode cache: unable to close owned descriptor",)
+        owned.cleanup_result = result
+    return result
 
 
 def validation_child_environment(
