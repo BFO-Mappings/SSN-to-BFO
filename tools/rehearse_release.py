@@ -6,17 +6,22 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import shlex
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
-from typing import Iterable, Mapping
+from typing import TYPE_CHECKING, Iterable, Mapping
 from urllib.parse import urlsplit
 
-from build_release import PACKAGE_FILE_PATHS, compare_complete_packages
+from build_release import (
+    PACKAGE_FILE_PATHS,
+    compare_complete_packages,
+    resolve_validation_toolchain,
+)
 from check_release import EXPECTED_DIRECTORIES
 from release_archive import (
     AtomicNoReplaceUnsupportedError,
@@ -28,8 +33,13 @@ from release_archive import (
 from release_context import SOURCE_COMMIT_PATTERN, parse_formal_release_context
 from release_manifest import ReleaseManifest, load_and_validate_release_manifest
 
+if TYPE_CHECKING:
+    from build_release import ResolvedValidationToolchain
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+VALIDATION_PYCACHE_ENVIRONMENT = "SSN_TO_BFO_VALIDATION_PYCACHE"
+VALIDATION_GUARD_ENVIRONMENT = "SSN_TO_BFO_VALIDATION_GUARD"
 GIT_BASE_ARGUMENTS = (
     "-c",
     "core.hooksPath=/dev/null",
@@ -107,11 +117,11 @@ class OwnedDirectory:
 
 @dataclass(frozen=True)
 class CandidateResult:
-    checkout: Path
-    environment: Mapping[str, str]
-    package_dir: Path
-    archive_path: Path
-    sidecar_path: Path
+    checkout: Path = field(repr=False)
+    environment: Mapping[str, str] = field(repr=False)
+    package_dir: Path = field(repr=False)
+    archive_path: Path = field(repr=False)
+    sidecar_path: Path = field(repr=False)
     manifest: ReleaseManifest
     archive_sha256: str
 
@@ -435,14 +445,78 @@ def _checkout_clean_issues(checkout: Path, environment: Mapping[str, str], sourc
     return tuple(sorted(set(issues), key=lambda value: value.sort_key))
 
 
-def _candidate_environment(candidate_root: Path, guard_directory: Path) -> dict[str, str]:
+def _candidate_environment(
+    candidate_root: Path,
+    checkout: Path,
+    invoking_repository: Path,
+    guard_directory: Path,
+    toolchain_bin: Path,
+) -> dict[str, str]:
+    candidate_root = candidate_root.resolve(strict=True)
+    checkout = checkout.resolve(strict=True)
+    invoking_repository = invoking_repository.resolve(strict=True)
+    bytecode_cache = candidate_root / "python-bytecode-cache"
+    placement_issue = (
+        not bytecode_cache.is_absolute()
+        or not bytecode_cache.is_relative_to(candidate_root)
+        or bytecode_cache.is_relative_to(checkout)
+        or bytecode_cache.is_relative_to(invoking_repository)
+    )
+    if placement_issue:
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    "validation_environment.python_bytecode_cache",
+                    "candidate bytecode cache is not isolated beneath the external candidate root",
+                ),
+            )
+        )
+    try:
+        bytecode_cache.mkdir()
+        cache_status = os.lstat(bytecode_cache)
+        resolved_cache = bytecode_cache.resolve(strict=True)
+    except OSError as exc:
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    "validation_environment.python_bytecode_cache",
+                    str(exc),
+                ),
+            )
+        ) from exc
+    if (
+        not stat.S_ISDIR(cache_status.st_mode)
+        or resolved_cache != bytecode_cache
+        or not resolved_cache.is_relative_to(candidate_root)
+        or resolved_cache.is_relative_to(checkout)
+        or resolved_cache.is_relative_to(invoking_repository)
+    ):
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    "validation_environment.python_bytecode_cache",
+                    "created candidate bytecode cache is not an isolated real directory",
+                ),
+            )
+        )
+    bytecode_cache = resolved_cache
     environment = _sanitized_environment(candidate_root / "home")
+    environment.pop("PYTHONPYCACHEPREFIX", None)
+    for key in tuple(environment):
+        if key.startswith("SSN_TO_BFO_VALIDATION_"):
+            environment.pop(key, None)
     temporary = candidate_root / "tmp"
     temporary.mkdir(exist_ok=True)
     blocked_proxy = "http://127.0.0.1:9"
     environment.update(
         {
             "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONPYCACHEPREFIX": str(bytecode_cache),
+            VALIDATION_PYCACHE_ENVIRONMENT: str(bytecode_cache),
+            VALIDATION_GUARD_ENVIRONMENT: str(guard_directory),
             "PYTHONHASHSEED": "0",
             "PYTHONNOUSERSITE": "1",
             "PYTHONPATH": str(guard_directory),
@@ -460,7 +534,101 @@ def _candidate_environment(candidate_root: Path, guard_directory: Path) -> dict[
             "no_proxy": "",
         }
     )
+    environment["PATH"] = os.pathsep.join(
+        value for value in (str(toolchain_bin), environment.get("PATH", "")) if value
+    )
     return environment
+
+
+def _preflight_validation_toolchain(repository: Path) -> ResolvedValidationToolchain:
+    """Resolve the verified host toolchain before candidate HOME isolation."""
+
+    try:
+        toolchain = resolve_validation_toolchain(repository)
+    except Exception as exc:
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    "validation_environment.toolchain",
+                    str(exc),
+                ),
+            )
+        ) from exc
+    for field, path in (
+        ("java_executable", Path(toolchain.java_executable)),
+        ("robot_jar", Path(toolchain.robot_jar)),
+    ):
+        if not path.is_absolute():
+            raise ReleaseRehearsalError(
+                (
+                    rehearsal_issue(
+                        "PACKAGE_BUILD_FAILED",
+                        f"validation_environment.{field}",
+                        "production resolver returned a non-absolute path",
+                    ),
+                )
+            )
+        try:
+            path.resolve().relative_to(repository)
+        except ValueError:
+            continue
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    f"validation_environment.{field}",
+                    "verified toolchain path is inside the invoking checkout",
+                ),
+            )
+        )
+    return toolchain
+
+
+def _provision_candidate_toolchain(
+    candidate_root: Path,
+    toolchain: ResolvedValidationToolchain,
+) -> Path:
+    """Create the candidate-private wrapper used for production reverification."""
+
+    toolchain_bin = candidate_root / "toolchain" / "bin"
+    wrapper = toolchain_bin / "robot"
+    command = " ".join(
+        (
+            shlex.quote(str(toolchain.java_executable)),
+            shlex.quote(f"-Xmx{toolchain.java_heap}"),
+            "-jar",
+            shlex.quote(str(toolchain.robot_jar)),
+            '"$@"',
+        )
+    )
+    content = f"#!/bin/sh\n{command}\n"
+    try:
+        toolchain_bin.mkdir(parents=True)
+        wrapper.write_text(content, encoding="utf-8", newline="\n")
+        wrapper.chmod(0o755)
+        information = wrapper.lstat()
+    except OSError as exc:
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    "validation_environment.robot_wrapper",
+                    str(exc),
+                ),
+            )
+        ) from exc
+    if not stat.S_ISREG(information.st_mode) or stat.S_IMODE(information.st_mode) != 0o755:
+        raise ReleaseRehearsalError(
+            (
+                rehearsal_issue(
+                    "PACKAGE_BUILD_FAILED",
+                    "validation_environment.robot_wrapper",
+                    "candidate wrapper is not a regular executable file with mode 0755",
+                ),
+            )
+        )
+    return toolchain_bin
 
 
 def _phase_command(
@@ -530,6 +698,7 @@ def _build_candidate(
     notes_relative: str,
     expected_notes: bytes,
     guard_directory: Path,
+    verified_toolchain: ResolvedValidationToolchain,
 ) -> CandidateResult:
     checkout = candidate_root / "checkout"
     git_environment = _sanitized_environment(candidate_root / "git-home")
@@ -573,7 +742,14 @@ def _build_candidate(
     package = package_parent / release_identifier
     archive = artifact_parent / archive_filename(release_identifier)
     sidecar = artifact_parent / sidecar_filename(release_identifier)
-    environment = _candidate_environment(candidate_root, guard_directory)
+    toolchain_bin = _provision_candidate_toolchain(candidate_root, verified_toolchain)
+    environment = _candidate_environment(
+        candidate_root,
+        checkout,
+        invoking_repository,
+        guard_directory,
+        toolchain_bin,
+    )
     python = sys.executable
     common = [
         "--release-id", release_identifier,
@@ -959,6 +1135,8 @@ def rehearse_release(
     elif output_dir is not None:
         raise ReleaseRehearsalError((rehearsal_issue("OUTPUT_PROHIBITED", "output_dir", "verify retains no output"),))
 
+    verified_toolchain = _preflight_validation_toolchain(repository)
+
     staged_output: OwnedDirectory | None = None
     git_home_directory: OwnedDirectory | None = None
     temporary: OwnedDirectory | None = None
@@ -1045,6 +1223,7 @@ def rehearse_release(
             notes_relative,
             expected_notes,
             guard,
+            verified_toolchain,
         )
         second = _build_candidate(
             second_root.path,
@@ -1056,6 +1235,7 @@ def rehearse_release(
             notes_relative,
             expected_notes,
             guard,
+            verified_toolchain,
         )
         package_issues = compare_complete_packages(first.package_dir, second.package_dir)
         if package_issues:

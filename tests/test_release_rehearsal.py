@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -21,7 +24,10 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import rehearse_release as rehearsal  # noqa: E402
 import run_validation_suite as validation_runner  # noqa: E402
-from build_release import PACKAGE_FILE_PATHS  # noqa: E402
+import build_release as production_build  # noqa: E402
+import release_archive as archive_tool  # noqa: E402
+
+PACKAGE_FILE_PATHS = production_build.PACKAGE_FILE_PATHS
 
 
 RELEASE_ID = "2099-01-02"
@@ -32,12 +38,21 @@ BUILD_STUB = '''#!/usr/bin/env python3
 import argparse
 import json
 import socket
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 PACKAGE_FILE_PATHS = {paths!r}
 
 def compare_complete_packages(first, second):
     return ()
+
+def resolve_validation_toolchain(repository_root):
+    return SimpleNamespace(
+        java_executable=Path(sys.executable).resolve(),
+        robot_jar=Path("/etc/hosts"),
+        java_heap="4G",
+    )
 
 def main():
     parser = argparse.ArgumentParser()
@@ -227,6 +242,40 @@ class ReleaseRehearsalTests(unittest.TestCase):
         )
         subprocess.run(["git", "-C", str(self.repository), "commit", "-q", "-m", "fixture"], env=environment, check=True)
         self.commit = run_git(self.repository, "rev-parse", "HEAD").stdout.decode().strip()
+        self.host_home = self.root / "invoking-home"
+        self.host_bin = self.host_home / "bin"
+        self.host_jar = self.host_home / "tools/robot/robot.jar"
+        self.host_bin.mkdir(parents=True)
+        self.host_jar.parent.mkdir(parents=True)
+        self.host_java = self.host_bin / "java"
+        self.host_robot = self.host_bin / "robot"
+        self.host_java.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        self.host_java.chmod(0o755)
+        self.host_jar.write_bytes(b"fixture robot jar\n")
+        self.host_robot.write_text(
+            '#!/bin/sh\njava -Xmx4G -jar ~/tools/robot/robot.jar "$@"\n',
+            encoding="utf-8",
+        )
+        self.host_robot.chmod(0o755)
+        self.verified_toolchain = production_build.ResolvedValidationToolchain(
+            java_executable=self.host_java,
+            java_vendor="Fixture Java Vendor",
+            java_version="22.0.2",
+            java_vm_name="Fixture Java VM",
+            robot_executable=self.host_robot,
+            robot_jar=self.host_jar,
+            robot_artifact="https://example.invalid/robot.jar",
+            robot_version="1.9.7",
+            robot_jar_sha256=production_build.sha256_bytes(self.host_jar.read_bytes()),
+            java_heap="4G",
+        )
+        resolver = mock.patch.object(
+            rehearsal,
+            "resolve_validation_toolchain",
+            return_value=self.verified_toolchain,
+        )
+        self.mock_resolver = resolver.start()
+        self.addCleanup(resolver.stop)
 
     def manifest_loader(self, path: Path):
         return types.SimpleNamespace(**json.loads(path.read_bytes()))
@@ -434,7 +483,640 @@ raise SystemExit(7)
                 NOTES,
                 (self.repository / NOTES).read_bytes(),
                 guard,
+                self.verified_toolchain,
             )
+
+    def create_production_toolchain_fixture(self):
+        repository = self.root / "production-toolchain-repository"
+        (repository / "tools").mkdir(parents=True)
+        (repository / "config").mkdir()
+        for source in (REPO_ROOT / "tools").glob("*.py"):
+            shutil.copy2(source, repository / "tools" / source.name)
+        java_bin = self.root / "production-host/bin"
+        host_home = self.root / "production-host/home"
+        robot_bin = host_home / "bin"
+        robot_jar = host_home / "tools/robot/robot.jar"
+        java_bin.mkdir(parents=True)
+        robot_bin.mkdir(parents=True)
+        robot_jar.parent.mkdir(parents=True)
+        java = java_bin / "java"
+        java.write_text(
+            "#!/bin/sh\n"
+            "for argument in \"$@\"; do\n"
+            "  if [ \"$argument\" = \"--version\" ]; then\n"
+            "    printf 'ROBOT version 1.9.7\\n'\n"
+            "    exit 0\n"
+            "  fi\n"
+            "done\n"
+            "printf '    java.vendor = Fixture Vendor\\n' >&2\n"
+            "printf '    java.version = 22.0.2\\n' >&2\n"
+            "printf '    java.vm.name = Fixture VM\\n' >&2\n",
+            encoding="utf-8",
+        )
+        java.chmod(0o755)
+        robot_jar.write_bytes(b"deterministic fake robot jar\n")
+        robot = robot_bin / "robot"
+        robot.write_text(
+            '#!/bin/sh\njava -Xmx4G -jar ~/tools/robot/robot.jar "$@"\n',
+            encoding="utf-8",
+        )
+        robot.chmod(0o755)
+        robot_hash = production_build.sha256_bytes(robot_jar.read_bytes())
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+        (repository / "config/validation-toolchain.env").write_text(
+            "\n".join(
+                (
+                    f"VALIDATION_PYTHON_VERSION={python_version}",
+                    "VALIDATION_JAVA_DISTRIBUTION=fixture",
+                    "VALIDATION_JAVA_VERSION=22",
+                    "VALIDATION_ROBOT_VERSION=1.9.7",
+                    "VALIDATION_ROBOT_URL=https://example.invalid/robot.jar",
+                    f"VALIDATION_ROBOT_SHA256={robot_hash}",
+                    "VALIDATION_ROBOT_JAVA_HEAP=4G",
+                    "",
+                )
+            ),
+            encoding="utf-8",
+        )
+        run_git(repository, "init", "-q")
+        run_git(repository, "add", ".")
+        run_git(
+            repository,
+            "-c", "user.name=Release Test",
+            "-c", "user.email=release@example.invalid",
+            "commit", "-q", "-m", "committed production resolver fixture",
+        )
+        invoking_environment = os.environ.copy()
+        invoking_environment.update(
+            {
+                "HOME": str(host_home),
+                "PATH": os.pathsep.join((str(robot_bin), str(java_bin), os.defpath)),
+                "PYTHONDONTWRITEBYTECODE": "1",
+            }
+        )
+        return repository, host_home, java, robot, robot_jar, invoking_environment
+
+    def run_candidate_toolchain_resolver(
+        self,
+        repository: Path,
+        environment: dict[str, str],
+    ) -> subprocess.CompletedProcess[str]:
+        script = (
+            "import json, os, sys\n"
+            "from pathlib import Path\n"
+            "sys.path.insert(0, 'tools')\n"
+            "import build_release\n"
+            "try:\n"
+            "    value = build_release.resolve_validation_toolchain(Path.cwd())\n"
+            "except Exception as exc:\n"
+            "    print(str(exc))\n"
+            "    raise SystemExit(1)\n"
+            "print(json.dumps({\n"
+            "    'java': str(value.java_executable),\n"
+            "    'jar': str(value.robot_jar),\n"
+            "    'hash': value.robot_jar_sha256,\n"
+            "    'robot_version': value.robot_version,\n"
+            "    'java_vendor': value.java_vendor,\n"
+            "    'java_version': value.java_version,\n"
+            "    'java_vm': value.java_vm_name,\n"
+            "    'heap': value.java_heap,\n"
+            "    'dont_write': os.environ['PYTHONDONTWRITEBYTECODE'],\n"
+            "    'cache': os.environ['PYTHONPYCACHEPREFIX'],\n"
+            "}, sort_keys=True))\n"
+        )
+        return subprocess.run(
+            [sys.executable, "-B", "-c", script],
+            cwd=repository,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+
+    def test_toolchain_preflight_failure_precedes_candidate_state_and_preserves_detail(self) -> None:
+        detail = (
+            "ERROR [UNVERIFIED_ROBOT_ARTIFACT] validation_environment.robot_artifact: "
+            "resolved ROBOT JAR is not a regular file"
+        )
+        with mock.patch.object(
+            rehearsal,
+            "resolve_validation_toolchain",
+            side_effect=RuntimeError(detail),
+        ), mock.patch.object(rehearsal.tempfile, "mkdtemp") as make_temporary, mock.patch.object(
+            rehearsal,
+            "_build_candidate",
+        ) as build_candidate, self.assertRaises(rehearsal.ReleaseRehearsalError) as raised:
+            self.rehearse()
+        self.assert_codes(raised, "PACKAGE_BUILD_FAILED")
+        self.assertIn(detail, str(raised.exception))
+        make_temporary.assert_not_called()
+        build_candidate.assert_not_called()
+
+    def test_candidate_private_wrappers_control_path_and_keep_home_xdg_sanitized(self) -> None:
+        observed: list[dict[str, object]] = []
+        original_phase = rehearsal._phase_command
+        invoking_home = self.host_home
+        invoking_path = os.pathsep.join((str(self.host_bin), os.environ.get("PATH", "")))
+        inherited_cache = "/some/shared/inherited/cache"
+
+        def record_phase(code, field, command, *, checkout, environment):
+            toolchain_bin = Path(environment["PATH"].split(os.pathsep)[0])
+            wrapper = toolchain_bin / "robot"
+            wrapper_status = wrapper.lstat()
+            content = wrapper.read_text(encoding="utf-8")
+            probe = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    "-c",
+                    (
+                        "import json, os, subprocess, sys; "
+                        "nested = subprocess.run([sys.executable, '-B', '-c', "
+                        "'import json, os; print(json.dumps({\\\"dont_write\\\": "
+                        "os.environ[\\\"PYTHONDONTWRITEBYTECODE\\\"], \\\"cache\\\": "
+                        "os.environ[\\\"PYTHONPYCACHEPREFIX\\\"]}, sort_keys=True))'], "
+                        "env=os.environ.copy(), check=True, capture_output=True, text=True); "
+                        "print(json.dumps({'dont_write': os.environ['PYTHONDONTWRITEBYTECODE'], "
+                        "'cache': os.environ['PYTHONPYCACHEPREFIX'], "
+                        "'nested': json.loads(nested.stdout)}, sort_keys=True))"
+                    ),
+                ],
+                cwd=checkout,
+                env=dict(environment),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+            reported_environment = json.loads(probe.stdout)
+            observed.append(
+                {
+                    "code": code,
+                    "wrapper": wrapper,
+                    "toolchain": toolchain_bin.parent,
+                    "content": content,
+                    "mode": stat.S_IMODE(wrapper_status.st_mode),
+                    "regular": stat.S_ISREG(wrapper_status.st_mode),
+                    "candidate_root": checkout.parent,
+                    "checkout": checkout,
+                    "cache": Path(environment["PYTHONPYCACHEPREFIX"]),
+                    "home": Path(environment["HOME"]),
+                    "xdg": Path(environment["XDG_CONFIG_HOME"]),
+                    "resolved_robot": shutil.which("robot", path=environment["PATH"]),
+                    "reported_environment": reported_environment,
+                }
+            )
+            return original_phase(code, field, command, checkout=checkout, environment=environment)
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "HOME": str(invoking_home),
+                "PATH": invoking_path,
+                "PYTHONPYCACHEPREFIX": inherited_cache,
+                rehearsal.VALIDATION_PYCACHE_ENVIRONMENT: inherited_cache,
+                rehearsal.VALIDATION_GUARD_ENVIRONMENT: "/some/shared/inherited/guard",
+            },
+        ), mock.patch.object(
+            rehearsal,
+            "_phase_command",
+            side_effect=record_phase,
+        ):
+            result = self.rehearse()
+        self.assertEqual(result.source_commit, self.commit)
+        self.assertEqual(len(observed), 8)
+        wrappers = {value["wrapper"] for value in observed}
+        candidate_roots = {value["candidate_root"] for value in observed}
+        toolchains = {value["toolchain"] for value in observed}
+        checkouts = {value["checkout"] for value in observed}
+        caches = {value["cache"] for value in observed}
+        homes = {value["home"] for value in observed}
+        xdgs = {value["xdg"] for value in observed}
+        self.assertEqual(len(wrappers), 2)
+        self.assertEqual(len(candidate_roots), 2)
+        self.assertEqual(len(toolchains), 2)
+        self.assertEqual(len(checkouts), 2)
+        self.assertEqual(len(caches), 2)
+        self.assertEqual(len(homes), 2)
+        self.assertEqual(len(xdgs), 2)
+        self.assertTrue(all(home != invoking_home and home.name == "home" for home in homes))
+        self.assertTrue(all(xdg != invoking_home and xdg.parent in homes for xdg in xdgs))
+        for cache in caches:
+            owner = next(root for root in candidate_roots if cache.is_relative_to(root))
+            other = next(root for root in candidate_roots if root != owner)
+            checkout = next(path for path in checkouts if path.parent == owner)
+            self.assertTrue(cache.is_absolute())
+            self.assertEqual(cache, owner / "python-bytecode-cache")
+            self.assertFalse(cache.is_relative_to(checkout))
+            self.assertFalse(cache.is_relative_to(self.repository))
+            self.assertFalse(cache.is_relative_to(other))
+            self.assertNotEqual(str(cache), inherited_cache)
+        self.assertEqual(
+            {value["code"] for value in observed},
+            {"PACKAGE_BUILD_FAILED", "PACKAGE_VALIDATION_FAILED", "ARCHIVE_BUILD_FAILED", "ARCHIVE_VALIDATION_FAILED"},
+        )
+        contents = {value["content"] for value in observed}
+        self.assertEqual(len(contents), 1)
+        content = contents.pop()
+        self.assertEqual(content.count("\n"), 2)
+        self.assertTrue(content.endswith("\n"))
+        self.assertNotIn("~", content)
+        self.assertNotIn("$HOME", content)
+        self.assertEqual(
+            shlex.split(content.splitlines()[1]),
+            [str(self.host_java), "-Xmx4G", "-jar", str(self.host_jar), "$@"],
+        )
+        for value in observed:
+            self.assertTrue(value["regular"])
+            self.assertEqual(value["mode"], 0o755)
+            self.assertEqual(value["resolved_robot"], str(value["wrapper"]))
+            self.assertEqual(
+                value["reported_environment"],
+                {
+                    "cache": str(value["cache"]),
+                    "dont_write": "1",
+                    "nested": {
+                        "cache": str(value["cache"]),
+                        "dont_write": "1",
+                    },
+                },
+            )
+        self.assertTrue(all(not os.path.lexists(path) for path in wrappers))
+        self.assertTrue(all(not path.exists() for path in candidate_roots | toolchains | checkouts | caches | homes | xdgs))
+
+    def test_candidate_bytecode_caches_isolate_explicit_and_nested_compilation(self) -> None:
+        inherited_cache = "/some/shared/inherited/cache"
+        repository_bytecode_before = self.repository_bytecode_paths()
+        observed: dict[Path, dict[str, object]] = {}
+        original_phase = rehearsal._phase_command
+
+        def compile_probe(code, field, command, *, checkout, environment):
+            candidate_root = checkout.parent
+            if candidate_root not in observed:
+                module = candidate_root / "candidate_bytecode_probe.py"
+                module.write_text("VALUE = 17\n", encoding="utf-8")
+                label = candidate_root.name
+                script = r'''
+import json
+import os
+import py_compile
+import subprocess
+import sys
+from pathlib import Path
+
+module = Path(sys.argv[1])
+label = sys.argv[2]
+cache = Path(os.environ["PYTHONPYCACHEPREFIX"])
+compiled = Path(py_compile.compile(str(module), doraise=True))
+sentinel = cache / (label + ".sentinel")
+sentinel.write_text(label + "\n", encoding="utf-8")
+nested = subprocess.run(
+    [
+        sys.executable,
+        "-B",
+        "-c",
+        "import json, os; print(json.dumps({\"cache\": os.environ[\"PYTHONPYCACHEPREFIX\"], \"dont_write\": os.environ[\"PYTHONDONTWRITEBYTECODE\"]}, sort_keys=True))",
+    ],
+    env=os.environ.copy(),
+    check=True,
+    capture_output=True,
+    text=True,
+)
+print(json.dumps({
+    "cache": str(cache),
+    "compiled": str(compiled),
+    "dont_write": os.environ["PYTHONDONTWRITEBYTECODE"],
+    "entries": sorted(path.relative_to(cache).as_posix() for path in cache.rglob("*") if path.is_file()),
+    "nested": json.loads(nested.stdout),
+    "sentinel": str(sentinel),
+    "sentinel_bytes": sentinel.read_bytes().decode("ascii"),
+}, sort_keys=True))
+'''
+                completed = subprocess.run(
+                    [sys.executable, "-B", "-c", script, str(module), label],
+                    cwd=checkout,
+                    env=dict(environment),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=True,
+                )
+                observed[candidate_root] = json.loads(completed.stdout)
+            return original_phase(code, field, command, checkout=checkout, environment=environment)
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "PYTHONPYCACHEPREFIX": inherited_cache,
+                rehearsal.VALIDATION_PYCACHE_ENVIRONMENT: inherited_cache,
+                rehearsal.VALIDATION_GUARD_ENVIRONMENT: "/some/shared/inherited/guard",
+            },
+        ), mock.patch.object(rehearsal, "_phase_command", side_effect=compile_probe):
+            result = self.rehearse()
+        self.assertEqual(result.source_commit, self.commit)
+        self.assertEqual(len(observed), 2)
+        roots = set(observed)
+        caches = {Path(value["cache"]) for value in observed.values()}
+        self.assertEqual(len(caches), 2)
+        for candidate_root, report in observed.items():
+            cache = Path(report["cache"])
+            checkout = candidate_root / "checkout"
+            other_root = next(root for root in roots if root != candidate_root)
+            self.assertTrue(cache.is_absolute())
+            self.assertEqual(cache, candidate_root / "python-bytecode-cache")
+            self.assertNotEqual(str(cache), inherited_cache)
+            self.assertFalse(cache.is_relative_to(checkout))
+            self.assertFalse(cache.is_relative_to(self.repository))
+            self.assertFalse(cache.is_relative_to(other_root))
+            self.assertTrue(Path(report["compiled"]).is_relative_to(cache))
+            self.assertTrue(Path(report["sentinel"]).is_relative_to(cache))
+            self.assertEqual(report["sentinel_bytes"], candidate_root.name + "\n")
+            self.assertIn(candidate_root.name + ".sentinel", report["entries"])
+            self.assertNotIn(other_root.name + ".sentinel", report["entries"])
+            self.assertEqual(report["dont_write"], "1")
+            self.assertEqual(
+                report["nested"],
+                {"cache": str(cache), "dont_write": "1"},
+            )
+        self.assertEqual(self.repository_bytecode_paths(), repository_bytecode_before)
+        self.assertTrue(all(not root.exists() for root in roots))
+        self.assertTrue(all(not cache.exists() for cache in caches))
+
+    def test_home_relative_wrapper_is_reverified_through_candidate_absolute_wrapper(self) -> None:
+        repository, host_home, java, original_robot, robot_jar, invoking_environment = (
+            self.create_production_toolchain_fixture()
+        )
+        self.assertIn("~/tools/robot/robot.jar", original_robot.read_text(encoding="utf-8"))
+        with mock.patch.dict(os.environ, invoking_environment, clear=True), mock.patch.object(
+            rehearsal,
+            "resolve_validation_toolchain",
+            production_build.resolve_validation_toolchain,
+        ):
+            verified = rehearsal._preflight_validation_toolchain(repository)
+            candidate_root = self.root / "production-candidate"
+            candidate_root.mkdir()
+            guard = candidate_root / "offline-python"
+            guard.mkdir()
+            (guard / "sitecustomize.py").write_text(rehearsal.SITE_CUSTOMIZE, encoding="utf-8")
+            toolchain_bin = rehearsal._provision_candidate_toolchain(candidate_root, verified)
+            candidate_environment = rehearsal._candidate_environment(
+                candidate_root,
+                repository,
+                repository,
+                guard,
+                toolchain_bin,
+            )
+        self.assertEqual(verified.java_executable, java.resolve())
+        self.assertEqual(verified.robot_jar, robot_jar.resolve())
+        self.assertEqual(verified.robot_executable, original_robot.resolve())
+        self.assertFalse((Path(candidate_environment["HOME"]) / "tools/robot/robot.jar").exists())
+        self.assertNotEqual(Path(candidate_environment["HOME"]), host_home)
+        wrapper = toolchain_bin / "robot"
+        self.assertEqual(shutil.which("robot", path=candidate_environment["PATH"]), str(wrapper))
+        completed = self.run_candidate_toolchain_resolver(repository, candidate_environment)
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertNotIn("UNVERIFIED_ROBOT_ARTIFACT", completed.stdout + completed.stderr)
+        resolved = json.loads(completed.stdout)
+        self.assertEqual(
+            resolved,
+            {
+                "hash": production_build.sha256_bytes(robot_jar.read_bytes()),
+                "heap": "4G",
+                "jar": str(robot_jar.resolve()),
+                "java": str(java.resolve()),
+                "java_vendor": "Fixture Vendor",
+                "java_version": "22.0.2",
+                "java_vm": "Fixture VM",
+                "robot_version": "1.9.7",
+                "dont_write": "1",
+                "cache": str(candidate_root / "python-bytecode-cache"),
+            },
+        )
+
+        wrapper_bytes = wrapper.read_bytes()
+        java_bytes = java.read_bytes()
+        jar_bytes = robot_jar.read_bytes()
+
+        def restore_fixture() -> None:
+            if os.path.lexists(robot_jar):
+                if robot_jar.is_dir() and not robot_jar.is_symlink():
+                    shutil.rmtree(robot_jar)
+                else:
+                    robot_jar.unlink()
+            robot_jar.write_bytes(jar_bytes)
+            java.write_bytes(java_bytes)
+            java.chmod(0o755)
+            wrapper.write_bytes(wrapper_bytes)
+            wrapper.chmod(0o755)
+
+        scenarios = (
+            ("missing_jar", lambda: robot_jar.unlink(), "resolved ROBOT JAR is not a regular file"),
+            ("changed_jar", lambda: robot_jar.write_bytes(b"changed jar\n"), "ROBOT_SHA256_MISMATCH"),
+            (
+                "nonregular_jar",
+                lambda: (robot_jar.unlink(), robot_jar.mkdir()),
+                "resolved ROBOT JAR is not a regular file",
+            ),
+            ("nonexecutable_java", lambda: java.chmod(0o644), "resolved Java executable is not an executable file"),
+            (
+                "mutated_wrapper",
+                lambda: wrapper.write_text(
+                    '#!/bin/sh\njava -Xmx4G -jar ~/tools/robot/robot.jar "$@"\n',
+                    encoding="utf-8",
+                ),
+                "resolved ROBOT JAR is not a regular file",
+            ),
+        )
+        for name, mutate, diagnostic in scenarios:
+            with self.subTest(case=name):
+                restore_fixture()
+                mutate()
+                failure = self.run_candidate_toolchain_resolver(repository, candidate_environment)
+                self.assertNotEqual(failure.returncode, 0)
+                self.assertIn(diagnostic, failure.stdout + failure.stderr)
+        restore_fixture()
+
+    def test_toolchain_paths_do_not_leak_into_governed_candidate_outputs(self) -> None:
+        leaked: list[tuple[str, str]] = []
+        sensitive_paths: set[Path] = set()
+        candidate_models: list[str] = []
+        results: list[rehearsal.RehearsalResult] = []
+        original_build = rehearsal._build_candidate
+        original_rehearse = rehearsal.rehearse_release
+
+        def inspect_candidate(candidate_root, *args, **kwargs):
+            candidate = original_build(candidate_root, *args, **kwargs)
+            toolchain_bin = Path(candidate.environment["PATH"].split(os.pathsep)[0])
+            guard_directory = Path(args[7])
+            candidate_sensitive = {
+                Path(candidate_root),
+                candidate.checkout,
+                toolchain_bin.parent,
+                toolchain_bin,
+                toolchain_bin / "robot",
+                Path(candidate.environment["PYTHONPYCACHEPREFIX"]),
+                Path(candidate.environment["HOME"]),
+                Path(candidate.environment["XDG_CONFIG_HOME"]),
+                Path(candidate.environment["TMPDIR"]),
+                self.host_home,
+                self.host_java,
+                self.host_jar,
+                guard_directory,
+            }
+            sensitive_paths.update(candidate_sensitive)
+            sensitive = tuple(
+                str(path).encode("utf-8")
+                for path in sorted(candidate_sensitive, key=lambda value: str(value))
+            )
+            governed_values: list[tuple[str, bytes]] = [
+                *(
+                    (f"package:{path.relative_to(candidate.package_dir).as_posix()}", path.read_bytes())
+                    for path in candidate.package_dir.rglob("*")
+                    if path.is_file()
+                ),
+                ("manifest:raw", (candidate.package_dir / "manifest.json").read_bytes()),
+                ("manifest:model", repr(candidate.manifest).encode("utf-8")),
+                ("SHA256SUMS", (candidate.package_dir / "SHA256SUMS").read_bytes()),
+                ("archive:raw", candidate.archive_path.read_bytes()),
+                ("sidecar", candidate.sidecar_path.read_bytes()),
+                ("candidate:model", repr(candidate).encode("utf-8")),
+            ]
+            for member in archive_tool._parse_raw_archive(candidate.archive_path.read_bytes(), RELEASE_ID):
+                if not member.is_directory:
+                    governed_values.append((f"archive-member:{member.name}", member.content))
+            for label, content in governed_values:
+                for value in sensitive:
+                    if value and value in content:
+                        leaked.append((label, value.decode("utf-8")))
+            candidate_models.append(repr(candidate))
+            return candidate
+
+        def fixture_rehearse(
+            command,
+            release_identifier,
+            release_date,
+            git_tag,
+            source_commit,
+            notes_relative,
+            *,
+            output_dir=None,
+        ):
+            with mock.patch.object(
+                rehearsal,
+                "load_and_validate_release_manifest",
+                side_effect=self.manifest_loader,
+            ):
+                result = original_rehearse(
+                    command,
+                    release_identifier,
+                    release_date,
+                    git_tag,
+                    source_commit,
+                    notes_relative,
+                    output_dir=output_dir,
+                    repository_root=self.repository,
+                )
+            results.append(result)
+            return result
+
+        standard_output = io.StringIO()
+        standard_error = io.StringIO()
+        arguments = [
+            "verify",
+            "--release-id",
+            RELEASE_ID,
+            "--release-date",
+            RELEASE_ID,
+            "--git-tag",
+            "v" + RELEASE_ID,
+            "--source-commit",
+            self.commit,
+            "--notes",
+            NOTES,
+        ]
+        with mock.patch.dict(os.environ, {"HOME": str(self.host_home)}), mock.patch.object(
+            rehearsal,
+            "_build_candidate",
+            side_effect=inspect_candidate,
+        ), mock.patch.object(
+            rehearsal,
+            "rehearse_release",
+            side_effect=fixture_rehearse,
+        ), contextlib.redirect_stdout(standard_output), contextlib.redirect_stderr(standard_error):
+            return_code = rehearsal.main(arguments)
+        self.assertEqual(return_code, 0, standard_output.getvalue() + standard_error.getvalue())
+        self.assertEqual(leaked, [])
+        self.assertEqual(len(results), 1)
+        stable_values = (
+            *candidate_models,
+            repr(results[0]),
+            standard_output.getvalue(),
+            standard_error.getvalue(),
+        )
+        for path in sensitive_paths:
+            encoded = str(path)
+            for value in stable_values:
+                self.assertNotIn(encoded, value)
+        self.assertIn("Release rehearsal: PASS", standard_output.getvalue())
+        self.assertEqual(standard_error.getvalue(), "")
+        self.assertTrue(sensitive_paths)
+        self.assertTrue(all(not os.path.lexists(path) for path in sensitive_paths if "invoking-home" not in str(path)))
+
+    def test_candidate_toolchain_cleanup_after_wrapper_and_each_phase_failure(self) -> None:
+        environment = rehearsal._sanitized_environment(self.root / "toolchain-cleanup-snapshot")
+        before = rehearsal.snapshot_repository(self.repository, environment)
+        scenarios = (
+            "wrapper",
+            "PACKAGE_BUILD_FAILED",
+            "PACKAGE_VALIDATION_FAILED",
+            "ARCHIVE_BUILD_FAILED",
+            "ARCHIVE_VALIDATION_FAILED",
+        )
+        for target in scenarios:
+            with self.subTest(boundary=target):
+                wrappers: list[Path] = []
+                caches: list[Path] = []
+                original_provision = rehearsal._provision_candidate_toolchain
+                original_phase = rehearsal._phase_command
+                failed = False
+
+                def provision(candidate_root, toolchain):
+                    nonlocal failed
+                    toolchain_bin = original_provision(candidate_root, toolchain)
+                    wrappers.append(toolchain_bin / "robot")
+                    if target == "wrapper" and not failed:
+                        failed = True
+                        raise rehearsal.ReleaseRehearsalError(
+                            (rehearsal.rehearsal_issue("PACKAGE_BUILD_FAILED", "toolchain", "injected after wrapper"),)
+                        )
+                    return toolchain_bin
+
+                def phase(code, field, command, *, checkout, environment):
+                    nonlocal failed
+                    caches.append(Path(environment["PYTHONPYCACHEPREFIX"]))
+                    result = original_phase(code, field, command, checkout=checkout, environment=environment)
+                    if code == target and not failed:
+                        failed = True
+                        raise rehearsal.ReleaseRehearsalError(
+                            (rehearsal.rehearsal_issue(code, field, "injected after phase"),)
+                        )
+                    return result
+
+                with mock.patch.object(
+                    rehearsal,
+                    "_provision_candidate_toolchain",
+                    side_effect=provision,
+                ), mock.patch.object(rehearsal, "_phase_command", side_effect=phase), self.assertRaises(
+                    rehearsal.ReleaseRehearsalError
+                ):
+                    self.rehearse()
+                self.assertTrue(failed)
+                self.assertTrue(wrappers)
+                self.assertTrue(all(not os.path.lexists(path) for path in wrappers))
+                self.assertTrue(all(not path.parents[1].exists() for path in wrappers))
+                self.assertTrue(all(not path.exists() for path in caches))
+                self.assertEqual(rehearsal.snapshot_repository(self.repository, environment), before)
 
     def test_verify_uses_two_clean_detached_clones_and_leaves_no_result(self) -> None:
         environment = rehearsal._sanitized_environment(self.root / "snapshot-environment")
