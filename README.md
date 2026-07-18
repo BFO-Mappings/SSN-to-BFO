@@ -2,17 +2,11 @@
 
 The alignment in this repo follows and extends the method proposed in Prudhomme, Tim, Giacomo De Colle, Austin Liebers, Alec Sculley, Peihong “Karl” Xie, Sydney Cohen, and John Beverley. “A Semantic Approach to Mapping the Provenance Ontology to Basic Formal Ontology.” _Scientific Data_ 12, no. 1 (February 17, 2025): 282. https://doi.org/10.1038/s41597-025-04580-1.
 
-## Two-track SSN/SOSA to BFO/CCO scaffold
+## Maintained products and inactive source scaffolding
 
-This repository now includes scaffolded structure for two source ontology tracks:
+The current SSN/SOSA track is represented by the integrated ontology and four maintained modular products generated from governed COMS. The former current-track editor and direct-mapping scaffold has been retired; it is not an alias or compatibility layer for the maintained products.
 
-- current SSN/SOSA: the current released SSN/SOSA ontology track.
-- sosa-next: the forthcoming SOSA-only ontology track. This name remains temporary until the final release name or version is supplied.
-
-Each track supports two direct-mapping deliverables:
-
-- BFO direct mappings.
-- CCO direct mappings.
+The separate `sosa-next` scaffold is intentionally retained but inactive. Its temporary name, editor source, catalog, and two release shells do not participate in current generation, validation, package construction, or publication.
 
 ## Mapping authority
 
@@ -49,7 +43,7 @@ Like every maintained ontology product, the development artifact emits the seven
 
 `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` is the maintained authoritative development artifact for the 19 unchanged BFO-bearing governed COMS axioms. It imports only the alignment core, so the locally resolved project-module closure contains 48 governed axioms: 19 direct strict-BFO axioms plus 29 target-neutral core axioms. The 57 CCO-bearing or mixed mappings remain explicitly deferred because no transformation or weakened projection is approved.
 
-The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. The graph emits the seven governed development annotations; actual release selection/publication and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
+The published strict graph contains no CCO or RO logical terms and does not import an external ontology. Validation reasons over an explicit, network-free pinned merged CCO/BFO closure that includes `imports/cco.ttl`; this validation dependency does not make CCO part of the published strict graph and is not mapping authority. The graph emits the seven governed development annotations; actual release selection/publication and transformation rules remain deferred. Run `make check-strict-bfo-mapping` for the focused tests and shared nonmutating transaction.
 
 ### BFO projection
 
@@ -61,7 +55,7 @@ The direct nine-triple graph contains one ontology declaration, one strict-BFO i
 
 `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` is the maintained authoritative development artifact for 57 unchanged governed COMS axioms: 25 CCO-bearing and 32 mixed BFO/CCO axioms. It imports only the strict BFO mapping, whose alignment-core import completes a 105-axiom project-module closure without directly duplicating either imported layer.
 
-The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. The graph emits the seven governed development annotations; actual release selection/publication and transformation rules remain deferred. The old `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl` file remains inactive, non-authoritative scaffolding pending complete modular-product migration. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
+The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations. Its fixed semantic validation uses the explicitly listed local source ontologies and the pinned merged CCO/BFO dependency `imports/cco.ttl`; neither CCO nor BFO is imported by the published extension. The graph emits the seven governed development annotations; actual release selection/publication and transformation rules remain deferred. Run `make check-cco-extension` for the focused tests and shared nonmutating transaction.
 
 ## Validation environment
 
@@ -134,75 +128,21 @@ Manifest schema version 1 records formal context, governed inputs and byte-affec
 
 `tools/build_release.py` remains the authoritative package builder and `tools/check_release.py` remains the authoritative package checker. `tools/release_archive.py` deterministically constructs and validates the package archive as raw, uncompressed POSIX USTAR bytes: fixed member order and metadata, zero member mtimes, zero-filled file-record padding, and exactly two final all-zero 512-byte EOF records with no additional record padding. Canonical numeric fields use seven zero-padded ASCII octal digits followed by NUL for mode, uid, gid, device major, and device minor; eleven zero-padded ASCII octal digits followed by NUL for size and mtime; and six zero-padded ASCII octal digits, NUL, then ASCII space for checksum. The checksum calculation treats all eight checksum-field bytes as ASCII spaces. Base-256, signed, space-terminated, non-octal, overflowing, and other noncanonical encodings are rejected. The external `build --output-dir ABSOLUTE_PATH` operation stages and validates the archive plus sidecar as one private pair, then publishes their absent containing directory with one no-replace atomic rename; it never exposes a one-file pair. Its lowercase SHA-256 sidecar is outside the archive. `tools/rehearse_release.py verify` requires the requested full commit to equal an unchanged clean invoking `HEAD`, then builds and validates two isolated local detached clones from that exact commit with Python socket access blocked. It compares their complete 13-file packages, canonical manifests, archives, and sidecars, then retains no artifact. Rehearsal `build --output-dir ABSOLUTE_PATH` performs the same proof before one final no-replace atomic creation of an absent external directory; a published output is never cleanup-owned. It never changes the invoking checkout, creates a tag, uploads, creates a GitHub release, or deploys anything. Run `make check-release-archive` and `make check-release-rehearsal` for focused gates; a full real two-clone rehearsal remains an explicit, slower command after these tools and the committed synthetic fixture are committed.
 
-No actual release package or archive is committed, no actual release identifier/date/notes have been selected, and no tag or GitHub release has been created. Tag readiness, placeholder cleanup, persistent IRI deployment, creator/contributor governance, and publication remain later work.
+No actual release package or archive is committed, no actual release identifier/date/notes have been selected, and no tag or GitHub release has been created. Tag readiness, persistent IRI deployment, creator/contributor governance, and publication remain later work.
 
 `release-notes/SYNTHETIC-2099-01-02.md` is a committed deterministic release-engineering fixture for package and post-commit rehearsal validation only. It is not an actual release announcement and does not select a real identity, tag, upload, GitHub release, or deployment.
 
-The four new release files under `releases/` are placeholders until completed mapping content is inserted:
+## Development dependencies and source scaffolding
 
-- `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl`
-- `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl`
-- `releases/sosa-next/sosa-bfo-directmappings.ttl`
-- `releases/sosa-next/sosa-cco-directmappings.ttl`
+COMS is the sole editable mapping authority. The current maintained modules replace the retired editor, direct-mapping shells, and ungoverned hierarchy-projection analysis. No development XML catalog is required: validation explicitly loads the five pinned local Turtle dependencies under `imports/` and resolves project-module imports through governed local paths.
 
-Development editor placeholders live under `src/current-ssn-sosa/` and `src/sosa-next/`. Their per-track targets remain available as optional local scaffold workflows for artifact hygiene, but they are not the authoritative hosted CI or release gate and do not validate the COMS/root mapping authority. Hosted CI runs `make check`.
+`imports/cco.ttl` is a full flattened merged CCO/BFO validation dependency, not a placeholder and not an editable mapping source. The `sosa-next` editor, catalog, and release shells remain intact as inactive lifecycle scaffolding; only its own optional local targets consume them. The source dispatcher retains those `sosa-next` targets and current example validation, but current product generation and release construction remain rooted in COMS and the maintained products.
 
-Run local validation with:
-
-```bash
-make -C src/current-ssn-sosa all
-make -C src/sosa-next all
-make -C src all
-```
-
-Release-file BFO projection from CCO mappings is not implemented in this migration. The authoritative root ontology is generated from the COMS workbook by `make check-coms`.
-
-## Workflow artifacts and reports
-
-The `all` targets remain the basic validation workflow for each track. They run reasoning over the editor ontology and the existing hygiene SPARQL checks. They do not generate release mappings and they do not evaluate mapping correctness.
-
-Additional generated artifacts can be produced with:
-
-```bash
-make -C src reports
-make -C src sssom
-make -C src entailed-mappings
-make -C src unmapped
-make -C src artifacts
-```
-
-`reports` runs ROBOT report generation for both editor ontologies and writes TSV reports under each track's `build/artifacts/` directory.
-
-`sssom` runs generic SSSOM-style CSV exports over authored TTL mappings for each track's BFO and CCO target deliverables. These exports are generated report artifacts, not release files.
-
-`entailed-mappings` materializes derived TTL artifacts under each track's `build/artifacts/` directory. These generated files are not release mappings and should not be treated as authored mapping content.
-
-`unmapped` is scaffolded but disabled by default. It exits successfully with a message until real source imports and final source namespace configuration are added.
-
-Generated build artifacts are ignored by Git. The maintained BFO-projection module is import-only; projected or weakened mapping content from CCO mappings is not implemented. Root spreadsheets and the root `imports/` directory remain preserved; `SSN2BFO.ttl` is a maintained generated artifact.
-
-## Current SSN/SOSA CCO mapping and BFO-only projection
-
-Under this project's convention, a mapping file counts as a CCO direct mapping when its target vocabulary includes CCO terms, even when it also includes BFO terms, because CCO imports and extends BFO. A BFO direct mapping is BFO-only: its mapping targets should be BFO IRIs and not CCO IRIs.
-
-The root `SSN2BFO.ttl` file is the authoritative generated current SSN/SOSA to CCO mapping. Edit `mappings/SSN2BFO-COMS.xlsx`, then run `make check-coms`; do not edit the Turtle file directly.
-
-The current SSN/SOSA track includes a generated-artifact workflow for deriving a review-only BFO-only artifact from `SSN2BFO.ttl` and `imports/cco.ttl`:
-
-```bash
-make -C src/current-ssn-sosa derive-bfo-from-cco
-make -C src derive-bfo-from-cco
-```
-
-The generated BFO-only artifact is written to `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-generated.ttl`. It combines direct BFO-target mappings in the authoritative generated `SSN2BFO.ttl` with conservative BFO projections from direct named CCO targets that have explicit CCO to BFO superclass or superproperty paths in `imports/cco.ttl`.
-
-The skipped-target report is written to `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-skipped-cco-targets.csv`. CCO targets without explicit BFO paths are reported there rather than guessed.
-
-This generated artifact is not a release file. The BFO release placeholder is not populated by this workflow. Complex blank-node expressions, restrictions, intersections, unions, property chains, labels, comments, definitions, natural-language notes, and mapping justifications are skipped. No `sosa-next` projection is implemented yet.
+The XML catalog inside a formal 13-file release package is different from a development catalog. It is generated by the package builder, maps exactly the five immutable same-release version IRIs to package-relative products, and is byte-governed by package validation. This cleanup introduces no old-path compatibility promise, redirect, or persistent-IRI deployment. No actual release has occurred.
 
 ## Example validation
 
-Current SSN/SOSA example instance data lives under `src/current-ssn-sosa/examples/sosa-instance-data/`. These files are example data, not ontology imports, and they are not currently imported into the editor ontology.
+Current SSN/SOSA example instance data lives under `src/current-ssn-sosa/examples/sosa-instance-data/`. These files are example data, not ontology imports, mapping authorities, or maintained product inputs.
 
 Run the current-track parse check with:
 
@@ -216,7 +156,7 @@ Or through the root dispatcher:
 make -C src validate-examples
 ```
 
-This target uses ROBOT `convert` to parse-check every `.ttl` file under `src/current-ssn-sosa/examples/` and writes temporary generated output under `src/current-ssn-sosa/build/artifacts/`. It is not part of `all`.
+This target uses ROBOT `convert` to parse-check every `.ttl` file under `src/current-ssn-sosa/examples/` and writes temporary generated output under `src/current-ssn-sosa/build/artifacts/`. The source-level default remains the retained inactive `sosa-next` workflow; current examples are invoked explicitly through `validate-examples`.
 
 ## License
 

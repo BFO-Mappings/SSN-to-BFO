@@ -53,6 +53,7 @@ COMPILE_COMMAND = [
     "tests/test_build_release.py",
     "tests/test_release_archive.py",
     "tests/test_release_rehearsal.py",
+    "tests/test_placeholder_catalog_migration.py",
     "tools/workflow_check.py",
 ]
 VALIDATE_COMMAND = [PYTHON, "tools/run_validation_suite.py"]
@@ -227,22 +228,50 @@ def check_release_tooling_integration() -> None:
         "Makefile": (
             "check-release-archive:",
             "check-release-rehearsal:",
+            "check-placeholder-catalog-migration:",
             "tools/release_archive.py",
             "tools/rehearse_release.py",
             "tests/test_release_archive.py",
             "tests/test_release_rehearsal.py",
+            "tests/test_placeholder_catalog_migration.py",
         ),
         "tools/run_validation_suite.py": (
             "Release archive focused tests",
             "Release rehearsal focused tests",
+            "Placeholder and catalog migration focused tests",
             "tools/release_archive.py",
             "tools/rehearse_release.py",
             "tests/test_release_archive.py",
             "tests/test_release_rehearsal.py",
+            "tests/test_placeholder_catalog_migration.py",
         ),
-        "README.md": ("tools/release_archive.py", "tools/rehearse_release.py", "check-release-archive", "check-release-rehearsal"),
-        "reports/coms-automatic-validation-setup.md": ("tools/release_archive.py", "tools/rehearse_release.py", "check-release-archive", "check-release-rehearsal"),
-        "reports/publication-product-and-import-policy.md": ("clean-checkout rehearsal", "USTAR"),
+        "README.md": (
+            "tools/release_archive.py",
+            "tools/rehearse_release.py",
+            "check-release-archive",
+            "check-release-rehearsal",
+            "COMS is the sole editable mapping authority",
+            "No development XML catalog is required",
+        ),
+        "reports/coms-automatic-validation-setup.md": (
+            "tools/release_archive.py",
+            "tools/rehearse_release.py",
+            "check-release-archive",
+            "check-release-rehearsal",
+            "Placeholder And Catalog Migration",
+            "No development XML catalog is required",
+        ),
+        "reports/publication-product-and-import-policy.md": (
+            "clean-checkout rehearsal",
+            "USTAR",
+            "Retired Current Scaffold",
+            "No development XML catalog is required",
+        ),
+        "src/current-ssn-sosa/docs/README.md": (
+            "COMS.xlsx",
+            "requires no development XML catalog",
+            "`sosa-next` scaffold remains intentionally inactive",
+        ),
         "tests/test_build_release.py": (
             "notes_fixture_state",
             "SYNTHETIC-2099-01-02.md",
@@ -258,6 +287,20 @@ def check_release_tooling_integration() -> None:
     synthetic_notes = REPO_ROOT / "release-notes" / "SYNTHETIC-2099-01-02.md"
     if synthetic_notes.is_symlink() or not synthetic_notes.is_file():
         issues.append("release-notes/SYNTHETIC-2099-01-02.md: missing committed regular fixture")
+    retired_paths = (
+        "imports/catalog-v001.xml",
+        "releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl",
+        "releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl",
+        "src/current-ssn-sosa/catalog-v001.xml",
+        "src/current-ssn-sosa/ssn-sosa-mappings-edit.ttl",
+        "src/current-ssn-sosa/sparql/artifact-metadata.rq",
+        "src/current-ssn-sosa/sparql/construct/README.md",
+        "src/current-ssn-sosa/sparql/construct/derive-bfo-from-cco.rq",
+        "src/current-ssn-sosa/sparql/report/unprojectable-cco-targets.rq",
+    )
+    for relative in retired_paths:
+        if (REPO_ROOT / relative).exists() or (REPO_ROOT / relative).is_symlink():
+            issues.append(f"{relative}: retired path is present")
     for workflow in sorted((REPO_ROOT / ".github" / "workflows").glob("*")):
         if workflow.is_file() and "rehearse_release.py build" in workflow.read_text(encoding="utf-8"):
             issues.append(f"{workflow.relative_to(REPO_ROOT)}: publication command is prohibited")

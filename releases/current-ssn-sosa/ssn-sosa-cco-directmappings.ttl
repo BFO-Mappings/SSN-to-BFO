@@ -1,9 +1,0 @@
-@prefix owl:  <http://www.w3.org/2002/07/owl#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@base <https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/cco> .
-
-<https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/cco>
-  a             owl:Ontology ;
-  rdfs:label    "Current SSN/SOSA to CCO direct mappings"@en ;
-  rdfs:comment  "Insert completed current SSN/SOSA → CCO mapping content here."@en ;
-.

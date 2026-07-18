@@ -420,6 +420,7 @@ def compile_check() -> StepResult:
             "tests/test_build_release.py",
             "tests/test_release_archive.py",
             "tests/test_release_rehearsal.py",
+            "tests/test_placeholder_catalog_migration.py",
         ],
     )
 
@@ -672,6 +673,23 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_release_rehearsal.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Placeholder and catalog migration focused tests",
+                [
+                    sys.executable,
+                    "-B",
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_placeholder_catalog_migration.py",
                 ],
             )
         )
