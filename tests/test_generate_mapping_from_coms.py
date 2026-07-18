@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -1088,6 +1089,19 @@ class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
         self.addCleanup(self.temp_dir.cleanup)
         self.root = Path(self.temp_dir.name)
 
+    def assert_owned_descriptors_closed(
+        self,
+        owned: checker.OwnedCompilationRoot,
+        directory_fd: int,
+        marker_fd: int,
+    ) -> None:
+        self.assertEqual(owned.directory_fd, -1)
+        self.assertEqual(owned.marker_fd, -1)
+        with self.assertRaises(OSError):
+            os.fstat(directory_fd)
+        with self.assertRaises(OSError):
+            os.fstat(marker_fd)
+
     @staticmethod
     def bytecode_paths(repository: Path) -> set[str]:
         return {
@@ -1262,11 +1276,22 @@ class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
 
     def test_compilation_cleanup_refuses_replacement_directory(self) -> None:
         owned = checker.create_compilation_root()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        pinned = os.fstat(directory_fd)
+        self.assertEqual((pinned.st_dev, pinned.st_ino), (owned.device, owned.inode))
+        self.assertTrue(stat.S_ISDIR(pinned.st_mode))
         shutil.rmtree(owned.path)
         owned.path.mkdir()
         sentinel = owned.path / "sentinel.bin"
         sentinel.write_bytes(b"unrelated replacement directory\n")
         self.addCleanup(shutil.rmtree, owned.path, True)
+
+        still_pinned = os.fstat(owned.directory_fd)
+        self.assertEqual((still_pinned.st_dev, still_pinned.st_ino), (owned.device, owned.inode))
+        self.assertTrue(stat.S_ISDIR(still_pinned.st_mode))
+        self.assertTrue(owned.path.is_dir())
+        self.assertEqual(sentinel.read_bytes(), b"unrelated replacement directory\n")
 
         errors = checker.cleanup_compilation_root(owned)
 
@@ -1276,9 +1301,18 @@ class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
         )
         self.assertEqual(sentinel.read_bytes(), b"unrelated replacement directory\n")
         self.assertTrue(owned.path.is_dir())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(
+            checker.cleanup_compilation_root(owned),
+            (checker.COMPILATION_ROOT_IDENTITY_ERROR,),
+        )
+        self.assertEqual(sentinel.read_bytes(), b"unrelated replacement directory\n")
+        self.assertTrue(owned.path.is_dir())
 
     def test_compilation_cleanup_refuses_replacement_symlink(self) -> None:
         owned = checker.create_compilation_root()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
         shutil.rmtree(owned.path)
         target = self.root / "unrelated-target"
         target.mkdir()
@@ -1295,17 +1329,218 @@ class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
         )
         self.assertTrue(owned.path.is_symlink())
         self.assertEqual(sentinel.read_bytes(), b"unrelated symlink target\n")
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(
+            checker.cleanup_compilation_root(owned),
+            (checker.COMPILATION_ROOT_IDENTITY_ERROR,),
+        )
+        self.assertTrue(owned.path.is_symlink())
+        self.assertEqual(sentinel.read_bytes(), b"unrelated symlink target\n")
+
+    def test_compilation_cleanup_rejects_matching_superficial_path_metadata(self) -> None:
+        owned = checker.create_compilation_root()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        original_lstat = checker.os.lstat
+        shutil.rmtree(owned.path)
+        owned.path.mkdir()
+        sentinel = owned.path / "sentinel.bin"
+        sentinel.write_bytes(b"matching superficial metadata replacement\n")
+        self.addCleanup(shutil.rmtree, owned.path, True)
+        matching_metadata = SimpleNamespace(
+            st_dev=owned.device,
+            st_ino=owned.inode,
+            st_mode=owned.file_type | 0o700,
+        )
+
+        def superficial_lstat(path):
+            if Path(path) == owned.path:
+                return matching_metadata
+            return original_lstat(path)
+
+        with mock.patch.object(checker.os, "lstat", side_effect=superficial_lstat):
+            errors = checker.cleanup_compilation_root(owned)
+
+        self.assertEqual(errors, (checker.COMPILATION_ROOT_IDENTITY_ERROR,))
+        self.assertEqual(sentinel.read_bytes(), b"matching superficial metadata replacement\n")
+        self.assertTrue(owned.path.is_dir())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(
+            checker.cleanup_compilation_root(owned),
+            (checker.COMPILATION_ROOT_IDENTITY_ERROR,),
+        )
+        self.assertEqual(sentinel.read_bytes(), b"matching superficial metadata replacement\n")
+
+    def test_compilation_marker_mutations_fail_closed(self) -> None:
+        for case in (
+            "missing",
+            "directory",
+            "symlink",
+            "bytes",
+            "identity",
+            "type",
+            "mode",
+            "token",
+        ):
+            with self.subTest(case=case):
+                owned = checker.create_compilation_root()
+                cleanup_owned = owned
+                directory_fd = owned.directory_fd
+                marker_fd = owned.marker_fd
+                marker = owned.path / owned.marker_name
+                original_token = owned.marker_token
+                sentinel = owned.path / "sentinel.bin"
+                sentinel.write_bytes((case + " marker mutation\n").encode("ascii"))
+                symlink_target: Path | None = None
+                changed_marker_bytes = b"changed marker bytes\n"
+
+                if case == "missing":
+                    marker.unlink()
+                elif case == "directory":
+                    marker.unlink()
+                    marker.mkdir()
+                    (marker / "sentinel.bin").write_bytes(b"replacement marker directory\n")
+                elif case == "symlink":
+                    marker.unlink()
+                    symlink_target = self.root / "replacement-marker-target"
+                    symlink_target.write_bytes(b"replacement marker symlink target\n")
+                    marker.symlink_to(symlink_target)
+                elif case == "bytes":
+                    marker.write_bytes(changed_marker_bytes)
+                    marker.chmod(0o600)
+                elif case == "identity":
+                    cleanup_owned = replace(owned, marker_inode=owned.marker_inode + 1)
+                elif case == "type":
+                    cleanup_owned = replace(owned, marker_file_type=stat.S_IFDIR)
+                elif case == "mode":
+                    marker.chmod(0o640)
+                elif case == "token":
+                    cleanup_owned = replace(
+                        owned,
+                        marker_token=bytes(value ^ 0xFF for value in owned.marker_token),
+                    )
+
+                def assert_preserved() -> None:
+                    self.assertTrue(owned.path.is_dir())
+                    self.assertEqual(
+                        sentinel.read_bytes(),
+                        (case + " marker mutation\n").encode("ascii"),
+                    )
+                    if case == "missing":
+                        self.assertFalse(os.path.lexists(marker))
+                    elif case == "directory":
+                        self.assertEqual(
+                            (marker / "sentinel.bin").read_bytes(),
+                            b"replacement marker directory\n",
+                        )
+                    elif symlink_target is not None:
+                        self.assertTrue(marker.is_symlink())
+                        self.assertEqual(
+                            symlink_target.read_bytes(),
+                            b"replacement marker symlink target\n",
+                        )
+                    elif case == "bytes":
+                        self.assertEqual(marker.read_bytes(), changed_marker_bytes)
+                    elif case == "mode":
+                        self.assertEqual(stat.S_IMODE(os.lstat(marker).st_mode), 0o640)
+                    else:
+                        self.assertEqual(marker.read_bytes(), original_token)
+
+                errors = checker.cleanup_compilation_root(cleanup_owned)
+                self.assertEqual(errors, (checker.COMPILATION_ROOT_IDENTITY_ERROR,))
+                assert_preserved()
+                self.assert_owned_descriptors_closed(cleanup_owned, directory_fd, marker_fd)
+                self.assertEqual(
+                    checker.cleanup_compilation_root(cleanup_owned),
+                    (checker.COMPILATION_ROOT_IDENTITY_ERROR,),
+                )
+                assert_preserved()
+                shutil.rmtree(owned.path)
+
+    def test_compilation_cleanup_removes_valid_owned_root_and_closes_descriptors(self) -> None:
+        owned = checker.create_compilation_root()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        marker = owned.path / owned.marker_name
+        compiled = owned.path / "compiled.pyc"
+        compiled.write_bytes(b"compiled bytecode\n")
+        marker_info = os.lstat(marker)
+        self.assertEqual(
+            owned.marker_name,
+            ".ssn-to-bfo-owned-coms-compilation-root",
+        )
+        self.assertTrue(stat.S_ISREG(marker_info.st_mode))
+        self.assertEqual(stat.S_IMODE(marker_info.st_mode), 0o600)
+        self.assertEqual(len(owned.marker_token), 32)
+        self.assertEqual(marker.read_bytes(), owned.marker_token)
+        self.assertFalse(os.get_inheritable(directory_fd))
+        self.assertFalse(os.get_inheritable(marker_fd))
+
+        self.assertEqual(checker.cleanup_compilation_root(owned), ())
+
+        self.assertFalse(owned.path.exists())
+        self.assertFalse(marker.exists())
+        self.assertFalse(compiled.exists())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
+        self.assertEqual(checker.cleanup_compilation_root(owned), ())
+
+    def test_compilation_descriptors_are_not_inherited_by_children(self) -> None:
+        owned = checker.create_compilation_root()
+        directory_fd = owned.directory_fd
+        marker_fd = owned.marker_fd
+        script = (
+            "import os, sys\n"
+            "for value in sys.argv[1:]:\n"
+            "    try:\n"
+            "        os.fstat(int(value))\n"
+            "    except OSError:\n"
+            "        continue\n"
+            "    raise SystemExit(7)\n"
+        )
+        environment = os.environ.copy()
+        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+
+        child = subprocess.run(
+            [sys.executable, "-B", "-c", script, str(directory_fd), str(marker_fd)],
+            cwd=REPO_ROOT,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(child.returncode, 0, child.stdout + child.stderr)
+        self.assertFalse(os.get_inheritable(directory_fd))
+        self.assertFalse(os.get_inheritable(marker_fd))
+        self.assertEqual(checker.cleanup_compilation_root(owned), ())
+        self.assert_owned_descriptors_closed(owned, directory_fd, marker_fd)
 
     def test_compile_and_cleanup_failures_remain_observable_and_restore_process_state(self) -> None:
+        def cleanup_failure(owned):
+            marker = owned.path / owned.marker_name
+            marker.unlink()
+            sentinel = owned.path / "cleanup-failure-sentinel.bin"
+            sentinel.write_bytes(b"preserve after cleanup refusal\n")
+
         repository, paths = self.compile_fixture()
         original_state = sys.dont_write_bytecode
-
-        def cleanup_failure(owned):
-            shutil.rmtree(owned.path)
-            return ("CLEANUP_FAILED COMS compilation root: injected failure",)
-
         for compile_fails in (False, True):
+            roots: list[checker.OwnedCompilationRoot] = []
+            descriptor_pairs: list[tuple[int, int]] = []
+            corrupted = False
+            original_create = checker.create_compilation_root
+
+            def record_root():
+                owned = original_create()
+                roots.append(owned)
+                descriptor_pairs.append((owned.directory_fd, owned.marker_fd))
+                return owned
+
             def compile_result(source, *, cfile, doraise):
+                nonlocal corrupted
+                if not corrupted:
+                    cleanup_failure(roots[-1])
+                    corrupted = True
                 if compile_fails:
                     raise OSError("injected compile failure")
                 Path(cfile).write_bytes(b"compiled\n")
@@ -1314,16 +1549,30 @@ class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
             with self.subTest(compile_fails=compile_fails), self.checker_patch(
                 repository, paths
             ), mock.patch.object(
-                checker.py_compile, "compile", side_effect=compile_result
+                checker, "create_compilation_root", side_effect=record_root
             ), mock.patch.object(
-                checker, "cleanup_compilation_root", side_effect=cleanup_failure
+                checker.py_compile, "compile", side_effect=compile_result
             ), self.assertRaises(checker.CheckFailure) as raised:
                 checker.compile_generator([])
             message = str(raised.exception)
-            self.assertIn("CLEANUP_FAILED", message)
+            self.assertIn(checker.COMPILATION_ROOT_IDENTITY_ERROR, message)
             if compile_fails:
                 self.assertIn("generator compile failed", message)
             self.assertEqual(sys.dont_write_bytecode, original_state)
+            self.assertEqual(len(roots), 1)
+            self.assertEqual(len(descriptor_pairs), 1)
+            owned = roots[0]
+            self.assertTrue(owned.path.is_dir())
+            self.assertEqual(
+                (owned.path / "cleanup-failure-sentinel.bin").read_bytes(),
+                b"preserve after cleanup refusal\n",
+            )
+            self.assert_owned_descriptors_closed(owned, *descriptor_pairs[0])
+            self.assertEqual(
+                checker.cleanup_compilation_root(owned),
+                (checker.COMPILATION_ROOT_IDENTITY_ERROR,),
+            )
+            shutil.rmtree(owned.path)
 
 
 class ComsAuthorityMigrationTests(unittest.TestCase):

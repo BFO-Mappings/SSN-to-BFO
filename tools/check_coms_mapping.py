@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import py_compile
+import secrets
 import shutil
 import stat
 import subprocess
@@ -21,7 +22,7 @@ import sys
 import tempfile
 import time
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -162,12 +163,33 @@ class CheckFailure(RuntimeError):
     pass
 
 
-@dataclass(frozen=True)
+COMPILATION_ROOT_MARKER = ".ssn-to-bfo-owned-coms-compilation-root"
+COMPILATION_ROOT_IDENTITY_ERROR = (
+    "CLEANUP_FAILED COMS compilation root: owned path identity changed"
+)
+
+
+@dataclass(eq=False)
 class OwnedCompilationRoot:
     path: Path
+    directory_fd: int = field(repr=False)
     device: int
     inode: int
     file_type: int
+    marker_name: str
+    marker_fd: int = field(repr=False)
+    marker_device: int
+    marker_inode: int
+    marker_file_type: int
+    marker_mode: int
+    marker_token: bytes = field(repr=False)
+    cleanup_result: tuple[str, ...] | None = None
+
+    def __copy__(self):
+        raise TypeError("owned compilation roots cannot be copied")
+
+    def __deepcopy__(self, memo):
+        raise TypeError("owned compilation roots cannot be copied")
 
 
 def utc_now() -> str:
@@ -195,11 +217,20 @@ def emit(message: str, log: list[str]) -> None:
 
 
 def create_compilation_root() -> OwnedCompilationRoot:
-    """Create an identity-recorded compilation directory outside the repository."""
+    """Create a pinned and privately marked compilation root outside the repository."""
 
+    required_flags = ("O_DIRECTORY", "O_CLOEXEC", "O_NOFOLLOW")
+    if any(not hasattr(os, name) for name in required_flags):
+        raise CheckFailure("platform cannot pin an owned COMS compilation root")
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | os.O_NOFOLLOW
+    marker_flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW
     repository = REPO_ROOT.resolve()
     seen: set[Path] = set()
     for candidate in (Path(tempfile.gettempdir()), Path("/tmp")):
+        path: Path | None = None
+        directory_fd = -1
+        marker_fd = -1
+        complete = False
         try:
             parent = candidate.resolve()
             if parent in seen:
@@ -213,41 +244,225 @@ def create_compilation_root() -> OwnedCompilationRoot:
                 continue
             if not stat.S_ISDIR(parent_info.st_mode) or stat.S_ISLNK(parent_info.st_mode):
                 continue
-            path = Path(
-                tempfile.mkdtemp(prefix="ssn-to-bfo-coms-compile-", dir=parent)
-            )
-            info = os.lstat(path)
-            if not stat.S_ISDIR(info.st_mode):
-                raise CheckFailure("COMS compilation root is not a directory")
-            return OwnedCompilationRoot(
-                path=path,
-                device=info.st_dev,
-                inode=info.st_ino,
-                file_type=stat.S_IFMT(info.st_mode),
-            )
+            try:
+                path = Path(
+                    tempfile.mkdtemp(prefix="ssn-to-bfo-coms-compile-", dir=parent)
+                )
+                directory_fd = os.open(path, directory_flags)
+                os.set_inheritable(directory_fd, False)
+                path_info = os.lstat(path)
+                directory_info = os.fstat(directory_fd)
+                path_identity = (
+                    path_info.st_dev,
+                    path_info.st_ino,
+                    stat.S_IFMT(path_info.st_mode),
+                )
+                directory_identity = (
+                    directory_info.st_dev,
+                    directory_info.st_ino,
+                    stat.S_IFMT(directory_info.st_mode),
+                )
+                if (
+                    path_identity != directory_identity
+                    or directory_identity[2] != stat.S_IFDIR
+                    or os.get_inheritable(directory_fd)
+                ):
+                    raise CheckFailure("COMS compilation root is not a pinned real directory")
+
+                marker_token = secrets.token_bytes(32)
+                marker_fd = os.open(
+                    COMPILATION_ROOT_MARKER,
+                    marker_flags,
+                    0o600,
+                    dir_fd=directory_fd,
+                )
+                os.set_inheritable(marker_fd, False)
+                os.fchmod(marker_fd, 0o600)
+                remaining = memoryview(marker_token)
+                while remaining:
+                    written = os.write(marker_fd, remaining)
+                    if written <= 0:
+                        raise OSError("unable to write COMS compilation-root marker")
+                    remaining = remaining[written:]
+                marker_info = os.fstat(marker_fd)
+                marker_mode = stat.S_IMODE(marker_info.st_mode)
+                if (
+                    not stat.S_ISREG(marker_info.st_mode)
+                    or marker_mode != 0o600
+                    or os.get_inheritable(marker_fd)
+                ):
+                    raise CheckFailure("COMS compilation-root marker is not a private regular file")
+                owned = OwnedCompilationRoot(
+                    path=path,
+                    directory_fd=directory_fd,
+                    device=directory_info.st_dev,
+                    inode=directory_info.st_ino,
+                    file_type=stat.S_IFMT(directory_info.st_mode),
+                    marker_name=COMPILATION_ROOT_MARKER,
+                    marker_fd=marker_fd,
+                    marker_device=marker_info.st_dev,
+                    marker_inode=marker_info.st_ino,
+                    marker_file_type=stat.S_IFMT(marker_info.st_mode),
+                    marker_mode=marker_mode,
+                    marker_token=marker_token,
+                )
+                complete = True
+                return owned
+            except OSError:
+                pass
+            finally:
+                if not complete:
+                    if marker_fd >= 0:
+                        try:
+                            os.close(marker_fd)
+                        except OSError:
+                            pass
+                    if path is not None and directory_fd >= 0:
+                        try:
+                            path_info = os.lstat(path)
+                            directory_info = os.fstat(directory_fd)
+                            if (
+                                (
+                                    path_info.st_dev,
+                                    path_info.st_ino,
+                                    stat.S_IFMT(path_info.st_mode),
+                                )
+                                == (
+                                    directory_info.st_dev,
+                                    directory_info.st_ino,
+                                    stat.S_IFMT(directory_info.st_mode),
+                                )
+                                and stat.S_ISDIR(path_info.st_mode)
+                                and shutil.rmtree.avoids_symlink_attacks
+                            ):
+                                shutil.rmtree(path)
+                        except OSError:
+                            pass
+                        try:
+                            os.close(directory_fd)
+                        except OSError:
+                            pass
+                    elif path is not None:
+                        try:
+                            os.rmdir(path)
+                        except OSError:
+                            pass
+            if path is not None and os.path.lexists(path):
+                raise CheckFailure("unable to clean failed COMS compilation-root creation")
         except OSError:
             continue
     raise CheckFailure("no external temporary directory is available for COMS compilation")
 
 
 def cleanup_compilation_root(owned: OwnedCompilationRoot) -> tuple[str, ...]:
-    """Remove only the external compilation directory created by this invocation."""
+    """Remove one pinned and marked compilation root at most once."""
 
+    if owned.cleanup_result is not None:
+        return owned.cleanup_result
+    result: tuple[str, ...] = (COMPILATION_ROOT_IDENTITY_ERROR,)
     try:
-        info = os.lstat(owned.path)
-    except OSError:
-        return ("CLEANUP_FAILED COMS compilation root: owned path is missing",)
-    identity = (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode))
-    expected = (owned.device, owned.inode, owned.file_type)
-    if identity != expected:
-        return ("CLEANUP_FAILED COMS compilation root: owned path identity changed",)
-    if not stat.S_ISDIR(info.st_mode):
-        return ("CLEANUP_FAILED COMS compilation root: owned path is not a directory",)
-    try:
+        if owned.directory_fd < 0 or owned.marker_fd < 0:
+            return result
+        directory_info = os.fstat(owned.directory_fd)
+        path_info = os.lstat(owned.path)
+        expected_directory = (owned.device, owned.inode, owned.file_type)
+        descriptor_identity = (
+            directory_info.st_dev,
+            directory_info.st_ino,
+            stat.S_IFMT(directory_info.st_mode),
+        )
+        path_identity = (
+            path_info.st_dev,
+            path_info.st_ino,
+            stat.S_IFMT(path_info.st_mode),
+        )
+        if (
+            descriptor_identity != expected_directory
+            or path_identity != descriptor_identity
+            or descriptor_identity[2] != stat.S_IFDIR
+            or os.get_inheritable(owned.directory_fd)
+        ):
+            return result
+
+        marker_descriptor_info = os.fstat(owned.marker_fd)
+        marker_info = os.stat(
+            owned.marker_name,
+            dir_fd=owned.directory_fd,
+            follow_symlinks=False,
+        )
+        marker_path_info = os.lstat(owned.path / owned.marker_name)
+        expected_marker = (
+            owned.marker_device,
+            owned.marker_inode,
+            owned.marker_file_type,
+            owned.marker_mode,
+        )
+        marker_descriptor_identity = (
+            marker_descriptor_info.st_dev,
+            marker_descriptor_info.st_ino,
+            stat.S_IFMT(marker_descriptor_info.st_mode),
+            stat.S_IMODE(marker_descriptor_info.st_mode),
+        )
+        marker_identity = (
+            marker_info.st_dev,
+            marker_info.st_ino,
+            stat.S_IFMT(marker_info.st_mode),
+            stat.S_IMODE(marker_info.st_mode),
+        )
+        marker_path_identity = (
+            marker_path_info.st_dev,
+            marker_path_info.st_ino,
+            stat.S_IFMT(marker_path_info.st_mode),
+            stat.S_IMODE(marker_path_info.st_mode),
+        )
+        if (
+            marker_descriptor_identity != expected_marker
+            or marker_identity != expected_marker
+            or marker_path_identity != expected_marker
+            or marker_identity[2] != stat.S_IFREG
+            or marker_identity[3] != 0o600
+            or os.get_inheritable(owned.marker_fd)
+        ):
+            return result
+
+        os.lseek(owned.marker_fd, 0, os.SEEK_SET)
+        marker_bytes = bytearray()
+        while len(marker_bytes) <= len(owned.marker_token):
+            chunk = os.read(
+                owned.marker_fd,
+                len(owned.marker_token) + 1 - len(marker_bytes),
+            )
+            if not chunk:
+                break
+            marker_bytes.extend(chunk)
+        if bytes(marker_bytes) != owned.marker_token:
+            return result
+        if not shutil.rmtree.avoids_symlink_attacks:
+            return result
         shutil.rmtree(owned.path)
-    except OSError as exc:
-        return (f"CLEANUP_FAILED COMS compilation root: {exc.strerror}",)
-    return ()
+        result = ()
+    except OSError:
+        result = (COMPILATION_ROOT_IDENTITY_ERROR,)
+    finally:
+        close_failed = False
+        if owned.marker_fd >= 0:
+            try:
+                os.close(owned.marker_fd)
+            except OSError:
+                close_failed = True
+            owned.marker_fd = -1
+        if owned.directory_fd >= 0:
+            try:
+                os.close(owned.directory_fd)
+            except OSError:
+                close_failed = True
+            owned.directory_fd = -1
+        if close_failed and not result:
+            result = (
+                "CLEANUP_FAILED COMS compilation root: unable to close owned descriptor",
+            )
+        owned.cleanup_result = result
+    return result
 
 
 def validate_product_metadata(
