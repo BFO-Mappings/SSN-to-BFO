@@ -1,10 +1,10 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal watch-coms coms-status post-merge-check status diffstat
 
 validate:
-	python tools/run_validation_suite.py
+	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
 
 validate-write:
-	python tools/run_validation_suite.py --write-reports
+	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py --write-reports
 
 audit-write: legacy-audit-write
 
@@ -17,7 +17,9 @@ legacy-audit-write:
 		--output-csv reports/mapping-consistency-audit.csv
 
 compile:
-	python -m py_compile \
+	@cache_dir=$$(mktemp -d /tmp/ssn-to-bfo-pycache.XXXXXX); \
+	trap 'rm -rf "$$cache_dir"' EXIT HUP INT TERM; \
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX="$$cache_dir" python -m py_compile \
 		tools/run_validation_suite.py \
 		tools/test_elk_instance_mapping_entailments.py \
 		tools/test_instance_data.py \
@@ -34,6 +36,8 @@ compile:
 		tools/release_manifest.py \
 		tools/build_release.py \
 		tools/check_release.py \
+		tools/release_archive.py \
+		tools/rehearse_release.py \
 		tests/test_generate_mapping_from_coms.py \
 		tests/test_coms_row_identity.py \
 		tests/test_product_dispositions.py \
@@ -46,59 +50,67 @@ compile:
 		tests/test_release_rendering.py \
 		tests/test_release_manifest.py \
 		tests/test_build_release.py \
+		tests/test_release_archive.py \
+		tests/test_release_rehearsal.py \
 		tools/workflow_check.py
 
 check-publication-metadata:
-	python -m unittest discover -s tests -p 'test_publication_metadata.py'
-	python tools/check_publication_metadata.py
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_publication_metadata.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_publication_metadata.py
 
 check-release-rendering:
-	python -m unittest discover -s tests -p 'test_release_context.py'
-	python -m unittest discover -s tests -p 'test_release_rendering.py'
-	python -m unittest discover -s tests -p 'test_publication_metadata.py'
-	python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
-	python -m unittest discover -s tests -p 'test_modular_products.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_context.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_rendering.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_publication_metadata.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_modular_products.py'
 
 check-release-package:
-	python -m unittest discover -s tests -p 'test_release_manifest.py'
-	python -m unittest discover -s tests -p 'test_build_release.py'
-	python -m unittest discover -s tests -p 'test_release_context.py'
-	python -m unittest discover -s tests -p 'test_release_rendering.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_manifest.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_build_release.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_context.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_rendering.py'
+
+check-release-archive:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_archive.py'
+
+check-release-rehearsal:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_rehearsal.py'
 
 check-coms:
-	python tools/check_coms_mapping.py
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py
 
 check-coms-row-identities:
-	python -m unittest discover -s tests -p 'test_coms_row_identity.py'
-	python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
-	python tools/check_coms_mapping.py --check-only
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_coms_row_identity.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_generate_mapping_from_coms.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 check-coms-product-dispositions:
-	python -m unittest discover -s tests -p 'test_product_dispositions.py'
-	python tools/check_coms_mapping.py --check-only
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_product_dispositions.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 check-alignment-core:
-	python -m unittest discover -s tests -p 'test_modular_products.py'
-	python tools/check_coms_mapping.py --check-only
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_modular_products.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 check-strict-bfo-mapping:
-	python -m unittest discover -s tests -p 'test_strict_bfo_mapping.py'
-	python tools/check_coms_mapping.py --check-only
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_strict_bfo_mapping.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 check-cco-extension:
-	python -m unittest discover -s tests -p 'test_cco_extension.py'
-	python tools/check_coms_mapping.py --check-only
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_cco_extension.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 check-bfo-projection:
-	python -m unittest discover -s tests -p 'test_bfo_projection.py'
-	python tools/check_coms_mapping.py --check-only
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_bfo_projection.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 watch-coms:
 	@echo "Watching mappings/SSN2BFO-COMS.xlsx. Press Ctrl+C to stop."
-	python tools/watch_coms_mapping.py
+	PYTHONDONTWRITEBYTECODE=1 python tools/watch_coms_mapping.py
 
 coms-status:
-	python tools/check_coms_mapping.py --status
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --status
 
 check: validate compile
 	git diff --check
@@ -106,7 +118,7 @@ check: validate compile
 
 post-merge-check:
 	git status --short
-	python tools/run_validation_suite.py
+	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
 	git status --short
 
 status:

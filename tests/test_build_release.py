@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -45,12 +46,37 @@ FORMAL_HASHES = {
 NOTES_PATH = REPO_ROOT / "release-notes/SYNTHETIC-2099-01-02.md"
 
 
+def synthetic_notes_text(suffix: str = "") -> str:
+    sections = {
+        "Release identity": "Synthetic identity 2099-01-02 is a deterministic release-engineering fixture. It is not an actual release announcement, tag, GitHub release, upload, or deployment.",
+        "Included products": "This fixture exercises the repository's governed formal package inputs without selecting an actual release.",
+        "Product selection guidance": "Consumers must use the governed product descriptions and policy rather than this synthetic fixture as release guidance.",
+        "Governed axiom and closure summary": "The package builder records governed counts from the repository inputs deterministically.",
+        "Import graph": "The formal package catalog records only the governed package-relative product graph.",
+        "BFO projection notice": "The package preserves the governed import-only BFO projection policy.",
+        "Validation summary": "The fixture is accepted by the real deterministic package builder and checker.",
+        "Known limitations": "This fixture does not announce or authorize a real publication.",
+        "Deferred functionality": "Actual release selection, publication, and deployment remain outside this fixture.",
+        "License scope": "Repository license information is packaged from the governed project license.",
+        "Dependencies": "Validation dependencies are recorded from stable repository configuration and are not redistributed by this fixture.",
+        "Reproduction": "Use committed repository inputs and the explicit synthetic identity only for deterministic release-engineering regression coverage.",
+    }
+    return "\n\n".join(f"# {heading}\n\n{sections[heading]}{suffix}" for heading in build.REQUIRED_RELEASE_NOTE_HEADINGS) + "\n"
+
+
 def notes_bytes(suffix: str = "") -> bytes:
-    sections = [
-        f"# {heading}\n\nApproved synthetic package regression content{suffix}."
-        for heading in build.REQUIRED_RELEASE_NOTE_HEADINGS
-    ]
-    return ("\n\n".join(sections) + "\n").encode("utf-8")
+    return synthetic_notes_text(suffix).encode("utf-8")
+
+
+def notes_fixture_state(path: Path) -> tuple[int, int, bytes, int, str]:
+    status = path.lstat()
+    return (
+        stat.S_IFMT(status.st_mode),
+        stat.S_IMODE(status.st_mode),
+        path.read_bytes(),
+        status.st_mtime_ns,
+        hashlib.sha256(path.read_bytes()).hexdigest(),
+    )
 
 
 def hashes(root: Path) -> dict[str, str]:
@@ -70,7 +96,12 @@ def package_file_state(root: Path) -> dict[str, tuple[bytes, int]]:
 class ReleasePackageTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        NOTES_PATH.write_bytes(notes_bytes())
+        status = NOTES_PATH.lstat()
+        if not stat.S_ISREG(status.st_mode) or stat.S_ISLNK(status.st_mode):
+            raise AssertionError("the committed synthetic release notes fixture must be a regular file")
+        cls.notes_fixture_before = notes_fixture_state(NOTES_PATH)
+        if NOTES_PATH.read_bytes() != notes_bytes():
+            raise AssertionError("the committed synthetic release notes fixture differs from its governed regression content")
         cls.root = Path(tempfile.mkdtemp(prefix="release-package-tests-"))
         cls.package = cls.root / SYNTHETIC_CONTEXT.release_identifier
         cls.result = build.build_release_package(
@@ -85,7 +116,8 @@ class ReleasePackageTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.root, ignore_errors=True)
-        NOTES_PATH.unlink(missing_ok=True)
+        if notes_fixture_state(NOTES_PATH) != cls.notes_fixture_before:
+            raise AssertionError("package tests mutated the committed synthetic release notes fixture")
 
     def copy_package(self) -> tuple[Path, Path]:
         parent = Path(tempfile.mkdtemp(prefix="release-package-copy-"))
@@ -94,11 +126,11 @@ class ReleasePackageTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, parent, True)
         return parent, destination
 
-    def fast_build(self, context, notes: Path, output: Path):
+    def fast_build(self, context, notes: Path, output: Path, *, repository_root: Path = REPO_ROOT):
         with mock.patch.object(build, "run_independent_reasoning", return_value=self.manifest.validation.hermit_results), mock.patch.object(
             check, "validate_release_package", return_value=()
         ):
-            return build.build_release_package(context, notes, output, REPO_ROOT)
+            return build.build_release_package(context, notes, output, repository_root)
 
     def rewrite_manifest_and_checksums(self, package: Path, mutate) -> None:
         document = json.loads((package / "manifest.json").read_bytes())
@@ -284,7 +316,7 @@ class ReleasePackageTests(unittest.TestCase):
             "CRLF": notes_bytes().replace(b"\n", b"\r\n"),
             "no newline": notes_bytes()[:-1],
             "extra newline": notes_bytes() + b"\n",
-            "control": notes_bytes().replace(b"Approved", b"Approved\x00", 1),
+            "control": notes_bytes().replace(b"Synthetic", b"Synthetic\x00", 1),
             "template": template,
             "placeholder": notes_bytes(b" TODO"),
         }
@@ -293,10 +325,31 @@ class ReleasePackageTests(unittest.TestCase):
                 self.assertTrue(build.validate_release_notes_bytes(value, template_bytes=template))
         self.assertFalse(build.validate_release_notes_bytes(notes_bytes(), template_bytes=template))
 
+    def test_committed_synthetic_notes_fixture_is_read_only_and_accepted(self) -> None:
+        status = NOTES_PATH.lstat()
+        self.assertTrue(stat.S_ISREG(status.st_mode))
+        self.assertFalse(stat.S_ISLNK(status.st_mode))
+        self.assertEqual(notes_fixture_state(NOTES_PATH), self.notes_fixture_before)
+        self.assertFalse(
+            build.validate_release_notes_bytes(
+                NOTES_PATH.read_bytes(),
+                template_bytes=(REPO_ROOT / "release-notes/TEMPLATE.md").read_bytes(),
+            )
+        )
+        self.assertTrue(
+            build.validate_release_notes_bytes(
+                (REPO_ROOT / "release-notes/TEMPLATE.md").read_bytes(),
+                template_bytes=(REPO_ROOT / "release-notes/TEMPLATE.md").read_bytes(),
+            )
+        )
+
     def test_builder_rejects_every_notes_boundary_without_residue_or_mutation(self) -> None:
-        invalid_path = REPO_ROOT / "release-notes/INVALID-PACKAGE-NOTES.md"
         parent = Path(tempfile.mkdtemp(prefix="release-build-note-failures-"))
         self.addCleanup(shutil.rmtree, parent, True)
+        fixture_repository = parent / "repository"
+        (fixture_repository / "release-notes").mkdir(parents=True)
+        shutil.copy2(REPO_ROOT / "release-notes/TEMPLATE.md", fixture_repository / "release-notes/TEMPLATE.md")
+        invalid_path = fixture_repository / "release-notes/INVALID-PACKAGE-NOTES.md"
         before = build.snapshot_development_outputs(REPO_ROOT)
         cases = (
             ("empty", invalid_path, b""),
@@ -313,36 +366,34 @@ class ReleasePackageTests(unittest.TestCase):
             ("extra-final-blank", invalid_path, notes_bytes() + b"\n"),
             (
                 "template",
-                REPO_ROOT / "release-notes/TEMPLATE.md",
+                fixture_repository / "release-notes/TEMPLATE.md",
                 None,
             ),
             ("outside-repository", parent / "outside.md", notes_bytes()),
         )
-        try:
-            for name, notes, value in cases:
-                with self.subTest(case=name):
-                    if value is not None:
-                        notes.write_bytes(value)
-                    output_parent = parent / name
-                    output_parent.mkdir()
-                    output = output_parent / SYNTHETIC_CONTEXT.release_identifier
-                    with self.assertRaises(Exception):
-                        build.build_release_package(
-                            SYNTHETIC_CONTEXT,
-                            notes,
-                            output,
-                            REPO_ROOT,
-                        )
-                    self.assertFalse(output.exists())
-                    self.assertFalse(
-                        any(
-                            path.name.startswith(build.TEMP_PREFIX)
-                            for path in output_parent.iterdir()
-                        )
+        for name, notes, value in cases:
+            with self.subTest(case=name):
+                if value is not None:
+                    notes.write_bytes(value)
+                output_parent = parent / name
+                output_parent.mkdir()
+                output = output_parent / SYNTHETIC_CONTEXT.release_identifier
+                with self.assertRaises(Exception):
+                    build.build_release_package(
+                        SYNTHETIC_CONTEXT,
+                        notes,
+                        output,
+                        fixture_repository,
                     )
-                    self.assertFalse(build.development_snapshot_issues(REPO_ROOT, before))
-        finally:
-            invalid_path.unlink(missing_ok=True)
+                self.assertFalse(output.exists())
+                self.assertFalse(
+                    any(
+                        path.name.startswith(build.TEMP_PREFIX)
+                        for path in output_parent.iterdir()
+                    )
+                )
+                self.assertFalse(build.development_snapshot_issues(REPO_ROOT, before))
+                self.assertEqual(notes_fixture_state(NOTES_PATH), self.notes_fixture_before)
 
     def test_builder_rejects_invalid_output_and_notes_paths_without_residue(self) -> None:
         parent = Path(tempfile.mkdtemp(prefix="release-build-paths-"))
@@ -516,12 +567,17 @@ class ReleasePackageTests(unittest.TestCase):
         changed = {path for path in build.PACKAGE_FILE_PATHS if (commit_output / path).read_bytes() != (self.package / path).read_bytes()}
         self.assertEqual(changed, {"manifest.json", "SHA256SUMS"})
 
-        alternate_notes = REPO_ROOT / "release-notes/SYNTHETIC-2099-01-02-ALTERNATE.md"
+        alternate_repository = parent / "alternate-repository"
+        shutil.copytree(
+            REPO_ROOT,
+            alternate_repository,
+            ignore=shutil.ignore_patterns(".git", "__pycache__", "*.pyc", "*.pyo"),
+        )
+        alternate_notes = alternate_repository / "release-notes/SYNTHETIC-2099-01-02-ALTERNATE.md"
         alternate_notes.write_bytes(notes_bytes(" with alternate notes"))
-        self.addCleanup(alternate_notes.unlink, True)
         notes_output = parent / "notes" / "2099-01-02"
         notes_output.parent.mkdir()
-        self.fast_build(SYNTHETIC_CONTEXT, alternate_notes, notes_output)
+        self.fast_build(SYNTHETIC_CONTEXT, alternate_notes, notes_output, repository_root=alternate_repository)
         changed = {path for path in build.PACKAGE_FILE_PATHS if (notes_output / path).read_bytes() != (self.package / path).read_bytes()}
         self.assertEqual(changed, {"RELEASE-NOTES.md", "manifest.json", "SHA256SUMS"})
 
@@ -599,7 +655,7 @@ class ReleasePackageTests(unittest.TestCase):
 
         def changed_notes(package):
             notes = package / "RELEASE-NOTES.md"
-            notes.write_bytes(notes.read_bytes().replace(b"Approved", b"Altered", 1))
+            notes.write_bytes(notes.read_bytes().replace(b"Synthetic", b"Altered", 1))
 
             def update(document):
                 content = notes.read_bytes()
@@ -780,10 +836,11 @@ class ReleasePackageTests(unittest.TestCase):
             output = parent / seed / "2099-01-02"
             output.parent.mkdir()
             environment = os.environ.copy()
-            environment["PYTHONHASHSEED"] = seed
+            environment.update({"PYTHONHASHSEED": seed, "PYTHONDONTWRITEBYTECODE": "1"})
             completed = subprocess.run(
                 [
                     sys.executable,
+                    "-B",
                     "tools/build_release.py",
                     "--release-id", "2099-01-02",
                     "--release-date", "2099-01-02",
