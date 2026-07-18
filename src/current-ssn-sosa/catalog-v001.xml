@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
-    <uri name="https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/bfo" uri="../../releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl"/>
-    <uri name="https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/cco" uri="../../releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl"/>
-    <uri name="https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/edit" uri="ssn-sosa-mappings-edit.ttl"/>
-    <group id="Folder Repository, directory=, recursive=true, Auto-Update=false, version=2" prefer="public" xml:base=""/>
-</catalog>

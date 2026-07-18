@@ -11,7 +11,6 @@ Adopt four generated modular products alongside, not in place of, the independen
 | Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping` | **Maintained authoritative development artifact.** It contains the 19 current BFO-bearing axioms unchanged. |
 | BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection` | **Maintained authoritative development artifact.** It is the designated product for approved weaker but sound BFO consequences, imports the strict BFO mapping, and currently asserts no direct projection axiom. |
 | CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension` | **Maintained authoritative development artifact.** It adds the 25 CCO-bearing and 32 mixed BFO/CCO axioms and imports the strict BFO mapping. |
-| Current simple BFO projection | `src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-generated.ttl` | None | **Review-only; publication workflow to be retired.** It is not the approved BFO projection product. |
 | RO module | No approved path | None | **Deferred.** It remains outside the approved product set pending a focused applicability review. |
 | `sosa-next` modules | Existing `releases/sosa-next/` placeholders | None approved | **Inactive lifecycle scaffolding.** They remain outside current generation, CI, release, and completeness accounting. |
 | Future SWRL/rule module | No approved path | None | **Deferred.** It requires a separately governed rule-policy decision. |
@@ -191,7 +190,7 @@ Policy:
 - Assert actual OWL/RDF mapping axioms. `owl:Axiom` annotations may supplement assertions but never replace them.
 - Account deterministically for unchanged, lossless, excluded, deferred, and inapplicable rows.
 
-`ssn-sosa-bfo-directmappings.ttl` is not the intended production filename. The existing placeholder may remain unchanged until implementation, but it must be deliberately renamed/replaced with `ssn-sosa-bfo-mapping.ttl` before first production publication.
+The maintained strict-BFO product now occupies its approved production path. The former current-track shell was obsolete scaffolding and has been removed without an alias, redirect, or compatibility wrapper.
 
 ### 3.4 BFO projection
 
@@ -233,7 +232,7 @@ Policy:
 - Describe the product as a CCO extension/profile, not a graph containing only CCO IRIs.
 - Assert actual mapping/typing axioms; annotations may supplement but never replace assertions.
 
-`ssn-sosa-cco-directmappings.ttl` is not the intended production filename. The existing placeholder may remain until implementation, but it must be deliberately renamed/replaced with `ssn-sosa-cco-extension.ttl` before first production publication.
+The maintained CCO-extension product now occupies its approved production path. The former current-track shell was obsolete scaffolding and has been removed without an alias, redirect, or compatibility wrapper.
 
 ### 3.6 RO product
 
@@ -603,25 +602,15 @@ Formal release gates additionally require:
 
 The existing COMS safeguards remain mandatory: temporary validation, content-based freshness, atomic publication, last-known-good preservation, and rollback. Multi-product generation must be one transaction so root and modules cannot represent different workbook, policy, or metadata versions.
 
-## 9. Existing Placeholder and Inactive-Track Disposition
+## 9. Retired Current Scaffold and Inactive-Track Disposition
 
-### Current SSN/SOSA placeholders
+### Current SSN/SOSA scaffold
 
-The existing files:
+The complete maintained product set has replaced the former current-track editor and release shells. Those obsolete files, their empty development catalogs, and their ungoverned projection-analysis workflow are retired together with active consumers. They are not moved into legacy storage, populated from maintained product bytes, retained as import wrappers, or assigned aliases.
 
-- `releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl`
-- `releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl`
+COMS remains the sole editable mapping authority. No development XML catalog is required for validation: current checks resolve the maintained modules and five pinned local dependency files explicitly. The merged CCO/BFO dependency is a complete pinned validation input, not a placeholder. The formal package catalog remains a separate generated, package-relative, byte-governed artifact.
 
-may remain unchanged until implementation. They must not be manually populated or published as the approved products.
-
-Before first production publication, implementation must deliberately replace/rename them to:
-
-- `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl`
-- `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl`
-
-The alignment-core and BFO-projection paths must be created only by the governed generator, not as manually maintained shells. Catalogs, documentation, expected-file policies, and consumers must move to the approved names in the same implementation transaction. Placeholder replacement/renaming occurs atomically only after the complete generated product set passes all gates.
-
-No `directmappings` filename is an intended current-track production identity.
+This cleanup creates no compatibility promise for former paths or ontology IRIs, no redirect, no persistent-IRI deployment, and no actual release.
 
 ### `sosa-next` lifecycle
 
@@ -648,37 +637,13 @@ Activate the track only after:
 
 Replace the temporary name `sosa-next` with the actual source-version identity before publication. No production path or ontology IRI may retain "next."
 
-Do not remove the scaffold during current product work. After current modular products are implemented, review removal separately. Remove it only when no stable next-version source is expected during the foreseeable development cycle and the scaffold causes meaningful maintainer or consumer confusion. Removal must be a dedicated cleanup PR.
+Do not remove the `sosa-next` scaffold during current cleanup work. Review its activation or removal separately after a stable source-version decision; either outcome requires a dedicated change.
 
-## 10. Current Review-Only Projection
+## 10. Retired Projection Analysis
 
-`src/current-ssn-sosa/build/artifacts/current-ssn-sosa-bfo-only-generated.ttl` remains review-only until the governed COMS products replace it. It cannot be promoted because:
+The former current-track named-hierarchy projection analysis is retired completely. It was ungoverned, incomplete for complex COMS expressions, machine-path dependent, and outside maintained validation and release construction. It is not preserved as a diagnostic target or prospective release artifact.
 
-- it produces only 22 simple assertions while the root has 50 complex mapping/typing axioms;
-- it omits complex mappings and property chains;
-- its seven-row exclusion report covers only named CCO property targets without BFO paths and does not account for every omitted COMS row;
-- it turns some `owl:equivalentClass` mappings into weaker `rdfs:subClassOf` consequences;
-- it has no ontology declaration, stable product IRI, imports, release metadata, or authority declaration;
-- it is an ignored build artifact rather than a transactionally maintained output;
-- it uses the old independent ROBOT 1.9.5 installation path;
-- it has no governed transformation rules, proof obligations, or positive/negative tests.
-
-After the governed alignment core, strict BFO mapping, BFO projection, and CCO extension exist:
-
-1. Retire `make -C src/current-ssn-sosa derive-bfo-from-cco` as a publication workflow.
-2. Stop treating `current-ssn-sosa-bfo-only-generated.ttl` as a prospective release artifact.
-3. Replace its publication role with the COMS-generated strict BFO mapping and BFO projection.
-
-Preserve the underlying named-target hierarchy analysis only if maintainers find it useful. If retained:
-
-- rename the target to a diagnostic name such as `suggest-bfo-projection-candidates`;
-- emit CSV or Markdown candidate-report output, not an ontology product;
-- identify results as possible weaker consequences rather than approved mappings;
-- require human semantic review and an approved transformation rule before publication;
-- use the declared validation toolchain;
-- keep it outside release gates unless a later candidate-analysis policy explicitly governs it.
-
-Candidate analysis must never write directly into the production BFO projection module.
+The maintained strict-BFO mapping and import-only BFO projection are the only approved current BFO module paths. No transformation or weakened projection is approved, and no candidate-analysis output may be treated as mapping authority.
 
 ## 11. Decisions Required Before Implementation
 
@@ -691,7 +656,7 @@ The following decisions are settled by this report and must not be reopened as i
 3. Separation of strict BFO mappings from weakened BFO projections.
 4. Lossless, weakened, and unsupported transformation categories and proof obligations.
 5. Date-based release identifiers, `v<version>` tags, and immutable release version IRI forms.
-6. Retirement of the current simple projection as a publication workflow, with optional retention only as candidate analysis.
+6. Complete retirement of the former current simple projection workflow and candidate analysis.
 7. Retention of `sosa-next` as inactive scaffolding under the activation/removal policy in section 9.
 
 RO applicability and SWRL/rule-module governance remain separate future policy reviews, not implementation choices for the approved current products.
@@ -707,9 +672,7 @@ Implementation must still specify:
 5. Persistent deployment and stable-IRI catalog migration beyond the package-local version-IRI catalog.
 6. Module-specific fixed HermiT closures and example suites.
 7. Canonical integrated-versus-modular semantic reconciliation.
-8. Placeholder rename/migration mechanics for tracked paths and downstream references.
-9. Whether an optional materialized standalone BFO-projection closure is needed as a packaging artifact.
-10. Diagnostic candidate-report schema if the old hierarchy analysis is retained.
+8. Whether an optional materialized standalone BFO-projection closure is needed as a packaging artifact.
 
 These choices may refine implementation mechanics but may not alter approved product identity, import direction, mapping strength, transformation classification, version policy, or lifecycle boundaries.
 
@@ -726,10 +689,9 @@ Use narrow branches/PRs in this order:
 7. **Generate BFO projection:** import the strict BFO mapping and add only approved weaker consequences.
 8. **Generate CCO extension:** import the strict BFO mapping and emit the 25 CCO-bearing plus 32 mixed axioms unchanged.
 9. **Add modular and reconciliation gates:** test imports, vocabularies, accounting, HermiT, transformations, freshness, rollback, metadata, and integrated-versus-modular semantics.
-10. **Replace placeholders atomically:** rename/remove old current-track `directmappings` shells only after every product passes.
-11. **Retire or rename old projection workflow:** preserve only governed candidate analysis if it remains useful.
-12. **Add consumer documentation and examples:** explain integrated, strict BFO, projected BFO, and CCO loading.
-13. **Keep later scopes separate:** RO applicability, SWRL governance, and `sosa-next` activation remain separate work.
+10. **Retire obsolete current scaffolding:** remove the former editor, release shells, empty development catalogs, projection analysis, and active references after every maintained product passes. **Complete.**
+11. **Add consumer documentation and examples:** explain integrated, strict BFO, projected BFO, and CCO loading.
+12. **Keep later scopes separate:** RO applicability, SWRL governance, and `sosa-next` activation remain separate work.
 
 No implementation step may change the COMS workbook merely to simplify product generation.
 
@@ -765,9 +727,9 @@ No implementation step may change the COMS workbook merely to simplify product g
 - [ ] Fixed-closure HermiT returns 0 with zero named unsatisfiable classes for every applicable product/profile.
 - [ ] Integrated and modular governed semantics reconcile, with lossless and weakened derived axioms reported separately.
 - [ ] Generation is deterministic, fresh, temporary-first, atomic, rollback-capable, clean-tree checked, and hosted-CI enforced.
-- [ ] Current `directmappings` placeholders are deliberately renamed/replaced only after all gates pass.
-- [ ] The old 22-triple projection workflow is retired from publication or renamed as non-product candidate analysis.
-- [ ] Candidate analysis cannot write into the production BFO projection.
+- [x] Former current-track release shells, editor scaffold, and empty development catalogs are removed after all maintained products passed their gates.
+- [x] The old simple projection workflow and candidate analysis are retired completely.
+- [x] No retired candidate analysis can write into the production BFO projection.
 - [ ] `sosa-next` remains inactive and excluded until all activation conditions are approved.
 - [ ] RO and future SWRL/rule products remain outside the approved current product set.
 
@@ -779,7 +741,7 @@ Final policy conclusions:
 4. Approved lossless transformations may enter the strict BFO mapping; weaker but sound consequences belong only in the BFO projection.
 5. The BFO projection imports the strict BFO mapping and supplies the complete projected BFO consumer closure without entering the CCO extension closure.
 6. The 25 CCO-bearing plus 32 mixed axioms belong unchanged in the CCO extension unless COMS itself changes.
-7. The current 22-triple projection is not a production release and its publication workflow will be retired after replacement.
+7. The former simple projection analysis and its publication workflow are retired; the governed strict-BFO mapping and BFO projection replace that role.
 8. No COMS row may be silently omitted from any product accounting.
 9. PROV's modular idea is useful, but its current release serialization and annotation mechanics are not templates to copy.
 10. RO and `sosa-next` products are not part of the current approved product set.

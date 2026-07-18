@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -52,6 +52,7 @@ compile:
 		tests/test_build_release.py \
 		tests/test_release_archive.py \
 		tests/test_release_rehearsal.py \
+		tests/test_placeholder_catalog_migration.py \
 		tools/workflow_check.py
 
 check-publication-metadata:
@@ -76,6 +77,9 @@ check-release-archive:
 
 check-release-rehearsal:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_release_rehearsal.py'
+
+check-placeholder-catalog-migration:
+	PYTHONDONTWRITEBYTECODE=1 python -B -m unittest discover -s tests -p 'test_placeholder_catalog_migration.py'
 
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py
