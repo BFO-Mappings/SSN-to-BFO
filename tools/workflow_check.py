@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shlex
+import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -34,6 +37,8 @@ COMPILE_COMMAND = [
     "tools/release_manifest.py",
     "tools/build_release.py",
     "tools/check_release.py",
+    "tools/release_archive.py",
+    "tools/rehearse_release.py",
     "tests/test_generate_mapping_from_coms.py",
     "tests/test_coms_row_identity.py",
     "tests/test_product_dispositions.py",
@@ -46,6 +51,8 @@ COMPILE_COMMAND = [
     "tests/test_release_rendering.py",
     "tests/test_release_manifest.py",
     "tests/test_build_release.py",
+    "tests/test_release_archive.py",
+    "tests/test_release_rehearsal.py",
     "tools/workflow_check.py",
 ]
 VALIDATE_COMMAND = [PYTHON, "tools/run_validation_suite.py"]
@@ -70,12 +77,23 @@ def command_text(command: list[str]) -> str:
     return shlex.join(command)
 
 
-def run_command(name: str, command: list[str], *, required: bool = True) -> subprocess.CompletedProcess[str]:
+def run_command(
+    name: str,
+    command: list[str],
+    *,
+    required: bool = True,
+    environment: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     print(f"\n==> {name}")
     print(f"$ {command_text(command)}")
+    child_environment = os.environ.copy()
+    child_environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    if environment is not None:
+        child_environment.update(environment)
     proc = subprocess.run(
         command,
         cwd=REPO_ROOT,
+        env=child_environment,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -91,8 +109,15 @@ def run_command(name: str, command: list[str], *, required: bool = True) -> subp
     return proc
 
 
-def run_step(state: WorkflowState, name: str, command: list[str], *, required: bool = True) -> None:
-    proc = run_command(name, command, required=required)
+def run_step(
+    state: WorkflowState,
+    name: str,
+    command: list[str],
+    *,
+    required: bool = True,
+    environment: dict[str, str] | None = None,
+) -> None:
+    proc = run_command(name, command, required=required, environment=environment)
     state.results.append(CommandResult(name, proc.returncode))
 
 
@@ -160,9 +185,86 @@ def check_catalog(state: WorkflowState) -> None:
 
 
 def run_validation_set(state: WorkflowState) -> None:
+    check_release_tooling_integration()
     run_step(state, "Validation suite", VALIDATE_COMMAND)
-    run_step(state, "Python compile check", COMPILE_COMMAND)
+    run_compile_check(state)
     run_step(state, "Git whitespace check", ["git", "diff", "--check"])
+
+
+def external_temporary_directory(prefix: str) -> Path:
+    """Create a temporary directory that cannot be nested in this repository."""
+
+    candidates = (Path("/tmp"), Path(tempfile.gettempdir()))
+    for candidate in candidates:
+        try:
+            parent = candidate.resolve()
+            parent.relative_to(REPO_ROOT)
+        except ValueError:
+            if parent.is_dir() and not parent.is_symlink():
+                return Path(tempfile.mkdtemp(prefix=prefix, dir=parent))
+        except OSError:
+            continue
+    raise RuntimeError("no external temporary directory is available for Python bytecode")
+
+
+def run_compile_check(state: WorkflowState) -> None:
+    cache_directory = external_temporary_directory("ssn-to-bfo-workflow-pycache-")
+    try:
+        run_step(
+            state,
+            "Python compile check",
+            COMPILE_COMMAND,
+            environment={"PYTHONPYCACHEPREFIX": str(cache_directory)},
+        )
+    finally:
+        shutil.rmtree(cache_directory, ignore_errors=True)
+
+
+def check_release_tooling_integration() -> None:
+    """Fail early when the release archive/rehearsal gates drift out of the workflow."""
+
+    required_text = {
+        "Makefile": (
+            "check-release-archive:",
+            "check-release-rehearsal:",
+            "tools/release_archive.py",
+            "tools/rehearse_release.py",
+            "tests/test_release_archive.py",
+            "tests/test_release_rehearsal.py",
+        ),
+        "tools/run_validation_suite.py": (
+            "Release archive focused tests",
+            "Release rehearsal focused tests",
+            "tools/release_archive.py",
+            "tools/rehearse_release.py",
+            "tests/test_release_archive.py",
+            "tests/test_release_rehearsal.py",
+        ),
+        "README.md": ("tools/release_archive.py", "tools/rehearse_release.py", "check-release-archive", "check-release-rehearsal"),
+        "reports/coms-automatic-validation-setup.md": ("tools/release_archive.py", "tools/rehearse_release.py", "check-release-archive", "check-release-rehearsal"),
+        "reports/publication-product-and-import-policy.md": ("clean-checkout rehearsal", "USTAR"),
+        "tests/test_build_release.py": (
+            "notes_fixture_state",
+            "SYNTHETIC-2099-01-02.md",
+            "committed synthetic release notes fixture",
+        ),
+    }
+    issues: list[str] = []
+    for relative, required_values in required_text.items():
+        content = (REPO_ROOT / relative).read_text(encoding="utf-8")
+        for value in required_values:
+            if value not in content:
+                issues.append(f"{relative}: missing {value!r}")
+    synthetic_notes = REPO_ROOT / "release-notes" / "SYNTHETIC-2099-01-02.md"
+    if synthetic_notes.is_symlink() or not synthetic_notes.is_file():
+        issues.append("release-notes/SYNTHETIC-2099-01-02.md: missing committed regular fixture")
+    for workflow in sorted((REPO_ROOT / ".github" / "workflows").glob("*")):
+        if workflow.is_file() and "rehearse_release.py build" in workflow.read_text(encoding="utf-8"):
+            issues.append(f"{workflow.relative_to(REPO_ROOT)}: publication command is prohibited")
+    if issues:
+        for issue in issues:
+            print(f"ERROR [RELEASE_TOOLING_INTEGRATION] {issue}", file=sys.stderr)
+        raise SystemExit(1)
 
 
 def compare_expected_files(state: WorkflowState, expected_files: list[str]) -> None:
@@ -246,10 +348,11 @@ def pre_commit_mode(state: WorkflowState, expected_files: list[str]) -> None:
 
 
 def write_reports_mode(state: WorkflowState, expected_files: list[str]) -> None:
+    check_release_tooling_integration()
     current_branch(state)
     run_step(state, "Validation suite with canonical reports", VALIDATE_WRITE_COMMAND)
     run_step(state, "Validation suite with temporary reports", VALIDATE_COMMAND)
-    run_step(state, "Python compile check", COMPILE_COMMAND)
+    run_compile_check(state)
     run_step(state, "Git whitespace check", ["git", "diff", "--check"])
     run_command("Git status", ["git", "status", "--short"])
     run_command("Diff stat", ["git", "diff", "--stat"])

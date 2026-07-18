@@ -7,6 +7,8 @@ import hashlib
 import inspect
 import json
 import os
+import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -1078,6 +1080,250 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Reused strict-BFO closure triple count: 14986", report)
         self.assertIn("Projection-specific HermiT invocation: none", report)
         self.assertIn("Zero direct projection axioms is intentional", report)
+
+
+class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="coms-bytecode-test-")
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+
+    @staticmethod
+    def bytecode_paths(repository: Path) -> set[str]:
+        return {
+            path.relative_to(repository).as_posix()
+            for path in repository.rglob("*")
+            if path.name == "__pycache__" or path.suffix in {".pyc", ".pyo"}
+        }
+
+    @staticmethod
+    def path_state(path: Path) -> tuple[int, int, bytes, int, int, int, int]:
+        info = os.lstat(path)
+        return (
+            stat.S_IFMT(info.st_mode),
+            stat.S_IMODE(info.st_mode),
+            path.read_bytes(),
+            info.st_size,
+            info.st_mtime_ns,
+            info.st_dev,
+            info.st_ino,
+        )
+
+    def compile_fixture(self) -> tuple[Path, dict[str, Path]]:
+        repository = self.root / "compile-repository"
+        tools = repository / "tools"
+        tools.mkdir(parents=True)
+        paths = {
+            "GENERATOR": tools / "generate_mapping_from_coms.py",
+            "ROW_IDENTITY_MODULE": tools / "coms_row_identity.py",
+            "DISPOSITION_MODULE": tools / "product_dispositions.py",
+            "MODULAR_PRODUCTS_MODULE": tools / "modular_products.py",
+            "PUBLICATION_METADATA_MODULE": tools / "publication_metadata.py",
+        }
+        for index, path in enumerate(paths.values()):
+            path.write_text(f"VALUE = {index}\n", encoding="utf-8")
+        return repository, paths
+
+    def checker_patch(self, repository: Path, paths: dict[str, Path]):
+        return mock.patch.multiple(checker, REPO_ROOT=repository, **paths)
+
+    def create_sentinels(self, repository: Path) -> dict[Path, tuple[int, int, bytes, int, int, int, int]]:
+        sentinels = {
+            repository / "tools/__pycache__/preexisting.pyc": b"preexisting-pyc\x00sentinel\n",
+            repository / "tests/__pycache__/preexisting.pyo": b"preexisting-pyo\x00sentinel\n",
+        }
+        for index, (path, content) in enumerate(sentinels.items()):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+            path.chmod(0o640)
+            timestamp = 1_700_000_000_000_000_000 + index
+            os.utime(path, ns=(timestamp, timestamp))
+        return {path: self.path_state(path) for path in sentinels}
+
+    def test_direct_check_only_preserves_repository_bytecode_and_outputs(self) -> None:
+        repository = self.root / "direct-repository"
+        shutil.copytree(
+            REPO_ROOT,
+            repository,
+            ignore=shutil.ignore_patterns(".git", ".cache", "__pycache__", "*.pyc", "*.pyo"),
+        )
+        subprocess.run(
+            ["git", "init", "--quiet"],
+            cwd=repository,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        before_sentinels = self.create_sentinels(repository)
+        before_bytecode = self.bytecode_paths(repository)
+        output_relatives = tuple(
+            path.relative_to(REPO_ROOT) for path in checker.MAINTAINED_OUTPUTS.values()
+        )
+        before_outputs = {
+            relative: (repository / relative).read_bytes() for relative in output_relatives
+        }
+        external_temp = self.root / "direct-external-temp"
+        external_temp.mkdir()
+        environment = os.environ.copy()
+        environment.pop("PYTHONPYCACHEPREFIX", None)
+        environment.update(
+            {
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "TMPDIR": str(external_temp),
+            }
+        )
+
+        completed = subprocess.run(
+            [sys.executable, "-B", "tools/check_coms_mapping.py", "--check-only"],
+            cwd=repository,
+            env=environment,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=180,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn("Check-only mode: maintained outputs are fresh", completed.stdout)
+        self.assertEqual(self.bytecode_paths(repository), before_bytecode)
+        for path, state in before_sentinels.items():
+            self.assertEqual(self.path_state(path), state)
+            self.assertTrue(path.parent.is_dir())
+        self.assertEqual(
+            {relative: (repository / relative).read_bytes() for relative in output_relatives},
+            before_outputs,
+        )
+        self.assertFalse(
+            any(external_temp.glob("ssn-to-bfo-coms-compile-*"))
+        )
+
+    def test_compile_generator_uses_only_explicit_external_cfiles_and_restores_process_state(self) -> None:
+        repository, paths = self.compile_fixture()
+        observed: list[tuple[Path, Path, bool, bool]] = []
+
+        def record_compile(source, *, cfile, doraise):
+            destination = Path(cfile)
+            observed.append(
+                (Path(source), destination, doraise, sys.dont_write_bytecode)
+            )
+            destination.write_bytes(b"external compiled bytecode\n")
+            return str(destination)
+
+        original = sys.dont_write_bytecode
+        try:
+            for initial in (False, True):
+                with self.subTest(initial=initial), self.checker_patch(repository, paths), mock.patch.object(
+                    checker.py_compile, "compile", side_effect=record_compile
+                ):
+                    sys.dont_write_bytecode = initial
+                    self.assertEqual(
+                        checker.compile_generator([]),
+                        checker.sha256_file(paths["GENERATOR"]),
+                    )
+                    self.assertEqual(sys.dont_write_bytecode, initial)
+        finally:
+            sys.dont_write_bytecode = original
+
+        self.assertEqual(len(observed), 10)
+        for source, destination, doraise, suppressed in observed:
+            self.assertIn(source, paths.values())
+            self.assertTrue(destination.is_absolute())
+            self.assertFalse(destination.is_relative_to(repository))
+            self.assertTrue(doraise)
+            self.assertTrue(suppressed)
+            self.assertFalse(destination.parent.exists())
+        self.assertEqual(self.bytecode_paths(repository), set())
+
+    def test_compile_failure_cleans_external_root_and_preserves_preexisting_bytecode(self) -> None:
+        repository, paths = self.compile_fixture()
+        paths["GENERATOR"].write_text("def invalid(:\n", encoding="utf-8")
+        sentinels = self.create_sentinels(repository)
+        before_bytecode = self.bytecode_paths(repository)
+        roots: list[checker.OwnedCompilationRoot] = []
+        original_create = checker.create_compilation_root
+
+        def record_root():
+            owned = original_create()
+            roots.append(owned)
+            return owned
+
+        original_state = sys.dont_write_bytecode
+        with self.checker_patch(repository, paths), mock.patch.object(
+            checker, "create_compilation_root", side_effect=record_root
+        ), self.assertRaises(checker.CheckFailure) as raised:
+            checker.compile_generator([])
+        self.assertIn("generator compile failed", str(raised.exception))
+        self.assertEqual(sys.dont_write_bytecode, original_state)
+        self.assertTrue(roots)
+        self.assertTrue(all(not owned.path.exists() for owned in roots))
+        self.assertEqual(self.bytecode_paths(repository), before_bytecode)
+        for path, state in sentinels.items():
+            self.assertEqual(self.path_state(path), state)
+
+    def test_compilation_cleanup_refuses_replacement_directory(self) -> None:
+        owned = checker.create_compilation_root()
+        shutil.rmtree(owned.path)
+        owned.path.mkdir()
+        sentinel = owned.path / "sentinel.bin"
+        sentinel.write_bytes(b"unrelated replacement directory\n")
+        self.addCleanup(shutil.rmtree, owned.path, True)
+
+        errors = checker.cleanup_compilation_root(owned)
+
+        self.assertEqual(
+            errors,
+            ("CLEANUP_FAILED COMS compilation root: owned path identity changed",),
+        )
+        self.assertEqual(sentinel.read_bytes(), b"unrelated replacement directory\n")
+        self.assertTrue(owned.path.is_dir())
+
+    def test_compilation_cleanup_refuses_replacement_symlink(self) -> None:
+        owned = checker.create_compilation_root()
+        shutil.rmtree(owned.path)
+        target = self.root / "unrelated-target"
+        target.mkdir()
+        sentinel = target / "sentinel.bin"
+        sentinel.write_bytes(b"unrelated symlink target\n")
+        owned.path.symlink_to(target, target_is_directory=True)
+        self.addCleanup(owned.path.unlink, missing_ok=True)
+
+        errors = checker.cleanup_compilation_root(owned)
+
+        self.assertEqual(
+            errors,
+            ("CLEANUP_FAILED COMS compilation root: owned path identity changed",),
+        )
+        self.assertTrue(owned.path.is_symlink())
+        self.assertEqual(sentinel.read_bytes(), b"unrelated symlink target\n")
+
+    def test_compile_and_cleanup_failures_remain_observable_and_restore_process_state(self) -> None:
+        repository, paths = self.compile_fixture()
+        original_state = sys.dont_write_bytecode
+
+        def cleanup_failure(owned):
+            shutil.rmtree(owned.path)
+            return ("CLEANUP_FAILED COMS compilation root: injected failure",)
+
+        for compile_fails in (False, True):
+            def compile_result(source, *, cfile, doraise):
+                if compile_fails:
+                    raise OSError("injected compile failure")
+                Path(cfile).write_bytes(b"compiled\n")
+                return cfile
+
+            with self.subTest(compile_fails=compile_fails), self.checker_patch(
+                repository, paths
+            ), mock.patch.object(
+                checker.py_compile, "compile", side_effect=compile_result
+            ), mock.patch.object(
+                checker, "cleanup_compilation_root", side_effect=cleanup_failure
+            ), self.assertRaises(checker.CheckFailure) as raised:
+                checker.compile_generator([])
+            message = str(raised.exception)
+            self.assertIn("CLEANUP_FAILED", message)
+            if compile_fails:
+                self.assertIn("generator compile failed", message)
+            self.assertEqual(sys.dont_write_bytecode, original_state)
 
 
 class ComsAuthorityMigrationTests(unittest.TestCase):

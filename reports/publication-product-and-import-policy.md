@@ -477,7 +477,9 @@ Formal release generation:
 
 ### Candidate release package
 
-The deterministic package builder accepts only an explicit formal context, repository-relative approved release notes, and absent output directory. It builds and validates in a temporary sibling before atomic publication and never updates the nine maintained development outputs. The package is candidate tooling: it does not prove that the source commit matches a clean checkout and does not create an archive, Git tag, GitHub release, or deployed persistent IRI.
+The deterministic package builder remains the package authority and accepts only an explicit formal context, repository-relative approved release notes, and absent output directory. The package checker remains the independent package-check authority. The builder builds and validates in a temporary sibling before atomic publication and never updates the nine maintained development outputs. The clean-checkout rehearsal separately requires the requested full lowercase commit to equal clean invoking `HEAD`, snapshots the invoking Git/worktree state, builds two local detached clones from that exact commit, and compares the complete outputs without modifying the invoking repository. Its archive authority writes and validates an uncompressed raw POSIX USTAR stream with fixed member order, zero metadata mtimes, zero file-record padding, and exactly two final all-zero 512-byte EOF records with no trailing record padding. Mode, uid, gid, device major, and device minor are encoded as seven zero-padded ASCII octal digits followed by NUL; size and mtime are eleven zero-padded ASCII octal digits followed by NUL; checksum is six zero-padded ASCII octal digits, NUL, then ASCII space, and its calculation treats all eight checksum-field bytes as ASCII spaces. Base-256, signed, space-terminated, non-octal, overflowing, and other noncanonical numeric encodings are rejected. The standalone archive build stages and validates its archive plus external lowercase SHA-256 sidecar as one private pair, then uses one no-replace rename to publish their absent containing directory. Verify retains no artifact; an explicit rehearsal build uses one final no-replace atomic creation of an absent external rehearsal-output directory, which is never cleanup-owned after publication. This rehearsal does not create a Git tag, upload, GitHub release, or deployed persistent IRI.
+
+The committed `release-notes/SYNTHETIC-2099-01-02.md` file is a deterministic release-engineering fixture only. It satisfies the production notes validator while explicitly not announcing, authorizing, tagging, uploading, or deploying an actual release.
 
 A candidate package contains exactly 13 regular files: five formal ontology products, `catalog-v001.xml`, `manifest.json`, `SHA256SUMS`, `RELEASE-NOTES.md`, `LICENSE`, the COMS workbook, publication-metadata TOML, and product-disposition evidence. It contains no third-party ontology, development report, coverage report, legacy report, placeholder, source snapshot, archive, or inactive-track product. The package is offline-complete for its project-module imports; external integrated-root imports remain documented pinned dependencies and are not redistributed.
 
@@ -517,7 +519,7 @@ With a complete validated formal context, the same renderer retains those seven 
 
 Development serialization is deterministic and preserves the existing generated-file Turtle comments in addition to the machine-readable warning. Metadata prefix and ontology-header ordering are explicit, and stripping the ontology declaration, approved project imports, and exact seven annotations must reproduce the governed logical graph. Metadata is never counted as a governed axiom, mapping triple, structural expression triple, projection axiom, or copied declaration.
 
-Creator and contributor governance, ORCIDs, agents, provenance RDF, source and dependency RDF, local validation paths in RDF, workbook or generator provenance RDF, source-commit and tag RDF, clean-checkout source binding, deterministic archives, tagging, and GitHub publication remain deferred. Package manifests may record dependency and artifact hashes as non-RDF evidence. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
+Creator and contributor governance, ORCIDs, agents, provenance RDF, source and dependency RDF, local validation paths in RDF, workbook or generator provenance RDF, source-commit and tag RDF, tagging, and GitHub publication remain deferred. Package manifests may record dependency and artifact hashes as non-RDF evidence. Local filesystem paths and hashes must never be emitted as ontology RDF identifiers or publication metadata. Contributor metadata must not be inferred automatically from Git authors.
 
 Development artifacts use stable ontology IRIs and the governed development authority status. They do not claim `owl:versionIRI`, `owl:versionInfo`, `dcterms:issued`, a release date, a Git tag, or frozen artifact identity. Formal rendering and candidate packaging are separate explicit operations and do not alter the nine maintained development outputs. No actual release context or notes have been selected, and no package has been committed or published.
 
@@ -594,6 +596,8 @@ Formal release gates additionally require:
 - exact `YYYY-MM-DD` release identifier/date and matching `vYYYY-MM-DD` Git tag;
 - version IRIs under `http://www.sks.ai/SSN2BFO/releases/<version>/`;
 - immutable artifact and manifest hashes;
+- clean-checkout binding of the requested commit to invoking `HEAD` with unchanged source snapshots;
+- two independent deterministic package and canonical-archive rebuilds;
 - same-release project-module import resolution;
 - failure when a version/tag/hash relationship is inconsistent.
 
@@ -699,14 +703,13 @@ Implementation must still specify:
 1. Machine-readable product-disposition schema and governed file location.
 2. Stable COMS row-key mechanism resilient to worksheet row movement.
 3. Transformation-rule serialization and proof/result representation.
-4. Clean-checkout source-commit binding and deterministic archive construction around the implemented manifest/package format.
-5. Multi-product temporary-generation, validation, atomic replacement, and rollback transaction design.
-6. Persistent deployment and stable-IRI catalog migration beyond the package-local version-IRI catalog.
-7. Module-specific fixed HermiT closures and example suites.
-8. Canonical integrated-versus-modular semantic reconciliation.
-9. Placeholder rename/migration mechanics for tracked paths and downstream references.
-10. Whether an optional materialized standalone BFO-projection closure is needed as a packaging artifact.
-11. Diagnostic candidate-report schema if the old hierarchy analysis is retained.
+4. Multi-product temporary-generation, validation, atomic replacement, and rollback transaction design.
+5. Persistent deployment and stable-IRI catalog migration beyond the package-local version-IRI catalog.
+6. Module-specific fixed HermiT closures and example suites.
+7. Canonical integrated-versus-modular semantic reconciliation.
+8. Placeholder rename/migration mechanics for tracked paths and downstream references.
+9. Whether an optional materialized standalone BFO-projection closure is needed as a packaging artifact.
+10. Diagnostic candidate-report schema if the old hierarchy analysis is retained.
 
 These choices may refine implementation mechanics but may not alter approved product identity, import direction, mapping strength, transformation classification, version policy, or lifecycle boundaries.
 

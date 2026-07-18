@@ -4,15 +4,55 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shlex
+import shutil
+import stat
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TMP_DIR = Path("/tmp/ssn-to-bfo-validation-suite")
+BYTECODE_CACHE_ENVIRONMENT = "SSN_TO_BFO_VALIDATION_PYCACHE"
+BYTECODE_GUARD_ENVIRONMENT = "SSN_TO_BFO_VALIDATION_GUARD"
+
+
+BYTECODE_SITE_CUSTOMIZE = f'''"""Propagate validation bytecode isolation to helper subprocesses."""
+
+import os
+import subprocess
+
+_CACHE_ENVIRONMENT = {BYTECODE_CACHE_ENVIRONMENT!r}
+_GUARD_ENVIRONMENT = {BYTECODE_GUARD_ENVIRONMENT!r}
+_MARKER = "_ssn_to_bfo_validation_bytecode_guard"
+
+if not getattr(subprocess, _MARKER, False):
+    _original_popen = subprocess.Popen
+
+    def _guarded_popen(*args, **kwargs):
+        supplied = kwargs.get("env")
+        environment = os.environ.copy() if supplied is None else dict(supplied)
+        cache = environment.get(_CACHE_ENVIRONMENT, os.environ[_CACHE_ENVIRONMENT])
+        guard = environment.get(_GUARD_ENVIRONMENT, os.environ[_GUARD_ENVIRONMENT])
+        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["PYTHONPYCACHEPREFIX"] = cache
+        python_path = environment.get("PYTHONPATH", "")
+        entries = [entry for entry in python_path.split(os.pathsep) if entry]
+        if guard not in entries:
+            entries.append(guard)
+        environment["PYTHONPATH"] = os.pathsep.join(entries)
+        environment[_CACHE_ENVIRONMENT] = cache
+        environment[_GUARD_ENVIRONMENT] = guard
+        kwargs["env"] = environment
+        return _original_popen(*args, **kwargs)
+
+    subprocess.Popen = _guarded_popen
+    setattr(subprocess, _MARKER, True)
+'''
 
 
 @dataclass
@@ -22,16 +62,33 @@ class StepResult:
     detail: str = ""
 
 
+@dataclass(frozen=True)
+class OwnedTemporaryDirectory:
+    path: Path
+    device: int
+    inode: int
+    file_type: int
+
+
 def command_text(command: list[str]) -> str:
     return shlex.join(command)
 
 
-def run_command(name: str, command: list[str]) -> StepResult:
+def run_command(name: str, command: list[str], *, environment: dict[str, str] | None = None) -> StepResult:
     print(f"\n==> {name}")
     print(f"$ {command_text(command)}")
-    proc = subprocess.run(command, cwd=REPO_ROOT)
-    passed = proc.returncode == 0
-    status = "PASS" if passed else f"FAIL ({proc.returncode})"
+    owned_cache = validation_bytecode_cache()
+    try:
+        child_environment = validation_child_environment(owned_cache, environment)
+        proc = subprocess.run(command, cwd=REPO_ROOT, env=child_environment)
+    finally:
+        cleanup_errors = cleanup_owned_temporary_directory(owned_cache)
+    passed = proc.returncode == 0 and not cleanup_errors
+    if cleanup_errors:
+        primary = "PASS" if proc.returncode == 0 else f"FAIL ({proc.returncode})"
+        status = primary + "; " + "; ".join(cleanup_errors)
+    else:
+        status = "PASS" if passed else f"FAIL ({proc.returncode})"
     print(f"{name}: {status}")
     return StepResult(name=name, passed=passed, detail=status)
 
@@ -43,6 +100,81 @@ def parse_ttl_check() -> StepResult:
         "print('SSN2BFO.ttl parse OK')"
     )
     return run_command("Turtle parse check", [sys.executable, "-c", code])
+
+
+def external_temporary_directory(prefix: str) -> OwnedTemporaryDirectory:
+    """Create a temporary directory that cannot be nested in this repository."""
+
+    candidates = (Path("/tmp"), Path(tempfile.gettempdir()))
+    for candidate in candidates:
+        try:
+            parent = candidate.resolve()
+            parent.relative_to(REPO_ROOT)
+        except ValueError:
+            if parent.is_dir() and not parent.is_symlink():
+                path = Path(tempfile.mkdtemp(prefix=prefix, dir=parent))
+                info = os.lstat(path)
+                if not stat.S_ISDIR(info.st_mode):
+                    raise RuntimeError("external temporary path is not a directory")
+                return OwnedTemporaryDirectory(
+                    path=path,
+                    device=info.st_dev,
+                    inode=info.st_ino,
+                    file_type=stat.S_IFMT(info.st_mode),
+                )
+        except OSError:
+            continue
+    raise RuntimeError("no external temporary directory is available for Python bytecode")
+
+
+def cleanup_owned_temporary_directory(owned: OwnedTemporaryDirectory) -> tuple[str, ...]:
+    """Remove one identity-owned directory without following a replacement path."""
+
+    try:
+        info = os.lstat(owned.path)
+    except OSError as exc:
+        return (f"CLEANUP_FAILED external bytecode cache: {exc.strerror}",)
+    identity = (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode))
+    expected = (owned.device, owned.inode, owned.file_type)
+    if identity != expected:
+        return ("CLEANUP_FAILED external bytecode cache: owned path identity changed",)
+    if not stat.S_ISDIR(info.st_mode):
+        return ("CLEANUP_FAILED external bytecode cache: owned path is not a directory",)
+    try:
+        shutil.rmtree(owned.path)
+    except OSError as exc:
+        return (f"CLEANUP_FAILED external bytecode cache: {exc.strerror}",)
+    return ()
+
+
+def validation_child_environment(
+    owned_cache: OwnedTemporaryDirectory,
+    environment: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Build the enforced bytecode-isolated environment for one validation step."""
+
+    cache_directory = owned_cache.path / "pycache"
+    guard_directory = owned_cache.path / "guard"
+    cache_directory.mkdir()
+    guard_directory.mkdir()
+    (guard_directory / "sitecustomize.py").write_text(BYTECODE_SITE_CUSTOMIZE, encoding="utf-8")
+
+    child_environment = os.environ.copy()
+    if environment is not None:
+        child_environment.update(environment)
+    child_environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    child_environment["PYTHONPYCACHEPREFIX"] = str(cache_directory)
+    child_environment[BYTECODE_CACHE_ENVIRONMENT] = str(cache_directory)
+    child_environment[BYTECODE_GUARD_ENVIRONMENT] = str(guard_directory)
+    python_path = child_environment.get("PYTHONPATH", "")
+    entries = [
+        entry
+        for entry in python_path.split(os.pathsep)
+        if entry and entry != str(guard_directory)
+    ]
+    entries.insert(0, str(guard_directory))
+    child_environment["PYTHONPATH"] = os.pathsep.join(entries)
+    return child_environment
 
 
 def compile_check() -> StepResult:
@@ -70,6 +202,8 @@ def compile_check() -> StepResult:
             "tools/release_manifest.py",
             "tools/build_release.py",
             "tools/check_release.py",
+            "tools/release_archive.py",
+            "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
@@ -82,6 +216,8 @@ def compile_check() -> StepResult:
             "tests/test_release_rendering.py",
             "tests/test_release_manifest.py",
             "tests/test_build_release.py",
+            "tests/test_release_archive.py",
+            "tests/test_release_rehearsal.py",
         ],
     )
 
@@ -104,20 +240,13 @@ def print_summary(results: list[StepResult], report_paths: dict[str, Path], used
     return 0
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--write-reports",
-        action="store_true",
-        help="Write validation reports to canonical reports/ paths instead of temporary outputs.",
-    )
-    parser.add_argument(
-        "--tmp-dir",
-        default=str(DEFAULT_TMP_DIR),
-        help=f"Temporary report directory used unless --write-reports is set. Default: {DEFAULT_TMP_DIR}",
-    )
-    args = parser.parse_args()
+def validation_bytecode_cache() -> OwnedTemporaryDirectory:
+    """Create one identity-owned external cache for a validation step."""
 
+    return external_temporary_directory("ssn-to-bfo-validation-pycache-")
+
+
+def run_validation_suite(args: argparse.Namespace) -> int:
     tmp_dir = Path(args.tmp_dir)
     if args.write_reports:
         smoke_report = REPO_ROOT / "reports/instance-data-smoke-test.md"
@@ -315,6 +444,38 @@ def main() -> int:
     if results[-1].passed:
         results.append(
             run_command(
+                "Release archive focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_release_archive.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Release rehearsal focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_release_rehearsal.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
                 "Publication metadata development check",
                 [sys.executable, "tools/check_publication_metadata.py"],
             )
@@ -379,6 +540,23 @@ def main() -> int:
         results.append(run_command("Git whitespace check", ["git", "diff", "--check"]))
 
     return print_summary(results, report_paths, not args.write_reports)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--write-reports",
+        action="store_true",
+        help="Write validation reports to canonical reports/ paths instead of temporary outputs.",
+    )
+    parser.add_argument(
+        "--tmp-dir",
+        default=str(DEFAULT_TMP_DIR),
+        help=f"Temporary report directory used unless --write-reports is set. Default: {DEFAULT_TMP_DIR}",
+    )
+    args = parser.parse_args()
+
+    return run_validation_suite(args)
 
 
 if __name__ == "__main__":

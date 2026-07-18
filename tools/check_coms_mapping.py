@@ -15,41 +15,48 @@ import json
 import os
 import py_compile
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
 import time
 import traceback
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from product_dispositions import (
-    ProductDispositionError,
-    load_disposition_document,
-    serialize_disposition_document,
-)
-from generate_mapping_from_coms import (
-    GENERATED_NOTICE as ROOT_GENERATED_NOTICE,
-    ROOT_IMPORT_TURTLE_TERMS,
-    ROOT_ORDERED_IMPORTS,
-    ROOT_PREFIXES,
-)
-from modular_products import (
-    ALIGNMENT_CORE_IMPORT_IRI,
-    BFO_PROJECTION_PREFIXES,
-    CCO_EXTENSION_PREFIXES,
-    GENERATED_NOTICE as MODULAR_GENERATED_NOTICE,
-    PREFIXES as ALIGNMENT_CORE_PREFIXES,
-    STRICT_BFO_IMPORT_IRI,
-    STRICT_BFO_PREFIXES,
-)
-from publication_metadata import (
-    PublicationMetadataError,
-    load_metadata,
-    strip_emitted_ontology_header,
-    validate_emitted_ontology_metadata,
-    validate_serialized_ontology_header,
-)
+_IMPORT_DONT_WRITE_BYTECODE = sys.dont_write_bytecode
+sys.dont_write_bytecode = True
+try:
+    from product_dispositions import (
+        ProductDispositionError,
+        load_disposition_document,
+        serialize_disposition_document,
+    )
+    from generate_mapping_from_coms import (
+        GENERATED_NOTICE as ROOT_GENERATED_NOTICE,
+        ROOT_IMPORT_TURTLE_TERMS,
+        ROOT_ORDERED_IMPORTS,
+        ROOT_PREFIXES,
+    )
+    from modular_products import (
+        ALIGNMENT_CORE_IMPORT_IRI,
+        BFO_PROJECTION_PREFIXES,
+        CCO_EXTENSION_PREFIXES,
+        GENERATED_NOTICE as MODULAR_GENERATED_NOTICE,
+        PREFIXES as ALIGNMENT_CORE_PREFIXES,
+        STRICT_BFO_IMPORT_IRI,
+        STRICT_BFO_PREFIXES,
+    )
+    from publication_metadata import (
+        PublicationMetadataError,
+        load_metadata,
+        strip_emitted_ontology_header,
+        validate_emitted_ontology_metadata,
+        validate_serialized_ontology_header,
+    )
+finally:
+    sys.dont_write_bytecode = _IMPORT_DONT_WRITE_BYTECODE
 
 try:
     import openpyxl
@@ -155,6 +162,14 @@ class CheckFailure(RuntimeError):
     pass
 
 
+@dataclass(frozen=True)
+class OwnedCompilationRoot:
+    path: Path
+    device: int
+    inode: int
+    file_type: int
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -177,6 +192,62 @@ def sha256_file(path: Path) -> str:
 def emit(message: str, log: list[str]) -> None:
     print(message, flush=True)
     log.append(message)
+
+
+def create_compilation_root() -> OwnedCompilationRoot:
+    """Create an identity-recorded compilation directory outside the repository."""
+
+    repository = REPO_ROOT.resolve()
+    seen: set[Path] = set()
+    for candidate in (Path(tempfile.gettempdir()), Path("/tmp")):
+        try:
+            parent = candidate.resolve()
+            if parent in seen:
+                continue
+            seen.add(parent)
+            parent.relative_to(repository)
+        except ValueError:
+            try:
+                parent_info = os.lstat(parent)
+            except OSError:
+                continue
+            if not stat.S_ISDIR(parent_info.st_mode) or stat.S_ISLNK(parent_info.st_mode):
+                continue
+            path = Path(
+                tempfile.mkdtemp(prefix="ssn-to-bfo-coms-compile-", dir=parent)
+            )
+            info = os.lstat(path)
+            if not stat.S_ISDIR(info.st_mode):
+                raise CheckFailure("COMS compilation root is not a directory")
+            return OwnedCompilationRoot(
+                path=path,
+                device=info.st_dev,
+                inode=info.st_ino,
+                file_type=stat.S_IFMT(info.st_mode),
+            )
+        except OSError:
+            continue
+    raise CheckFailure("no external temporary directory is available for COMS compilation")
+
+
+def cleanup_compilation_root(owned: OwnedCompilationRoot) -> tuple[str, ...]:
+    """Remove only the external compilation directory created by this invocation."""
+
+    try:
+        info = os.lstat(owned.path)
+    except OSError:
+        return ("CLEANUP_FAILED COMS compilation root: owned path is missing",)
+    identity = (info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode))
+    expected = (owned.device, owned.inode, owned.file_type)
+    if identity != expected:
+        return ("CLEANUP_FAILED COMS compilation root: owned path identity changed",)
+    if not stat.S_ISDIR(info.st_mode):
+        return ("CLEANUP_FAILED COMS compilation root: owned path is not a directory",)
+    try:
+        shutil.rmtree(owned.path)
+    except OSError as exc:
+        return (f"CLEANUP_FAILED COMS compilation root: {exc.strerror}",)
+    return ()
 
 
 def validate_product_metadata(
@@ -257,17 +328,36 @@ def verify_workbook(log: list[str]) -> str:
 
 def compile_generator(log: list[str]) -> str:
     emit("[2/11] Compiling COMS generator", log)
+    owned = create_compilation_root()
+    previous_dont_write_bytecode = sys.dont_write_bytecode
+    failure: CheckFailure | None = None
     try:
-        for path in (
-            GENERATOR,
-            ROW_IDENTITY_MODULE,
-            DISPOSITION_MODULE,
-            MODULAR_PRODUCTS_MODULE,
-            PUBLICATION_METADATA_MODULE,
+        sys.dont_write_bytecode = True
+        for index, path in enumerate(
+            (
+                GENERATOR,
+                ROW_IDENTITY_MODULE,
+                DISPOSITION_MODULE,
+                MODULAR_PRODUCTS_MODULE,
+                PUBLICATION_METADATA_MODULE,
+            )
         ):
-            py_compile.compile(str(path), doraise=True)
+            cfile = owned.path / f"{index:02d}-{path.stem}.pyc"
+            py_compile.compile(str(path), cfile=str(cfile), doraise=True)
     except py_compile.PyCompileError as exc:
-        raise CheckFailure(f"generator compile failed: {exc.msg}") from exc
+        failure = CheckFailure(f"generator compile failed: {exc.msg}")
+    except Exception as exc:
+        failure = CheckFailure(f"generator compile failed: {type(exc).__name__}: {exc}")
+    finally:
+        sys.dont_write_bytecode = previous_dont_write_bytecode
+        cleanup_errors = cleanup_compilation_root(owned)
+
+    if failure is not None and cleanup_errors:
+        raise CheckFailure(f"{failure}; {'; '.join(cleanup_errors)}") from failure
+    if failure is not None:
+        raise failure
+    if cleanup_errors:
+        raise CheckFailure("; ".join(cleanup_errors))
     generator_hash = sha256_file(GENERATOR)
     emit(f"Generator SHA-256: {generator_hash}", log)
     return generator_hash
