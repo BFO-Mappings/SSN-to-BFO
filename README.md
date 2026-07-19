@@ -12,14 +12,14 @@ The separate `sosa-next` scaffold is intentionally retained but inactive. Its te
 
 `mappings/SSN2BFO-COMS.xlsx` is the sole editable mapping authority. Root-level `SSN2BFO.ttl` is the authoritative generated publication artifact; direct edits to it are prohibited because `make check-coms` regenerates, validates, and atomically replaces it from the workbook only after the candidate passes all checks.
 
-`legacy/SSN2BFO-pre-COMS.ttl` is a frozen, byte-preserved snapshot of the manually maintained ontology that preceded COMS authority. It and `Current_SOSA-SSN to BFO-CCO.xlsx` are historical comparison sources, not release authorities. COMS is not required to reproduce every legacy axiom.
+`legacy/SSN2BFO-pre-COMS.ttl` is a frozen, byte-preserved snapshot of the manually maintained ontology that preceded COMS authority. It and `legacy/workbooks/Current_SOSA-SSN to BFO-CCO.xlsx` are historical comparison sources, not release authorities. COMS is not required to reproduce every legacy axiom.
 
 For historical investigation only, `make legacy-audit-write` compares those two pre-COMS sources. The frozen `tools/test_object_property_typing_probes.py` profile likewise targets the legacy ontology. Neither diagnostic is part of the default validation or release gate.
 
-Historical spreadsheets remain preserved at the repository root:
+Historical spreadsheets are preserved under `legacy/workbooks/`:
 
-- `Current_SOSA-SSN to BFO-CCO.xlsx`
-- `FINAL_SOSA 2023 to BFO-CCO .xlsx`
+- `legacy/workbooks/Current_SOSA-SSN to BFO-CCO.xlsx`
+- `legacy/workbooks/FINAL_SOSA 2023 to BFO-CCO .xlsx`
 
 ### COMS row identity
 
@@ -128,7 +128,7 @@ Manifest schema version 1 records formal context, governed inputs and byte-affec
 
 `tools/build_release.py` remains the authoritative package builder and `tools/check_release.py` remains the authoritative package checker. `tools/release_archive.py` deterministically constructs and validates the package archive as raw, uncompressed POSIX USTAR bytes: fixed member order and metadata, zero member mtimes, zero-filled file-record padding, and exactly two final all-zero 512-byte EOF records with no additional record padding. Canonical numeric fields use seven zero-padded ASCII octal digits followed by NUL for mode, uid, gid, device major, and device minor; eleven zero-padded ASCII octal digits followed by NUL for size and mtime; and six zero-padded ASCII octal digits, NUL, then ASCII space for checksum. The checksum calculation treats all eight checksum-field bytes as ASCII spaces. Base-256, signed, space-terminated, non-octal, overflowing, and other noncanonical encodings are rejected. The external `build --output-dir ABSOLUTE_PATH` operation stages and validates the archive plus sidecar as one private pair, then publishes their absent containing directory with one no-replace atomic rename; it never exposes a one-file pair. Its lowercase SHA-256 sidecar is outside the archive. `tools/rehearse_release.py verify` requires the requested full commit to equal an unchanged clean invoking `HEAD`, then builds and validates two isolated local detached clones from that exact commit with Python socket access blocked. It compares their complete 13-file packages, canonical manifests, archives, and sidecars, then retains no artifact. Rehearsal `build --output-dir ABSOLUTE_PATH` performs the same proof before one final no-replace atomic creation of an absent external directory; a published output is never cleanup-owned. It never changes the invoking checkout, creates a tag, uploads, creates a GitHub release, or deploys anything. Run `make check-release-archive` and `make check-release-rehearsal` for focused gates; a full real two-clone rehearsal remains an explicit, slower command after these tools and the committed synthetic fixture are committed.
 
-No actual release package or archive is committed, no actual release identifier/date/notes have been selected, and no tag or GitHub release has been created. Tag readiness, persistent IRI deployment, creator/contributor governance, and publication remain later work.
+No release package or archive is committed to the repository. The first governed GitHub release, `v2026-07-18`, was published from commit `221c65ab27b59ae701f2ed73a98cb9e79d77b750`; its deterministic archive and checksum sidecar are distributed as release assets rather than tracked repository files. Persistent IRI deployment and creator/contributor governance remain later work.
 
 `release-notes/SYNTHETIC-2099-01-02.md` is a committed deterministic release-engineering fixture for package and post-commit rehearsal validation only. It is not an actual release announcement and does not select a real identity, tag, upload, GitHub release, or deployment.
 

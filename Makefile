@@ -12,7 +12,7 @@ legacy-audit-write:
 	@echo "Running informational pre-COMS legacy ontology/spreadsheet audit (not a release gate)."
 	python tools/compare_mappings.py \
 		--ttl legacy/SSN2BFO-pre-COMS.ttl \
-		--spreadsheet "Current_SOSA-SSN to BFO-CCO.xlsx" \
+		--spreadsheet "legacy/workbooks/Current_SOSA-SSN to BFO-CCO.xlsx" \
 		--output-md reports/mapping-consistency-audit.md \
 		--output-csv reports/mapping-consistency-audit.csv
 
