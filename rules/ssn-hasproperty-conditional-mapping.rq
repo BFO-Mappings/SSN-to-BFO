@@ -1,0 +1,54 @@
+# Conditional mapping artifact for ssn:hasProperty.
+#
+# This CONSTRUCT query is intentionally separate from SSN2BFO.ttl. It models
+# the intended conditional mapping without asserting a global OWL subproperty
+# axiom for ssn:hasProperty.
+#
+# Assumptions:
+# - The input graph contains explicit rdf:type assertions, or has already been
+#   materialized/classified so that relevant instances are typed under the BFO
+#   classes below.
+# - The input graph contains explicit rdfs:subPropertyOf hierarchy triples, or
+#   has already materialized/precomputed them, when narrower properties such as
+#   SSN Systems subproperties should be matched.
+# - The rdf:type/rdfs:subClassOf* paths below are convenience checks over
+#   explicit or precomputed class hierarchy triples. They do not provide
+#   complete OWL DL entailment and should not be treated as a substitute for
+#   reasoner validation.
+# - The ?hasPropertyRelation rdfs:subPropertyOf* ssn:hasProperty path matches
+#   direct ssn:hasProperty use because * includes the zero-length path. It also
+#   matches narrower properties only when the relevant subproperty hierarchy is
+#   explicit or precomputed in the input graph.
+
+PREFIX ssn:  <http://www.w3.org/ns/ssn/>
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX bfo:  <http://purl.obolibrary.org/obo/>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+
+CONSTRUCT {
+  ?entity bfo:BFO_0000196 ?property .
+  ?process bfo:BFO_0000117 ?profile .
+}
+WHERE {
+  {
+    # Continuant case:
+    # If an independent continuant hasProperty a specifically dependent
+    # continuant, construct BFO bearer_of.
+    ?hasPropertyRelation rdfs:subPropertyOf* ssn:hasProperty .
+    ?entity ?hasPropertyRelation ?property .
+    ?entity rdf:type/rdfs:subClassOf* bfo:BFO_0000004 .
+    ?property rdf:type/rdfs:subClassOf* bfo:BFO_0000020 .
+  }
+  UNION
+  {
+    # Occurrent case:
+    # If an occurrent hasProperty a process profile, construct BFO
+    # has_occurrent_part.
+    ?hasPropertyRelation rdfs:subPropertyOf* ssn:hasProperty .
+    ?process ?hasPropertyRelation ?profile .
+    ?process rdf:type/rdfs:subClassOf* bfo:BFO_0000003 .
+    ?profile rdf:type/rdfs:subClassOf* bfo:BFO_0000144 .
+  }
+}

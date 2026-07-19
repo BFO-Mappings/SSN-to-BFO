@@ -1,0 +1,1514 @@
+#!/usr/bin/env python3
+"""Atomically validate and publish the spreadsheet-driven COMS ontology.
+
+The default mode is ``--update``: generate and validate all products in a
+temporary directory, then replace maintained outputs only after every check
+passes. ``--check-only`` performs the same validation without rewriting
+maintained outputs and fails when they are stale.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import py_compile
+import secrets
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+import traceback
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+
+_IMPORT_DONT_WRITE_BYTECODE = sys.dont_write_bytecode
+sys.dont_write_bytecode = True
+try:
+    from product_dispositions import (
+        ProductDispositionError,
+        load_disposition_document,
+        serialize_disposition_document,
+    )
+    from generate_mapping_from_coms import (
+        GENERATED_NOTICE as ROOT_GENERATED_NOTICE,
+        ROOT_IMPORT_TURTLE_TERMS,
+        ROOT_ORDERED_IMPORTS,
+        ROOT_PREFIXES,
+    )
+    from modular_products import (
+        ALIGNMENT_CORE_IMPORT_IRI,
+        BFO_PROJECTION_PREFIXES,
+        CCO_EXTENSION_PREFIXES,
+        GENERATED_NOTICE as MODULAR_GENERATED_NOTICE,
+        PREFIXES as ALIGNMENT_CORE_PREFIXES,
+        STRICT_BFO_IMPORT_IRI,
+        STRICT_BFO_PREFIXES,
+    )
+    from publication_metadata import (
+        PublicationMetadataError,
+        load_metadata,
+        strip_emitted_ontology_header,
+        validate_emitted_ontology_metadata,
+        validate_serialized_ontology_header,
+    )
+finally:
+    sys.dont_write_bytecode = _IMPORT_DONT_WRITE_BYTECODE
+
+try:
+    import openpyxl
+except ModuleNotFoundError:  # pragma: no cover - runtime dependency guard
+    openpyxl = None
+
+try:
+    from rdflib import Graph, RDF, OWL, URIRef
+except ModuleNotFoundError:  # pragma: no cover - runtime dependency guard
+    Graph = None
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+WORKBOOK = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
+GENERATOR = REPO_ROOT / "tools/generate_mapping_from_coms.py"
+ROW_IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
+DISPOSITION_MODULE = REPO_ROOT / "tools/product_dispositions.py"
+MODULAR_PRODUCTS_MODULE = REPO_ROOT / "tools/modular_products.py"
+PUBLICATION_METADATA = REPO_ROOT / "config/publication-metadata.toml"
+PUBLICATION_METADATA_MODULE = REPO_ROOT / "tools/publication_metadata.py"
+CACHE_DIR = REPO_ROOT / ".cache/coms"
+LAST_SUCCESS = CACHE_DIR / "last-success.json"
+LAST_FAILURE = CACHE_DIR / "last-failure.log"
+
+MAINTAINED_OUTPUTS = {
+    "candidate": REPO_ROOT / "SSN2BFO.ttl",
+    "generation_report": REPO_ROOT / "reports/coms-generation-validation.md",
+    "coverage_report": REPO_ROOT / "reports/coms-source-term-coverage.md",
+    "diff_report": REPO_ROOT / "reports/coms-vs-pre-coms-legacy-diff.md",
+    "disposition_report": REPO_ROOT / "reports/coms-product-dispositions.json",
+    "alignment_core": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+    "strict_bfo_mapping": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+    "bfo_projection": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
+    "cco_extension": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
+}
+
+SERIALIZED_HEADER_PRODUCTS = (
+    (
+        "candidate",
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+        ROOT_GENERATED_NOTICE,
+        ROOT_PREFIXES,
+        ROOT_IMPORT_TURTLE_TERMS,
+    ),
+    (
+        "alignment_core",
+        "alignment_core",
+        (),
+        MODULAR_GENERATED_NOTICE,
+        ALIGNMENT_CORE_PREFIXES,
+        None,
+    ),
+    (
+        "strict_bfo_mapping",
+        "strict_bfo_mapping",
+        (ALIGNMENT_CORE_IMPORT_IRI,),
+        MODULAR_GENERATED_NOTICE,
+        STRICT_BFO_PREFIXES,
+        None,
+    ),
+    (
+        "bfo_projection",
+        "bfo_projection",
+        (STRICT_BFO_IMPORT_IRI,),
+        MODULAR_GENERATED_NOTICE,
+        BFO_PROJECTION_PREFIXES,
+        None,
+    ),
+    (
+        "cco_extension",
+        "cco_extension",
+        (STRICT_BFO_IMPORT_IRI,),
+        MODULAR_GENERATED_NOTICE,
+        CCO_EXTENSION_PREFIXES,
+        None,
+    ),
+)
+
+METADATA_LABELS = {
+    "workbook SHA-256": "workbook_sha256",
+    "generator SHA-256": "generator_sha256",
+    "generation timestamp (UTC)": "generation_timestamp",
+    "maintained ontology path": "maintained_output_path",
+    "generated ontology SHA-256": "generated_candidate_sha256",
+    "product-disposition module SHA-256": "disposition_module_sha256",
+    "modular-products module SHA-256": "modular_products_module_sha256",
+    "publication metadata SHA-256": "publication_metadata_sha256",
+    "maintained product-disposition path": "disposition_report_path",
+    "product-disposition JSON SHA-256": "disposition_report_sha256",
+    "maintained alignment-core path": "alignment_core_path",
+    "alignment-core Turtle SHA-256": "alignment_core_sha256",
+    "maintained strict-BFO path": "strict_bfo_mapping_path",
+    "strict-BFO Turtle SHA-256": "strict_bfo_mapping_sha256",
+    "maintained BFO-projection path": "bfo_projection_path",
+    "BFO-projection Turtle SHA-256": "bfo_projection_sha256",
+    "maintained CCO-extension path": "cco_extension_path",
+    "CCO-extension Turtle SHA-256": "cco_extension_sha256",
+}
+
+
+class CheckFailure(RuntimeError):
+    pass
+
+
+COMPILATION_ROOT_MARKER = ".ssn-to-bfo-owned-coms-compilation-root"
+COMPILATION_ROOT_IDENTITY_ERROR = (
+    "CLEANUP_FAILED COMS compilation root: owned path identity changed"
+)
+
+
+@dataclass(eq=False)
+class OwnedCompilationRoot:
+    path: Path
+    directory_fd: int = field(repr=False)
+    device: int
+    inode: int
+    file_type: int
+    marker_name: str
+    marker_fd: int = field(repr=False)
+    marker_device: int
+    marker_inode: int
+    marker_file_type: int
+    marker_mode: int
+    marker_token: bytes = field(repr=False)
+    cleanup_result: tuple[str, ...] | None = None
+
+    def __copy__(self):
+        raise TypeError("owned compilation roots cannot be copied")
+
+    def __deepcopy__(self, memo):
+        raise TypeError("owned compilation roots cannot be copied")
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def relative(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def emit(message: str, log: list[str]) -> None:
+    print(message, flush=True)
+    log.append(message)
+
+
+def create_compilation_root() -> OwnedCompilationRoot:
+    """Create a pinned and privately marked compilation root outside the repository."""
+
+    required_flags = ("O_DIRECTORY", "O_CLOEXEC", "O_NOFOLLOW")
+    if any(not hasattr(os, name) for name in required_flags):
+        raise CheckFailure("platform cannot pin an owned COMS compilation root")
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | os.O_NOFOLLOW
+    marker_flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW
+    repository = REPO_ROOT.resolve()
+    seen: set[Path] = set()
+    for candidate in (Path(tempfile.gettempdir()), Path("/tmp")):
+        path: Path | None = None
+        directory_fd = -1
+        marker_fd = -1
+        complete = False
+        try:
+            parent = candidate.resolve()
+            if parent in seen:
+                continue
+            seen.add(parent)
+            parent.relative_to(repository)
+        except ValueError:
+            try:
+                parent_info = os.lstat(parent)
+            except OSError:
+                continue
+            if not stat.S_ISDIR(parent_info.st_mode) or stat.S_ISLNK(parent_info.st_mode):
+                continue
+            try:
+                path = Path(
+                    tempfile.mkdtemp(prefix="ssn-to-bfo-coms-compile-", dir=parent)
+                )
+                directory_fd = os.open(path, directory_flags)
+                os.set_inheritable(directory_fd, False)
+                path_info = os.lstat(path)
+                directory_info = os.fstat(directory_fd)
+                path_identity = (
+                    path_info.st_dev,
+                    path_info.st_ino,
+                    stat.S_IFMT(path_info.st_mode),
+                )
+                directory_identity = (
+                    directory_info.st_dev,
+                    directory_info.st_ino,
+                    stat.S_IFMT(directory_info.st_mode),
+                )
+                if (
+                    path_identity != directory_identity
+                    or directory_identity[2] != stat.S_IFDIR
+                    or os.get_inheritable(directory_fd)
+                ):
+                    raise CheckFailure("COMS compilation root is not a pinned real directory")
+
+                marker_token = secrets.token_bytes(32)
+                marker_fd = os.open(
+                    COMPILATION_ROOT_MARKER,
+                    marker_flags,
+                    0o600,
+                    dir_fd=directory_fd,
+                )
+                os.set_inheritable(marker_fd, False)
+                os.fchmod(marker_fd, 0o600)
+                remaining = memoryview(marker_token)
+                while remaining:
+                    written = os.write(marker_fd, remaining)
+                    if written <= 0:
+                        raise OSError("unable to write COMS compilation-root marker")
+                    remaining = remaining[written:]
+                marker_info = os.fstat(marker_fd)
+                marker_mode = stat.S_IMODE(marker_info.st_mode)
+                if (
+                    not stat.S_ISREG(marker_info.st_mode)
+                    or marker_mode != 0o600
+                    or os.get_inheritable(marker_fd)
+                ):
+                    raise CheckFailure("COMS compilation-root marker is not a private regular file")
+                owned = OwnedCompilationRoot(
+                    path=path,
+                    directory_fd=directory_fd,
+                    device=directory_info.st_dev,
+                    inode=directory_info.st_ino,
+                    file_type=stat.S_IFMT(directory_info.st_mode),
+                    marker_name=COMPILATION_ROOT_MARKER,
+                    marker_fd=marker_fd,
+                    marker_device=marker_info.st_dev,
+                    marker_inode=marker_info.st_ino,
+                    marker_file_type=stat.S_IFMT(marker_info.st_mode),
+                    marker_mode=marker_mode,
+                    marker_token=marker_token,
+                )
+                complete = True
+                return owned
+            except OSError:
+                pass
+            finally:
+                if not complete:
+                    if marker_fd >= 0:
+                        try:
+                            os.close(marker_fd)
+                        except OSError:
+                            pass
+                    if path is not None and directory_fd >= 0:
+                        try:
+                            path_info = os.lstat(path)
+                            directory_info = os.fstat(directory_fd)
+                            if (
+                                (
+                                    path_info.st_dev,
+                                    path_info.st_ino,
+                                    stat.S_IFMT(path_info.st_mode),
+                                )
+                                == (
+                                    directory_info.st_dev,
+                                    directory_info.st_ino,
+                                    stat.S_IFMT(directory_info.st_mode),
+                                )
+                                and stat.S_ISDIR(path_info.st_mode)
+                                and shutil.rmtree.avoids_symlink_attacks
+                            ):
+                                shutil.rmtree(path)
+                        except OSError:
+                            pass
+                        try:
+                            os.close(directory_fd)
+                        except OSError:
+                            pass
+                    elif path is not None:
+                        try:
+                            os.rmdir(path)
+                        except OSError:
+                            pass
+            if path is not None and os.path.lexists(path):
+                raise CheckFailure("unable to clean failed COMS compilation-root creation")
+        except OSError:
+            continue
+    raise CheckFailure("no external temporary directory is available for COMS compilation")
+
+
+def cleanup_compilation_root(owned: OwnedCompilationRoot) -> tuple[str, ...]:
+    """Remove one pinned and marked compilation root at most once."""
+
+    if owned.cleanup_result is not None:
+        return owned.cleanup_result
+    result: tuple[str, ...] = (COMPILATION_ROOT_IDENTITY_ERROR,)
+    try:
+        if owned.directory_fd < 0 or owned.marker_fd < 0:
+            return result
+        directory_info = os.fstat(owned.directory_fd)
+        path_info = os.lstat(owned.path)
+        expected_directory = (owned.device, owned.inode, owned.file_type)
+        descriptor_identity = (
+            directory_info.st_dev,
+            directory_info.st_ino,
+            stat.S_IFMT(directory_info.st_mode),
+        )
+        path_identity = (
+            path_info.st_dev,
+            path_info.st_ino,
+            stat.S_IFMT(path_info.st_mode),
+        )
+        if (
+            descriptor_identity != expected_directory
+            or path_identity != descriptor_identity
+            or descriptor_identity[2] != stat.S_IFDIR
+            or os.get_inheritable(owned.directory_fd)
+        ):
+            return result
+
+        marker_descriptor_info = os.fstat(owned.marker_fd)
+        marker_info = os.stat(
+            owned.marker_name,
+            dir_fd=owned.directory_fd,
+            follow_symlinks=False,
+        )
+        marker_path_info = os.lstat(owned.path / owned.marker_name)
+        expected_marker = (
+            owned.marker_device,
+            owned.marker_inode,
+            owned.marker_file_type,
+            owned.marker_mode,
+        )
+        marker_descriptor_identity = (
+            marker_descriptor_info.st_dev,
+            marker_descriptor_info.st_ino,
+            stat.S_IFMT(marker_descriptor_info.st_mode),
+            stat.S_IMODE(marker_descriptor_info.st_mode),
+        )
+        marker_identity = (
+            marker_info.st_dev,
+            marker_info.st_ino,
+            stat.S_IFMT(marker_info.st_mode),
+            stat.S_IMODE(marker_info.st_mode),
+        )
+        marker_path_identity = (
+            marker_path_info.st_dev,
+            marker_path_info.st_ino,
+            stat.S_IFMT(marker_path_info.st_mode),
+            stat.S_IMODE(marker_path_info.st_mode),
+        )
+        if (
+            marker_descriptor_identity != expected_marker
+            or marker_identity != expected_marker
+            or marker_path_identity != expected_marker
+            or marker_identity[2] != stat.S_IFREG
+            or marker_identity[3] != 0o600
+            or os.get_inheritable(owned.marker_fd)
+        ):
+            return result
+
+        os.lseek(owned.marker_fd, 0, os.SEEK_SET)
+        marker_bytes = bytearray()
+        while len(marker_bytes) <= len(owned.marker_token):
+            chunk = os.read(
+                owned.marker_fd,
+                len(owned.marker_token) + 1 - len(marker_bytes),
+            )
+            if not chunk:
+                break
+            marker_bytes.extend(chunk)
+        if bytes(marker_bytes) != owned.marker_token:
+            return result
+        if not shutil.rmtree.avoids_symlink_attacks:
+            return result
+        shutil.rmtree(owned.path)
+        result = ()
+    except OSError:
+        result = (COMPILATION_ROOT_IDENTITY_ERROR,)
+    finally:
+        close_failed = False
+        if owned.marker_fd >= 0:
+            try:
+                os.close(owned.marker_fd)
+            except OSError:
+                close_failed = True
+            owned.marker_fd = -1
+        if owned.directory_fd >= 0:
+            try:
+                os.close(owned.directory_fd)
+            except OSError:
+                close_failed = True
+            owned.directory_fd = -1
+        if close_failed and not result:
+            result = (
+                "CLEANUP_FAILED COMS compilation root: unable to close owned descriptor",
+            )
+        owned.cleanup_result = result
+    return result
+
+
+def validate_product_metadata(
+    graph: Graph,
+    publication_metadata: object,
+    product_key: str,
+    expected_imports: tuple[str, ...],
+) -> None:
+    issues = validate_emitted_ontology_metadata(
+        graph,
+        publication_metadata,
+        product_key,
+        expected_imports,
+    )
+    if issues:
+        raise CheckFailure(
+            f"{product_key} publication metadata validation failed: "
+            + " | ".join(
+                f"ERROR [{issue.code}] {issue.field}: {issue.message}"
+                for issue in issues
+            )
+        )
+
+
+def validate_candidate_serialized_headers(
+    paths: dict[str, Path],
+    publication_metadata: object,
+) -> None:
+    issues = []
+    for (
+        output_name,
+        product_key,
+        expected_imports,
+        generated_notice,
+        prefixes,
+        import_turtle_terms,
+    ) in SERIALIZED_HEADER_PRODUCTS:
+        issues.extend(
+            validate_serialized_ontology_header(
+                paths[output_name].read_bytes(),
+                publication_metadata,
+                product_key,
+                expected_imports,
+                generated_notice=generated_notice,
+                prefixes=prefixes,
+                import_turtle_terms=import_turtle_terms,
+            )
+        )
+    if issues:
+        raise CheckFailure(
+            "serialized ontology header validation failed: "
+            + " | ".join(
+                f"ERROR [{issue.code}] {issue.field}: {issue.message}"
+                for issue in issues
+            )
+        )
+
+
+def verify_workbook(log: list[str]) -> str:
+    emit("[1/11] Verifying workbook exists and opens", log)
+    if not WORKBOOK.is_file():
+        raise CheckFailure(f"missing workbook: {relative(WORKBOOK)}")
+    if openpyxl is None:
+        raise CheckFailure("missing dependency: openpyxl is required to inspect the COMS workbook")
+    try:
+        workbook = openpyxl.load_workbook(WORKBOOK, read_only=True, data_only=False)
+        sheet_names = workbook.sheetnames
+        workbook.close()
+    except Exception as exc:
+        raise CheckFailure(f"workbook cannot be opened: {type(exc).__name__}: {exc}") from exc
+    if not sheet_names:
+        raise CheckFailure("workbook contains no worksheets")
+    workbook_hash = sha256_file(WORKBOOK)
+    emit(f"Workbook worksheets: {', '.join(sheet_names)}", log)
+    emit(f"Workbook SHA-256: {workbook_hash}", log)
+    return workbook_hash
+
+
+def compile_generator(log: list[str]) -> str:
+    emit("[2/11] Compiling COMS generator", log)
+    owned = create_compilation_root()
+    previous_dont_write_bytecode = sys.dont_write_bytecode
+    failure: CheckFailure | None = None
+    try:
+        sys.dont_write_bytecode = True
+        for index, path in enumerate(
+            (
+                GENERATOR,
+                ROW_IDENTITY_MODULE,
+                DISPOSITION_MODULE,
+                MODULAR_PRODUCTS_MODULE,
+                PUBLICATION_METADATA_MODULE,
+            )
+        ):
+            cfile = owned.path / f"{index:02d}-{path.stem}.pyc"
+            py_compile.compile(str(path), cfile=str(cfile), doraise=True)
+    except py_compile.PyCompileError as exc:
+        failure = CheckFailure(f"generator compile failed: {exc.msg}")
+    except Exception as exc:
+        failure = CheckFailure(f"generator compile failed: {type(exc).__name__}: {exc}")
+    finally:
+        sys.dont_write_bytecode = previous_dont_write_bytecode
+        cleanup_errors = cleanup_compilation_root(owned)
+
+    if failure is not None and cleanup_errors:
+        raise CheckFailure(f"{failure}; {'; '.join(cleanup_errors)}") from failure
+    if failure is not None:
+        raise failure
+    if cleanup_errors:
+        raise CheckFailure("; ".join(cleanup_errors))
+    generator_hash = sha256_file(GENERATOR)
+    emit(f"Generator SHA-256: {generator_hash}", log)
+    return generator_hash
+
+
+def run_command(label: str, command: list[str], log: list[str]) -> subprocess.CompletedProcess[str]:
+    emit(label, log)
+    emit("$ " + " ".join(command), log)
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if proc.stdout:
+        for line in proc.stdout.rstrip().splitlines():
+            emit(line, log)
+    if proc.stderr:
+        for line in proc.stderr.rstrip().splitlines():
+            emit(line, log)
+    if proc.returncode != 0:
+        raise CheckFailure(f"{label} failed with return code {proc.returncode}")
+    return proc
+
+
+def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
+    return {
+        "candidate": transaction_dir / "candidate/SSN2BFO.ttl",
+        "generation_report": transaction_dir / "reports/coms-generation-validation.md",
+        "coverage_report": transaction_dir / "reports/coms-source-term-coverage.md",
+        "diff_report": transaction_dir / "reports/coms-vs-pre-coms-legacy-diff.md",
+        "disposition_report": transaction_dir / "reports/coms-product-dispositions.json",
+        "alignment_core": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+        "strict_bfo_mapping": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+        "bfo_projection": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
+        "cco_extension": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
+        "summary": transaction_dir / "summary.json",
+        "hermit": transaction_dir / "hermit",
+    }
+
+
+def run_generator(paths: dict[str, Path], log: list[str]) -> None:
+    emit("[3/11] Running generator and spreadsheet-row validation in a temporary transaction", log)
+    command = [
+        sys.executable,
+        relative(GENERATOR),
+        "--input",
+        relative(WORKBOOK),
+        "--output",
+        str(paths["candidate"]),
+        "--report",
+        str(paths["generation_report"]),
+        "--disposition-report",
+        str(paths["disposition_report"]),
+        "--alignment-core-output",
+        str(paths["alignment_core"]),
+        "--strict-bfo-output",
+        str(paths["strict_bfo_mapping"]),
+        "--bfo-projection-output",
+        str(paths["bfo_projection"]),
+        "--cco-extension-output",
+        str(paths["cco_extension"]),
+        "--coverage-report",
+        str(paths["coverage_report"]),
+        "--diff-report",
+        str(paths["diff_report"]),
+        "--tmp-dir",
+        str(paths["hermit"]),
+        "--report-workbook-path",
+        relative(WORKBOOK),
+        "--report-output-path",
+        relative(MAINTAINED_OUTPUTS["candidate"]),
+        "--report-disposition-path",
+        relative(MAINTAINED_OUTPUTS["disposition_report"]),
+        "--report-alignment-core-path",
+        relative(MAINTAINED_OUTPUTS["alignment_core"]),
+        "--report-strict-bfo-path",
+        relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
+        "--report-bfo-projection-path",
+        relative(MAINTAINED_OUTPUTS["bfo_projection"]),
+        "--report-cco-extension-path",
+        relative(MAINTAINED_OUTPUTS["cco_extension"]),
+        "--summary-json",
+        str(paths["summary"]),
+    ]
+    try:
+        run_command("COMS generator", command, log)
+    except CheckFailure:
+        if paths["generation_report"].is_file():
+            emit("--- temporary generation report ---", log)
+            for line in paths["generation_report"].read_text(encoding="utf-8").splitlines():
+                emit(line, log)
+        raise
+
+
+def load_summary(path: Path) -> dict[str, object]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CheckFailure(f"cannot read generator summary {path}: {exc}") from exc
+
+
+def validate_temporary_outputs(
+    paths: dict[str, Path],
+    workbook_hash: str,
+    generator_hash: str,
+    log: list[str],
+) -> dict[str, object]:
+    emit("[4/11] Confirming row validation completed without malformed or unresolved mappings", log)
+    required = [*MAINTAINED_OUTPUTS, "summary"]
+    missing = [name for name in required if not paths[name].is_file() or paths[name].stat().st_size == 0]
+    if missing:
+        raise CheckFailure("missing required temporary outputs: " + ", ".join(missing))
+
+    summary = load_summary(paths["summary"])
+    if summary.get("status") != "PASS":
+        raise CheckFailure(f"generator summary status is {summary.get('status')!r}, expected 'PASS'")
+    if summary.get("workbook_sha256") != workbook_hash:
+        raise CheckFailure("generator summary workbook hash does not match the checked input")
+    if summary.get("generator_sha256") != generator_hash:
+        raise CheckFailure("generator summary generator hash does not match the compiled generator")
+
+    try:
+        disposition = load_disposition_document(paths["disposition_report"])
+        publication_metadata = load_metadata(PUBLICATION_METADATA)
+    except (ProductDispositionError, PublicationMetadataError) as exc:
+        raise CheckFailure(f"product-disposition validation failed: {exc}") from exc
+    if paths["disposition_report"].read_bytes() != serialize_disposition_document(disposition):
+        raise CheckFailure("product-disposition JSON is not canonically serialized")
+    validate_candidate_serialized_headers(paths, publication_metadata)
+    expected_disposition_hashes = {
+        "workbook_sha256": workbook_hash,
+        "generator_sha256": generator_hash,
+        "row_identity_module_sha256": sha256_file(ROW_IDENTITY_MODULE),
+        "disposition_module_sha256": sha256_file(DISPOSITION_MODULE),
+        "publication_metadata_sha256": sha256_file(PUBLICATION_METADATA),
+    }
+    for field, expected in expected_disposition_hashes.items():
+        if getattr(disposition.input_hashes, field) != expected:
+            raise CheckFailure(f"temporary product-disposition {field} mismatch")
+    expected_products = tuple(product.key for product in publication_metadata.products)
+    if disposition.product_order != expected_products:
+        raise CheckFailure("temporary product-disposition product order mismatch")
+    disposition_hash = sha256_file(paths["disposition_report"])
+    if summary.get("product_disposition_report_sha256") != disposition_hash:
+        raise CheckFailure("product-disposition hash does not match generator summary")
+    disposition_summary = summary.get("product_dispositions")
+    if not isinstance(disposition_summary, dict):
+        raise CheckFailure("generator summary is missing product-disposition results")
+    for field in disposition.summary.__dataclass_fields__:
+        if disposition_summary.get(field) != getattr(disposition.summary, field):
+            raise CheckFailure(f"product-disposition summary mismatch for {field}")
+    emit(
+        "Product dispositions: PASS "
+        f"({disposition.summary.governed_row_count} rows; "
+        f"{disposition.summary.authoritative_axiom_count} axioms)",
+        log,
+    )
+
+    alignment_path = paths["alignment_core"]
+    alignment_hash = sha256_file(alignment_path)
+    alignment_summary = summary.get("alignment_core")
+    if not isinstance(alignment_summary, dict):
+        raise CheckFailure("generator summary is missing alignment-core results")
+    alignment_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "alignment_core"
+    )
+    expected_alignment = {
+        "product_key": "alignment_core",
+        "stable_ontology_iri": alignment_metadata.stable_ontology_iri,
+        "governed_axiom_count": 29,
+        "logical_triple_count": 53,
+        "ontology_declaration_triple_count": 1,
+        "import_triple_count": 0,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 61,
+        "domain_axiom_count": 15,
+        "range_axiom_count": 14,
+        "named_target_count": 26,
+        "union_target_count": 3,
+        "hermit_return_code": 0,
+        "hermit_result": "PASS",
+        "named_unsat_count": 0,
+    }
+    for field, expected in expected_alignment.items():
+        if alignment_summary.get(field) != expected:
+            raise CheckFailure(
+                f"alignment-core summary mismatch for {field}: "
+                f"expected {expected!r}, got {alignment_summary.get(field)!r}"
+            )
+    if summary.get("alignment_core_sha256") != alignment_hash:
+        raise CheckFailure("alignment-core hash does not match generator summary")
+    if summary.get("modular_products_module_sha256") != sha256_file(MODULAR_PRODUCTS_MODULE):
+        raise CheckFailure("modular-products module hash does not match generator summary")
+    alignment_graph = Graph()
+    try:
+        alignment_graph.parse(alignment_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"alignment-core parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    validate_product_metadata(alignment_graph, publication_metadata, "alignment_core", ())
+    alignment_logical = strip_emitted_ontology_header(
+        alignment_graph, publication_metadata, "alignment_core", ()
+    )
+    if len(alignment_logical) != 53 or len(alignment_graph) != 61:
+        raise CheckFailure(
+            "alignment-core triple partition mismatch: expected 1 declaration, "
+            f"0 imports, 7 metadata, 53 logical, 61 total; got {len(alignment_graph)} total"
+        )
+    emit(
+        "Alignment core: PASS (1 declaration; 0 imports; 7 metadata; "
+        "29 governed axioms; 53 logical triples; 61 total triples)",
+        log,
+    )
+
+    strict_path = paths["strict_bfo_mapping"]
+    strict_hash = sha256_file(strict_path)
+    strict_summary = summary.get("strict_bfo_mapping")
+    if not isinstance(strict_summary, dict):
+        raise CheckFailure("generator summary is missing strict-BFO results")
+    strict_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "strict_bfo_mapping"
+    )
+    expected_strict = {
+        "product_key": "strict_bfo_mapping",
+        "stable_ontology_iri": strict_metadata.stable_ontology_iri,
+        "governed_axiom_count": 19,
+        "logical_triple_count": 125,
+        "ontology_declaration_triple_count": 1,
+        "import_triple_count": 1,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 134,
+        "subclass_axiom_count": 3,
+        "equivalent_class_axiom_count": 3,
+        "direct_subproperty_axiom_count": 9,
+        "property_chain_axiom_count": 2,
+        "domain_axiom_count": 1,
+        "range_axiom_count": 1,
+        "union_expression_count": 6,
+        "intersection_expression_count": 6,
+        "existential_restriction_count": 6,
+        "rdf_list_count": 14,
+        "project_closure_governed_axiom_count": 48,
+        "project_graph_triple_count": 195,
+        "local_project_graph_triple_count": 194,
+        "hermit_return_code": 0,
+        "hermit_result": "PASS",
+        "closure_triple_count": 14986,
+        "named_unsat_count": 0,
+    }
+    for field, expected in expected_strict.items():
+        if strict_summary.get(field) != expected:
+            raise CheckFailure(
+                f"strict-BFO summary mismatch for {field}: "
+                f"expected {expected!r}, got {strict_summary.get(field)!r}"
+            )
+    if summary.get("strict_bfo_mapping_sha256") != strict_hash:
+        raise CheckFailure("strict-BFO hash does not match generator summary")
+    strict_graph = Graph()
+    try:
+        strict_graph.parse(strict_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"strict-BFO parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    strict_ontology_iri = URIRef(strict_metadata.stable_ontology_iri)
+    expected_import = URIRef(alignment_metadata.stable_ontology_iri)
+    validate_product_metadata(
+        strict_graph,
+        publication_metadata,
+        "strict_bfo_mapping",
+        (str(expected_import),),
+    )
+    strict_logical = strip_emitted_ontology_header(
+        strict_graph,
+        publication_metadata,
+        "strict_bfo_mapping",
+        (str(expected_import),),
+    )
+    if len(strict_logical) != 125 or len(strict_graph) != 134:
+        raise CheckFailure(
+            "strict-BFO triple partition mismatch: expected 1 declaration, 1 import, "
+            f"7 metadata, 125 logical, 134 total; got {len(strict_graph)} total"
+        )
+    emit(
+        "Strict BFO mapping: PASS "
+        "(1 declaration; 1 import; 7 metadata; 19 direct governed axioms; "
+        "125 logical triples; 134 total triples)",
+        log,
+    )
+
+    projection_path = paths["bfo_projection"]
+    projection_hash = sha256_file(projection_path)
+    projection_summary = summary.get("bfo_projection")
+    if not isinstance(projection_summary, dict):
+        raise CheckFailure("generator summary is missing BFO-projection results")
+    projection_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "bfo_projection"
+    )
+    expected_projection = {
+        "product_key": "bfo_projection",
+        "stable_ontology_iri": projection_metadata.stable_ontology_iri,
+        "governed_axiom_count": 0,
+        "logical_triple_count": 0,
+        "ontology_declaration_triple_count": 1,
+        "import_triple_count": 1,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 9,
+        "provided_transitively_count": 29,
+        "provided_through_import_count": 19,
+        "deferred_no_transformation_rule_count": 57,
+        "project_closure_governed_axiom_count": 48,
+        "project_graph_triple_count": 204,
+        "local_project_graph_triple_count": 202,
+        "reasoning_reused_from": "strict_bfo_mapping",
+        "reasoning_source_sha256": strict_hash,
+        "reasoning_closure_triple_count": 14986,
+        "reasoning_return_code": 0,
+        "reasoned_output_produced": True,
+        "named_unsat_count": 0,
+        "projection_specific_hermit_invoked": False,
+    }
+    for field, expected in expected_projection.items():
+        if projection_summary.get(field) != expected:
+            raise CheckFailure(
+                f"BFO-projection summary mismatch for {field}: "
+                f"expected {expected!r}, got {projection_summary.get(field)!r}"
+            )
+    if summary.get("bfo_projection_sha256") != projection_hash:
+        raise CheckFailure("BFO-projection hash does not match generator summary")
+    projection_graph = Graph()
+    try:
+        projection_graph.parse(projection_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"BFO-projection parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    projection_ontology_iri = URIRef(projection_metadata.stable_ontology_iri)
+    validate_product_metadata(
+        projection_graph,
+        publication_metadata,
+        "bfo_projection",
+        (str(strict_ontology_iri),),
+    )
+    projection_logical = strip_emitted_ontology_header(
+        projection_graph,
+        publication_metadata,
+        "bfo_projection",
+        (str(strict_ontology_iri),),
+    )
+    if len(projection_logical) != 0 or len(projection_graph) != 9:
+        raise CheckFailure(
+            "BFO-projection triple partition mismatch: expected 1 declaration, "
+            f"1 import, 7 metadata, 0 logical, 9 total; got {len(projection_graph)} total"
+        )
+    emit(
+        "BFO projection: PASS "
+        "(1 declaration; 1 import; 7 metadata; 0 direct governed axioms; "
+        "0 logical triples; 9 total triples; "
+        "strict reasoning reused)",
+        log,
+    )
+
+    cco_path = paths["cco_extension"]
+    cco_hash = sha256_file(cco_path)
+    cco_summary = summary.get("cco_extension")
+    if not isinstance(cco_summary, dict):
+        raise CheckFailure("generator summary is missing CCO-extension results")
+    cco_metadata = next(
+        product
+        for product in publication_metadata.products
+        if product.key == "cco_extension"
+    )
+    expected_cco = {
+        "product_key": "cco_extension",
+        "stable_ontology_iri": cco_metadata.stable_ontology_iri,
+        "governed_axiom_count": 57,
+        "cco_bearing_axiom_count": 25,
+        "mixed_bfo_cco_axiom_count": 32,
+        "logical_triple_count": 934,
+        "ontology_declaration_triple_count": 1,
+        "import_triple_count": 1,
+        "metadata_annotation_count": 7,
+        "total_triple_count": 943,
+        "subclass_axiom_count": 31,
+        "equivalent_class_axiom_count": 7,
+        "direct_subproperty_axiom_count": 16,
+        "property_chain_axiom_count": 3,
+        "union_expression_count": 7,
+        "intersection_expression_count": 86,
+        "existential_restriction_count": 95,
+        "rdf_list_count": 96,
+        "project_closure_governed_axiom_count": 105,
+        "project_graph_triple_count": 1138,
+        "local_project_graph_triple_count": 1136,
+        "hermit_return_code": 0,
+        "hermit_result": "PASS",
+        "closure_triple_count": 15928,
+        "named_unsat_count": 0,
+    }
+    for field, expected in expected_cco.items():
+        if cco_summary.get(field) != expected:
+            raise CheckFailure(
+                f"CCO-extension summary mismatch for {field}: "
+                f"expected {expected!r}, got {cco_summary.get(field)!r}"
+            )
+    if summary.get("cco_extension_sha256") != cco_hash:
+        raise CheckFailure("CCO-extension hash does not match generator summary")
+    cco_graph = Graph()
+    try:
+        cco_graph.parse(cco_path, format="turtle")
+    except Exception as exc:
+        raise CheckFailure(
+            f"CCO-extension parse failed: {type(exc).__name__}: {exc}"
+        ) from exc
+    cco_ontology_iri = URIRef(cco_metadata.stable_ontology_iri)
+    expected_cco_import = URIRef(strict_metadata.stable_ontology_iri)
+    validate_product_metadata(
+        cco_graph,
+        publication_metadata,
+        "cco_extension",
+        (str(expected_cco_import),),
+    )
+    cco_logical = strip_emitted_ontology_header(
+        cco_graph,
+        publication_metadata,
+        "cco_extension",
+        (str(expected_cco_import),),
+    )
+    if len(cco_logical) != 934 or len(cco_graph) != 943:
+        raise CheckFailure(
+            "CCO-extension triple partition mismatch: expected 1 declaration, "
+            f"1 import, 7 metadata, 934 logical, 943 total; got {len(cco_graph)} total"
+        )
+    emit(
+        "CCO extension: PASS "
+        "(1 declaration; 1 import; 7 metadata; 57 direct governed axioms; "
+        "934 logical triples; 943 total triples)",
+        log,
+    )
+
+    emit("[5/11] Confirming maintained SPARQL source-term coverage checks ran", log)
+    coverage = summary.get("source_term_coverage")
+    if not isinstance(coverage, dict):
+        raise CheckFailure("generator summary is missing source-term coverage results")
+    if not isinstance(coverage.get("query_source_count"), int) or coverage["query_source_count"] <= 0:
+        raise CheckFailure("source-term coverage query returned no source terms")
+    if not isinstance(coverage.get("query_unmapped_count"), int):
+        raise CheckFailure("unmapped-source-term query count is missing")
+    emit(
+        "Coverage query: PASS "
+        f"({coverage['query_source_count']} source terms; {coverage['query_unmapped_count']} unmapped)",
+        log,
+    )
+
+    emit("[6/11] Parsing temporary generated candidate TTL", log)
+    if Graph is None:
+        raise CheckFailure("missing dependency: rdflib is required to parse the generated candidate")
+    graph = Graph()
+    try:
+        graph.parse(paths["candidate"], format="turtle")
+    except Exception as exc:
+        raise CheckFailure(f"generated candidate parse failed: {type(exc).__name__}: {exc}") from exc
+    expected_triples = summary.get("generated_ontology_triple_count")
+    if expected_triples != len(graph):
+        raise CheckFailure(
+            f"generated triple-count mismatch: parsed {len(graph)}, summary recorded {expected_triples}"
+        )
+    root_partition = {
+        "generated_candidate_ontology_declaration_triple_count": 1,
+        "generated_candidate_import_triple_count": 4,
+        "generated_candidate_metadata_annotation_count": 7,
+        "generated_candidate_logical_triple_count": 1112,
+    }
+    for field, expected in root_partition.items():
+        if summary.get(field) != expected:
+            raise CheckFailure(
+                f"integrated-root summary mismatch for {field}: expected {expected}, "
+                f"got {summary.get(field)!r}"
+            )
+    validate_product_metadata(
+        graph,
+        publication_metadata,
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+    )
+    root_logical = strip_emitted_ontology_header(
+        graph,
+        publication_metadata,
+        "integrated",
+        ROOT_ORDERED_IMPORTS,
+    )
+    if len(root_logical) != 1112 or len(graph) != 1124:
+        raise CheckFailure(
+            "integrated-root triple partition mismatch: expected 1 declaration, "
+            f"4 imports, 7 metadata, 1112 logical, 1124 total; got {len(graph)} total"
+        )
+    candidate_hash = sha256_file(paths["candidate"])
+    if summary.get("generated_candidate_sha256") != candidate_hash:
+        raise CheckFailure("generated candidate hash does not match generator summary")
+    emit(
+        "Generated candidate parse: PASS "
+        f"(1 declaration; 4 imports; 7 metadata; 1112 logical; {len(graph)} total)",
+        log,
+    )
+
+    emit("[7-9/11] Confirming candidate closure cleanup and HermiT result", log)
+    if summary.get("hermit_return_code") != 0 or summary.get("hermit_result") != "PASS":
+        raise CheckFailure(
+            f"candidate HermiT failed: return={summary.get('hermit_return_code')}, "
+            f"result={summary.get('hermit_result')}"
+        )
+    if summary.get("owl_nothing_count") != 0:
+        raise CheckFailure(f"candidate closure has owl:Nothing count {summary.get('owl_nothing_count')}")
+    if summary.get("named_unsat_count") != 0 or summary.get("named_unsat_set"):
+        raise CheckFailure(f"candidate closure has named unsatisfiable classes: {summary.get('named_unsat_set')}")
+    if summary.get("candidate_closure_triple_count") != 15912:
+        raise CheckFailure(
+            "candidate closure triple-count mismatch: expected 15912, got "
+            f"{summary.get('candidate_closure_triple_count')!r}"
+        )
+    emit(
+        "Candidate HermiT: PASS "
+        f"({summary.get('candidate_closure_triple_count')} closure triples; no named unsats)",
+        log,
+    )
+
+    emit("[10/11] Confirming required reports and freshness metadata", log)
+    metadata = read_report_metadata(paths["generation_report"])
+    expected_metadata = {
+        "workbook_sha256": workbook_hash,
+        "generator_sha256": generator_hash,
+        "maintained_output_path": relative(MAINTAINED_OUTPUTS["candidate"]),
+        "generated_candidate_sha256": candidate_hash,
+        "disposition_module_sha256": sha256_file(DISPOSITION_MODULE),
+        "modular_products_module_sha256": sha256_file(MODULAR_PRODUCTS_MODULE),
+        "publication_metadata_sha256": sha256_file(PUBLICATION_METADATA),
+        "disposition_report_path": relative(MAINTAINED_OUTPUTS["disposition_report"]),
+        "disposition_report_sha256": disposition_hash,
+        "alignment_core_path": relative(MAINTAINED_OUTPUTS["alignment_core"]),
+        "alignment_core_sha256": alignment_hash,
+        "strict_bfo_mapping_path": relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
+        "strict_bfo_mapping_sha256": strict_hash,
+        "bfo_projection_path": relative(MAINTAINED_OUTPUTS["bfo_projection"]),
+        "bfo_projection_sha256": projection_hash,
+        "cco_extension_path": relative(MAINTAINED_OUTPUTS["cco_extension"]),
+        "cco_extension_sha256": cco_hash,
+    }
+    for key, expected in expected_metadata.items():
+        if metadata.get(key) != expected:
+            raise CheckFailure(f"temporary generation report {key} mismatch")
+    if not metadata.get("generation_timestamp"):
+        raise CheckFailure("temporary generation report lacks generation timestamp")
+    for path in (
+        paths["generation_report"],
+        paths["coverage_report"],
+        paths["diff_report"],
+        paths["alignment_core"],
+        paths["strict_bfo_mapping"],
+        paths["bfo_projection"],
+        paths["cco_extension"],
+    ):
+        assert_no_trailing_whitespace(path)
+    return summary
+
+
+def read_report_metadata(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        return {}
+    metadata: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 2:
+            continue
+        key = METADATA_LABELS.get(cells[0])
+        if key:
+            metadata[key] = cells[1]
+    return metadata
+
+
+def assert_no_trailing_whitespace(path: Path) -> None:
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if line.rstrip(" \t") != line:
+            raise CheckFailure(f"trailing whitespace in temporary output {path}:{number}")
+
+
+def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
+    errors: list[str] = []
+    for name, path in MAINTAINED_OUTPUTS.items():
+        if not path.is_file() or path.stat().st_size == 0:
+            errors.append(f"missing required maintained output: {relative(path)}")
+    if errors:
+        return errors
+
+    metadata = read_report_metadata(MAINTAINED_OUTPUTS["generation_report"])
+    for key in METADATA_LABELS.values():
+        if key not in metadata:
+            errors.append(f"generation report is missing source metadata: {key}")
+    if metadata.get("workbook_sha256") != workbook_hash:
+        errors.append("workbook hash differs from the generated report")
+    if metadata.get("generator_sha256") != generator_hash:
+        errors.append("generator hash differs from the generated report")
+    disposition_module_hash = sha256_file(DISPOSITION_MODULE)
+    modular_products_module_hash = sha256_file(MODULAR_PRODUCTS_MODULE)
+    publication_metadata_hash = sha256_file(PUBLICATION_METADATA)
+    if metadata.get("disposition_module_sha256") != disposition_module_hash:
+        errors.append("product-disposition module hash differs from the generated report")
+    if metadata.get("modular_products_module_sha256") != modular_products_module_hash:
+        errors.append("modular-products module hash differs from the generated report")
+    if metadata.get("publication_metadata_sha256") != publication_metadata_hash:
+        errors.append("publication metadata hash differs from the generated report")
+    if metadata.get("maintained_output_path") != relative(MAINTAINED_OUTPUTS["candidate"]):
+        errors.append("maintained ontology path differs from the generated report")
+    candidate_hash = sha256_file(MAINTAINED_OUTPUTS["candidate"])
+    if metadata.get("generated_candidate_sha256") != candidate_hash:
+        errors.append("generated candidate hash differs from the generated report")
+    disposition_path = MAINTAINED_OUTPUTS["disposition_report"]
+    disposition_hash = sha256_file(disposition_path)
+    if metadata.get("disposition_report_path") != relative(disposition_path):
+        errors.append("maintained product-disposition path differs from the generated report")
+    if metadata.get("disposition_report_sha256") != disposition_hash:
+        errors.append("product-disposition hash differs from the generated report")
+    alignment_path = MAINTAINED_OUTPUTS["alignment_core"]
+    alignment_hash = sha256_file(alignment_path)
+    if metadata.get("alignment_core_path") != relative(alignment_path):
+        errors.append("alignment-core path differs from the generated report")
+    if metadata.get("alignment_core_sha256") != alignment_hash:
+        errors.append("alignment-core hash differs from the generated report")
+    strict_path = MAINTAINED_OUTPUTS["strict_bfo_mapping"]
+    strict_hash = sha256_file(strict_path)
+    if metadata.get("strict_bfo_mapping_path") != relative(strict_path):
+        errors.append("strict-BFO path differs from the generated report")
+    if metadata.get("strict_bfo_mapping_sha256") != strict_hash:
+        errors.append("strict-BFO hash differs from the generated report")
+    projection_path = MAINTAINED_OUTPUTS["bfo_projection"]
+    projection_hash = sha256_file(projection_path)
+    if metadata.get("bfo_projection_path") != relative(projection_path):
+        errors.append("BFO-projection path differs from the generated report")
+    if metadata.get("bfo_projection_sha256") != projection_hash:
+        errors.append("BFO-projection hash differs from the generated report")
+    cco_path = MAINTAINED_OUTPUTS["cco_extension"]
+    cco_hash = sha256_file(cco_path)
+    if metadata.get("cco_extension_path") != relative(cco_path):
+        errors.append("CCO-extension path differs from the generated report")
+    if metadata.get("cco_extension_sha256") != cco_hash:
+        errors.append("CCO-extension hash differs from the generated report")
+    try:
+        disposition = load_disposition_document(disposition_path)
+        publication_metadata = load_metadata(PUBLICATION_METADATA)
+    except (ProductDispositionError, PublicationMetadataError) as exc:
+        errors.append(f"product-disposition document is invalid: {exc}")
+    else:
+        if disposition_path.read_bytes() != serialize_disposition_document(disposition):
+            errors.append("product-disposition document is not canonically serialized")
+        expected_hashes = {
+            "workbook_sha256": workbook_hash,
+            "generator_sha256": generator_hash,
+            "row_identity_module_sha256": sha256_file(ROW_IDENTITY_MODULE),
+            "disposition_module_sha256": disposition_module_hash,
+            "publication_metadata_sha256": publication_metadata_hash,
+        }
+        for field, expected in expected_hashes.items():
+            if getattr(disposition.input_hashes, field) != expected:
+                errors.append(f"product-disposition {field} is stale")
+        if disposition.product_order != tuple(product.key for product in publication_metadata.products):
+            errors.append("product-disposition product order differs from publication metadata")
+    return errors
+
+
+def normalized_generation_report(path: Path) -> str:
+    dynamic_prefixes = ("| generation timestamp (UTC) |", "- Runtime seconds:")
+    lines = [
+        line
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if not line.startswith(dynamic_prefixes)
+    ]
+    return "\n".join(lines)
+
+
+def output_differences(paths: dict[str, Path]) -> list[str]:
+    differences: list[str] = []
+    for name in (
+        "candidate",
+        "coverage_report",
+        "diff_report",
+        "disposition_report",
+        "alignment_core",
+        "strict_bfo_mapping",
+        "bfo_projection",
+        "cco_extension",
+    ):
+        current = MAINTAINED_OUTPUTS[name]
+        if not current.is_file() or current.read_bytes() != paths[name].read_bytes():
+            differences.append(name)
+    current_report = MAINTAINED_OUTPUTS["generation_report"]
+    if (
+        not current_report.is_file()
+        or normalized_generation_report(current_report)
+        != normalized_generation_report(paths["generation_report"])
+    ):
+        differences.append("generation_report")
+    return differences
+
+
+def git_diff_check(log: list[str], label: str) -> None:
+    emit("[11/11] Running git diff --check", log)
+    run_command(label, ["git", "diff", "--check"], log)
+
+
+def replace_outputs_atomically(paths: dict[str, Path], transaction_dir: Path, log: list[str]) -> None:
+    backup_dir = transaction_dir / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backups: dict[str, Path] = {}
+    originally_missing: set[str] = set()
+    for name, destination in MAINTAINED_OUTPUTS.items():
+        if destination.exists():
+            backup = backup_dir / name
+            shutil.copy2(destination, backup)
+            backups[name] = backup
+        else:
+            originally_missing.add(name)
+
+    emit("All temporary checks passed; atomically replacing maintained COMS outputs", log)
+    try:
+        for name, destination in MAINTAINED_OUTPUTS.items():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(paths[name], destination)
+        git_diff_check(log, "Post-update git whitespace check")
+    except Exception:
+        emit("Post-update validation failed; restoring last known-good outputs", log)
+        for name, destination in MAINTAINED_OUTPUTS.items():
+            if name in backups:
+                os.replace(backups[name], destination)
+            elif name in originally_missing and destination.exists():
+                destination.unlink()
+        raise
+
+
+def write_json_atomic(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(temp_name, path)
+    except Exception:
+        try:
+            os.unlink(temp_name)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def record_success(summary: dict[str, object], workbook_hash: str, generator_hash: str) -> None:
+    coverage = summary.get("source_term_coverage")
+    assert isinstance(coverage, dict)
+    payload = {
+        "workbook_path": relative(WORKBOOK),
+        "workbook_sha256": workbook_hash,
+        "generator_sha256": generator_hash,
+        "generated_candidate_sha256": summary.get("generated_candidate_sha256"),
+        "product_disposition_report_path": summary.get("product_disposition_report_path"),
+        "product_disposition_report_sha256": summary.get("product_disposition_report_sha256"),
+        "product_dispositions": summary.get("product_dispositions"),
+        "alignment_core_path": summary.get("alignment_core_path"),
+        "alignment_core_sha256": summary.get("alignment_core_sha256"),
+        "alignment_core": summary.get("alignment_core"),
+        "strict_bfo_mapping_path": summary.get("strict_bfo_mapping_path"),
+        "strict_bfo_mapping_sha256": summary.get("strict_bfo_mapping_sha256"),
+        "strict_bfo_mapping": summary.get("strict_bfo_mapping"),
+        "bfo_projection_path": summary.get("bfo_projection_path"),
+        "bfo_projection_sha256": summary.get("bfo_projection_sha256"),
+        "bfo_projection": summary.get("bfo_projection"),
+        "cco_extension_path": summary.get("cco_extension_path"),
+        "cco_extension_sha256": summary.get("cco_extension_sha256"),
+        "cco_extension": summary.get("cco_extension"),
+        "timestamp": utc_now(),
+        "generated_ontology_triple_count": summary.get("generated_ontology_triple_count"),
+        "generated_candidate_ontology_declaration_triple_count": summary.get(
+            "generated_candidate_ontology_declaration_triple_count"
+        ),
+        "generated_candidate_import_triple_count": summary.get(
+            "generated_candidate_import_triple_count"
+        ),
+        "generated_candidate_metadata_annotation_count": summary.get(
+            "generated_candidate_metadata_annotation_count"
+        ),
+        "generated_candidate_logical_triple_count": summary.get(
+            "generated_candidate_logical_triple_count"
+        ),
+        "candidate_closure_triple_count": summary.get("candidate_closure_triple_count"),
+        "hermit_result": summary.get("hermit_result"),
+        "source_term_counts": {
+            "mapped_classes": coverage.get("mapped_classes"),
+            "unmapped_classes": coverage.get("unmapped_classes"),
+            "mapped_object_properties": coverage.get("mapped_object_properties"),
+            "unmapped_object_properties": coverage.get("unmapped_object_properties"),
+            "explicitly_listed_blank_mappings": coverage.get("explicitly_listed_blank_mappings"),
+            "listed_only_in_domain_range_rows": coverage.get("listed_only_in_domain_range_rows"),
+            "source_terms_absent_from_spreadsheet": coverage.get("source_terms_absent_from_spreadsheet"),
+        },
+    }
+    write_json_atomic(LAST_SUCCESS, payload)
+
+
+def write_failure_log(mode: str, log: list[str], exc: BaseException) -> None:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    content = [
+        "COMS mapping quality-check failure",
+        f"timestamp: {utc_now()}",
+        f"mode: {mode}",
+        f"exception: {type(exc).__name__}: {exc}",
+        "",
+        "Command log:",
+        *log,
+        "",
+        "Traceback:",
+        traceback.format_exc(),
+    ]
+    LAST_FAILURE.write_text("\n".join(content), encoding="utf-8")
+
+
+def print_status() -> int:
+    workbook_hash = sha256_file(WORKBOOK) if WORKBOOK.is_file() else "missing"
+    generator_hash = sha256_file(GENERATOR) if GENERATOR.is_file() else "missing"
+    errors: list[str] = []
+    if not WORKBOOK.is_file():
+        errors.append(f"missing workbook: {relative(WORKBOOK)}")
+    if not GENERATOR.is_file():
+        errors.append(f"missing generator: {relative(GENERATOR)}")
+    if not errors:
+        errors.extend(freshness_errors(workbook_hash, generator_hash))
+    print(f"Workbook: {relative(WORKBOOK)}")
+    print(f"Current workbook SHA-256: {workbook_hash}")
+    if LAST_SUCCESS.is_file():
+        try:
+            success = json.loads(LAST_SUCCESS.read_text(encoding="utf-8"))
+            print(f"Last successful SHA-256: {success.get('workbook_sha256', 'unknown')}")
+            print(f"Last successful check: {success.get('timestamp', 'unknown')}")
+        except json.JSONDecodeError:
+            print("Last-success metadata: invalid JSON")
+    else:
+        print("Last-success metadata: not present")
+    print(f"Generated artifacts current: {'yes' if not errors else 'no'}")
+    for error in errors:
+        print(f"- {error}")
+    print(f"Last failure log: {relative(LAST_FAILURE) if LAST_FAILURE.is_file() else 'none'}")
+    return 0
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Validate freshness and quality without rewriting maintained outputs.",
+    )
+    mode.add_argument(
+        "--update",
+        action="store_true",
+        help="Validate temporary products and atomically refresh maintained outputs (the default).",
+    )
+    mode.add_argument(
+        "--status",
+        action="store_true",
+        help="Print workbook/artifact freshness and last-success status without running validation.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+    if args.status:
+        return print_status()
+
+    mode = "check-only" if args.check_only else "update"
+    started = time.perf_counter()
+    log: list[str] = [f"COMS quality check started: {utc_now()}", f"Mode: {mode}"]
+    transaction_dir: Path | None = None
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        workbook_hash = verify_workbook(log)
+        generator_hash = compile_generator(log)
+        current_freshness_errors = freshness_errors(workbook_hash, generator_hash)
+        if args.check_only and current_freshness_errors:
+            raise CheckFailure("stale COMS outputs: " + "; ".join(current_freshness_errors))
+        if current_freshness_errors:
+            emit("Maintained outputs are stale and will be refreshed after temporary validation:", log)
+            for error in current_freshness_errors:
+                emit(f"- {error}", log)
+
+        transaction_dir = Path(tempfile.mkdtemp(prefix="run-", dir=CACHE_DIR))
+        paths = transaction_paths(transaction_dir)
+        run_generator(paths, log)
+        summary = validate_temporary_outputs(paths, workbook_hash, generator_hash, log)
+        git_diff_check(log, "Pre-update git whitespace check")
+
+        differences = output_differences(paths)
+        if args.check_only:
+            if differences:
+                raise CheckFailure(
+                    "maintained outputs differ from freshly validated temporary products: "
+                    + ", ".join(differences)
+                )
+            emit("Check-only mode: maintained outputs are fresh; no tracked files were rewritten", log)
+        elif differences or current_freshness_errors:
+            replace_outputs_atomically(paths, transaction_dir, log)
+        else:
+            emit("Maintained outputs already match; no tracked files were rewritten", log)
+
+        record_success(summary, workbook_hash, generator_hash)
+        elapsed = time.perf_counter() - started
+        emit(f"COMS quality check: PASS ({elapsed:.2f} seconds)", log)
+        emit(f"Last-success metadata: {relative(LAST_SUCCESS)}", log)
+        return 0
+    except Exception as exc:
+        write_failure_log(mode, log, exc)
+        print(f"COMS quality check: FAIL ({exc})", file=sys.stderr, flush=True)
+        print(f"Failure log: {relative(LAST_FAILURE)}", file=sys.stderr, flush=True)
+        return 1
+    finally:
+        if transaction_dir is not None:
+            shutil.rmtree(transaction_dir, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

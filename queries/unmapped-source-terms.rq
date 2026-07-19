@@ -1,0 +1,9 @@
+PREFIX coms: <http://www.sks.ai/SSN2BFO/coms/coverage#>
+
+SELECT ?term ?kind ?coverageStatus
+WHERE {
+  ?term coms:sourceKind ?kind ;
+        coms:coverageStatus ?coverageStatus .
+  FILTER(?coverageStatus NOT IN ("mapped", "covered_by_property_typing"))
+}
+ORDER BY ?kind ?coverageStatus ?term

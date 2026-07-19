@@ -1,0 +1,20 @@
+@prefix ex: <https://example.org/restriction-mapping-fixture/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix sosa-rel: <http://www.w3.org/ns/sosa/sampling/> .
+
+# Synthetic regression-test fixture for active restriction mappings.
+# This is not source example data and is not an authoritative W3C example.
+# It exists only to exercise explicit-filler validation for restrictions
+# discovered from SSN2BFO.ttl in tools/test_elk_instance_mapping_entailments.py.
+
+ex:sample-relationship
+    rdf:type sosa-rel:SampleRelationship ;
+    sosa-rel:relatedSample ex:sample ;
+    sosa-rel:natureOfRelationship ex:relationship-nature .
+
+ex:sample
+    rdf:type sosa:Sample .
+
+ex:relationship-nature
+    rdf:type sosa-rel:RelationshipNature .
