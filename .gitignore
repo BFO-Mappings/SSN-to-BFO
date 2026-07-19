@@ -1,0 +1,23 @@
+# Local system files
+.DS_Store
+
+# Local Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Local COMS watcher/check state
+.cache/coms/
+
+# ROBOT dependency cache
+build/lib/
+
+# Generated validation outputs
+src/*/build/artifacts/*
+!src/*/build/artifacts/.gitkeep
+
+# Temporary ROBOT/debug outputs
+inconsistency-explanation.md
+*.tmp
+*.tmp.ttl

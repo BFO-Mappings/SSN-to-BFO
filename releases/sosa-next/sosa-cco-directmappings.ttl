@@ -1,0 +1,9 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco> .
+
+<https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco>
+  a             owl:Ontology ;
+  rdfs:label    "Forthcoming SOSA-only to CCO direct mappings"@en ;
+  rdfs:comment  "Insert completed forthcoming SOSA-only → CCO mapping content here."@en ;
+.
