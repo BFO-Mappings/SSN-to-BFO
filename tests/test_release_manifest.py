@@ -114,7 +114,7 @@ def valid_manifest() -> manifest.ReleaseManifest:
         robot_sha256=HASH,
         toolchain_path="config/validation-toolchain.env",
         toolchain_sha256=HASH,
-        requirements_path="requirements-validation.txt",
+        requirements_path="requirements/validation.txt",
         requirements_sha256=HASH,
     )
     validation = manifest.ReleaseManifestValidation(

@@ -22,7 +22,7 @@ It includes:
 
 ## Validation environment
 
-`requirements-validation.txt` declares direct Python packages.
+`requirements/validation.txt` declares direct Python packages.
 
 `config/validation-toolchain.env` declares the supported Python, Java, and ROBOT versions, the ROBOT release URL and checksum, and the Java heap configuration. Hosted CI consumes these declarations rather than maintaining an independent version list.
 
@@ -33,7 +33,7 @@ The ROBOT bootstrap helper verifies its JAR checksum on every invocation:
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements-validation.txt
+python -m pip install -r requirements/validation.txt
 python -m pip check
 
 robot_bin="$(tools/install_validation_robot.sh)"

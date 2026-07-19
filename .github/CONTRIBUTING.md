@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for contributing to SSN-to-BFO. This repository follows the branch policy described in [BRANCHING.md](BRANCHING.md).
+Thank you for contributing to SSN-to-BFO. This repository follows the branch policy described in [Branching Policy](../docs/BRANCHING.md).
 
 ## Branch Flow
 
@@ -25,7 +25,7 @@ Do not force-push shared branches, rewrite public history, delete branches, rena
 
 ## Validation
 
-Run the repository validation described in [Validation and Release Engineering](docs/VALIDATION-AND-RELEASES.md) or in the relevant task instructions before opening a pull request.
+Run the repository validation described in [Validation and Release Engineering](../docs/VALIDATION-AND-RELEASES.md) or in the relevant task instructions before opening a pull request.
 
 Do not add validation commands unless the corresponding files and Make targets are present on the target branch.
 
