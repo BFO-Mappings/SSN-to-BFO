@@ -1,0 +1,38 @@
+SELECT DISTINCT ?item ?violation WHERE {
+  {
+    ?item ?p ?o .
+    FILTER(isIRI(?item))
+    BIND(STR(?item) AS ?text)
+  }
+  UNION
+  {
+    ?s ?item ?o .
+    FILTER(isIRI(?item))
+    BIND(STR(?item) AS ?text)
+  }
+  UNION
+  {
+    ?s ?p ?item .
+    FILTER(isIRI(?item))
+    BIND(STR(?item) AS ?text)
+  }
+  UNION
+  {
+    ?s ?p ?item .
+    FILTER(isLiteral(?item))
+    BIND(STR(?item) AS ?text)
+  }
+
+  FILTER(
+    CONTAINS(?text, "https://example.org/")
+    || CONTAINS(?text, "PROV-to-BFO")
+    || CONTAINS(?text, "PROV-O")
+    || STRSTARTS(?text, "http://www.w3.org/ns/prov")
+    || STRSTARTS(?text, "https://www.w3.org/ns/prov")
+    || CONTAINS(?text, "http://www.w3.org/ns/prov-o")
+    || CONTAINS(?text, "https://www.w3.org/ns/prov-o")
+  )
+
+  BIND("Found leftover template/source repository reference." AS ?violation)
+}
+ORDER BY ?item

@@ -1,0 +1,22 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT ?term ?kind
+WHERE {
+  VALUES (?sourcePrefix ?kind ?type) {
+    ("http://www.w3.org/ns/sosa/" "class" owl:Class)
+    ("http://www.w3.org/ns/sosa/" "object_property" owl:ObjectProperty)
+    ("http://www.w3.org/ns/sosa/sampling/" "class" owl:Class)
+    ("http://www.w3.org/ns/sosa/sampling/" "object_property" owl:ObjectProperty)
+    ("http://www.w3.org/ns/ssn/" "class" owl:Class)
+    ("http://www.w3.org/ns/ssn/" "object_property" owl:ObjectProperty)
+    ("http://www.w3.org/ns/ssn/systems/" "class" owl:Class)
+    ("http://www.w3.org/ns/ssn/systems/" "object_property" owl:ObjectProperty)
+  }
+  ?term a ?type .
+  FILTER(isIRI(?term))
+  FILTER(STRSTARTS(STR(?term), ?sourcePrefix))
+  FILTER NOT EXISTS { ?term owl:deprecated true }
+  FILTER NOT EXISTS { ?term owl:deprecated "true"^^xsd:boolean }
+}
+ORDER BY ?kind ?term

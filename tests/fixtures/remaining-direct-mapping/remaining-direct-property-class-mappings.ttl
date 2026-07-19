@@ -1,0 +1,46 @@
+@prefix ex: <https://example.org/remaining-direct-mapping-fixture/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix sosa-rel: <http://www.w3.org/ns/sosa/sampling/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+@prefix ssn-system: <http://www.w3.org/ns/ssn/systems/> .
+
+# Synthetic regression-test fixture for remaining active direct mappings.
+# This is not source example data and is not an authoritative W3C example.
+# It exists only to exercise active direct mappings in
+# tools/test_elk_instance_mapping_entailments.py.
+
+ex:relationship-nature
+    rdf:type sosa-rel:RelationshipNature .
+
+ex:sample-relationship
+    rdf:type sosa-rel:SampleRelationship .
+
+ex:actuatable-property
+    sosa:isActedOnBy ex:actuation .
+
+ex:sampling-result
+    sosa:isResultOf ex:sampling .
+
+ex:sampling
+    sosa:madeBySampler ex:sampler .
+
+ex:sampler
+    sosa:madeSampling ex:sampling .
+
+ex:deployment
+    rdf:type ssn:Deployment ;
+    ssn:deployedOnPlatform ex:platform ;
+    ssn:deployedSystem ex:deployed-system .
+
+ex:deployed-system
+    rdf:type ssn:System ;
+    ssn:hasDeployment ex:deployment .
+
+ex:platform
+    rdf:type sosa:Platform ;
+    ssn:inDeployment ex:deployment .
+
+ex:observation
+    rdf:type sosa:Observation ;
+    ssn-system:qualityOfObservation ex:observation-quality .

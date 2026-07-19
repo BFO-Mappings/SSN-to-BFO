@@ -1,0 +1,113 @@
+name: Validate Authoritative COMS Mapping
+
+"on":
+  pull_request:
+    branches:
+      - main
+      - dev
+      - tests
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authoritative_coms_mapping:
+    name: Validate authoritative COMS mapping
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Load validation toolchain declaration
+        id: toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          source config/validation-toolchain.env
+          required_variables=(
+            VALIDATION_PYTHON_VERSION
+            VALIDATION_JAVA_DISTRIBUTION
+            VALIDATION_JAVA_VERSION
+            VALIDATION_ROBOT_VERSION
+            VALIDATION_ROBOT_URL
+            VALIDATION_ROBOT_SHA256
+            VALIDATION_ROBOT_JAVA_HEAP
+          )
+          for variable in "${required_variables[@]}"; do
+            if [[ -z "${!variable:-}" ]]; then
+              echo "Required validation toolchain variable is empty: ${variable}" >&2
+              exit 1
+            fi
+          done
+          {
+            echo "python_version=${VALIDATION_PYTHON_VERSION}"
+            echo "java_distribution=${VALIDATION_JAVA_DISTRIBUTION}"
+            echo "java_version=${VALIDATION_JAVA_VERSION}"
+            echo "robot_version=${VALIDATION_ROBOT_VERSION}"
+            echo "robot_url=${VALIDATION_ROBOT_URL}"
+            echo "robot_sha256=${VALIDATION_ROBOT_SHA256}"
+            echo "robot_java_heap=${VALIDATION_ROBOT_JAVA_HEAP}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up declared Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.toolchain.outputs.python_version }}
+          cache: pip
+          cache-dependency-path: requirements/validation.txt
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements/validation.txt
+
+      - name: Set up declared Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ steps.toolchain.outputs.java_distribution }}
+          java-version: ${{ steps.toolchain.outputs.java_version }}
+
+      - name: Install declared ROBOT
+        run: |
+          set -euo pipefail
+          robot_bin="$(tools/install_validation_robot.sh "${RUNNER_TEMP}/validation-robot")"
+          echo "${robot_bin}" >> "${GITHUB_PATH}"
+
+      - name: Verify tool versions
+        run: |
+          set -euo pipefail
+          python --version
+          java -version
+          robot_version="$(robot --version 2>&1)"
+          printf '%s\n' "${robot_version}"
+          expected_robot_version="${{ steps.toolchain.outputs.robot_version }}"
+          escaped_robot_version="${expected_robot_version//./\\.}"
+          if ! grep -Eq "(^|[^0-9.])${escaped_robot_version}([^0-9.]|$)" <<< "${robot_version}"; then
+            echo "Expected ROBOT ${expected_robot_version}, got: ${robot_version}" >&2
+            exit 1
+          fi
+          python -m pip check
+          python - <<'PY'
+          import openpyxl
+          import rdflib
+
+          print(f"openpyxl {openpyxl.__version__}")
+          print(f"rdflib {rdflib.__version__}")
+          PY
+
+      - name: Validate authoritative COMS mapping
+        run: make check
+
+      - name: Verify validation did not modify the repository
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authoritative-coms-validation-diagnostics
+          path: |
+            /tmp/ssn-to-bfo-validation-suite/
+            .cache/coms/last-failure.log
+          if-no-files-found: ignore

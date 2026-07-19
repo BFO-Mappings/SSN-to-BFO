@@ -1,4 +1,48 @@
 # SSN-to-BFO
-We are currently soliciting feedback on our mapping decisions documented in the SSN to BFO spreadsheet. Please provide that feedback in the issue tracker.
 
-The alignment in this repo follows the method proposed in Prudhomme, Tim, Giacomo De Colle, Austin Liebers, Alec Sculley, Peihong “Karl” Xie, Sydney Cohen, and John Beverley. “A Semantic Approach to Mapping the Provenance Ontology to Basic Formal Ontology.” _Scientific Data_ 12, no. 1 (February 17, 2025): 282. https://doi.org/10.1038/s41597-025-04580-1.
+SSN-to-BFO provides OWL mappings from the W3C/OGC Semantic Sensor Network Ontology and SOSA to Basic Formal Ontology (BFO) and the Common Core Ontologies (CCO).
+
+The project follows and extends the mapping method introduced in [Prudhomme et al. (2025)](https://doi.org/10.1038/s41597-025-04580-1).
+
+## Use the mapping
+
+For most applications, use `SSN2BFO.ttl` from the [latest release](https://github.com/BFO-Mappings/SSN-to-BFO/releases/latest).
+
+Load it as an OWL ontology in Protégé, ROBOT, a triplestore, or another RDF/OWL application. Your environment must also resolve the applicable SSN/SOSA, BFO, and CCO dependencies, which are not redistributed in the release archive.
+
+For reproducible use, prefer the tagged release assets rather than files from an active development branch.
+
+## Available products
+
+| Product | File | Use when |
+| --- | --- | --- |
+| Integrated mapping | `SSN2BFO.ttl` | You want the complete SSN/SOSA-to-BFO/CCO mapping |
+| Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | You want the governed BFO mapping without CCO-bearing axioms |
+| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | You want the modular BFO and CCO mapping stack |
+| Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | You want the target-neutral SSN/SOSA alignment layer |
+| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | You need the designated projection layer; it currently adds no direct mapping axioms |
+
+See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships among these products.
+
+## Release
+
+The current governed release is [`v2026-07-18`](https://github.com/BFO-Mappings/SSN-to-BFO/releases/tag/v2026-07-18).
+
+The release provides:
+
+- the integrated and modular ontology files
+- release notes
+- a manifest and checksums
+- a catalog for resolving the packaged project modules
+
+## Documentation
+
+- [Product Architecture](docs/PRODUCT-ARCHITECTURE.md)
+- [Mapping Governance](docs/MAPPING-GOVERNANCE.md)
+- [Validation and Release Engineering](docs/VALIDATION-AND-RELEASES.md)
+- [Licensing](docs/LICENSING.md)
+- [Contributing](.github/CONTRIBUTING.md)
+
+## License
+
+Project-authored content is dedicated under [CC0 1.0 Universal](LICENSE), except for identified third-party material. Third-party ontologies, dependencies, and example data retain their original terms and notices.
