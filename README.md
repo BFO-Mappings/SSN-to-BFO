@@ -41,7 +41,7 @@ The release provides:
 - [Mapping Governance](docs/MAPPING-GOVERNANCE.md)
 - [Validation and Release Engineering](docs/VALIDATION-AND-RELEASES.md)
 - [Licensing](docs/LICENSING.md)
-- [Contributing](CONTRIBUTING.md)
+- [Contributing](.github/CONTRIBUTING.md)
 
 ## License
 

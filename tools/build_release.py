@@ -576,7 +576,7 @@ def collect_validation_environment(
     toolchain: ResolvedValidationToolchain,
 ) -> ReleaseManifestValidationEnvironment:
     toolchain_path = "config/validation-toolchain.env"
-    requirements_path = "requirements-validation.txt"
+    requirements_path = "requirements/validation.txt"
     return ReleaseManifestValidationEnvironment(
         python_implementation=platform.python_implementation(),
         python_version=platform.python_version(),
