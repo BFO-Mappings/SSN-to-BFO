@@ -246,11 +246,19 @@ def check_release_tooling_integration() -> None:
             "tests/test_placeholder_catalog_migration.py",
         ),
         "README.md": (
+            "SSN2BFO.ttl",
+            "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+            "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
+            "v2026-07-18",
+        ),
+        "docs/MAPPING-GOVERNANCE.md": (
+            "sole editable source of governed mapping assertions",
+        ),
+        "docs/VALIDATION-AND-RELEASES.md": (
             "tools/release_archive.py",
             "tools/rehearse_release.py",
             "check-release-archive",
             "check-release-rehearsal",
-            "COMS is the sole editable mapping authority",
             "No development XML catalog is required",
         ),
         "reports/coms-automatic-validation-setup.md": (

@@ -1,76 +1,48 @@
 # SSN-to-BFO
 
-SSN-to-BFO provides governed mappings from SSN/SOSA to Basic Formal Ontology (BFO) and the Common Core Ontologies (CCO). The alignment follows and extends the method presented in Prudhomme et al., “[A Semantic Approach to Mapping the Provenance Ontology to Basic Formal Ontology](https://doi.org/10.1038/s41597-025-04580-1),” _Scientific Data_ 12 (2025): 282.
+SSN-to-BFO provides OWL mappings from the W3C/OGC Semantic Sensor Network Ontology and SOSA to Basic Formal Ontology (BFO) and the Common Core Ontologies (CCO).
 
-## Mapping authority
+The project follows and extends the mapping method introduced in [Prudhomme et al. (2025)](https://doi.org/10.1038/s41597-025-04580-1).
 
-COMS is the sole editable mapping authority. Mapping changes must be made in:
+## Use the mapping
 
-- `mappings/SSN2BFO-COMS.xlsx`
+For most applications, use `SSN2BFO.ttl` from the [latest release](https://github.com/BFO-Mappings/SSN-to-BFO/releases/latest).
 
-Root-level `SSN2BFO.ttl` is the authoritative generated integrated ontology and must not be edited directly. Historical pre-COMS ontology and workbook sources are preserved under `legacy/` for comparison only.
+Load it as an OWL ontology in Protégé, ROBOT, a triplestore, or another RDF/OWL application. Your environment must also resolve the applicable SSN/SOSA, BFO, and CCO dependencies, which are not redistributed in the release archive.
 
-See [Mapping Governance](docs/MAPPING-GOVERNANCE.md) for RowID rules, historical-source treatment, product dispositions, and editing constraints.
+For reproducible use, prefer the tagged release assets rather than files from an active development branch.
 
-## Maintained products
+## Available products
 
-| Product | Path | Purpose |
+| Product | File | Use when |
 | --- | --- | --- |
-| Integrated mapping | `SSN2BFO.ttl` | Complete governed COMS axiom set |
-| Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | Target-neutral SSN/SOSA alignment axioms |
-| Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | Governed BFO-bearing axioms |
-| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | Approved weaker BFO consequences; currently no direct projection axioms |
-| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | Governed CCO-bearing and mixed BFO/CCO axioms |
+| Integrated mapping | `SSN2BFO.ttl` | You want the complete SSN/SOSA-to-BFO/CCO mapping |
+| Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | You want the governed BFO mapping without CCO-bearing axioms |
+| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | You want the modular BFO and CCO mapping stack |
+| Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | You want the target-neutral SSN/SOSA alignment layer |
+| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | You need the designated projection layer; it currently adds no direct mapping axioms |
 
-See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for product boundaries, imports, counts, and inactive source scaffolding.
+See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships among these products.
 
-## Validation
+## Release
 
-`make check` is the canonical local and hosted-CI validation gate.
+The current governed release is [`v2026-07-18`](https://github.com/BFO-Mappings/SSN-to-BFO/releases/tag/v2026-07-18).
 
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-validation.txt
-python -m pip check
+The release provides:
 
-robot_bin="$(tools/install_validation_robot.sh)"
-export PATH="${robot_bin}:${PATH}"
+- the integrated and modular ontology files
+- release notes
+- a manifest and checksums
+- a catalog for resolving the packaged project modules
 
-make check
-```
+## Documentation
 
-Java 22 and ROBOT must be available. No development XML catalog is required; validation resolves the pinned local dependencies and project modules directly.
-
-Focused deterministic release checks use `tools/release_archive.py` and `tools/rehearse_release.py` through:
-
-```bash
-make check-release-archive
-make check-release-rehearsal
-```
-
-See [Validation and Release Engineering](docs/VALIDATION-AND-RELEASES.md) for the toolchain, publication metadata, package format, deterministic archive rules, rehearsal process, and example validation.
-
-## Current release
-
-The first governed GitHub release is [`v2026-07-18`](https://github.com/BFO-Mappings/SSN-to-BFO/releases/tag/v2026-07-18), published from commit `221c65ab27b59ae701f2ed73a98cb9e79d77b750`.
-
-Release packages and checksum sidecars are distributed as GitHub release assets rather than committed repository files.
-
-## Development
-
-Repository workflow and contribution guidance:
-
+- [Product Architecture](docs/PRODUCT-ARCHITECTURE.md)
+- [Mapping Governance](docs/MAPPING-GOVERNANCE.md)
+- [Validation and Release Engineering](docs/VALIDATION-AND-RELEASES.md)
+- [Licensing](docs/LICENSING.md)
 - [Contributing](CONTRIBUTING.md)
-- [Branching Policy](BRANCHING.md)
-- [Agent Instructions](AGENTS.md)
-
-Routine changes follow:
-
-```text
-feature/* -> dev -> stage -> main
-```
 
 ## License
 
-Project-authored content is dedicated under [CC0 1.0 Universal](LICENSE), except for identified third-party material. Imported, referenced, validation-only, and example materials retain their original terms. See [Licensing](docs/LICENSING.md) for the scope and redistribution guidance.
+Project-authored content is dedicated under [CC0 1.0 Universal](LICENSE), except for identified third-party material. Third-party ontologies, dependencies, and example data retain their original terms and notices.
