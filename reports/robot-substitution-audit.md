@@ -80,13 +80,12 @@ The repository already uses ROBOT for:
 - controlled release reasoning;
 - some ontology conversion.
 
-However, ROBOT is invoked through several separate Python wrappers and an older
-retained Makefile.
+ROBOT is still invoked through several separate Python wrappers.
 
-The repository-governed toolchain pins ROBOT 1.9.7, while
-`src/current-ssn-sosa/Makefile` still downloads ROBOT 1.9.5 directly. That
-second installation path should eventually be retired or redirected to the
-governed launcher.
+The older retained example-validation Makefile previously downloaded ROBOT
+1.9.5 independently. It now delegates to
+`tools/install_validation_robot.sh`, so example validation uses the governed
+ROBOT 1.9.7 version, checksum, and Java heap configuration.
 
 ## Mapping-axiom generation
 
@@ -436,14 +435,17 @@ Only after exact equivalence is stable:
 - import extraction;
 - the retained example-validation Makefile.
 
-## Immediate cleanup recommendation
+## Completed immediate cleanup
 
-Update or retire `src/current-ssn-sosa/Makefile` so it no longer downloads
-ROBOT 1.9.5 independently.
+`src/current-ssn-sosa/Makefile` now uses the repository-governed ROBOT installer
+instead of downloading ROBOT 1.9.5 independently.
 
-It should use the repository-governed ROBOT 1.9.7 launcher and checksum policy.
+Both supported invocation paths were verified successfully:
 
-This is a low-risk improvement even if no broader substitution is performed.
+- `make -C src/current-ssn-sosa validate-examples`;
+- `make -C src validate-examples`.
+
+All 11 retained Turtle examples parsed successfully using governed ROBOT 1.9.7.
 
 ## Final assessment
 
