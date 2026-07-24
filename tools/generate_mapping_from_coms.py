@@ -1611,25 +1611,50 @@ def unsat_classes(graph: Graph) -> list[URIRef]:
     return sorted(classes, key=str)
 
 
-def run_candidate_hermit(generated_path: Path, tmp_dir: Path) -> HermitResult:
-    generated_graph = Graph()
-    generated_graph.parse(generated_path, format="turtle")
+@dataclass(frozen=True)
+class HermitRunProfile:
+    graph_filename: str
+    reasoned_filename: str
 
-    closure = Graph()
-    bind_prefixes(closure)
-    for path in CANDIDATE_CLOSURE_INPUTS:
-        closure.parse(REPO_ROOT / path, format="turtle")
-    closure.parse(generated_path, format="turtle")
-    for triple in list(closure.triples((None, OWL.imports, None))):
-        closure.remove(triple)
-    for triple in CLEANUP_TRIPLES:
-        closure.remove(triple)
+
+CANDIDATE_HERMIT_PROFILE = HermitRunProfile(
+    graph_filename="coms-candidate-full-closure.ttl",
+    reasoned_filename="coms-candidate-full-closure-reasoned.ttl",
+)
+ALIGNMENT_CORE_HERMIT_PROFILE = HermitRunProfile(
+    graph_filename="alignment-core-source-closure.ttl",
+    reasoned_filename="alignment-core-source-closure-reasoned.ttl",
+)
+STRICT_BFO_HERMIT_PROFILE = HermitRunProfile(
+    graph_filename="strict-bfo-pinned-merged-cco-bfo-closure.ttl",
+    reasoned_filename="strict-bfo-pinned-merged-cco-bfo-closure-reasoned.ttl",
+)
+CCO_EXTENSION_HERMIT_PROFILE = HermitRunProfile(
+    graph_filename="cco-extension-pinned-merged-cco-bfo-closure.ttl",
+    reasoned_filename="cco-extension-pinned-merged-cco-bfo-closure-reasoned.ttl",
+)
+BFO_PROJECTION_HERMIT_PROFILE = HermitRunProfile(
+    graph_filename="bfo-projection-pinned-merged-cco-bfo-closure.ttl",
+    reasoned_filename="bfo-projection-pinned-merged-cco-bfo-closure-reasoned.ttl",
+)
+
+
+def _run_hermit_closure(
+    generated_path: Path,
+    closure: Graph,
+    tmp_dir: Path,
+    profile: HermitRunProfile,
+) -> HermitResult:
+    """Serialize one configured closure and evaluate it with ROBOT/HermiT."""
+
+    generated_graph = Graph().parse(generated_path, format="turtle")
 
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    graph_path = tmp_dir / "coms-candidate-full-closure.ttl"
-    reasoned_path = tmp_dir / "coms-candidate-full-closure-reasoned.ttl"
+    graph_path = tmp_dir / profile.graph_filename
+    reasoned_path = tmp_dir / profile.reasoned_filename
     if reasoned_path.exists():
         reasoned_path.unlink()
+
     closure.serialize(destination=graph_path, format="turtle")
 
     robot = shutil.which("robot")
@@ -1647,28 +1672,43 @@ def run_candidate_hermit(generated_path: Path, tmp_dir: Path) -> HermitResult:
             robot_path=None,
         )
 
-    command = [
-        robot,
-        "reason",
-        "--reasoner",
-        "HermiT",
-        "--input",
-        str(graph_path),
-        "--output",
-        str(reasoned_path),
-    ]
     proc = subprocess.run(
-        command,
+        [
+            robot,
+            "reason",
+            "--reasoner",
+            "HermiT",
+            "--input",
+            str(graph_path),
+            "--output",
+            str(reasoned_path),
+        ],
         cwd=REPO_ROOT,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    output = "\n".join(part for part in (proc.stdout.strip(), proc.stderr.strip()) if part)
-    output_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
-    reasoned_output_produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
+
+    output = "\n".join(
+        part
+        for part in (
+            proc.stdout.strip(),
+            proc.stderr.strip(),
+        )
+        if part
+    )
+
+    inferred_unsats = {
+        URIRef(match.group(1))
+        for match in UNSAT_RE.finditer(output)
+    }
+
+    reasoned_output_produced = (
+        reasoned_path.exists()
+        and reasoned_path.stat().st_size > 0
+    )
     owl_nothing_count: int | None = None
-    inferred_unsats: set[URIRef] = set(output_unsats)
+
     if reasoned_output_produced:
         reasoned_graph = Graph()
         bind_prefixes(reasoned_graph)
@@ -1690,80 +1730,56 @@ def run_candidate_hermit(generated_path: Path, tmp_dir: Path) -> HermitResult:
     )
 
 
-def run_alignment_core_hermit(generated_path: Path, tmp_dir: Path) -> HermitResult:
+def run_candidate_hermit(
+    generated_path: Path,
+    tmp_dir: Path,
+) -> HermitResult:
+    closure = Graph()
+    bind_prefixes(closure)
+
+    for input_path in CANDIDATE_CLOSURE_INPUTS:
+        closure.parse(
+            REPO_ROOT / input_path,
+            format="turtle",
+        )
+
+    closure.parse(generated_path, format="turtle")
+
+    for triple in list(
+        closure.triples((None, OWL.imports, None))
+    ):
+        closure.remove(triple)
+
+    for triple in CLEANUP_TRIPLES:
+        closure.remove(triple)
+
+    return _run_hermit_closure(
+        generated_path,
+        closure,
+        tmp_dir,
+        CANDIDATE_HERMIT_PROFILE,
+    )
+
+
+def run_alignment_core_hermit(
+    generated_path: Path,
+    tmp_dir: Path,
+) -> HermitResult:
     """Reason over the import-free core plus the fixed tracked source closure."""
 
-    generated_graph = Graph()
-    generated_graph.parse(generated_path, format="turtle")
     closure = build_fixed_source_closure(
         generated_path.read_bytes(),
         (REPO_ROOT / path for path in SOURCE_IMPORTS),
     )
+
     for triple in CLEANUP_TRIPLES:
         closure.remove(triple)
 
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    graph_path = tmp_dir / "alignment-core-source-closure.ttl"
-    reasoned_path = tmp_dir / "alignment-core-source-closure-reasoned.ttl"
-    if reasoned_path.exists():
-        reasoned_path.unlink()
-    closure.serialize(destination=graph_path, format="turtle")
-
-    robot = shutil.which("robot")
-    if robot is None:
-        return HermitResult(
-            graph_path=graph_path,
-            reasoned_path=reasoned_path,
-            generated_triple_count=len(generated_graph),
-            closure_triple_count=len(closure),
-            return_code=None,
-            reasoned_output_produced=False,
-            owl_nothing_count=None,
-            unsat_classes=[],
-            robot_output="ROBOT executable not found on PATH.",
-            robot_path=None,
-        )
-
-    command = [
-        robot,
-        "reason",
-        "--reasoner",
-        "HermiT",
-        "--input",
-        str(graph_path),
-        "--output",
-        str(reasoned_path),
-    ]
-    proc = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    output = "\n".join(part for part in (proc.stdout.strip(), proc.stderr.strip()) if part)
-    output_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
-    reasoned_output_produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
-    owl_nothing_count: int | None = None
-    inferred_unsats: set[URIRef] = set(output_unsats)
-    if reasoned_output_produced:
-        reasoned_graph = Graph()
-        bind_prefixes(reasoned_graph)
-        reasoned_graph.parse(reasoned_path, format="turtle")
-        inferred_unsats |= set(unsat_classes(reasoned_graph))
-        owl_nothing_count = len(inferred_unsats)
-
-    return HermitResult(
-        graph_path=graph_path,
-        reasoned_path=reasoned_path,
-        generated_triple_count=len(generated_graph),
-        closure_triple_count=len(closure),
-        return_code=proc.returncode,
-        reasoned_output_produced=reasoned_output_produced,
-        owl_nothing_count=owl_nothing_count,
-        unsat_classes=sorted(inferred_unsats, key=str),
-        robot_output=output,
-        robot_path=robot,
+    return _run_hermit_closure(
+        generated_path,
+        closure,
+        tmp_dir,
+        ALIGNMENT_CORE_HERMIT_PROFILE,
     )
 
 
@@ -1774,10 +1790,11 @@ def run_strict_bfo_hermit(
 ) -> HermitResult:
     """Reason over the strict product and its explicit pinned validation closure."""
 
-    generated_graph = Graph()
-    generated_graph.parse(generated_path, format="turtle")
     closure = build_fixed_validation_closure(
-        (generated_path.read_bytes(), alignment_core_path.read_bytes()),
+        (
+            generated_path.read_bytes(),
+            alignment_core_path.read_bytes(),
+        ),
         (
             REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
             *(REPO_ROOT / path for path in SOURCE_IMPORTS),
@@ -1785,68 +1802,11 @@ def run_strict_bfo_hermit(
         CLEANUP_TRIPLES,
     )
 
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    graph_path = tmp_dir / "strict-bfo-pinned-merged-cco-bfo-closure.ttl"
-    reasoned_path = tmp_dir / "strict-bfo-pinned-merged-cco-bfo-closure-reasoned.ttl"
-    if reasoned_path.exists():
-        reasoned_path.unlink()
-    closure.serialize(destination=graph_path, format="turtle")
-
-    robot = shutil.which("robot")
-    if robot is None:
-        return HermitResult(
-            graph_path=graph_path,
-            reasoned_path=reasoned_path,
-            generated_triple_count=len(generated_graph),
-            closure_triple_count=len(closure),
-            return_code=None,
-            reasoned_output_produced=False,
-            owl_nothing_count=None,
-            unsat_classes=[],
-            robot_output="ROBOT executable not found on PATH.",
-            robot_path=None,
-        )
-
-    command = [
-        robot,
-        "reason",
-        "--reasoner",
-        "HermiT",
-        "--input",
-        str(graph_path),
-        "--output",
-        str(reasoned_path),
-    ]
-    proc = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    output = "\n".join(part for part in (proc.stdout.strip(), proc.stderr.strip()) if part)
-    output_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
-    reasoned_output_produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
-    owl_nothing_count: int | None = None
-    inferred_unsats: set[URIRef] = set(output_unsats)
-    if reasoned_output_produced:
-        reasoned_graph = Graph()
-        bind_prefixes(reasoned_graph)
-        reasoned_graph.parse(reasoned_path, format="turtle")
-        inferred_unsats |= set(unsat_classes(reasoned_graph))
-        owl_nothing_count = len(inferred_unsats)
-
-    return HermitResult(
-        graph_path=graph_path,
-        reasoned_path=reasoned_path,
-        generated_triple_count=len(generated_graph),
-        closure_triple_count=len(closure),
-        return_code=proc.returncode,
-        reasoned_output_produced=reasoned_output_produced,
-        owl_nothing_count=owl_nothing_count,
-        unsat_classes=sorted(inferred_unsats, key=str),
-        robot_output=output,
-        robot_path=robot,
+    return _run_hermit_closure(
+        generated_path,
+        closure,
+        tmp_dir,
+        STRICT_BFO_HERMIT_PROFILE,
     )
 
 
@@ -1858,8 +1818,6 @@ def run_cco_extension_hermit(
 ) -> HermitResult:
     """Reason over the CCO extension and its explicit pinned validation closure."""
 
-    generated_graph = Graph()
-    generated_graph.parse(generated_path, format="turtle")
     closure = build_fixed_validation_closure(
         (
             generated_path.read_bytes(),
@@ -1873,68 +1831,11 @@ def run_cco_extension_hermit(
         CLEANUP_TRIPLES,
     )
 
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    graph_path = tmp_dir / "cco-extension-pinned-merged-cco-bfo-closure.ttl"
-    reasoned_path = tmp_dir / "cco-extension-pinned-merged-cco-bfo-closure-reasoned.ttl"
-    if reasoned_path.exists():
-        reasoned_path.unlink()
-    closure.serialize(destination=graph_path, format="turtle")
-
-    robot = shutil.which("robot")
-    if robot is None:
-        return HermitResult(
-            graph_path=graph_path,
-            reasoned_path=reasoned_path,
-            generated_triple_count=len(generated_graph),
-            closure_triple_count=len(closure),
-            return_code=None,
-            reasoned_output_produced=False,
-            owl_nothing_count=None,
-            unsat_classes=[],
-            robot_output="ROBOT executable not found on PATH.",
-            robot_path=None,
-        )
-
-    command = [
-        robot,
-        "reason",
-        "--reasoner",
-        "HermiT",
-        "--input",
-        str(graph_path),
-        "--output",
-        str(reasoned_path),
-    ]
-    proc = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    output = "\n".join(part for part in (proc.stdout.strip(), proc.stderr.strip()) if part)
-    output_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
-    reasoned_output_produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
-    owl_nothing_count: int | None = None
-    inferred_unsats: set[URIRef] = set(output_unsats)
-    if reasoned_output_produced:
-        reasoned_graph = Graph()
-        bind_prefixes(reasoned_graph)
-        reasoned_graph.parse(reasoned_path, format="turtle")
-        inferred_unsats |= set(unsat_classes(reasoned_graph))
-        owl_nothing_count = len(inferred_unsats)
-
-    return HermitResult(
-        graph_path=graph_path,
-        reasoned_path=reasoned_path,
-        generated_triple_count=len(generated_graph),
-        closure_triple_count=len(closure),
-        return_code=proc.returncode,
-        reasoned_output_produced=reasoned_output_produced,
-        owl_nothing_count=owl_nothing_count,
-        unsat_classes=sorted(inferred_unsats, key=str),
-        robot_output=output,
-        robot_path=robot,
+    return _run_hermit_closure(
+        generated_path,
+        closure,
+        tmp_dir,
+        CCO_EXTENSION_HERMIT_PROFILE,
     )
 
 
@@ -1946,7 +1847,6 @@ def run_bfo_projection_hermit(
 ) -> HermitResult:
     """Independently reason over projection, strict, core, and pinned dependencies."""
 
-    generated_graph = Graph().parse(generated_path, format="turtle")
     closure = build_fixed_validation_closure(
         (
             generated_path.read_bytes(),
@@ -1960,66 +1860,11 @@ def run_bfo_projection_hermit(
         CLEANUP_TRIPLES,
     )
 
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    graph_path = tmp_dir / "bfo-projection-pinned-merged-cco-bfo-closure.ttl"
-    reasoned_path = tmp_dir / "bfo-projection-pinned-merged-cco-bfo-closure-reasoned.ttl"
-    if reasoned_path.exists():
-        reasoned_path.unlink()
-    closure.serialize(destination=graph_path, format="turtle")
-
-    robot = shutil.which("robot")
-    if robot is None:
-        return HermitResult(
-            graph_path=graph_path,
-            reasoned_path=reasoned_path,
-            generated_triple_count=len(generated_graph),
-            closure_triple_count=len(closure),
-            return_code=None,
-            reasoned_output_produced=False,
-            owl_nothing_count=None,
-            unsat_classes=[],
-            robot_output="ROBOT executable not found on PATH.",
-            robot_path=None,
-        )
-
-    command = [
-        robot,
-        "reason",
-        "--reasoner",
-        "HermiT",
-        "--input",
-        str(graph_path),
-        "--output",
-        str(reasoned_path),
-    ]
-    proc = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    output = "\n".join(
-        part for part in (proc.stdout.strip(), proc.stderr.strip()) if part
-    )
-    inferred_unsats = {URIRef(match.group(1)) for match in UNSAT_RE.finditer(output)}
-    produced = reasoned_path.exists() and reasoned_path.stat().st_size > 0
-    owl_nothing_count: int | None = None
-    if produced:
-        reasoned_graph = Graph().parse(reasoned_path, format="turtle")
-        inferred_unsats |= set(unsat_classes(reasoned_graph))
-        owl_nothing_count = len(inferred_unsats)
-    return HermitResult(
-        graph_path=graph_path,
-        reasoned_path=reasoned_path,
-        generated_triple_count=len(generated_graph),
-        closure_triple_count=len(closure),
-        return_code=proc.returncode,
-        reasoned_output_produced=produced,
-        owl_nothing_count=owl_nothing_count,
-        unsat_classes=sorted(inferred_unsats, key=str),
-        robot_output=output,
-        robot_path=robot,
+    return _run_hermit_closure(
+        generated_path,
+        closure,
+        tmp_dir,
+        BFO_PROJECTION_HERMIT_PROFILE,
     )
 
 
