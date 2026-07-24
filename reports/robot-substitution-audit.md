@@ -139,24 +139,46 @@ because the COMS lexical expressions use project-specific CURIE-like names for
 properties inside Manchester expressions. ROBOT Template requires those
 properties to be resolvable by its Manchester parser.
 
-### Python normalization
+### Normalized ROBOT Template pilot
 
-The existing COMS generator already resolves lexical expressions into
-structured expression nodes and canonical full IRIs.
+The normalized pilot is now implemented as a read-only comparison path in
+`tools/robot_template_generation_pilot.py`.
 
-A small deterministic Python renderer can convert those structures into
-ROBOT-compatible Manchester expressions:
+The existing COMS generator continues to resolve workbook expressions into
+structured expression nodes and canonical full IRIs. The pilot then produces:
 
-- named class → `<full-IRI>`;
-- intersection → `(A and B)`;
-- union → `(A or B)`;
-- existential restriction → `(<property-IRI> some Filler)`.
+- deterministic temporary labels for every class and object property used in
+  a class expression;
+- a generated resolver ontology containing those labels;
+- a generated ROBOT Template TSV using the temporary labels;
+- a ROBOT-generated comparison ontology;
+- an exact canonical-axiom comparison against the authoritative COMS
+  identities.
 
-This should allow ROBOT Template to generate all 44 class mappings without
-depending on labels or project-specific CURIE resolution.
+Temporary labels are required because ROBOT 1.9.7 does not accept full class or
+property IRIs inside Manchester restriction expressions. These labels are
+generated implementation details and do not appear in the COMS workbook or any
+maintained ontology product.
 
-That normalized pilot has not yet been completed and must be treated as a
-proposed next validation step, not a proven result.
+Results:
+
+| Measure | Result |
+| --- | ---: |
+| Governed COMS rows | 105 |
+| Attempted non-chain rows | 100 |
+| Excluded property-chain rows | 5 |
+| Expected canonical axioms | 100 |
+| ROBOT canonical axioms | 100 |
+| Missing axioms | 0 |
+| Extra axioms | 0 |
+| Mismatched axioms | 0 |
+| Resolver entities | 82 |
+| Pilot summary | PASS |
+
+The generated resolver ontology and normalized template are byte-deterministic
+across separate runs and different Python hash seeds. The five maintained
+ontology products remain unchanged because the current Python generator remains
+authoritative during this phase.
 
 ### Property chains
 
