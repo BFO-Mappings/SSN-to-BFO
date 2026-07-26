@@ -397,6 +397,7 @@ def compile_check() -> StepResult:
             "tools/modular_products.py",
             "tools/generate_mapping_from_coms.py",
             "tools/robot_template_generation_pilot.py",
+            "tools/robot_property_chain_generation_pilot.py",
             "tools/check_coms_mapping.py",
             "tools/watch_coms_mapping.py",
             "tools/publication_metadata.py",
@@ -409,6 +410,7 @@ def compile_check() -> StepResult:
             "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_robot_template_generation_pilot.py",
+            "tests/test_robot_property_chain_generation_pilot.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
             "tests/test_modular_products.py",
@@ -731,6 +733,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_robot_template_generation_pilot.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "ROBOT property-chain generation focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_robot_property_chain_generation_pilot.py",
                 ],
             )
         )
