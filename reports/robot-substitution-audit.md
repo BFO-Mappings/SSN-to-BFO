@@ -180,20 +180,49 @@ across separate runs and different Python hash seeds. The five maintained
 ontology products remain unchanged because the current Python generator remains
 authoritative during this phase.
 
-### Property chains
+### Property-chain generation pilot
 
-The five property chains are not covered by the documented Template pilot.
+The five governed property-chain rows are now covered by a separate read-only
+pilot in `tools/robot_property_chain_generation_pilot.py`.
 
-Options include:
+The pilot:
 
-1. retain current Python chain emission initially;
-2. produce them as canonical OWL Functional Syntax and let ROBOT parse and
-   serialize them;
-3. generate controlled RDF list structures and merge them through ROBOT;
-4. use a narrowly governed SPARQL construction step.
+1. selects the five canonical `property_chain` rows produced from the unchanged
+   COMS workbook;
+2. emits deterministic OWL Functional Syntax using the already-resolved member
+   and super-property IRIs;
+3. invokes `robot convert --strict` to parse and serialize the temporary
+   ontology;
+4. canonicalizes ROBOT's RDF property-chain structures through the existing
+   graph-to-axiom comparison machinery;
+5. compares the result with the authoritative COMS axiom identities.
 
-The safest initial architecture is to retain the five current chain mappings
-until exact cross-tool equivalence is demonstrated.
+Results:
+
+| Measure | Result |
+| --- | ---: |
+| Governed COMS rows | 105 |
+| Attempted property-chain rows | 5 |
+| Expected canonical axioms | 5 |
+| ROBOT canonical axioms | 5 |
+| Missing axioms | 0 |
+| Extra axioms | 0 |
+| Mismatched axioms | 0 |
+| Declared object properties | 17 |
+| Pilot summary | PASS |
+
+The generated Functional Syntax is byte-deterministic across separate runs and
+different Python hash seeds. ROBOT outputs are graph-isomorphic across runs.
+
+Combined with the normalized Template pilot, ROBOT now independently
+reconstructs all 105 governed COMS axioms exactly:
+
+- 100 non-chain axioms through normalized ROBOT Template input;
+- 5 property-chain axioms through normalized OWL Functional Syntax;
+- 0 missing, extra, or mismatched canonical axioms.
+
+The current Python generator remains authoritative, and all five maintained
+ontology products remain unchanged.
 
 ## Recommended generation architecture
 
