@@ -307,15 +307,64 @@ Recommended uses:
 
 ### Merge and closure assembly
 
-Repeated RDFLib loops that load and copy triples from several files are good
-candidates for `robot merge`.
+Direct substitution of the current RDFLib closure builders with `robot merge`
+was tested and rejected for the governed SSN/SOSA source and validation
+closures. The pilot evaluated ROBOT 1.9.7 against the exact union behavior of
+both `build_fixed_source_closure` and `build_fixed_validation_closure`.
 
-Python should still decide:
+The strict merge failed because OWLAPI reported 32 RDF triples that it could
+not parse, including ordinary domain and range statements and anonymous
+`owl:unionOf` structures.
 
-- which files belong in a closure;
-- import-collapse policy;
-- catalog selection;
-- project-specific cleanup.
+The non-strict direct merge returned success but reported one unparsed anonymous
+`owl:unionOf` triple and expanded imported vocabulary. Against the Python
+alignment-core closure, it produced:
+
+- 1,421 raw triples versus 1,214;
+- 1,390 logical triples versus 1,164;
+- 27 Python-only and 253 ROBOT-only logical triples;
+- 107 supported canonical axioms versus 72;
+- one missing and 36 extra canonical axioms.
+
+The missing canonical axiom was:
+
+`ObjectPropertyDomain(<http://www.w3.org/ns/ssn/systems/inCondition> ObjectUnionOf(<http://www.w3.org/ns/ssn/systems/OperatingRange> <http://www.w3.org/ns/ssn/systems/SurvivalRange> <http://www.w3.org/ns/ssn/systems/SystemCapability>))`
+
+Using `--collapse-import-closure false` produced 1,197 triples, zero
+`owl:imports` triples, one ontology declaration, and 145 triples involving SKOS
+IRIs. It still reported the unparsed union triple and did not reproduce the
+Python closure.
+
+A further sanitized-input test removed all `owl:imports` statements from
+temporary copies before ROBOT loaded the five inputs. ROBOT still reported the
+unparsed union triple, 17 OWLAPI entity-recognition errors, and an unparsed
+`sosa:isSampleOf rdf:type owl:FunctionalProperty` statement. The result was
+also non-equivalent:
+
+- 1,181 raw triples versus 1,214;
+- 1,150 logical triples versus 1,164;
+- 1,068 shared, 96 Python-only, and 82 ROBOT-only logical triples;
+- 88 supported canonical axioms versus 72;
+- one missing and 17 extra canonical axioms;
+- 145 triples involving SKOS IRIs.
+
+The same `ssn-system:inCondition` union-domain axiom was missing. The 17 extra
+canonical axioms were synthetic subclass axioms targeting
+`http://org.semanticweb.owlapi/error#Error1` through
+`http://org.semanticweb.owlapi/error#Error17`.
+
+The difference is therefore semantic, not merely serialization-level.
+
+The current RDFLib closure builders must remain authoritative for:
+
+- exact offline RDF graph union;
+- import-edge removal without import expansion;
+- preservation of RDF structures not accepted cleanly by OWLAPI;
+- project-specific cleanup triples;
+- governed closure triple-count baselines.
+
+ROBOT remains appropriate for reasoning over the Python-built closure, but not
+for constructing the current fixed source or validation closures.
 
 ### Remove and filter
 
@@ -379,7 +428,7 @@ These should use ROBOT internally but retain Python control:
 | Current capability | Recommended boundary |
 | --- | --- |
 | Product HermiT checks | ROBOT reasons; Python defines profile and interprets result |
-| Full source closure | ROBOT merges/removes/reasons; Python defines exact closure |
+| Full source closure | Python builds the exact RDF closure and applies cleanup; ROBOT reasons over the resulting closure |
 | Typing probes | Python generates probes; ROBOT reasons over each probe |
 | ELK instance gate | ROBOT checks consistency; Python retains deterministic expected-entailment checks |
 | Source-term coverage | ROBOT query; Python reconciles results to governed rows |
@@ -442,7 +491,7 @@ repository-code reduction.
 | --- | ---: |
 | Mapping-axiom emission | 67% proven unchanged; 95% plausible after normalization |
 | Parsing and conversion | 70–100% |
-| Closure merge and removal | 60–90% |
+| Current SSN/SOSA closure merge and import-edge removal | 0–10% |
 | Reasoner invocation | 90–100% |
 | SPARQL querying and verification | 60–100% |
 | Product construction | 30–60% |
@@ -497,9 +546,12 @@ experiment proves that production use would:
 
 ### Phase 5: standardize other ROBOT operations — future work
 
+Closure merging has been evaluated and rejected for the current governed
+SSN/SOSA fixed-closure paths because ROBOT does not preserve the exact RDF or
+canonical axiom set.
+
 Potential candidates remain:
 
-- merge and closure assembly;
 - query and verify;
 - semantic diff;
 - import extraction;
@@ -527,10 +579,12 @@ ROBOT should not become the COMS governance engine.
 
 The recommended division of responsibility is:
 
-- **Python:** identity, policy, reconciliation, deterministic publication, and
-  release governance;
-- **ROBOT:** OWL parsing, construction, conversion, merging, filtering,
-  reasoning, querying, verification, extraction, and semantic diffing.
+- **Python:** identity, policy, reconciliation, exact RDF closure construction,
+  deterministic publication, and release governance;
+- **ROBOT:** OWL parsing, construction, conversion, reasoning, querying,
+  verification, extraction, semantic diffing, and filtering where the input is
+  OWLAPI-compatible; merging is not approved for the current governed closure
+  paths.
 
 This boundary preserves the strongest features of the current SSN-to-BFO
 architecture while reducing duplicated ontology-processing code.
