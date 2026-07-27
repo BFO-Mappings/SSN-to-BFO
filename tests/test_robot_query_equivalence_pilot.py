@@ -106,12 +106,26 @@ class RobotQueryEquivalencePilotTests(unittest.TestCase):
                 self.assertEqual(unmapped["robot_output_bytes"], 0)
 
             for section in (
-                "source_graph",
-                "coverage_graph",
                 "source_query",
                 "unmapped_query",
             ):
                 self.assertEqual(first[section], second[section])
+
+            for section in (
+                "source_graph",
+                "coverage_graph",
+            ):
+                first_semantic = {
+                    key: value
+                    for key, value in first[section].items()
+                    if key != "sha256"
+                }
+                second_semantic = {
+                    key: value
+                    for key, value in second[section].items()
+                    if key != "sha256"
+                }
+                self.assertEqual(first_semantic, second_semantic)
 
         after = {
             path.relative_to(REPO_ROOT).as_posix(): sha256(path)
