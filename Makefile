@@ -28,6 +28,7 @@ compile:
 		tools/product_dispositions.py \
 		tools/modular_products.py \
 		tools/generate_mapping_from_coms.py \
+		tools/robot_query_equivalence_pilot.py \
 		tools/check_coms_mapping.py \
 		tools/watch_coms_mapping.py \
 		tools/publication_metadata.py \
@@ -39,6 +40,7 @@ compile:
 		tools/release_archive.py \
 		tools/rehearse_release.py \
 		tests/test_generate_mapping_from_coms.py \
+		tests/test_robot_query_equivalence_pilot.py \
 		tests/test_coms_row_identity.py \
 		tests/test_product_dispositions.py \
 		tests/test_modular_products.py \
