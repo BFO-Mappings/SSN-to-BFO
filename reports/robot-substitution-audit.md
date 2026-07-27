@@ -29,7 +29,7 @@ The strongest substitution opportunities are:
 - HermiT and ELK invocation;
 - SPARQL query and verification;
 - limited semantic-diff checks for separately proven OWLAPI-compatible inputs;
-- some import and module extraction.
+- controlled non-strict STAR module extraction for the current governed BFO/CCO validation signature.
 
 The following should remain custom Python:
 
@@ -483,10 +483,53 @@ first been separately proven OWLAPI-compatible.
 
 ### Import or module extraction
 
-ROBOT extraction is a candidate for reducing retained import closures and
-reasoner inputs.
+ROBOT STAR extraction has been evaluated against the pinned
+`imports/cco.ttl` dependency.
 
-This should supplement, not replace:
+The governed COMS inventory selects 59 external seed terms:
+
+- 20 BFO terms;
+- 39 CCO terms;
+- 30 classes;
+- 29 object properties.
+
+Strict extraction is incompatible with the current dependency. ROBOT exits
+with code 1, reports four synthetic OWLAPI entity-recognition errors
+(`Error1` through `Error4`), declares the ontology invalid, and produces no
+module artifact.
+
+Non-strict STAR extraction produces a deterministic read-only module:
+
+- 3,090 triples, compared with 13,649 dependency triples;
+- 194 supported canonical axioms, all drawn unchanged from the dependency's
+  2,065 supported canonical axioms;
+- all 59 seed declarations present;
+- no `owl:imports` statements;
+- no synthetic error IRIs;
+- no module-only or mismatched shared canonical axioms;
+- byte-identical repeated output with SHA-256
+  `52e51f34d95b9b44b6c3d17008166b26e3eb49052c3e1ee72a99ae428f97efa4`.
+
+Temporary substitution of this module into the existing Python-governed
+validation closures reduced each closure by 10,553 triples while preserving
+exact reasoned governed-signature results:
+
+- strict BFO: 14,986 to 4,433 closure triples and 163 of 163 governed
+  axioms;
+- CCO extension: 15,928 to 5,375 closure triples and 232 of 232 governed
+  axioms;
+- BFO projection: 14,994 to 4,441 closure triples and 163 of 163 governed
+  axioms.
+
+A controlled inconsistency involving `BFO_0000002` was also detected
+equivalently by the full dependency closure and the extracted-module closure.
+
+Non-strict STAR extraction may therefore remain as a read-only validation
+candidate for this exact governed signature. It is not approved as a production
+dependency replacement. Python remains authoritative for seed selection,
+pinned dependency governance, exact closure construction, cleanup, and
+equivalence interpretation. This operation must continue to supplement, not
+replace:
 
 - pinned dependency governance;
 - exact dependency hashes;
@@ -564,6 +607,7 @@ repository-code reduction.
 | Mapping-axiom emission | 67% proven unchanged; 95% plausible after normalization |
 | Parsing and conversion | 70–100% |
 | Current SSN/SOSA closure merge and import-edge removal | 0–10% |
+| Governed BFO/CCO dependency-module extraction | Current-signature equivalence proven for all 59 seeds and the 150-term governed reasoning signature under non-strict STAR; strict extraction and production replacement remain unapproved |
 | Reasoner invocation | 90–100% |
 | SPARQL querying and verification | 100% proven for the two current governed coverage `SELECT` queries and `robot verify` semantics for the unmapped-term query; 60–100% broader potential |
 | Product construction | 30–60% |
@@ -637,9 +681,17 @@ operation for the current governed products because identical files produce
 false axiom differences when anonymous union-domain structures are loaded
 directly or through imports.
 
+Import and module extraction has now been evaluated. Strict ROBOT extraction is
+rejected for the current pinned CCO dependency because OWLAPI reports four
+synthetic entity-recognition errors and produces no artifact. Repeated
+non-strict STAR extraction is byte-reproducible and preserves the current
+governed reasoning signature across the strict-BFO, CCO-extension, and
+BFO-projection closures, including equivalent controlled-inconsistency
+detection. It is retained only as a read-only candidate; production dependency
+substitution is not approved.
+
 Potential candidates remain:
 
-- import extraction;
 - retained example validation.
 
 ## Completed immediate cleanup
@@ -667,9 +719,11 @@ The recommended division of responsibility is:
 - **Python:** identity, policy, reconciliation, exact RDF closure construction,
   deterministic publication, and release governance;
 - **ROBOT:** OWL parsing, construction, conversion, reasoning, querying,
-  verification, extraction, and filtering where the input is OWLAPI-compatible;
-  merging is not approved for the current governed closure paths, and semantic
-  diffing is not approved for the current governed products.
+  verification, filtering, and non-strict STAR extraction only where a
+  controlled input and governed output signature have been separately proven
+  equivalent; strict extraction is incompatible with the current pinned CCO
+  dependency, merging is not approved for the current governed closure paths,
+  and semantic diffing is not approved for the current governed products.
 
 This boundary preserves the strongest features of the current SSN-to-BFO
 architecture while reducing duplicated ontology-processing code.
