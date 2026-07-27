@@ -28,7 +28,7 @@ The strongest substitution opportunities are:
 - axiom removal and filtering;
 - HermiT and ELK invocation;
 - SPARQL query and verification;
-- ontology-level semantic diffs;
+- limited semantic-diff checks for separately proven OWLAPI-compatible inputs;
 - some import and module extraction.
 
 The following should remain custom Python:
@@ -445,17 +445,41 @@ Use:
 
 ### Semantic diff
 
-`robot diff` can compare OWL ontologies while ignoring irrelevant
-serialization differences.
+Direct use of `robot diff` as a semantic-equivalence authority was tested and
+rejected for the current governed ontology products.
 
-Potential uses:
+The controlled pilot first compared an OWLAPI-compatible temporary ontology to
+itself. ROBOT returned code 0, emitted no parser warnings, and wrote
+`Ontologies are identical`.
 
-- current generated product versus ROBOT-generated comparison product;
-- pre- and post-refactor semantic equivalence;
-- product-architecture migration checks.
+The same-file governed-product controls did not behave correctly:
 
-The current canonical COMS axiom comparison should remain the authoritative
-row-level governance check.
+- comparing the alignment core to itself returned code 0 but emitted two
+  OWLAPI parser warnings for its anonymous `owl:unionOf` structure;
+- the resulting diff falsely reported one left-only and one right-only
+  `AnnotationPropertyDomain` axiom for `ssn-system:inCondition`;
+- the only apparent difference was the generated blank-node identifier assigned
+  independently during each load;
+- comparing the strict BFO mapping to itself required a temporary catalog to
+  resolve its alignment-core import;
+- after import resolution, ROBOT again emitted two parser warnings and falsely
+  reported one left-only and one right-only `AnnotationPropertyDomain` axiom,
+  this time for `ssn:isPropertyOf`;
+- the false strict-BFO difference arose through the imported alignment-core
+  anonymous union-domain structure.
+
+This is a false semantic difference on identical governed inputs, not merely a
+presentation difference in the diff report. A permanent negative gate now
+proves both the valid OWLAPI-compatible control and the governed self-diff
+failure pattern.
+
+`robot diff` must therefore not be used as an authoritative semantic-diff or
+equivalence mechanism for the current governed products, including products
+whose import closure reaches the alignment core. The canonical COMS axiom
+comparison and Python-governed graph/product checks remain authoritative.
+
+ROBOT diffing may be used only as a supplemental operation for inputs that have
+first been separately proven OWLAPI-compatible.
 
 ### Import or module extraction
 
@@ -481,7 +505,7 @@ These should use ROBOT internally but retain Python control:
 | ELK instance gate | ROBOT checks consistency; Python retains deterministic expected-entailment checks |
 | Source-term coverage | ROBOT query; Python reconciles results to governed rows |
 | Modular-product validation | ROBOT handles general OWL checks; Python retains product policy |
-| Legacy comparison | ROBOT semantic diff where useful; Python retains workbook-aware comparison |
+| Legacy comparison | Python retains authoritative canonical and workbook-aware comparison; ROBOT diff is optional only for separately proven OWLAPI-compatible inputs |
 | Publication metadata | ROBOT may annotate; Python remains authoritative for metadata policy and order |
 
 ## Capabilities that should remain custom
@@ -608,9 +632,13 @@ Closure merging has been evaluated and rejected for the current governed
 SSN/SOSA fixed-closure paths because ROBOT does not preserve the exact RDF or
 canonical axiom set.
 
+Semantic diffing has also been evaluated and rejected as an authoritative
+operation for the current governed products because identical files produce
+false axiom differences when anonymous union-domain structures are loaded
+directly or through imports.
+
 Potential candidates remain:
 
-- semantic diff;
 - import extraction;
 - retained example validation.
 
@@ -639,9 +667,9 @@ The recommended division of responsibility is:
 - **Python:** identity, policy, reconciliation, exact RDF closure construction,
   deterministic publication, and release governance;
 - **ROBOT:** OWL parsing, construction, conversion, reasoning, querying,
-  verification, extraction, semantic diffing, and filtering where the input is
-  OWLAPI-compatible; merging is not approved for the current governed closure
-  paths.
+  verification, extraction, and filtering where the input is OWLAPI-compatible;
+  merging is not approved for the current governed closure paths, and semantic
+  diffing is not approved for the current governed products.
 
 This boundary preserves the strongest features of the current SSN-to-BFO
 architecture while reducing duplicated ontology-processing code.
