@@ -381,10 +381,35 @@ semantics rather than a declarative selection.
 
 ### Query and verify
 
-Good ROBOT candidates include:
+A read-only `robot query` equivalence pilot has now been completed for the two
+SPARQL `SELECT` queries used by the governed COMS source-term coverage path.
+Production query execution remains unchanged.
 
-- source-term coverage queries;
-- unmapped-term queries;
+The pilot serialized only temporary Python-built graphs and compared ROBOT
+1.9.7 results against the existing RDFLib results:
+
+- the exact Python source union contained 1,157 triples, including four retained
+  `owl:imports` statements, and survived the temporary Turtle round trip
+  isomorphically;
+- `queries/source-classes-and-object-properties.rq` returned the same 91 rows
+  from RDFLib and ROBOT, in the same order, with zero engine-only rows;
+- the Python-built coverage graph contained 182 triples and also survived its
+  temporary Turtle round trip isomorphically;
+- `queries/unmapped-source-terms.rq` returned zero rows from both engines;
+- both ROBOT invocations returned code 0 without warnings or errors;
+- ROBOT represented the empty result as an existing zero-byte CSV rather than
+  a header-only CSV, so callers must interpret that format explicitly.
+
+A permanent read-only gate now repeats the pilot, records machine-readable
+evidence, checks deterministic results across two runs, and verifies that none
+of the five maintained ontology products changes.
+
+This proves `robot query` compatibility for the two current governed coverage
+queries. It does not transfer graph construction, query selection, coverage
+reconciliation, report semantics, or production authority from Python.
+
+Additional good ROBOT candidates include:
+
 - structural violation queries;
 - forbidden-vocabulary checks;
 - import-policy checks;
@@ -392,8 +417,9 @@ Good ROBOT candidates include:
 
 Use:
 
-- `robot query` for informational result sets;
-- `robot verify` for queries whose returned rows are validation failures.
+- `robot query` for informational result sets after focused equivalence proof;
+- `robot verify` for queries whose returned rows are validation failures,
+  subject to a separate controlled pilot.
 
 ### Semantic diff
 
@@ -493,7 +519,7 @@ repository-code reduction.
 | Parsing and conversion | 70–100% |
 | Current SSN/SOSA closure merge and import-edge removal | 0–10% |
 | Reasoner invocation | 90–100% |
-| SPARQL querying and verification | 60–100% |
+| SPARQL querying and verification | 100% proven for the two current governed coverage `SELECT` queries; 60–100% broader potential |
 | Product construction | 30–60% |
 | Product validation | 20–50% |
 | Instance and probe testing | 15–35% |
@@ -544,7 +570,12 @@ experiment proves that production use would:
 5. simplify the total architecture rather than add another production-critical
    intermediate layer.
 
-### Phase 5: standardize other ROBOT operations — future work
+### Phase 5: standardize other ROBOT operations — in progress
+
+Read-only `robot query` execution has been evaluated and accepted for the two
+current governed COMS coverage queries. Exact ordered-row equality is required,
+and Python remains authoritative for temporary graph construction,
+reconciliation, diagnostics, and report semantics.
 
 Closure merging has been evaluated and rejected for the current governed
 SSN/SOSA fixed-closure paths because ROBOT does not preserve the exact RDF or
@@ -552,7 +583,7 @@ canonical axiom set.
 
 Potential candidates remain:
 
-- query and verify;
+- `robot verify` for failure-row validation;
 - semantic diff;
 - import extraction;
 - retained example validation.

@@ -398,6 +398,7 @@ def compile_check() -> StepResult:
             "tools/generate_mapping_from_coms.py",
             "tools/robot_template_generation_pilot.py",
             "tools/robot_property_chain_generation_pilot.py",
+            "tools/robot_query_equivalence_pilot.py",
             "tools/robot_reconstruction_validation.py",
             "tools/validate_robot_reconstruction.py",
             "tools/check_coms_mapping.py",
@@ -413,6 +414,7 @@ def compile_check() -> StepResult:
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_robot_template_generation_pilot.py",
             "tests/test_robot_property_chain_generation_pilot.py",
+            "tests/test_robot_query_equivalence_pilot.py",
             "tests/test_robot_reconstruction_validation.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
@@ -726,13 +728,14 @@ def run_validation_suite(args: argparse.Namespace) -> int:
     if results[-1].passed:
         results.append(
             run_command(
-                "ROBOT reconstruction focused tests",
+                "ROBOT focused tests",
                 [
                     sys.executable,
                     "-m",
                     "unittest",
                     "tests.test_robot_template_generation_pilot",
                     "tests.test_robot_property_chain_generation_pilot",
+                    "tests.test_robot_query_equivalence_pilot",
                     "tests.test_robot_reconstruction_validation",
                 ],
             )
