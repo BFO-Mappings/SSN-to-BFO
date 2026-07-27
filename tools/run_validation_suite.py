@@ -399,6 +399,7 @@ def compile_check() -> StepResult:
             "tools/robot_template_generation_pilot.py",
             "tools/robot_property_chain_generation_pilot.py",
             "tools/robot_query_equivalence_pilot.py",
+            "tools/robot_verify_pilot.py",
             "tools/robot_reconstruction_validation.py",
             "tools/validate_robot_reconstruction.py",
             "tools/check_coms_mapping.py",
@@ -415,6 +416,7 @@ def compile_check() -> StepResult:
             "tests/test_robot_template_generation_pilot.py",
             "tests/test_robot_property_chain_generation_pilot.py",
             "tests/test_robot_query_equivalence_pilot.py",
+            "tests/test_robot_verify_pilot.py",
             "tests/test_robot_reconstruction_validation.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
@@ -736,6 +738,7 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests.test_robot_template_generation_pilot",
                     "tests.test_robot_property_chain_generation_pilot",
                     "tests.test_robot_query_equivalence_pilot",
+                    "tests.test_robot_verify_pilot",
                     "tests.test_robot_reconstruction_validation",
                 ],
             )

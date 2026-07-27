@@ -415,11 +415,33 @@ Additional good ROBOT candidates include:
 - import-policy checks;
 - some product-profile checks.
 
+A separate controlled `robot verify` pilot has also been completed against
+`queries/unmapped-source-terms.rq` using only temporary Python-built coverage
+graphs:
+
+- the governed zero-violation graph contained 182 triples;
+- ROBOT returned code 0, emitted a `PASS` message reporting zero violations,
+  and created no report file;
+- a deterministic temporary mutation changed
+  `sosa:ActuatableProperty` from `mapped` to `absent_from_spreadsheet`;
+- RDFLib returned exactly one expected violation row for that mutation;
+- ROBOT returned code 1, emitted a `FAIL` message reporting one violation, and
+  created `unmapped-source-terms.csv`;
+- the CSV contained exactly the same term, kind, and coverage-status row as the
+  RDFLib result;
+- both temporary graph serializations survived isomorphic round trips;
+- two permanent-gate runs produced the same semantic evidence and left all five
+  maintained ontology products unchanged.
+
+This proves the expected pass/fail and failure-row reporting semantics for the
+current governed unmapped-term validation query. Production verification,
+diagnostic interpretation, and graph construction remain under Python control.
+
 Use:
 
 - `robot query` for informational result sets after focused equivalence proof;
-- `robot verify` for queries whose returned rows are validation failures,
-  subject to a separate controlled pilot.
+- `robot verify` for failure-row validation after focused pass/fail and report
+  equivalence proof.
 
 ### Semantic diff
 
@@ -519,7 +541,7 @@ repository-code reduction.
 | Parsing and conversion | 70–100% |
 | Current SSN/SOSA closure merge and import-edge removal | 0–10% |
 | Reasoner invocation | 90–100% |
-| SPARQL querying and verification | 100% proven for the two current governed coverage `SELECT` queries; 60–100% broader potential |
+| SPARQL querying and verification | 100% proven for the two current governed coverage `SELECT` queries and `robot verify` semantics for the unmapped-term query; 60–100% broader potential |
 | Product construction | 30–60% |
 | Product validation | 20–50% |
 | Instance and probe testing | 15–35% |
@@ -573,9 +595,14 @@ experiment proves that production use would:
 ### Phase 5: standardize other ROBOT operations — in progress
 
 Read-only `robot query` execution has been evaluated and accepted for the two
-current governed COMS coverage queries. Exact ordered-row equality is required,
-and Python remains authoritative for temporary graph construction,
-reconciliation, diagnostics, and report semantics.
+current governed COMS coverage queries. Exact ordered-row equality is required.
+
+Read-only `robot verify` execution has been evaluated and accepted for the
+current governed unmapped-term validation query. Exact exit-code, violation
+count, report-file, and failure-row equality are required.
+
+Python remains authoritative for temporary graph construction, reconciliation,
+diagnostics, report semantics, and production execution.
 
 Closure merging has been evaluated and rejected for the current governed
 SSN/SOSA fixed-closure paths because ROBOT does not preserve the exact RDF or
@@ -583,7 +610,6 @@ canonical axiom set.
 
 Potential candidates remain:
 
-- `robot verify` for failure-row validation;
 - semantic diff;
 - import extraction;
 - retained example validation.
