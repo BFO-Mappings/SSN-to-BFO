@@ -219,7 +219,20 @@ reconstructs all 105 governed COMS axioms exactly:
 
 - 100 non-chain axioms through normalized ROBOT Template input;
 - 5 property-chain axioms through normalized OWL Functional Syntax;
+- 0 overlapping backend axioms;
 - 0 missing, extra, or mismatched canonical axioms.
+
+The permanent combined gate is implemented by:
+
+- `tools/robot_reconstruction_validation.py`, which provides shared workbook
+  loading, canonical extraction, ROBOT resolution, and comparison helpers;
+- `tools/validate_robot_reconstruction.py`, which runs both reconstruction
+  backends and requires exact 105-of-105 canonical equality;
+- `tests/test_robot_reconstruction_validation.py`, which locks the combined
+  result, deterministic normalized inputs, and non-modification of maintained
+  ontology products;
+- `tools/run_validation_suite.py`, which runs the focused tests and complete
+  reconstruction check as authoritative validation steps.
 
 The current Python generator remains authoritative, and all five maintained
 ontology products remain unchanged.
@@ -443,48 +456,54 @@ A reasonable code-reduction target is approximately 3,000–5,000 lines, subject
 to proof through narrow pilots. The greater benefit may be consistency and
 reduced maintenance rather than raw line-count reduction.
 
-## Recommended implementation sequence
+## Implementation status and next steps
 
-### Phase 1: report-only validation
+### Phase 1: report-only validation — complete
 
-1. Commit this audit without changing production behavior.
-2. Record the 70-of-100 unchanged Template baseline.
-3. Add an exact Python-normalized class-expression pilot.
-4. Compare ROBOT output with canonical COMS axiom identities.
+- recorded the 70-of-100 unchanged Template baseline;
+- implemented normalized ROBOT Template reconstruction;
+- proved exact canonical equality for all 100 non-chain axioms;
+- preserved the authoritative Python generation path.
 
-### Phase 2: consolidate reasoning
+### Phase 2: consolidate reasoning — complete
 
-1. Create one generic ROBOT reasoning adapter.
-2. Express product-specific reasoning as configuration.
-3. Migrate the five generator HermiT wrappers.
-4. Preserve report text and expected result semantics.
-5. Run the full current validation suite.
+- introduced one configured ROBOT/HermiT execution adapter;
+- migrated the five generator reasoning wrappers;
+- preserved public wrapper signatures, report semantics, and temporary
+  filenames;
+- passed direct old-versus-new equivalence and the full validation suite.
 
-### Phase 3: add independent ROBOT generation
+### Phase 3: independent ROBOT reconstruction — complete
 
-1. Emit normalized ROBOT inputs from governed COMS rows.
-2. Generate a comparison ontology.
-3. Canonicalize ROBOT output.
-4. Require exact canonical-axiom equality with the current generator.
-5. Keep the current generator authoritative during this phase.
+- implemented normalized Template reconstruction for 100 non-chain axioms;
+- implemented normalized Functional Syntax reconstruction for 5 property-chain
+  axioms;
+- introduced a permanent combined 105-of-105 validation gate;
+- required zero overlap, missing, extra, or mismatched canonical axioms;
+- kept the current Python generator authoritative;
+- left all five maintained ontology products unchanged.
 
-### Phase 4: evaluate production generation
+### Phase 4: production-generation evaluation — intentionally deferred
 
-Only after exact equivalence is stable:
+ROBOT will remain an independent validation oracle unless a future controlled
+experiment proves that production use would:
 
-1. decide whether ROBOT should become the primary OWL axiom constructor;
-2. retain Python governance and product selection;
-3. preserve deterministic published bytes or explicitly govern a new rendering
-   version;
-4. avoid changing release artifacts merely to reduce implementation size.
+1. remove a meaningful amount of custom Python;
+2. preserve COMS RowID-level diagnostics;
+3. preserve atomic failure and rollback behavior;
+4. preserve deterministic maintained and release artifact bytes;
+5. simplify the total architecture rather than add another production-critical
+   intermediate layer.
 
-### Phase 5: standardize other ROBOT operations
+### Phase 5: standardize other ROBOT operations — future work
+
+Potential candidates remain:
 
 - merge and closure assembly;
 - query and verify;
 - semantic diff;
 - import extraction;
-- the retained example-validation Makefile.
+- retained example validation.
 
 ## Completed immediate cleanup
 

@@ -7,16 +7,14 @@ import argparse
 import csv
 import hashlib
 import json
-import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from rdflib import Graph, Literal, URIRef
+from rdflib import Literal, URIRef
 
-import generate_mapping_from_coms as coms
-import modular_products as modular
+import robot_reconstruction_validation as reconstruction
 from coms_row_identity import (
     CanonicalRowInput,
     ExpressionNode,
@@ -302,30 +300,6 @@ def write_template(
     return selected
 
 
-def canonical_expected_axioms(
-    processed_rows: Iterable[coms.ProcessedRow],
-) -> dict[str, str]:
-    expected: dict[str, str] = {}
-
-    for processed in processed_rows:
-        row = coms.canonical_input_for_processed_row(processed)
-        if row.mapping_type not in SUPPORTED_MAPPING_TYPES:
-            continue
-        if processed.identity_audit is None:
-            raise ValueError(f"{row.row_id}: canonical identity audit is missing")
-
-        for identity in processed.identity_audit.authoritative_axioms:
-            axiom_id = (
-                "sha256:"
-                + hashlib.sha256(
-                    identity.canonical_axiom.encode("utf-8")
-                ).hexdigest()
-            )
-            expected[axiom_id] = identity.canonical_axiom
-
-    return expected
-
-
 def artifact_paths(output_dir: Path) -> PilotArtifacts:
     return PilotArtifacts(
         resolver_path=output_dir / "resolver.ttl",
@@ -345,16 +319,11 @@ def run_pilot(
     output_dir.mkdir(parents=True, exist_ok=True)
     artifacts = artifact_paths(output_dir)
 
-    rows, stats = coms.read_workbook(workbook_path)
-    processed = coms.validate_and_process_rows(
-        rows,
-        coms.Resolver(),
-        stats,
+    governed = reconstruction.load_governed_coms_rows(
+        workbook_path,
     )
-    canonical_rows = tuple(
-        coms.canonical_input_for_processed_row(row)
-        for row in processed
-    )
+    processed = governed.processed_rows
+    canonical_rows = governed.canonical_rows
 
     labels = build_entity_labels(canonical_rows)
     selected = write_template(
@@ -367,9 +336,7 @@ def run_pilot(
     artifacts.output_path.unlink(missing_ok=True)
     artifacts.errors_path.unlink(missing_ok=True)
 
-    robot = robot_path or shutil.which("robot")
-    if robot is None:
-        raise RuntimeError("ROBOT executable not found on PATH")
+    robot = reconstruction.resolve_robot_path(robot_path)
 
     completed = subprocess.run(
         [
@@ -392,48 +359,40 @@ def run_pilot(
         stderr=subprocess.PIPE,
     )
 
-    expected = canonical_expected_axioms(processed)
+    expected = reconstruction.canonical_expected_axioms(
+        processed,
+        SUPPORTED_MAPPING_TYPES,
+    )
     actual: dict[str, str] = {}
 
     if artifacts.output_path.exists():
-        graph = Graph().parse(artifacts.output_path, format="turtle")
-        actual = {
-            axiom_id: value[0]
-            for axiom_id, value in modular._canonical_graph_axioms(
-                graph,
-                ignore_unsupported=True,
-            ).items()
-        }
+        actual = reconstruction.canonical_axioms_from_turtle(
+            artifacts.output_path,
+        )
 
-    missing = sorted(set(expected) - set(actual))
-    extra = sorted(set(actual) - set(expected))
-    mismatched = sorted(
-        axiom_id
-        for axiom_id in set(expected) & set(actual)
-        if expected[axiom_id] != actual[axiom_id]
+    comparison = reconstruction.compare_canonical_axioms(
+        expected,
+        actual,
     )
+    missing = list(comparison.missing_axiom_ids)
+    extra = list(comparison.extra_axiom_ids)
+    mismatched = list(comparison.mismatched_axiom_ids)
 
     passed = (
         completed.returncode == 0
         and len(selected) == 100
         and len(expected) == 100
         and len(actual) == 100
-        and not missing
-        and not extra
-        and not mismatched
+        and comparison.passed
     )
 
     summary: dict[str, object] = {
         "passed": passed,
         "robot_path": robot,
         "robot_return_code": completed.returncode,
-        "robot_output": "\n".join(
-            part
-            for part in (
-                completed.stdout.strip(),
-                completed.stderr.strip(),
-            )
-            if part
+        "robot_output": reconstruction.combined_process_output(
+            completed.stdout,
+            completed.stderr,
         ),
         "workbook": str(workbook_path),
         "governed_row_count": len(processed),
