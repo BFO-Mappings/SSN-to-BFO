@@ -31,6 +31,7 @@ compile:
 		tools/robot_diff_pilot.py \
 		tools/robot_extract_pilot.py \
 		tools/robot_query_equivalence_pilot.py \
+		tools/robot_retained_example_validation_pilot.py \
 		tools/robot_verify_pilot.py \
 		tools/check_coms_mapping.py \
 		tools/watch_coms_mapping.py \
@@ -46,6 +47,7 @@ compile:
 		tests/test_robot_diff_pilot.py \
 		tests/test_robot_extract_pilot.py \
 		tests/test_robot_query_equivalence_pilot.py \
+		tests/test_robot_retained_example_validation_pilot.py \
 		tests/test_robot_verify_pilot.py \
 		tests/test_coms_row_identity.py \
 		tests/test_product_dispositions.py \
