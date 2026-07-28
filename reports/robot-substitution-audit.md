@@ -87,6 +87,12 @@ The older retained example-validation Makefile previously downloaded ROBOT
 `tools/install_validation_robot.sh`, so example validation uses the governed
 ROBOT 1.9.7 version, checksum, and Java heap configuration.
 
+Retained-example conversion is now also covered by a permanent focused gate.
+The gate fixes the inventory at 11 Turtle examples, converts every example
+twice, compares normalized source and output graphs, requires canonical RDF
+reproducibility, and proves that malformed Turtle is rejected without producing
+an output artifact.
+
 ## Mapping-axiom generation
 
 ### Governed mapping set
@@ -605,7 +611,7 @@ repository-code reduction.
 | Area | Estimated ROBOT coverage |
 | --- | ---: |
 | Mapping-axiom emission | 67% proven unchanged; 95% plausible after normalization |
-| Parsing and conversion | 70–100% |
+| Parsing and conversion | 100% proven for the 11 retained Turtle examples under normalized graph equivalence and malformed-input rejection; 70–100% broader potential |
 | Current SSN/SOSA closure merge and import-edge removal | 0–10% |
 | Governed BFO/CCO dependency-module extraction | Current-signature equivalence proven for all 59 seeds and the 150-term governed reasoning signature under non-strict STAR; strict extraction and production replacement remain unapproved |
 | Reasoner invocation | 90–100% |
@@ -660,7 +666,7 @@ experiment proves that production use would:
 5. simplify the total architecture rather than add another production-critical
    intermediate layer.
 
-### Phase 5: standardize other ROBOT operations — in progress
+### Phase 5: standardize other ROBOT operations — complete
 
 Read-only `robot query` execution has been evaluated and accepted for the two
 current governed COMS coverage queries. Exact ordered-row equality is required.
@@ -690,9 +696,28 @@ BFO-projection closures, including equivalent controlled-inconsistency
 detection. It is retained only as a read-only candidate; production dependency
 substitution is not approved.
 
-Potential candidates remain:
+Retained-example validation has also been evaluated and accepted as a permanent
+read-only gate:
 
-- retained example validation.
+- the exact inventory contains 11 Turtle examples;
+- all 11 convert successfully in two independent runs;
+- all 11 converted graphs are canonically reproducible;
+- 10 of 11 converted files are byte-reproducible;
+- `ip68.ttl` differs only in anonymous-node serialization order;
+- normalized comparison removes 422 OWLAPI-added structural declarations;
+- one integral `xsd:decimal` source literal is normalized to the
+  OWLAPI-produced `xsd:integer` representation;
+- all 11 normalized converted graphs are isomorphic to their normalized source
+  graphs;
+- malformed Turtle returns code 1, reports an invalid ontology, and produces no
+  output artifact.
+
+Raw converted bytes are therefore not authoritative for retained-example
+validation. The authoritative contract is exact inventory, successful ROBOT
+conversion, narrowly defined normalization, normalized graph isomorphism,
+canonical RDF reproducibility, and controlled malformed-input rejection.
+
+All currently identified Phase 5 candidates have now been evaluated.
 
 ## Completed immediate cleanup
 
@@ -705,6 +730,10 @@ Both supported invocation paths were verified successfully:
 - `make -C src validate-examples`.
 
 All 11 retained Turtle examples parsed successfully using governed ROBOT 1.9.7.
+
+The permanent retained-example gate additionally proves normalized source/output
+equivalence, canonical reproducibility across repeated conversion, and exact
+malformed-input rejection. The focused ROBOT suite now contains 12 tests.
 
 ## Final assessment
 
@@ -719,11 +748,13 @@ The recommended division of responsibility is:
 - **Python:** identity, policy, reconciliation, exact RDF closure construction,
   deterministic publication, and release governance;
 - **ROBOT:** OWL parsing, construction, conversion, reasoning, querying,
-  verification, filtering, and non-strict STAR extraction only where a
-  controlled input and governed output signature have been separately proven
-  equivalent; strict extraction is incompatible with the current pinned CCO
-  dependency, merging is not approved for the current governed closure paths,
-  and semantic diffing is not approved for the current governed products.
+  verification, filtering, retained-example conversion, and non-strict STAR
+  extraction only where a controlled input and governed output signature have
+  been separately proven equivalent; raw converted bytes are not authoritative
+  for retained examples, strict extraction is incompatible with the current
+  pinned CCO dependency, merging is not approved for the current governed
+  closure paths, and semantic diffing is not approved for the current governed
+  products.
 
 This boundary preserves the strongest features of the current SSN-to-BFO
 architecture while reducing duplicated ontology-processing code.
