@@ -76,7 +76,7 @@ class BfoProjectionTests(unittest.TestCase):
         cls.reasoning = modular.ModularReasoningResult(
             source_product_key="strict_bfo_mapping",
             source_product_sha256=hashlib.sha256(cls.strict_bytes).hexdigest(),
-            closure_triple_count=14986,
+            closure_triple_count=14988,
             return_code=0,
             reasoned_output_produced=True,
             owl_nothing_count=0,
@@ -119,7 +119,7 @@ class BfoProjectionTests(unittest.TestCase):
 
     def test_exact_disposition_reconciliation_selects_no_direct_axioms(self) -> None:
         self.assertEqual(self.reconciliation.product_key, "bfo_projection")
-        self.assertEqual(self.reconciliation.governed_axiom_count, 105)
+        self.assertEqual(self.reconciliation.governed_axiom_count, 103)
         self.assertEqual(self.reconciliation.selected_axioms, ())
         self.assertEqual(
             tuple(
@@ -130,7 +130,7 @@ class BfoProjectionTests(unittest.TestCase):
                 ("target_neutral", "provided_transitively", None, 29),
                 ("bfo_bearing", "provided_through_import", None, 19),
                 ("cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25),
-                ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32),
+                ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 30),
             ),
         )
 
@@ -528,7 +528,7 @@ print(hashlib.sha256(data).hexdigest())
                 ),
                 self.metadata,
             ).sha256,
-            "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
+            "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5",
         )
 
 

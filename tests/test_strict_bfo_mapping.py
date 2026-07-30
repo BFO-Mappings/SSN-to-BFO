@@ -155,12 +155,24 @@ class StrictBfoMappingTests(unittest.TestCase):
 
     def test_nonselected_product_policy_is_reconciled(self) -> None:
         counts = {"provided_through_import": 0, "deferred": 0, "emitted_unchanged": 0}
+        zero_axiom_rows = 0
         for row in self.disposition.rows:
+            if not row.authoritative_axioms:
+                zero_axiom_rows += 1
+                continue
             disposition = dict(row.authoritative_axioms[0].product_dispositions)[
                 "strict_bfo_mapping"
             ]
             counts[disposition.status] += 1
-        self.assertEqual(counts, {"provided_through_import": 29, "deferred": 57, "emitted_unchanged": 19})
+        self.assertEqual(zero_axiom_rows, 2)
+        self.assertEqual(
+            counts,
+            {
+                "provided_through_import": 29,
+                "deferred": 55,
+                "emitted_unchanged": 19,
+            },
+        )
 
     def test_wrong_disposition_category_and_prohibited_direct_selection_fail(self) -> None:
         cases = []
@@ -489,9 +501,14 @@ class StrictBfoMappingTests(unittest.TestCase):
         closure = modular.build_fixed_validation_closure(
             (self.strict_result.serialized_bytes, self.core_result.serialized_bytes),
             dependencies,
-            coms.CLEANUP_TRIPLES,
         )
-        self.assertEqual(len(closure), 14986)
+        self.assertEqual(len(closure), 14988)
+        self.assertTrue(
+            all(
+                triple in closure
+                for triple in coms.SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+            )
+        )
         self.assertFalse(any(True for _ in closure.triples((None, OWL.imports, None))))
         bfo_iris = {
             iri
@@ -518,7 +535,12 @@ class StrictBfoMappingTests(unittest.TestCase):
         self.assertTrue(result.passed, result.robot_output)
         self.assertEqual(result.return_code, 0)
         self.assertTrue(result.reasoned_output_produced)
-        self.assertEqual(result.closure_triple_count, 14986)
+        self.assertEqual(result.closure_triple_count, 14988)
+        self.assertTrue(result.profile_checked)
+        self.assertEqual(result.profile_triple_count, 14992)
+        self.assertEqual(result.profile_declaration_completion_count, 4)
+        self.assertEqual(result.profile_return_code, 0)
+        self.assertTrue(result.source_sample_declarations_retained)
         self.assertEqual(result.unsat_classes, [])
 
 

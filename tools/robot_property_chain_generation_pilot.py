@@ -194,9 +194,9 @@ def run_pilot(
 
     passed = (
         completed.returncode == 0
-        and len(selected) == 5
-        and len(expected) == 5
-        and len(actual) == 5
+        and len(selected) == 3
+        and len(expected) == 3
+        and len(actual) == 3
         and comparison.passed
     )
 

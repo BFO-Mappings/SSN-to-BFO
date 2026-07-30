@@ -88,9 +88,9 @@ def run_validation(
         and bool(property_chain_summary["passed"])
         and len(governed.processed_rows) == 105
         and len(template_actual) == 100
-        and len(property_chain_actual) == 5
-        and len(expected) == 105
-        and len(actual) == 105
+        and len(property_chain_actual) == 3
+        and len(expected) == 103
+        and len(actual) == 103
         and not overlap
         and comparison.passed
     )

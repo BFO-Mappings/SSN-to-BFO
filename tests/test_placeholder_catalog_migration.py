@@ -94,7 +94,7 @@ DEPENDENCY_HASHES = {
     "imports/ssn-systems.ttl": "156870689643840c861aaead206458bcdfc9cded5f7107598dbf87e015861105",
 }
 MAINTAINED_PRODUCT_HASHES = {
-    "SSN2BFO.ttl": "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+    "SSN2BFO.ttl": "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
     "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl":
         "17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770",
     "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl":
@@ -102,7 +102,7 @@ MAINTAINED_PRODUCT_HASHES = {
     "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl":
         "b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0",
     "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl":
-        "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
+        "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5",
 }
 SOSA_NEXT_CATALOG_MAPPINGS = (
     (

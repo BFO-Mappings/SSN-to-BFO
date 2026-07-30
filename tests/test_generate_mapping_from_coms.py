@@ -412,6 +412,46 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertLess(message.index(self.row_id_for(1)), message.index(self.row_id_for(3)))
         self.assertLess(message.index(self.row_id_for(2)), message.index(self.row_id_for(4)))
 
+    def test_explicit_blank_row_has_complete_zero_axiom_identity_audit(self) -> None:
+        processed, stats = self.process(
+            [
+                (
+                    SUBJECT,
+                    "",
+                    "",
+                    "Mapping deliberately deferred.",
+                )
+            ]
+        )
+
+        self.assertEqual(stats.governed_row_id_count, 1)
+        self.assertEqual(stats.processed_row_count, 1)
+        self.assertEqual(stats.identity_audit_row_count, 1)
+        self.assertEqual(stats.blank_mapping_rows, 1)
+        self.assertTrue(stats.identity_count_reconciliation_passed)
+        self.assertTrue(
+            stats.identity_row_id_set_reconciliation_passed
+        )
+        self.assertTrue(stats.identity_location_reconciliation_passed)
+
+        item = processed[0]
+        self.assertEqual(item.predicate, "")
+        self.assertEqual(item.target, "")
+
+        audit = item.identity_audit
+        self.assertIsNotNone(audit)
+        self.assertEqual(
+            audit.expression.mapping_type,
+            "explicit_blank",
+        )
+        self.assertIsNone(audit.expression.predicate_iri)
+        self.assertIsNone(audit.expression.target)
+        self.assertEqual(audit.authoritative_axioms, ())
+
+        disposition = coms.disposition_input_for_processed_row(item)
+        self.assertEqual(disposition.mapping_type, "explicit_blank")
+        self.assertEqual(disposition.authoritative_axioms, ())
+
     def test_successful_processing_has_complete_identity_counts(self) -> None:
         processed, stats = self.process(
             [(SUBJECT, "rdfs:domain", "sosa:Observation")]
@@ -713,8 +753,8 @@ class ComsGenerationReportTests(unittest.TestCase):
         return coms.HermitResult(
             graph_path=self.root / "closure.ttl",
             reasoned_path=self.root / "reasoned.ttl",
-            generated_triple_count=1124,
-            closure_triple_count=15912,
+            generated_triple_count=1114,
+            closure_triple_count=15904,
             return_code=0 if available else None,
             reasoned_output_produced=available,
             owl_nothing_count=0 if available else None,
@@ -902,7 +942,7 @@ class ComsGenerationReportTests(unittest.TestCase):
             total_triple_count=61,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=1212,
+            closure_triple_count=1214,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -929,7 +969,7 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Import triples: 0", report)
         self.assertIn("Descriptive metadata annotations: 7", report)
         self.assertIn("Total RDF triples: 61", report)
-        self.assertIn("Source-closure triple count: 1212", report)
+        self.assertIn("Source-closure triple count: 1214", report)
         self.assertIn("Source-closure HermiT result: PASS", report)
 
     def test_generation_report_includes_strict_bfo_results(self) -> None:
@@ -953,7 +993,7 @@ class ComsGenerationReportTests(unittest.TestCase):
             total_triple_count=134,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=14986,
+            closure_triple_count=14988,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -970,14 +1010,14 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Project-module closure governed axioms: 48", report)
         self.assertIn("Descriptive metadata annotations: 7", report)
         self.assertIn("Total RDF triples: 134", report)
-        self.assertIn("Pinned closure triple count: 14986", report)
+        self.assertIn("Pinned closure triple count: 14988", report)
         self.assertIn("HermiT result: PASS", report)
 
     def test_generation_report_includes_cco_extension_results(self) -> None:
         selected = tuple(
             SimpleNamespace(target_category="cco_bearing") for _ in range(25)
         ) + tuple(
-            SimpleNamespace(target_category="mixed_bfo_cco") for _ in range(32)
+            SimpleNamespace(target_category="mixed_bfo_cco") for _ in range(30)
         )
         result = SimpleNamespace(
             metadata=SimpleNamespace(
@@ -986,19 +1026,19 @@ class ComsGenerationReportTests(unittest.TestCase):
                 )
             ),
             selected_rows=(SimpleNamespace(axioms=selected),),
-            governed_axiom_count=57,
+            governed_axiom_count=55,
             subclass_axiom_count=31,
             equivalent_class_axiom_count=7,
             direct_subproperty_axiom_count=16,
-            property_chain_axiom_count=3,
-            logical_triple_count=934,
+            property_chain_axiom_count=1,
+            logical_triple_count=924,
             ontology_declaration_triple_count=1,
             import_triple_count=1,
             metadata_annotation_count=7,
-            total_triple_count=943,
+            total_triple_count=933,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=15928,
+            closure_triple_count=15920,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -1011,13 +1051,13 @@ class ComsGenerationReportTests(unittest.TestCase):
             cco_extension_hermit=hermit,
         )
         self.assertIn("## CCO Extension", report)
-        self.assertIn("Direct governed authoritative axioms: 57", report)
+        self.assertIn("Direct governed authoritative axioms: 55", report)
         self.assertIn("CCO-bearing axioms: 25", report)
-        self.assertIn("Mixed BFO/CCO axioms: 32", report)
-        self.assertIn("Project-module closure governed axioms: 105", report)
+        self.assertIn("Mixed BFO/CCO axioms: 30", report)
+        self.assertIn("Project-module closure governed axioms: 103", report)
         self.assertIn("Descriptive metadata annotations: 7", report)
-        self.assertIn("Total RDF triples: 943", report)
-        self.assertIn("Pinned closure triple count: 15928", report)
+        self.assertIn("Total RDF triples: 933", report)
+        self.assertIn("Pinned closure triple count: 15920", report)
 
     def test_generation_report_includes_import_only_bfo_projection_results(self) -> None:
         result = SimpleNamespace(
@@ -1048,14 +1088,14 @@ class ComsGenerationReportTests(unittest.TestCase):
                     "cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25
                 ),
                 modular.ProductDispositionTotal(
-                    "mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32
+                    "mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 30
                 ),
             ),
         )
         reasoning = modular.ModularReasoningResult(
             source_product_key="strict_bfo_mapping",
             source_product_sha256="strict-bfo-hash",
-            closure_triple_count=14986,
+            closure_triple_count=14988,
             return_code=0,
             reasoned_output_produced=True,
             owl_nothing_count=0,
@@ -1078,7 +1118,7 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Descriptive metadata annotations: 7", report)
         self.assertIn("Total RDF triples: 9", report)
         self.assertIn("Project-module closure governed axioms: 48", report)
-        self.assertIn("Reused strict-BFO closure triple count: 14986", report)
+        self.assertIn("Reused strict-BFO closure triple count: 14988", report)
         self.assertIn("Projection-specific HermiT invocation: none", report)
         self.assertIn("Zero direct projection axioms is intentional", report)
 
@@ -1685,14 +1725,14 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             ),
             (),
         )
-        self.assertEqual(len(maintained_graph), 1124)
+        self.assertEqual(len(maintained_graph), 1114)
         logical_graph = strip_emitted_ontology_header(
             maintained_graph,
             metadata,
             "integrated",
             checker.ROOT_ORDERED_IMPORTS,
         )
-        self.assertEqual(len(logical_graph), 1112)
+        self.assertEqual(len(logical_graph), 1102)
         self.assertNotEqual(
             hashlib.sha256(maintained_path.read_bytes()).hexdigest(),
             "fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16",
@@ -1707,11 +1747,11 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             metadata,
             require_current_counts=True,
         )
-        self.assertEqual(len(regenerated_graph), 1124)
+        self.assertEqual(len(regenerated_graph), 1114)
         self.assertEqual(regenerated_path.read_bytes(), maintained_path.read_bytes())
         self.assertEqual(
             hashlib.sha256(maintained_path.read_bytes()).hexdigest(),
-            "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+            "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
         )
         governed_axiom_ids = {
             f"sha256:{axiom.sha256}"
@@ -1719,7 +1759,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             for axiom in item.identity_audit.authoritative_axioms
         }
         self.assertEqual(set(modular._canonical_graph_axioms(regenerated_graph)), governed_axiom_ids)
-        self.assertEqual(len(governed_axiom_ids), 105)
+        self.assertEqual(len(governed_axiom_ids), 103)
 
     def test_integrated_root_bytes_are_explicit_and_repeatable_without_rdflib_serialization(self) -> None:
         rows, stats = coms.read_workbook(REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx")
@@ -1744,7 +1784,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(first.read_bytes(), second.read_bytes())
         self.assertEqual(
             hashlib.sha256(first.read_bytes()).hexdigest(),
-            "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+            "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
         )
         self.assertNotIn(".serialize(", inspect.getsource(coms._root_turtle_bytes))
         self.assertNotIn(".serialize(", inspect.getsource(coms.generate_ontology))
@@ -1760,7 +1800,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "g.generate_ontology(processed,output,load_metadata(Path('config/publication-metadata.toml')),require_current_counts=True); "
             "print(hashlib.sha256(output.read_bytes()).hexdigest())"
         )
-        expected = "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0"
+        expected = "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11"
         observed: dict[str, str] = {}
         for seed in ("0", "1", "42", "random"):
             with tempfile.TemporaryDirectory(prefix=f"root-seed-{seed}-") as directory:
@@ -2935,7 +2975,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 set(graph.triples((None, OWL.imports, None))),
                 {(ontology_iri, OWL.imports, strict_iri)},
             )
-            self.assertEqual(len(graph), 943)
+            self.assertEqual(len(graph), 933)
             validation_complete = True
             return {}
 
@@ -3545,7 +3585,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                             "local_project_graph_triple_count": 194,
                             "hermit_return_code": 0,
                             "hermit_result": "PASS",
-                            "closure_triple_count": 14986,
+                            "closure_triple_count": 14988,
                             "named_unsat_count": 0,
                         },
                     }
@@ -3608,7 +3648,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         reasoning = modular.ModularReasoningResult(
             source_product_key="strict_bfo_mapping",
             source_product_sha256=hashlib.sha256(strict_bytes).hexdigest(),
-            closure_triple_count=14986,
+            closure_triple_count=14988,
             return_code=0,
             reasoned_output_produced=True,
             owl_nothing_count=0,
@@ -3796,7 +3836,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "local_project_graph_triple_count": 194,
                     "hermit_return_code": 0,
                     "hermit_result": "PASS",
-                    "closure_triple_count": 14986,
+                    "closure_triple_count": 14988,
                     "named_unsat_count": 0,
                 },
                 "bfo_projection_sha256": checker.sha256_file(
@@ -3813,7 +3853,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "total_triple_count": 9,
                     "provided_transitively_count": 29,
                     "provided_through_import_count": 19,
-                    "deferred_no_transformation_rule_count": 57,
+                    "deferred_no_transformation_rule_count": 55,
                     "project_closure_governed_axiom_count": 48,
                     "project_graph_triple_count": 204,
                     "local_project_graph_triple_count": 202,
@@ -3821,7 +3861,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "reasoning_source_sha256": checker.sha256_file(
                         paths["strict_bfo_mapping"]
                     ),
-                    "reasoning_closure_triple_count": 14986,
+                    "reasoning_closure_triple_count": 14988,
                     "reasoning_return_code": 0,
                     "reasoned_output_produced": True,
                     "named_unsat_count": 0,
@@ -3831,28 +3871,28 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 "cco_extension": {
                     "product_key": "cco_extension",
                     "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension",
-                    "governed_axiom_count": 57,
+                    "governed_axiom_count": 55,
                     "cco_bearing_axiom_count": 25,
-                    "mixed_bfo_cco_axiom_count": 32,
-                    "logical_triple_count": 934,
+                    "mixed_bfo_cco_axiom_count": 30,
+                    "logical_triple_count": 924,
                     "ontology_declaration_triple_count": 1,
                     "import_triple_count": 1,
                     "metadata_annotation_count": 7,
-                    "total_triple_count": 943,
+                    "total_triple_count": 933,
                     "subclass_axiom_count": 31,
                     "equivalent_class_axiom_count": 7,
                     "direct_subproperty_axiom_count": 16,
-                    "property_chain_axiom_count": 3,
+                    "property_chain_axiom_count": 1,
                     "union_expression_count": 7,
                     "intersection_expression_count": 86,
                     "existential_restriction_count": 95,
-                    "rdf_list_count": 96,
-                    "project_closure_governed_axiom_count": 105,
-                    "project_graph_triple_count": 1138,
-                    "local_project_graph_triple_count": 1136,
+                    "rdf_list_count": 94,
+                    "project_closure_governed_axiom_count": 103,
+                    "project_graph_triple_count": 1128,
+                    "local_project_graph_triple_count": 1126,
                     "hermit_return_code": 0,
                     "hermit_result": "PASS",
-                    "closure_triple_count": 15928,
+                    "closure_triple_count": 15920,
                     "named_unsat_count": 0,
                 },
             }

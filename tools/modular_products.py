@@ -71,43 +71,43 @@ STRICT_BFO_RDF_LIST_COUNT = 14
 STRICT_BFO_PROJECT_CLOSURE_AXIOM_COUNT = 48
 STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT = 195
 STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 194
-STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14986
+STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14988
 STRICT_BFO_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 201
 STRICT_BFO_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 200
-STRICT_BFO_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 14992
+STRICT_BFO_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 14994
 ALIGNMENT_CORE_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
 )
 
 CCO_EXTENSION_KEY = "cco_extension"
-CCO_EXTENSION_AXIOM_COUNT = 57
+CCO_EXTENSION_AXIOM_COUNT = 55
 CCO_EXTENSION_CCO_BEARING_COUNT = 25
-CCO_EXTENSION_MIXED_COUNT = 32
+CCO_EXTENSION_MIXED_COUNT = 30
 CCO_EXTENSION_SUBCLASS_COUNT = 31
 CCO_EXTENSION_EQUIVALENT_CLASS_COUNT = 7
 CCO_EXTENSION_DIRECT_SUBPROPERTY_COUNT = 16
-CCO_EXTENSION_PROPERTY_CHAIN_COUNT = 3
+CCO_EXTENSION_PROPERTY_CHAIN_COUNT = 1
 CCO_EXTENSION_DOMAIN_COUNT = 0
 CCO_EXTENSION_RANGE_COUNT = 0
-CCO_EXTENSION_LOGICAL_TRIPLE_COUNT = 934
-CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 943
-CCO_EXTENSION_FORMAL_TOTAL_TRIPLE_COUNT = 946
+CCO_EXTENSION_LOGICAL_TRIPLE_COUNT = 924
+CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 933
+CCO_EXTENSION_FORMAL_TOTAL_TRIPLE_COUNT = 936
 CCO_EXTENSION_NAMED_TARGET_COUNT = 20
-CCO_EXTENSION_COMPLEX_TARGET_COUNT = 37
+CCO_EXTENSION_COMPLEX_TARGET_COUNT = 35
 CCO_EXTENSION_UNION_COUNT = 7
 CCO_EXTENSION_INTERSECTION_COUNT = 86
 CCO_EXTENSION_EXISTENTIAL_COUNT = 95
-CCO_EXTENSION_RDF_LIST_COUNT = 96
-CCO_EXTENSION_SOURCE_TERM_COUNT = 61
-CCO_EXTENSION_CCO_TERM_COUNT = 42
-CCO_EXTENSION_BFO_TERM_COUNT = 18
-CCO_EXTENSION_PROJECT_CLOSURE_AXIOM_COUNT = 105
-CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1138
-CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1136
-CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15928
-CCO_EXTENSION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 1147
-CCO_EXTENSION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1145
-CCO_EXTENSION_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15937
+CCO_EXTENSION_RDF_LIST_COUNT = 94
+CCO_EXTENSION_SOURCE_TERM_COUNT = 59
+CCO_EXTENSION_CCO_TERM_COUNT = 40
+CCO_EXTENSION_BFO_TERM_COUNT = 16
+CCO_EXTENSION_PROJECT_CLOSURE_AXIOM_COUNT = 103
+CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1128
+CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1126
+CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15920
+CCO_EXTENSION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 1137
+CCO_EXTENSION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1135
+CCO_EXTENSION_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15929
 STRICT_BFO_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
 )
@@ -183,7 +183,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "emitted_unchanged", None, 29),
             ("bfo_bearing", "not_applicable", "TARGET_SPECIFIC", 19),
             ("cco_bearing", "not_applicable", "TARGET_SPECIFIC", 25),
-            ("mixed_bfo_cco", "not_applicable", "TARGET_SPECIFIC", 32),
+            ("mixed_bfo_cco", "not_applicable", "TARGET_SPECIFIC", CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
     STRICT_BFO_MAPPING_KEY: ProductSelectionPolicy(
@@ -194,7 +194,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "provided_through_import", None, 29),
             ("bfo_bearing", "emitted_unchanged", None, 19),
             ("cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25),
-            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32),
+            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
     CCO_EXTENSION_KEY: ProductSelectionPolicy(
@@ -208,7 +208,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "provided_transitively", None, 29),
             ("bfo_bearing", "provided_through_import", None, 19),
             ("cco_bearing", "emitted_unchanged", None, 25),
-            ("mixed_bfo_cco", "emitted_unchanged", None, 32),
+            ("mixed_bfo_cco", "emitted_unchanged", None, CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
     BFO_PROJECTION_KEY: ProductSelectionPolicy(
@@ -219,7 +219,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "provided_transitively", None, 29),
             ("bfo_bearing", "provided_through_import", None, 19),
             ("cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25),
-            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32),
+            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
 }
@@ -1983,11 +1983,11 @@ def validate_bfo_projection(
                 f"{disposition_reconciliation.product_key!r}",
             )
         )
-    if disposition_reconciliation.governed_axiom_count != 105:
+    if disposition_reconciliation.governed_axiom_count != 103:
         issues.append(
             issue(
                 "PRODUCT_RECONCILIATION_MISMATCH",
-                f"expected 105 governed axioms, got "
+                f"expected 103 governed axioms, got "
                 f"{disposition_reconciliation.governed_axiom_count}",
             )
         )

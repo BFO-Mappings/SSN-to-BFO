@@ -138,11 +138,11 @@ PREFIXES = {
 ROOT_ONTOLOGY_DECLARATION_COUNT = 1
 ROOT_IMPORT_COUNT = 4
 ROOT_METADATA_ANNOTATION_COUNT = 7
-ROOT_LOGICAL_TRIPLE_COUNT = 1112
-ROOT_TOTAL_TRIPLE_COUNT = 1124
-ROOT_FORMAL_TOTAL_TRIPLE_COUNT = 1127
-ROOT_FIXED_CLOSURE_TRIPLE_COUNT = 15912
-ROOT_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15915
+ROOT_LOGICAL_TRIPLE_COUNT = 1102
+ROOT_TOTAL_TRIPLE_COUNT = 1114
+ROOT_FORMAL_TOTAL_TRIPLE_COUNT = 1117
+ROOT_FIXED_CLOSURE_TRIPLE_COUNT = 15904
+ROOT_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15907
 
 PREFIX_FILES = {
     "bfo": Path("imports/cco.ttl"),
@@ -190,9 +190,36 @@ DOMAIN_RANGE_PREDICATES = {"rdfs:domain", "rdfs:range"}
 OBJECT_PROPERTY_SUBJECT_PREDICATES = OBJECT_PROPERTY_PREDICATES | DOMAIN_RANGE_PREDICATES
 MAPPING_PREDICATES = CLASS_PREDICATES | OBJECT_PROPERTY_PREDICATES
 
-CLEANUP_TRIPLES = (
+SAMPLE_PROPERTY_SOURCE_DECLARATIONS = (
     (SOSA.isSampleOf, RDF.type, OWL.FunctionalProperty),
     (SOSA.hasSample, RDF.type, OWL.InverseFunctionalProperty),
+)
+
+# Diagnostic-only compatibility alias. Production and release validation must
+# retain these pinned source declarations.
+CLEANUP_TRIPLES = SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+
+DL_PROFILE_DECLARATION_COMPLETION = (
+    (
+        URIRef("http://purl.org/dc/terms/type"),
+        RDF.type,
+        OWL.AnnotationProperty,
+    ),
+    (
+        URIRef("http://purl.org/dc/terms/issued"),
+        RDF.type,
+        OWL.AnnotationProperty,
+    ),
+    (
+        URIRef("http://www.w3.org/ns/adms#status"),
+        RDF.type,
+        OWL.AnnotationProperty,
+    ),
+    (
+        URIRef("http://www.w3.org/2004/02/skos/core#Concept"),
+        RDF.type,
+        OWL.Class,
+    ),
 )
 
 TOKEN_RE = re.compile(
@@ -325,11 +352,26 @@ class HermitResult:
     unsat_classes: list[URIRef]
     robot_output: str
     robot_path: str | None
+    profile_checked: bool = False
+    profile_graph_path: Path | None = None
+    profile_triple_count: int | None = None
+    profile_declaration_completion_count: int = 0
+    profile_return_code: int | None = None
+    profile_output: str = ""
+    source_sample_declarations_retained: bool | None = None
 
     @property
     def passed(self) -> bool:
+        profile_passed = (
+            not self.profile_checked
+            or (
+                self.profile_return_code == 0
+                and self.source_sample_declarations_retained is True
+            )
+        )
         return (
-            self.return_code == 0
+            profile_passed
+            and self.return_code == 0
             and self.reasoned_output_produced
             and self.owl_nothing_count == 0
             and not self.unsat_classes
@@ -1156,11 +1198,25 @@ def validate_identity_audit_completeness(
                     f"{item.row.diagnostic_id} has a mismatched identity audit",
                 )
             )
-        if not audit.authoritative_axioms:
+        if (
+            audit.expression.mapping_type != "explicit_blank"
+            and not audit.authoritative_axioms
+        ):
             problems.append(
                 (
                     "IDENTITY_AUDIT_INCOMPLETE",
                     f"{item.row.diagnostic_id} does not produce a canonical authoritative axiom",
+                )
+            )
+        if (
+            audit.expression.mapping_type == "explicit_blank"
+            and audit.authoritative_axioms
+        ):
+            problems.append(
+                (
+                    "IDENTITY_AUDIT_INCOMPLETE",
+                    f"{item.row.diagnostic_id} is an explicit blank row but "
+                    "produces canonical authoritative axioms",
                 )
             )
 
@@ -1402,7 +1458,7 @@ def render_formal_product_set(
         "alignment_core": 64,
         "strict_bfo_mapping": 137,
         "bfo_projection": 12,
-        "cco_extension": 946,
+        "cco_extension": 936,
     }
     for result in (core, strict, projection, cco):
         expected_total = expected_totals[result.metadata.product_key]
@@ -1471,7 +1527,7 @@ def render_formal_product_set(
         formal_metadata_annotation_count=3,
         logical_triple_count=ROOT_LOGICAL_TRIPLE_COUNT,
         total_triple_count=len(root_graph),
-        governed_axiom_count=105,
+        governed_axiom_count=103,
         sha256=hashlib.sha256(root_bytes).hexdigest(),
     )
     return FormalProductSet(
@@ -1644,18 +1700,56 @@ def _run_hermit_closure(
     closure: Graph,
     tmp_dir: Path,
     profile: HermitRunProfile,
+    *,
+    validate_profile: bool = True,
 ) -> HermitResult:
-    """Serialize one configured closure and evaluate it with ROBOT/HermiT."""
+    """Evaluate one exact closure with OWL 2 DL profile and HermiT gates."""
 
     generated_graph = Graph().parse(generated_path, format="turtle")
 
     tmp_dir.mkdir(parents=True, exist_ok=True)
     graph_path = tmp_dir / profile.graph_filename
     reasoned_path = tmp_dir / profile.reasoned_filename
-    if reasoned_path.exists():
-        reasoned_path.unlink()
+    profile_graph_path = graph_path.with_name(
+        f"{graph_path.stem}-owl2dl-profile{graph_path.suffix}"
+    )
 
+    reasoned_path.unlink(missing_ok=True)
+    profile_graph_path.unlink(missing_ok=True)
+
+    # This graph is the exact product-plus-pinned-dependency closure used by
+    # HermiT and reported through closure_triple_count.
     closure.serialize(destination=graph_path, format="turtle")
+
+    profile_triple_count: int | None = None
+    profile_completion_count = 0
+    profile_return_code: int | None = None
+    profile_output = ""
+    declarations_retained: bool | None = None
+
+    if validate_profile:
+        declarations_retained = all(
+            triple in closure
+            for triple in SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+        )
+
+        profile_graph = Graph()
+        bind_prefixes(profile_graph)
+        for prefix, namespace in closure.namespaces():
+            profile_graph.bind(prefix, namespace)
+        for triple in closure:
+            profile_graph.add(triple)
+
+        for triple in DL_PROFILE_DECLARATION_COMPLETION:
+            if triple not in profile_graph:
+                profile_graph.add(triple)
+                profile_completion_count += 1
+
+        profile_triple_count = len(profile_graph)
+        profile_graph.serialize(
+            destination=profile_graph_path,
+            format="turtle",
+        )
 
     robot = shutil.which("robot")
     if robot is None:
@@ -1670,7 +1764,67 @@ def _run_hermit_closure(
             unsat_classes=[],
             robot_output="ROBOT executable not found on PATH.",
             robot_path=None,
+            profile_checked=validate_profile,
+            profile_graph_path=profile_graph_path if validate_profile else None,
+            profile_triple_count=profile_triple_count,
+            profile_declaration_completion_count=profile_completion_count,
+            profile_return_code=None,
+            profile_output="ROBOT executable not found on PATH.",
+            source_sample_declarations_retained=declarations_retained,
         )
+
+    if validate_profile:
+        if declarations_retained is not True:
+            profile_return_code = 1
+            profile_output = (
+                "Exact validation closure does not retain both pinned SOSA "
+                "sample-property declarations."
+            )
+        else:
+            profile_proc = subprocess.run(
+                [
+                    robot,
+                    "validate-profile",
+                    "--profile",
+                    "DL",
+                    "--input",
+                    str(profile_graph_path),
+                ],
+                cwd=REPO_ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            profile_return_code = profile_proc.returncode
+            profile_output = "\n".join(
+                part
+                for part in (
+                    profile_proc.stdout.strip(),
+                    profile_proc.stderr.strip(),
+                )
+                if part
+            )
+
+        if profile_return_code != 0:
+            return HermitResult(
+                graph_path=graph_path,
+                reasoned_path=reasoned_path,
+                generated_triple_count=len(generated_graph),
+                closure_triple_count=len(closure),
+                return_code=None,
+                reasoned_output_produced=False,
+                owl_nothing_count=None,
+                unsat_classes=[],
+                robot_output=profile_output,
+                robot_path=robot,
+                profile_checked=True,
+                profile_graph_path=profile_graph_path,
+                profile_triple_count=profile_triple_count,
+                profile_declaration_completion_count=profile_completion_count,
+                profile_return_code=profile_return_code,
+                profile_output=profile_output,
+                source_sample_declarations_retained=declarations_retained,
+            )
 
     proc = subprocess.run(
         [
@@ -1689,7 +1843,7 @@ def _run_hermit_closure(
         stderr=subprocess.PIPE,
     )
 
-    output = "\n".join(
+    reasoner_output = "\n".join(
         part
         for part in (
             proc.stdout.strip(),
@@ -1697,10 +1851,18 @@ def _run_hermit_closure(
         )
         if part
     )
+    combined_output = "\n".join(
+        part
+        for part in (
+            profile_output.strip(),
+            reasoner_output.strip(),
+        )
+        if part
+    )
 
     inferred_unsats = {
         URIRef(match.group(1))
-        for match in UNSAT_RE.finditer(output)
+        for match in UNSAT_RE.finditer(reasoner_output)
     }
 
     reasoned_output_produced = (
@@ -1725,10 +1887,16 @@ def _run_hermit_closure(
         reasoned_output_produced=reasoned_output_produced,
         owl_nothing_count=owl_nothing_count,
         unsat_classes=sorted(inferred_unsats, key=str),
-        robot_output=output,
+        robot_output=combined_output,
         robot_path=robot,
+        profile_checked=validate_profile,
+        profile_graph_path=profile_graph_path if validate_profile else None,
+        profile_triple_count=profile_triple_count,
+        profile_declaration_completion_count=profile_completion_count,
+        profile_return_code=profile_return_code,
+        profile_output=profile_output,
+        source_sample_declarations_retained=declarations_retained,
     )
-
 
 def run_candidate_hermit(
     generated_path: Path,
@@ -1750,9 +1918,6 @@ def run_candidate_hermit(
     ):
         closure.remove(triple)
 
-    for triple in CLEANUP_TRIPLES:
-        closure.remove(triple)
-
     return _run_hermit_closure(
         generated_path,
         closure,
@@ -1771,9 +1936,6 @@ def run_alignment_core_hermit(
         generated_path.read_bytes(),
         (REPO_ROOT / path for path in SOURCE_IMPORTS),
     )
-
-    for triple in CLEANUP_TRIPLES:
-        closure.remove(triple)
 
     return _run_hermit_closure(
         generated_path,
@@ -1799,7 +1961,6 @@ def run_strict_bfo_hermit(
             REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
             *(REPO_ROOT / path for path in SOURCE_IMPORTS),
         ),
-        CLEANUP_TRIPLES,
     )
 
     return _run_hermit_closure(
@@ -1828,7 +1989,6 @@ def run_cco_extension_hermit(
             REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
             *(REPO_ROOT / path for path in SOURCE_IMPORTS),
         ),
-        CLEANUP_TRIPLES,
     )
 
     return _run_hermit_closure(
@@ -1857,7 +2017,6 @@ def run_bfo_projection_hermit(
             REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
             *(REPO_ROOT / path for path in SOURCE_IMPORTS),
         ),
-        CLEANUP_TRIPLES,
     )
 
     return _run_hermit_closure(
@@ -1946,8 +2105,7 @@ def build_and_write_strict_bfo_mapping(
                 REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
                 *(REPO_ROOT / path for path in SOURCE_IMPORTS),
             ),
-            CLEANUP_TRIPLES,
-        )
+            )
         structural_issues = validate_strict_bfo_mapping(
             result.serialized_bytes,
             selected,
@@ -2093,8 +2251,7 @@ def build_and_write_cco_extension(
                 REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
                 *(REPO_ROOT / path for path in SOURCE_IMPORTS),
             ),
-            CLEANUP_TRIPLES,
-        )
+            )
         structural_issues = validate_cco_extension(
             result.serialized_bytes,
             selected,
@@ -2769,7 +2926,7 @@ def write_generation_report(
             f"- Named unsatisfiable classes: {'n/a' if strict_bfo_hermit is None else len(strict_bfo_hermit.unsat_classes)}",
             f"- HermiT result: {'FAIL' if strict_bfo_hermit is None else 'PASS' if strict_bfo_hermit.passed else 'FAIL'}",
             "- The validation dependency `imports/cco.ttl` is not imported by the published strict graph and does not authorize CCO mappings or transformations.",
-            "- The 57 CCO-bearing or mixed mappings remain deferred; no transformation or projection is implemented.",
+            "- The 55 CCO-bearing or mixed axioms remain deferred; no transformation or projection is implemented.",
             "- Formal-release metadata and identity remain deferred.",
         ]
 
@@ -2867,7 +3024,7 @@ def write_generation_report(
             "- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`",
             "- Imported strict-BFO governed axioms: 19",
             "- Transitively imported alignment-core governed axioms: 29",
-            "- Project-module closure governed axioms: 105",
+            "- Project-module closure governed axioms: 103",
             "- Pairwise governed overlap: 0",
             "- RO and unexpected logical-vocabulary audit: PASS",
             "- Integrated-root and project-module canonical-axiom reconciliation: PASS",
@@ -3261,7 +3418,7 @@ def write_summary_json(
             "total_triple_count": bfo_projection_result.total_triple_count,
             "provided_transitively_count": 29,
             "provided_through_import_count": 19,
-            "deferred_no_transformation_rule_count": 57,
+            "deferred_no_transformation_rule_count": 55,
             "project_closure_governed_axiom_count": 48,
             "project_graph_triple_count": 204,
             "local_project_graph_triple_count": 202,
@@ -3316,9 +3473,9 @@ def write_summary_json(
             "intersection_expression_count": cco_extension_result.intersection_expression_count,
             "existential_restriction_count": cco_extension_result.existential_restriction_count,
             "rdf_list_count": cco_extension_result.rdf_list_count,
-            "project_closure_governed_axiom_count": 105,
-            "project_graph_triple_count": 1138,
-            "local_project_graph_triple_count": 1136,
+            "project_closure_governed_axiom_count": 103,
+            "project_graph_triple_count": 1128,
+            "local_project_graph_triple_count": 1126,
             "hermit_return_code": None if cco_extension_hermit is None else cco_extension_hermit.return_code,
             "hermit_result": "FAIL" if cco_extension_hermit is None else "PASS" if cco_extension_hermit.passed else "FAIL",
             "closure_triple_count": None if cco_extension_hermit is None else cco_extension_hermit.closure_triple_count,
