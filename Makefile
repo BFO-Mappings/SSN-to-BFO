@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -34,6 +34,7 @@ compile:
 		tools/robot_retained_example_validation_pilot.py \
 		tools/robot_verify_pilot.py \
 		tools/check_coms_mapping.py \
+		tools/check_sosa_next_mapping.py \
 		tools/watch_coms_mapping.py \
 		tools/publication_metadata.py \
 		tools/check_publication_metadata.py \
@@ -44,6 +45,7 @@ compile:
 		tools/release_archive.py \
 		tools/rehearse_release.py \
 		tests/test_generate_mapping_from_coms.py \
+		tests/test_check_sosa_next_mapping.py \
 		tests/test_robot_diff_pilot.py \
 		tests/test_robot_extract_pilot.py \
 		tests/test_robot_query_equivalence_pilot.py \
@@ -90,6 +92,10 @@ check-release-rehearsal:
 
 check-placeholder-catalog-migration:
 	PYTHONDONTWRITEBYTECODE=1 python -B -m unittest discover -s tests -p 'test_placeholder_catalog_migration.py'
+
+check-sosa-next:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_check_sosa_next_mapping.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_next_mapping.py
 
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py
