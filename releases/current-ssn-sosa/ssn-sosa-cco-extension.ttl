@@ -571,12 +571,6 @@ _:a7bfe203db92e7e2b6f107641f3edbbcc111a4b9879471d70e1928b2817c0b853_target_child
 
 <http://www.w3.org/ns/sosa/madeBySampler> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001833> .
 
-<http://www.w3.org/ns/sosa/isSampleOf> owl:propertyChainAxiom _:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_0 .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_0 rdf:first <http://purl.obolibrary.org/obo/BFO_0000101> .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_0 rdf:rest _:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_1 .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_1 rdf:first <https://www.commoncoreontologies.org/ont00001938> .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_1 rdf:rest rdf:nil .
-
 <http://www.w3.org/ns/ssn/systems/Resolution> rdfs:subClassOf _:a851caee27c77385ceed70a2deb1a071a3e708361318649f6f62e6b37813791a9_target .
 _:a851caee27c77385ceed70a2deb1a071a3e708361318649f6f62e6b37813791a9_target rdf:type owl:Class .
 _:a851caee27c77385ceed70a2deb1a071a3e708361318649f6f62e6b37813791a9_target owl:intersectionOf _:a851caee27c77385ceed70a2deb1a071a3e708361318649f6f62e6b37813791a9_target_list_0 .
@@ -701,12 +695,6 @@ _:aac90bbff84f27289fdc5c5fb492323384ea75b344016bb5eb7a4d34a540a8f91_chain_list_1
 _:aac90bbff84f27289fdc5c5fb492323384ea75b344016bb5eb7a4d34a540a8f91_chain_list_1 rdf:rest rdf:nil .
 
 <http://www.w3.org/ns/sosa/sampling/hasSampleRelationship> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001801> .
-
-<http://www.w3.org/ns/sosa/hasSample> owl:propertyChainAxiom _:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_0 .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_0 rdf:first <https://www.commoncoreontologies.org/ont00001873> .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_0 rdf:rest _:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_1 .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_1 rdf:first <http://purl.obolibrary.org/obo/BFO_0000084> .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_1 rdf:rest rdf:nil .
 
 <http://www.w3.org/ns/sosa/Actuation> owl:equivalentClass _:ac65595bd49e621675a797ec88f0bed32696c176393221adaae8b1a9192cdd842_target .
 _:ac65595bd49e621675a797ec88f0bed32696c176393221adaae8b1a9192cdd842_target rdf:type owl:Class .

@@ -225,9 +225,9 @@ class ProductDispositionTests(unittest.TestCase):
         self.assertEqual(document.product_order, self.product_order)
         self.assertEqual(summary.governed_row_count, 105)
         self.assertEqual(summary.unique_row_id_count, 105)
-        self.assertEqual(summary.authoritative_axiom_count, 105)
-        self.assertEqual(summary.unique_authoritative_axiom_count, 105)
-        self.assertEqual(summary.zero_axiom_row_count, 0)
+        self.assertEqual(summary.authoritative_axiom_count, 103)
+        self.assertEqual(summary.unique_authoritative_axiom_count, 103)
+        self.assertEqual(summary.zero_axiom_row_count, 2)
         self.assertEqual(
             (
                 summary.target_neutral_axiom_count,
@@ -235,7 +235,7 @@ class ProductDispositionTests(unittest.TestCase):
                 summary.cco_bearing_axiom_count,
                 summary.mixed_bfo_cco_axiom_count,
             ),
-            (29, 19, 25, 32),
+            (29, 19, 25, 30),
         )
         self.assertEqual(
             (
@@ -244,9 +244,16 @@ class ProductDispositionTests(unittest.TestCase):
                 summary.property_chain_row_count,
                 summary.property_typing_row_count,
             ),
-            (44, 25, 5, 31),
+            (44, 25, 3, 31),
         )
-        self.assertTrue(all(len(row.authoritative_axioms) == 1 for row in document.rows))
+        self.assertEqual(
+            sum(not row.authoritative_axioms for row in document.rows),
+            2,
+        )
+        self.assertEqual(
+            sum(len(row.authoritative_axioms) == 1 for row in document.rows),
+            103,
+        )
 
     def test_exact_disposition_matrix(self) -> None:
         expected = {

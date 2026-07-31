@@ -205,7 +205,7 @@ class RobotExtractPilotTests(unittest.TestCase):
 
                 expected_reasoning = {
                     "strict_bfo": (14986, 4433, 163),
-                    "cco_extension": (15928, 5375, 232),
+                    "cco_extension": (15918, 5365, 232),
                     "bfo_projection": (14994, 4441, 163),
                 }
 

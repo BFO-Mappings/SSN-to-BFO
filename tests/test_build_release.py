@@ -37,11 +37,11 @@ SYNTHETIC_CONTEXT = parse_formal_release_context(
     "0123456789abcdef0123456789abcdef01234567",
 )
 FORMAL_HASHES = {
-    "SSN2BFO.ttl": "fa076bfd3b4b279b14e66e52642d419bafce0c861aa51854f1dba18f39a163a4",
+    "SSN2BFO.ttl": "1e933f8bcf80a3479dc5eba88ccc0f3dfefd3b83c248ddfffd8222d2b5a57954",
     "current-ssn-sosa/ssn-sosa-alignment-core.ttl": "c40ec6372eeb43d37fb7fc4775535574ac4a4ee1e218fbe6e840e35b0ba20716",
     "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl": "68a91fc766a7ce8ace367d63d70b22f30adfdbb88a41cf9a622d2db956a69be9",
     "current-ssn-sosa/ssn-sosa-bfo-projection.ttl": "9c995fa0b6d8e3acfabbd495515fe36ffec58c4f353249ee9f3ee195c74b9673",
-    "current-ssn-sosa/ssn-sosa-cco-extension.ttl": "960160a4d422a8391c29a2e4ff6c211e6047cdb9fa11cebdbf1497d14e3311f2",
+    "current-ssn-sosa/ssn-sosa-cco-extension.ttl": "b8645db9d6c8cf49f8b223ce0bd37c65bffed9aac8bf6d41f53d37b51a38d300",
 }
 NOTES_PATH = REPO_ROOT / "release-notes/SYNTHETIC-2099-01-02.md"
 
@@ -173,11 +173,11 @@ class ReleasePackageTests(unittest.TestCase):
                 for value in self.manifest.products
             ],
             [
-                ("integrated", 1, 4, 7, 3, 1112, 1127, 105, 105),
+                ("integrated", 1, 4, 7, 3, 1102, 1117, 103, 105),
                 ("alignment_core", 1, 0, 7, 3, 53, 64, 29, 29),
                 ("strict_bfo_mapping", 1, 1, 7, 3, 125, 137, 19, 48),
                 ("bfo_projection", 1, 1, 7, 3, 0, 12, 0, 48),
-                ("cco_extension", 1, 1, 7, 3, 934, 946, 57, 105),
+                ("cco_extension", 1, 1, 7, 3, 924, 936, 55, 105),
             ],
         )
 

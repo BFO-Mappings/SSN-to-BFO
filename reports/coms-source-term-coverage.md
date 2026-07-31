@@ -19,13 +19,13 @@ A domain or range row covers a property for source-term coverage but does not co
 | source terms returned by SPARQL | 91 |
 | mapped classes | 44 |
 | unmapped classes | 0 |
-| mapped object properties | 30 |
-| unmapped object properties | 0 |
-| explicitly listed blank mappings | 0 |
+| mapped object properties | 28 |
+| unmapped object properties | 2 |
+| explicitly listed blank mappings | 2 |
 | listed only in domain/range property-typing rows | 17 |
 | source terms absent from spreadsheet | 0 |
 | spreadsheet subjects not found in source ontologies | 0 |
-| unmapped rows returned by SPARQL coverage query | 0 |
+| unmapped rows returned by SPARQL coverage query | 2 |
 
 ## Mapped Classes
 
@@ -81,12 +81,10 @@ A domain or range row covers a property for source-term coverage but does not co
 
 - `sosa:actsOnProperty`
 - `sosa:hasResult`
-- `sosa:hasSample`
 - `sosa:hosts`
 - `sosa:isActedOnBy`
 - `sosa:isHostedBy`
 - `sosa:isResultOf`
-- `sosa:isSampleOf`
 - `sosa:madeBySampler`
 - `sosa:madeSampling`
 - `sosa:observedProperty`
@@ -112,9 +110,13 @@ A domain or range row covers a property for source-term coverage but does not co
 
 ## Unmapped Object Properties
 
+- `sosa:hasSample`
+- `sosa:isSampleOf`
 
 ## Explicitly Listed Blank Mappings
 
+- `sosa:hasSample`
+- `sosa:isSampleOf`
 
 ## Listed Only In Domain/Range Property-Typing Rows
 

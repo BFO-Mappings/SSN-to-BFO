@@ -24,11 +24,11 @@ PRODUCT_ORDER = (
     "cco_extension",
 )
 FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS = (
-    ("integrated", 15915),
-    ("alignment_core", 1215),
-    ("strict_bfo_mapping", 14992),
-    ("bfo_projection", 15003),
-    ("cco_extension", 15937),
+    ("integrated", 15907),
+    ("alignment_core", 1217),
+    ("strict_bfo_mapping", 14994),
+    ("bfo_projection", 15005),
+    ("cco_extension", 15929),
 )
 if tuple(key for key, _ in FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS) != PRODUCT_ORDER:
     raise RuntimeError("formal fixed-closure counts and product order differ")
