@@ -83,8 +83,6 @@ SOSA_NEXT_HASHES = {
         "1bf9de31bf344c9b90c673cf3bab05467a7bb1026f8cb36d27e25cb9fabcfd2b",
     "src/sosa-next/sosa-mappings-edit.ttl":
         "7a27a32b8e76af2d57bf8ded5fe8b7e61ad67792c36ba3e3917d1279f8cd63d3",
-    "src/sosa-next/catalog-v001.xml":
-        "e0d766d9efa26ccf9ad2cf4b8f5a9dd37a47c1dbaf57836570c3ef2d38124a2d",
 }
 DEPENDENCY_HASHES = {
     "imports/cco.ttl": "3ad8f098ecb3d7ca27464a1edf2795b90c69573843447d51f090e6f1b30694f4",
@@ -105,6 +103,48 @@ MAINTAINED_PRODUCT_HASHES = {
         "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
 }
 SOSA_NEXT_CATALOG_MAPPINGS = (
+    (
+        "http://www.w3.org/ns/sosa/",
+        "imports/sosa.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/common/",
+        "imports/sosa-common.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/act/",
+        "imports/sosa-actuation.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/dep/",
+        "imports/sosa-deprecated.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/obs/",
+        "imports/sosa-observation.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/sam/",
+        "imports/sosa-sampling.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/systems/",
+        "imports/sosa-system.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/sampling/",
+        "imports/sample-relations.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/source-declaration-overlay",
+        "imports/sosa-source-declaration-overlay.ttl",
+    ),
+    (
+        "https://www.commoncoreontologies.org/"
+        "CommonCoreOntologiesMerged",
+        "../../imports/cco.ttl",
+    ),
     (
         "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo",
         "../../releases/sosa-next/sosa-bfo-directmappings.ttl",
@@ -169,16 +209,16 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
                 occurrences[relative] = matched
         self.assertEqual(set(occurrences), set(HISTORICAL_REFERENCE_ALLOWLIST), occurrences)
 
-    def test_sosa_next_scaffold_is_byte_preserved_and_strictly_parseable(self) -> None:
+    def test_sosa_next_scaffold_ttl_is_byte_preserved_and_parseable(self) -> None:
         for relative, expected_hash in SOSA_NEXT_HASHES.items():
             with self.subTest(path=relative):
                 path = REPO_ROOT / relative
                 self.assertTrue(stat.S_ISREG(path.lstat().st_mode))
                 self.assertEqual(sha256(path), expected_hash)
-                if path.suffix == ".ttl":
-                    self.assertGreater(len(Graph().parse(path, format="turtle")), 0)
-                else:
-                    ElementTree.parse(path)
+                self.assertGreater(
+                    len(Graph().parse(path, format="turtle")),
+                    0,
+                )
 
     def test_pinned_dependencies_are_preserved_parseable_and_logically_nonempty(self) -> None:
         parsed: dict[str, Graph] = {}
@@ -206,15 +246,36 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
         self.assertEqual(root.tag, f"{{{CATALOG_NAMESPACE}}}catalog")
         entries = tuple(
             (child.attrib["name"], child.attrib["uri"])
-            for child in root.findall(f"{{{CATALOG_NAMESPACE}}}uri")
+            for child in root.findall(
+                f".//{{{CATALOG_NAMESPACE}}}uri"
+            )
         )
-        self.assertEqual(entries, SOSA_NEXT_CATALOG_MAPPINGS)
-        for _, target in entries:
-            with self.subTest(target=target):
+
+        self.assertEqual(
+            len(entries),
+            len(SOSA_NEXT_CATALOG_MAPPINGS),
+        )
+        self.assertEqual(
+            len({name for name, _ in entries}),
+            len(entries),
+        )
+        self.assertEqual(
+            dict(entries),
+            dict(SOSA_NEXT_CATALOG_MAPPINGS),
+        )
+
+        for name, target in entries:
+            with self.subTest(name=name, target=target):
+                self.assertTrue(name)
                 self.assertFalse(PurePosixPath(target).is_absolute())
                 self.assertNotIn("\\", target)
                 self.assertNotIn("/Users/", target)
-                self.assertTrue((catalog_path.parent / target).resolve().is_file())
+
+                resolved = (catalog_path.parent / target).resolve()
+                self.assertTrue(resolved.is_file())
+                self.assertTrue(
+                    resolved.is_relative_to(REPO_ROOT.resolve())
+                )
 
     def test_formal_package_catalog_uses_production_generator_and_governed_order(self) -> None:
         metadata = publication_metadata.load_metadata(REPO_ROOT / "config/publication-metadata.toml")

@@ -1,7 +1,49 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
-    <uri name="https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo" uri="../../releases/sosa-next/sosa-bfo-directmappings.ttl"/>
-    <uri name="https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco" uri="../../releases/sosa-next/sosa-cco-directmappings.ttl"/>
-    <uri name="https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit" uri="sosa-mappings-edit.ttl"/>
-    <group id="Folder Repository, directory=, recursive=true, Auto-Update=false, version=2" prefer="public" xml:base=""/>
+<catalog prefer="public"
+         xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+  <group id="sosa-next-pinned-imports" prefer="public">
+    <uri
+      name="http://www.w3.org/ns/sosa/"
+      uri="imports/sosa.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/common/"
+      uri="imports/sosa-common.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/act/"
+      uri="imports/sosa-actuation.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/dep/"
+      uri="imports/sosa-deprecated.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/obs/"
+      uri="imports/sosa-observation.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/sam/"
+      uri="imports/sosa-sampling.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/systems/"
+      uri="imports/sosa-system.ttl"/>
+    <uri
+      name="http://www.w3.org/ns/sosa/sampling/"
+      uri="imports/sample-relations.ttl"/>
+    <uri
+      name="http://www.sks.ai/SSN2BFO/development/sosa-next/source-declaration-overlay"
+      uri="imports/sosa-source-declaration-overlay.ttl"/>
+
+    <uri
+      name="https://www.commoncoreontologies.org/CommonCoreOntologiesMerged"
+      uri="../../imports/cco.ttl"/>
+  </group>
+
+  <group id="sosa-next-development-products" prefer="public">
+    <uri
+      name="https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo"
+      uri="../../releases/sosa-next/sosa-bfo-directmappings.ttl"/>
+    <uri
+      name="https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco"
+      uri="../../releases/sosa-next/sosa-cco-directmappings.ttl"/>
+    <uri
+      name="https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit"
+      uri="sosa-mappings-edit.ttl"/>
+  </group>
 </catalog>

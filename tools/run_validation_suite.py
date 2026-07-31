@@ -406,6 +406,7 @@ def compile_check() -> StepResult:
             "tools/robot_reconstruction_validation.py",
             "tools/validate_robot_reconstruction.py",
             "tools/check_coms_mapping.py",
+            "tools/check_sosa_next_mapping.py",
             "tools/watch_coms_mapping.py",
             "tools/publication_metadata.py",
             "tools/check_publication_metadata.py",
@@ -416,6 +417,7 @@ def compile_check() -> StepResult:
             "tools/release_archive.py",
             "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
+            "tests/test_check_sosa_next_mapping.py",
             "tests/test_robot_template_generation_pilot.py",
             "tests/test_robot_property_chain_generation_pilot.py",
             "tests/test_robot_diff_pilot.py",
@@ -498,6 +500,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_coms_row_identity.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Forthcoming SOSA COMS focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_check_sosa_next_mapping.py",
                 ],
             )
         )
@@ -769,6 +787,18 @@ def run_validation_suite(args: argparse.Namespace) -> int:
             run_command(
                 "COMS workbook freshness and candidate quality check",
                 [sys.executable, "tools/check_coms_mapping.py", "--check-only"],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Forthcoming SOSA COMS mapping check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_next_mapping.py",
+                    "--output-dir",
+                    str(tmp_dir / "sosa-next-mapping-check"),
+                ],
             )
         )
     if results[-1].passed:
