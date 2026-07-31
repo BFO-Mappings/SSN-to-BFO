@@ -826,7 +826,7 @@ def validate_temporary_outputs(
         "local_project_graph_triple_count": 194,
         "hermit_return_code": 0,
         "hermit_result": "PASS",
-        "closure_triple_count": 14986,
+        "closure_triple_count": 14988,
         "named_unsat_count": 0,
     }
     for field, expected in expected_strict.items():
@@ -891,13 +891,13 @@ def validate_temporary_outputs(
         "total_triple_count": 9,
         "provided_transitively_count": 29,
         "provided_through_import_count": 19,
-        "deferred_no_transformation_rule_count": 57,
+        "deferred_no_transformation_rule_count": 55,
         "project_closure_governed_axiom_count": 48,
         "project_graph_triple_count": 204,
         "local_project_graph_triple_count": 202,
         "reasoning_reused_from": "strict_bfo_mapping",
         "reasoning_source_sha256": strict_hash,
-        "reasoning_closure_triple_count": 14986,
+        "reasoning_closure_triple_count": 14988,
         "reasoning_return_code": 0,
         "reasoned_output_produced": True,
         "named_unsat_count": 0,
@@ -957,28 +957,28 @@ def validate_temporary_outputs(
     expected_cco = {
         "product_key": "cco_extension",
         "stable_ontology_iri": cco_metadata.stable_ontology_iri,
-        "governed_axiom_count": 57,
+        "governed_axiom_count": 55,
         "cco_bearing_axiom_count": 25,
-        "mixed_bfo_cco_axiom_count": 32,
-        "logical_triple_count": 934,
+        "mixed_bfo_cco_axiom_count": 30,
+        "logical_triple_count": 924,
         "ontology_declaration_triple_count": 1,
         "import_triple_count": 1,
         "metadata_annotation_count": 7,
-        "total_triple_count": 943,
+        "total_triple_count": 933,
         "subclass_axiom_count": 31,
         "equivalent_class_axiom_count": 7,
         "direct_subproperty_axiom_count": 16,
-        "property_chain_axiom_count": 3,
+        "property_chain_axiom_count": 1,
         "union_expression_count": 7,
         "intersection_expression_count": 86,
         "existential_restriction_count": 95,
-        "rdf_list_count": 96,
-        "project_closure_governed_axiom_count": 105,
-        "project_graph_triple_count": 1138,
-        "local_project_graph_triple_count": 1136,
+        "rdf_list_count": 94,
+        "project_closure_governed_axiom_count": 103,
+        "project_graph_triple_count": 1128,
+        "local_project_graph_triple_count": 1126,
         "hermit_return_code": 0,
         "hermit_result": "PASS",
-        "closure_triple_count": 15928,
+        "closure_triple_count": 15920,
         "named_unsat_count": 0,
     }
     for field, expected in expected_cco.items():
@@ -1010,15 +1010,15 @@ def validate_temporary_outputs(
         "cco_extension",
         (str(expected_cco_import),),
     )
-    if len(cco_logical) != 934 or len(cco_graph) != 943:
+    if len(cco_logical) != 924 or len(cco_graph) != 933:
         raise CheckFailure(
             "CCO-extension triple partition mismatch: expected 1 declaration, "
-            f"1 import, 7 metadata, 934 logical, 943 total; got {len(cco_graph)} total"
+            f"1 import, 7 metadata, 924 logical, 933 total; got {len(cco_graph)} total"
         )
     emit(
         "CCO extension: PASS "
-        "(1 declaration; 1 import; 7 metadata; 57 direct governed axioms; "
-        "934 logical triples; 943 total triples)",
+        "(1 declaration; 1 import; 7 metadata; 55 direct governed axioms; "
+        "924 logical triples; 933 total triples)",
         log,
     )
 
@@ -1053,7 +1053,7 @@ def validate_temporary_outputs(
         "generated_candidate_ontology_declaration_triple_count": 1,
         "generated_candidate_import_triple_count": 4,
         "generated_candidate_metadata_annotation_count": 7,
-        "generated_candidate_logical_triple_count": 1112,
+        "generated_candidate_logical_triple_count": 1102,
     }
     for field, expected in root_partition.items():
         if summary.get(field) != expected:
@@ -1073,21 +1073,21 @@ def validate_temporary_outputs(
         "integrated",
         ROOT_ORDERED_IMPORTS,
     )
-    if len(root_logical) != 1112 or len(graph) != 1124:
+    if len(root_logical) != 1102 or len(graph) != 1114:
         raise CheckFailure(
             "integrated-root triple partition mismatch: expected 1 declaration, "
-            f"4 imports, 7 metadata, 1112 logical, 1124 total; got {len(graph)} total"
+            f"4 imports, 7 metadata, 1102 logical, 1114 total; got {len(graph)} total"
         )
     candidate_hash = sha256_file(paths["candidate"])
     if summary.get("generated_candidate_sha256") != candidate_hash:
         raise CheckFailure("generated candidate hash does not match generator summary")
     emit(
         "Generated candidate parse: PASS "
-        f"(1 declaration; 4 imports; 7 metadata; 1112 logical; {len(graph)} total)",
+        f"(1 declaration; 4 imports; 7 metadata; 1102 logical; {len(graph)} total)",
         log,
     )
 
-    emit("[7-9/11] Confirming candidate closure cleanup and HermiT result", log)
+    emit("[7-9/11] Confirming exact candidate closure profile and HermiT result", log)
     if summary.get("hermit_return_code") != 0 or summary.get("hermit_result") != "PASS":
         raise CheckFailure(
             f"candidate HermiT failed: return={summary.get('hermit_return_code')}, "
@@ -1097,9 +1097,9 @@ def validate_temporary_outputs(
         raise CheckFailure(f"candidate closure has owl:Nothing count {summary.get('owl_nothing_count')}")
     if summary.get("named_unsat_count") != 0 or summary.get("named_unsat_set"):
         raise CheckFailure(f"candidate closure has named unsatisfiable classes: {summary.get('named_unsat_set')}")
-    if summary.get("candidate_closure_triple_count") != 15912:
+    if summary.get("candidate_closure_triple_count") != 15904:
         raise CheckFailure(
-            "candidate closure triple-count mismatch: expected 15912, got "
+            "candidate closure triple-count mismatch: expected 15904, got "
             f"{summary.get('candidate_closure_triple_count')!r}"
         )
     emit(

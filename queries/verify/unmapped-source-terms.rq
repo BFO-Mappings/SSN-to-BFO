@@ -1,0 +1,9 @@
+PREFIX coms: <http://www.sks.ai/SSN2BFO/coms/coverage#>
+
+SELECT ?term ?kind ?coverageStatus
+WHERE {
+  ?term coms:sourceKind ?kind ;
+        coms:coverageStatus ?coverageStatus .
+  FILTER(?coverageStatus = "absent_from_spreadsheet")
+}
+ORDER BY ?kind ?coverageStatus ?term

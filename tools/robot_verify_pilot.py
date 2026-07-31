@@ -22,6 +22,7 @@ import robot_reconstruction_validation as reconstruction
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_VIOLATION_STATUS = "absent_from_spreadsheet"
 EXPECTED_REPORT_NAME = "unmapped-source-terms.csv"
+VERIFY_QUERY = REPO_ROOT / "queries/verify/unmapped-source-terms.rq"
 
 
 @dataclass(frozen=True)
@@ -69,7 +70,7 @@ def run_robot_verify(
             "--input",
             str(input_path),
             "--queries",
-            str(query_pilot.UNMAPPED_QUERY),
+            str(VERIFY_QUERY),
             "--output-dir",
             str(report_dir),
         ],
@@ -197,7 +198,7 @@ def run_pilot(
     passing_rows = query_pilot.ordered_rows(
         coms.run_select_query(
             coverage_graph,
-            query_pilot.UNMAPPED_QUERY,
+            VERIFY_QUERY,
         ),
         query_pilot.UNMAPPED_COLUMNS,
     )
@@ -221,7 +222,7 @@ def run_pilot(
     expected_violation_rows = query_pilot.ordered_rows(
         coms.run_select_query(
             violating_graph,
-            query_pilot.UNMAPPED_QUERY,
+            VERIFY_QUERY,
         ),
         query_pilot.UNMAPPED_COLUMNS,
     )

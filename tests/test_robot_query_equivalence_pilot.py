@@ -96,14 +96,17 @@ class RobotQueryEquivalencePilotTests(unittest.TestCase):
                 unmapped = summary["unmapped_query"]
                 self.assertTrue(unmapped["passed"])
                 self.assertEqual(unmapped["robot_return_code"], 0)
-                self.assertEqual(unmapped["rdflib_row_count"], 0)
-                self.assertEqual(unmapped["robot_row_count"], 0)
+                self.assertEqual(unmapped["rdflib_row_count"], 2)
+                self.assertEqual(unmapped["robot_row_count"], 2)
                 self.assertTrue(unmapped["same_ordered_rows"])
                 self.assertEqual(unmapped["rdflib_only_rows"], [])
                 self.assertEqual(unmapped["robot_only_rows"], [])
-                self.assertEqual(unmapped["robot_header"], [])
+                self.assertEqual(
+                    unmapped["robot_header"],
+                    ["term", "kind", "coverageStatus"],
+                )
                 self.assertTrue(unmapped["robot_output_exists"])
-                self.assertEqual(unmapped["robot_output_bytes"], 0)
+                self.assertEqual(unmapped["robot_output_bytes"], 173)
 
             for section in (
                 "source_query",

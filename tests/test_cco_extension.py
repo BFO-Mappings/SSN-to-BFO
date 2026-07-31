@@ -42,7 +42,6 @@ EXPECTED_INVENTORY = tuple(
         ("287f1392-ca8f-4dc2-9d42-b60b3962adfc", "ac90bbff84f27289fdc5c5fb492323384ea75b344016bb5eb7a4d34a540a8f91"),
         ("2902e2b3-44f8-4f81-8ca9-2def4b68befd", "f1380a66f7734f9b3e29c3e53388eabffa1e5fb296f1e0a192ada48d796a6c2b"),
         ("2a4f78b4-92cb-4095-9a6b-2ae03e00be4a", "c65595bd49e621675a797ec88f0bed32696c176393221adaae8b1a9192cdd842"),
-        ("2ae25d88-9551-45e7-a2b9-7735575e4d8f", "c0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac"),
         ("2befdb79-d016-45f8-8c35-69ee93fa731f", "7bcd034eadbf0577e59b123707dd31bbd105681183ea0b8e5cf98914676d3a59"),
         ("304f62a7-9160-4857-9c39-04a7215b1bb0", "6c917d0118060a0a5c8175a486c2880f4948c998bfc384d1494925e0e9e26390"),
         ("326ad20d-f954-44e0-b94f-dccf0fd76ebb", "787e892cd89062b21176fd6a4732cccaba3bd65cddaae2d9c8580e3072b140b9"),
@@ -57,7 +56,6 @@ EXPECTED_INVENTORY = tuple(
         ("6142726b-21b1-4dba-b5ec-a7d6dca4afab", "392dd07207293b5643eb67b0770ba70c84452967e49f1986ccb747ebe8424d6d"),
         ("624eaef2-892a-4b9d-8ed6-08c79571710f", "f7079e239ac89c931c0bf767439ded105c7d1760b7b6e0346551ef3c46d3f759"),
         ("6335c13d-fb23-49fd-9662-fd682c79f172", "fbdef9082a1ce45abecc3ed037f0fb12bb6c376dea196c3912566ee664f50370"),
-        ("637399a9-a264-49f7-bab8-33f2128646ab", "84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951"),
         ("69e972da-23ad-4e50-822b-e41198c95795", "7b38f4108fd76423fec54f3d4d34f07cc4b4540d5b773f2fd8f52413c6f78f93"),
         ("7b3f908b-b717-4336-9968-8b1083f847d3", "e69a0d20905384f1a3b3e5f9df6b82987f1a1da4e90db05becbc99d980b39168"),
         ("7caa02f4-26a1-4e81-b709-5c2116636f65", "04f2e1c545b6c6f252d9cf377e1e1f325bafa846d37c6b75a975a692ea059963"),
@@ -93,7 +91,7 @@ EXPECTED_INVENTORY = tuple(
 )
 EXPECTED_ROW_IDS = frozenset(row_id for row_id, _ in EXPECTED_INVENTORY)
 EXPECTED_AXIOM_IDS = frozenset(axiom_id for _, axiom_id in EXPECTED_INVENTORY)
-EXPECTED_INVENTORY_SHA256 = "818dcfc7f1206512c282527aefe47211464ee6d4d6575cf7bf060174af6200e1"
+EXPECTED_INVENTORY_SHA256 = "c5587418a9fa0a16b1309609da0eddc8e34e2c2b8ea421069e2f46dd576ac590"
 
 
 class CcoExtensionTests(unittest.TestCase):
@@ -140,7 +138,6 @@ class CcoExtensionTests(unittest.TestCase):
                 REPO_ROOT / "imports/cco.ttl",
                 *(REPO_ROOT / path for path in coms.SOURCE_IMPORTS),
             ),
-            coms.CLEANUP_TRIPLES,
         )
 
     @staticmethod
@@ -186,26 +183,31 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(payload.encode()).hexdigest(), EXPECTED_INVENTORY_SHA256)
         categories = [value.target_category for value in self.cco_selected]
         self.assertEqual(categories.count("cco_bearing"), 25)
-        self.assertEqual(categories.count("mixed_bfo_cco"), 32)
+        self.assertEqual(categories.count("mixed_bfo_cco"), 30)
         predicates = [value.canonical_input.predicate_iri for value in self.cco_selected]
         self.assertEqual(predicates.count(str(RDFS.subClassOf)), 31)
         self.assertEqual(predicates.count(str(OWL.equivalentClass)), 7)
         self.assertEqual(predicates.count(str(RDFS.subPropertyOf)), 16)
         self.assertEqual(
             sum(value.canonical_input.mapping_type == "property_chain" for value in self.cco_selected),
-            3,
+            1,
         )
 
     def test_nonselected_product_policy_is_reconciled(self) -> None:
         counts: dict[str, int] = {}
+        zero_axiom_rows = 0
         for row in self.disposition.rows:
+            if not row.authoritative_axioms:
+                zero_axiom_rows += 1
+                continue
             disposition = dict(row.authoritative_axioms[0].product_dispositions)[
                 "cco_extension"
             ]
             counts[disposition.status] = counts.get(disposition.status, 0) + 1
+        self.assertEqual(zero_axiom_rows, 2)
         self.assertEqual(
             counts,
-            {"emitted_unchanged": 57, "provided_through_import": 19, "provided_transitively": 29},
+            {"emitted_unchanged": 55, "provided_through_import": 19, "provided_transitively": 29},
         )
 
     def test_wrong_disposition_category_and_imported_direct_selection_fail(self) -> None:
@@ -325,11 +327,11 @@ class CcoExtensionTests(unittest.TestCase):
         strict = URIRef("http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping")
         self.assertEqual(set(graph.subjects(RDF.type, OWL.Ontology)), {ontology})
         self.assertEqual(set(graph.triples((None, OWL.imports, None))), {(ontology, OWL.imports, strict)})
-        self.assertEqual(self.cco_result.logical_triple_count, 934)
+        self.assertEqual(self.cco_result.logical_triple_count, 924)
         self.assertEqual(self.cco_result.ontology_declaration_triple_count, 1)
         self.assertEqual(self.cco_result.import_triple_count, 1)
         self.assertEqual(self.cco_result.metadata_annotation_count, 7)
-        self.assertEqual(len(graph), 943)
+        self.assertEqual(len(graph), 933)
         self.assertEqual(
             set(ontology_metadata_rdf_triples(self.metadata, "cco_extension")),
             set(graph.triples((ontology, None, None)))
@@ -356,13 +358,13 @@ class CcoExtensionTests(unittest.TestCase):
                     (str(strict),),
                 )
             ),
-            934,
+            924,
         )
         self.assertEqual(len(set(graph.subjects(OWL.unionOf, None))), 7)
         self.assertEqual(len(set(graph.subjects(OWL.intersectionOf, None))), 86)
         self.assertEqual(len(set(graph.subjects(OWL.someValuesFrom, None))), 95)
-        self.assertEqual(len(set(graph.subjects(OWL.propertyChainAxiom, None))), 3)
-        self.assertEqual(self.cco_result.rdf_list_count, 96)
+        self.assertEqual(len(set(graph.subjects(OWL.propertyChainAxiom, None))), 1)
+        self.assertEqual(self.cco_result.rdf_list_count, 94)
         self.assertFalse(any(True for _ in graph.triples((None, OWL.inverseOf, None))))
         self.assertEqual(self.validate_bytes(self.cco_result.serialized_bytes), set())
 
@@ -407,7 +409,7 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertFalse(self.cco_result.serialized_bytes.endswith(b"\n\n"))
         self.assertEqual(
             self.cco_result.sha256,
-            "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
+            "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5",
         )
         self.assertEqual(
             hashlib.sha256(self.core_result.serialized_bytes).hexdigest(),
@@ -468,15 +470,21 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertFalse(cco_ids & strict_ids)
         self.assertFalse(cco_ids & core_ids)
         self.assertFalse(strict_ids & core_ids)
-        self.assertEqual(len(cco_ids | strict_ids | core_ids), 105)
+        self.assertEqual(len(cco_ids | strict_ids | core_ids), 103)
         graph = Graph().parse(data=self.cco_result.serialized_bytes.decode(), format="turtle")
         graph.parse(data=self.strict_result.serialized_bytes.decode(), format="turtle")
         graph.parse(data=self.core_result.serialized_bytes.decode(), format="turtle")
-        self.assertEqual(len(graph), 1138)
+        self.assertEqual(len(graph), 1128)
         for triple in list(graph.triples((None, OWL.imports, None))):
             graph.remove(triple)
-        self.assertEqual(len(graph), 1136)
-        self.assertEqual(len(self.fixed_closure), 15928)
+        self.assertEqual(len(graph), 1126)
+        self.assertEqual(len(self.fixed_closure), 15920)
+        self.assertTrue(
+            all(
+                triple in self.fixed_closure
+                for triple in coms.SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+            )
+        )
         self.assertFalse(any(True for _ in self.fixed_closure.triples((None, OWL.imports, None))))
 
     def test_pinned_closure_hermit_is_clean(self) -> None:
@@ -494,7 +502,12 @@ class CcoExtensionTests(unittest.TestCase):
         self.assertTrue(result.passed, result.robot_output)
         self.assertEqual(result.return_code, 0)
         self.assertTrue(result.reasoned_output_produced)
-        self.assertEqual(result.closure_triple_count, 15928)
+        self.assertEqual(result.closure_triple_count, 15920)
+        self.assertTrue(result.profile_checked)
+        self.assertEqual(result.profile_triple_count, 15924)
+        self.assertEqual(result.profile_declaration_completion_count, 4)
+        self.assertEqual(result.profile_return_code, 0)
+        self.assertTrue(result.source_sample_declarations_retained)
         self.assertEqual(result.unsat_classes, [])
 
 

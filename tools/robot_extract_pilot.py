@@ -372,12 +372,14 @@ def reasoning_comparison(
         baseline_closure,
         output_dir / f"{name}-baseline",
         profile,
+        validate_profile=False,
     )
     module = coms._run_hermit_closure(
         generated_path,
         module_closure,
         output_dir / f"{name}-module",
         profile,
+        validate_profile=False,
     )
 
     baseline_axioms = (
@@ -484,12 +486,14 @@ def controlled_inconsistency_comparison(
         baseline_closure,
         output_dir / "inconsistent-baseline",
         coms.STRICT_BFO_HERMIT_PROFILE,
+        validate_profile=False,
     )
     module = coms._run_hermit_closure(
         strict_path,
         module_closure,
         output_dir / "inconsistent-module",
         coms.STRICT_BFO_HERMIT_PROFILE,
+        validate_profile=False,
     )
 
     diagnostic = "The ontology is inconsistent"

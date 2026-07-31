@@ -282,12 +282,6 @@ _:a2d8f0bb889aed23463bdc12f71eb087cf980f269d7283687d266c012c25c4f52_target_list_
 
 <http://www.w3.org/ns/sosa/hasResult> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001986> .
 
-<http://www.w3.org/ns/sosa/hasSample> owl:propertyChainAxiom _:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_0 .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_0 rdf:first <https://www.commoncoreontologies.org/ont00001873> .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_0 rdf:rest _:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_1 .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_1 rdf:first <http://purl.obolibrary.org/obo/BFO_0000084> .
-_:ac0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac_chain_list_1 rdf:rest rdf:nil .
-
 <http://www.w3.org/ns/sosa/hosts> owl:propertyChainAxiom _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 .
 _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 rdf:first <http://purl.obolibrary.org/obo/BFO_0000196> .
 _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 rdf:rest _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 .
@@ -323,12 +317,6 @@ _:a47859e2cfd5df437d1f55c83560793ab22f035de9b829ccdedcc4d3118cc4f3e_chain_list_2
 <http://www.w3.org/ns/sosa/isObservedBy> rdfs:range <http://www.w3.org/ns/sosa/Sensor> .
 
 <http://www.w3.org/ns/sosa/isResultOf> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001816> .
-
-<http://www.w3.org/ns/sosa/isSampleOf> owl:propertyChainAxiom _:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_0 .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_0 rdf:first <http://purl.obolibrary.org/obo/BFO_0000101> .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_0 rdf:rest _:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_1 .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_1 rdf:first <https://www.commoncoreontologies.org/ont00001938> .
-_:a84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951_chain_list_1 rdf:rest rdf:nil .
 
 <http://www.w3.org/ns/sosa/madeActuation> rdfs:domain <http://www.w3.org/ns/sosa/Actuator> .
 

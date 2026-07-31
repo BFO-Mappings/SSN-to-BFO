@@ -92,7 +92,7 @@ class RobotTemplateGenerationPilotTests(unittest.TestCase):
             for summary in (first, second):
                 self.assertEqual(summary["governed_row_count"], 105)
                 self.assertEqual(summary["attempted_non_chain_rows"], 100)
-                self.assertEqual(summary["excluded_property_chain_rows"], 5)
+                self.assertEqual(summary["excluded_property_chain_rows"], 3)
                 self.assertEqual(summary["expected_axiom_count"], 100)
                 self.assertEqual(summary["actual_axiom_count"], 100)
                 self.assertEqual(summary["robot_return_code"], 0)
