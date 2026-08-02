@@ -118,6 +118,46 @@ These are audit dispositions only. No COMS row or ontology product is changed in
 
 The current `cco:described_by o cco:is_about` chain is deactivated on semantic grounds, not because of a version-specific inconsistency. Description/aboutness does not entail that the described entity acts on or observes the property.
 
+## Evidence-based dispositions for the BFO/CCO-bearing OK-as-is set
+
+This phase reviews the 22 external rows marked `OK as-is` whose corrected axioms contain a BFO or CCO commitment.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa-rel:RelationshipNature` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa-rel:SampleRelationship` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:Actuation` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:ActuationCollection` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:Execution` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:ExecutionCollection` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:MaterialSample` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:ObservationCollection` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:Sample` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:Sampling` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:SamplingCollection` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:StatisticalSample` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:System` | `already_represented` | The System class axiom itself already matches the external cross-ontology commitment. Its use of sosa:implements remains dependency-sensitive to the separately validated adaptation of that relation's property chain. |
+| `sosa:deployedAsset` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:deployedOnPlatform` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:deployedSystem` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:detects` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:hasDeployment` | `adapt` | Replace the current cco:is_output_of superproperty with bfo:participates_in. The source relation is inverse to sosa:deployedAsset, whose governed mapping is under bfo:has_participant; participates_in is the corresponding inverse direction. |
+| `sosa:hasSubSystem` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:madeActuation` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:qualityOf` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
+| `sosa:wasOriginatedBy` | `already_represented` | The current process_started_by mapping matches the external corrected row. Its coherence with the separately proposed redesign of sosa:originated must still be reviewed in the semantic-redesign set. |
+
+### Disposition totals
+
+- Already represented: **21**
+- Adapt: **1**
+
+The `already_represented` disposition means that the external workbook introduces no change to that row's cross-ontology axiom. It does not duplicate source-native domain, range, inverse, declaration, restriction, label, or comment axioms in COMS.
+
+`sosa:System` and `sosa:wasOriginatedBy` remain subject to dependency review when the related `sosa:implements` and `sosa:originated` rows are reconciled.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
