@@ -145,16 +145,16 @@ This phase reviews the 22 external rows marked `OK as-is` whose corrected axioms
 | `sosa:hasSubSystem` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
 | `sosa:madeActuation` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
 | `sosa:qualityOf` | `already_represented` | The governed COMS axiom has the same BFO/CCO direction and logical strength as the external corrected axiom. Source-native declarations, domains, ranges, inverses, restrictions, labels, and comments do not require an additional COMS axiom. |
-| `sosa:wasOriginatedBy` | `already_represented` | The current process_started_by mapping matches the external corrected row. Its coherence with the separately proposed redesign of sosa:originated must still be reviewed in the semantic-redesign set. |
+| `sosa:wasOriginatedBy` | `adapt` | Replace cco:process_started_by with cco:caused_by. This is the inverse-side counterpart of adapting sosa:originated to cco:is_cause_of. The source supports Observation-to-Stimulus causal direction but does not entail the stronger temporal-start conditions of cco:process_started_by. |
 
 ### Disposition totals
 
-- Already represented: **21**
-- Adapt: **1**
+- Already represented: **20**
+- Adapt: **2**
 
 The `already_represented` disposition means that the external workbook introduces no change to that row's cross-ontology axiom. It does not duplicate source-native domain, range, inverse, declaration, restriction, label, or comment axioms in COMS.
 
-`sosa:System` and `sosa:wasOriginatedBy` remain subject to dependency review when the related `sosa:implements` and `sosa:originated` rows are reconciled.
+`sosa:System` remains dependency-sensitive to the adaptation of `sosa:implements`. The prior `sosa:wasOriginatedBy` disposition has now been revised to `adapt`, using `cco:caused_by` as the inverse-side counterpart of `sosa:originated` under `cco:is_cause_of`.
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
@@ -218,6 +218,33 @@ These rows distinguish Procedure-level input and output specifications from conc
 The exact pinned SOSA-next closure contained no relevant cardinality restrictions or property-chain axioms for these property families. The external workbook's simplicity rationale was therefore not independently reproduced, but no replacement property chain is adopted.
 
 `sosa:hasResult` is the only direct CCO mapping retained: its superproperty changes from `cco:is_output_of` to the correct process-to-output relation `cco:has_output`.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
+## Evidence-based dispositions for the remaining semantic-redesign relations
+
+These rows were assessed with their exact source directions, the current process mappings for Execution and ExecutionCollection, and the pinned CCO inverse pairs.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:madeBySampler` | `already_represented` | The current cco:has_agent superproperty preserves the Sampling-to-Sampler direction. A Sampler that made a Sampling is causally active as its agent. The external domain widening to SamplingCollection is source-native and does not require a different COMS axiom. |
+| `sosa:madeBySensor` | `already_represented` | The current cco:has_agent superproperty preserves the Observation-to-Sensor direction. A Sensor involved in making an Observation is causally active as its agent. The external domain widening to ObservationCollection is source-native and does not require a different COMS axiom. |
+| `sosa:madeBySystem` | `already_represented` | The current cco:has_agent superproperty preserves the Execution-to-System direction. The source relation states that the System made the Execution, which supports its being causally active as agent in that process. The expanded source domain list does not alter the cross-ontology axiom. |
+| `sosa:originated` | `adapt` | Replace cco:process_starts with cco:is_cause_of. The source states that a Stimulus originated an Observation and thus supports causal direction from Stimulus to Observation, but does not establish the stronger temporal-start conditions required by cco:process_starts. |
+| `sosa:resultQuality` | `adapt` | Replace cco:is_about with cco:is_subject_of. The source relation runs from an Observation or ObservationCollection to quality information pertaining to it. The Observation is therefore the subject of the InformationContentEntity; the inverse source relation qualityOf correctly maps to cco:is_about. |
+| `sosa:usedProcedure` | `already_represented` | The current cco:prescribed_by superproperty preserves the Execution-to-Procedure direction. The governed Procedure mapping places Procedure under PrescriptiveInformationContentEntity, and a Procedure used in an Execution serves as its rule or guide. The widened source domain list does not alter the cross-ontology axiom. |
+
+### Dependency revision
+
+The previously reviewed `sosa:wasOriginatedBy` row is revised from `already_represented` to `adapt`. Its superproperty changes from `cco:process_started_by` to `cco:caused_by`, preserving inverse coherence with `sosa:originated` under `cco:is_cause_of` without adding the unsupported temporal-start condition.
+
+The inverse quality relation `sosa:qualityOf` remains `already_represented` under `cco:is_about`.
+
+### Disposition totals for this phase
+
+- Newly already represented: **4**
+- Newly adapted: **2**
+- Prior disposition revised to adapt: **1**
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
