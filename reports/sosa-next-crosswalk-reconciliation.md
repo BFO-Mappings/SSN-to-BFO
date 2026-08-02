@@ -330,6 +330,27 @@ These rows were assessed against the exact native class definitions, relation si
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the Property and SampleCollection decision set
+
+These are the final unresolved rows carrying BFO or CCO commitments in the external crosswalk.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:Property` | `adapt` | Weaken the current equivalence to sosa:Property rdfs:subClassOf (bfo:SpecificallyDependentContinuant or bfo:ProcessProfile). The two-branch union remains the project's necessary upper bound for continuant and occurrent properties, but the reverse implications are unsupported: not every specifically dependent continuant or process profile is a SOSA Property. |
+| `sosa:SampleCollection` | `adapt` | Replace the current ObjectAggregate and has_member_part mapping with the single axiom sosa:SampleCollection rdfs:subClassOf bfo:Continuant. ObjectAggregate and member parthood incorrectly impose materiality. The proposed has_continuant_part restriction is also omitted because SOSA collection membership does not by itself establish BFO continuant parthood. The broad Continuant classification preserves the contrast with the process-oriented execution collection classes. |
+
+### Disposition totals
+
+- Adapt: **2**
+
+`sosa:Property` retains the continuant-or-process-profile upper bound but no longer classifies every member of those BFO categories as a SOSA Property.
+
+`sosa:SampleCollection` is retained as a Continuant without material ObjectAggregate classification or a BFO parthood restriction. SOSA membership remains source-native.
+
+With these dispositions, every external row that introduces, changes, or removes a BFO/CCO commitment has completed row-level review.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
