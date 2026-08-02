@@ -310,6 +310,26 @@ The three specialized procedure rows receive no additional cross-ontology restri
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the Deployment and Observation decision set
+
+These rows were assessed against the exact native class definitions, relation signatures, inherited mappings, and pinned CCO class definitions.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:Deployment` | `adapt` | Replace the current equivalent-class mapping with sosa:Deployment rdfs:subClassOf cco:PlannedAct and (sosa:deployedAsset some sosa:Asset). The source defines a Deployment as an arrangement of one or more Assets and states that it may involve Platforms, Systems, or both. The current mandatory System and Platform restrictions are therefore too narrow. A one-way subclass is retained because the source supports these as necessary conditions but does not justify the reverse classification of every matching PlannedAct as a Deployment. |
+| `sosa:Observation` | `deactivate` | Remove the direct Observation mapping row. Observation is already a native subclass of Execution and therefore inherits the governed Execution-to-PlannedAct mapping. The additional process-part restriction is unsupported: CCO ActOfObservation requires sense-based acquisition, while SOSA includes automated observations, and SOSA's broader estimation and calculation scope does not require every Observation to contain a distinct CCO ActOfMeasuring process part. |
+
+### Disposition totals
+
+- Adapt: **1**
+- Deactivate: **1**
+
+`sosa:Deployment` retains a one-way PlannedAct mapping and uses the source's general Asset relation rather than requiring both a System and a Platform.
+
+`sosa:Observation` requires no direct replacement row. Its native superclass `sosa:Execution` already supplies the PlannedAct classification, while the proposed internal CCO process-part restrictions are not universal across the full SOSA Observation scope.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
