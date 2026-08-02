@@ -23,10 +23,14 @@ GOVERNED_INPUTS = (
 
 CURRENT_PRODUCTS = (
     REPO_ROOT / "SSN2BFO.ttl",
-    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
-    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
-    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
+    REPO_ROOT
+    / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
+    REPO_ROOT
+    / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
+    REPO_ROOT
+    / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
+    REPO_ROOT
+    / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 )
 
 DATATYPE_DEFERRAL = (
@@ -45,10 +49,30 @@ EXPECTED_DATATYPE_TERMS = {
 
 EXPECTED_CLASS_DEFERRALS = {
     "sosa:ActuatableProperty",
+    "sosa:ActuatingProcedure",
     "sosa:Asset",
+    "sosa:Observation",
     "sosa:ObservableProperty",
+    "sosa:ObservingProcedure",
     "sosa:Result",
+    "sosa:SamplingProcedure",
     "sosa:Sensor",
+    "sosa:SpatialSample",
+}
+
+EXPECTED_OBJECT_PROPERTY_DEFERRALS = {
+    "sosa:actsOn",
+    "sosa:actsOnProperty",
+    "sosa:featureHasUltimateSample",
+    "sosa:forProperty",
+    "sosa:hasInput",
+    "sosa:hasInputValue",
+    "sosa:hasOperatingConditions",
+    "sosa:hasOriginalSample",
+    "sosa:hasOutput",
+    "sosa:hasSystemCapability",
+    "sosa:observedProperty",
+    "sosa:observes",
 }
 
 
@@ -59,6 +83,8 @@ def sha256(path: Path) -> str:
 class CheckSosaNextMappingTests(unittest.TestCase):
     def test_governed_workbook_and_reasoning_are_exact(self) -> None:
         protected_paths = (*GOVERNED_INPUTS, *CURRENT_PRODUCTS)
+        original_prefix_files = dict(checker.coms.PREFIX_FILES)
+        original_source_imports = tuple(checker.coms.SOURCE_IMPORTS)
 
         before = {
             path.relative_to(REPO_ROOT).as_posix(): sha256(path)
@@ -71,7 +97,24 @@ class CheckSosaNextMappingTests(unittest.TestCase):
             prefix="sosa-next-check-b-"
         ) as second_dir:
             first = checker.run_check(Path(first_dir))
+            self.assertEqual(
+                checker.coms.PREFIX_FILES,
+                original_prefix_files,
+            )
+            self.assertEqual(
+                checker.coms.SOURCE_IMPORTS,
+                original_source_imports,
+            )
+
             second = checker.run_check(Path(second_dir))
+            self.assertEqual(
+                checker.coms.PREFIX_FILES,
+                original_prefix_files,
+            )
+            self.assertEqual(
+                checker.coms.SOURCE_IMPORTS,
+                original_source_imports,
+            )
 
             for summary in (first, second):
                 self.assertTrue(summary["passed"], summary)
@@ -86,20 +129,20 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertEqual(summary["governed_row_count"], 119)
                 self.assertEqual(summary["unique_row_id_count"], 119)
-                self.assertEqual(summary["active_mapping_count"], 61)
-                self.assertEqual(summary["deferred_mapping_count"], 9)
+                self.assertEqual(summary["active_mapping_count"], 45)
+                self.assertEqual(summary["deferred_mapping_count"], 26)
                 self.assertEqual(
                     summary["explicitly_unmapped_row_count"],
-                    49,
+                    48,
                 )
                 self.assertEqual(summary["malformed_row_count"], 0)
                 self.assertEqual(
                     summary["canonical_authoritative_axiom_count"],
-                    61,
+                    45,
                 )
                 self.assertEqual(
                     summary["active_ontology_triple_count"],
-                    425,
+                    279,
                 )
 
                 reasoning = summary["reasoning"]
@@ -108,7 +151,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertTrue(reasoning["reasoned_output_exists"])
                 self.assertEqual(
                     reasoning["reasoned_output_triples"],
-                    1899,
+                    1746,
                 )
                 self.assertEqual(
                     reasoning["unsatisfiable_classes"],
@@ -120,7 +163,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["deferred_mappings"]
                 }
-                self.assertEqual(len(deferred), 9)
+                self.assertEqual(len(deferred), 26)
                 self.assertEqual(
                     len(deferred),
                     len(summary["deferred_mappings"]),
@@ -142,15 +185,14 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     EXPECTED_CLASS_DEFERRALS,
                 )
 
-                sensor = deferred["sosa:Sensor"]
-                self.assertEqual(sensor["subject_kind"], "class")
-                self.assertIn(
-                    "next CCO release",
-                    sensor["reasoning"],
-                )
-                self.assertIn(
-                    "forthcoming SOSA 2023 Edition",
-                    sensor["reasoning"],
+                object_property_terms = {
+                    subject
+                    for subject, item in deferred.items()
+                    if item["subject_kind"] == "object_property"
+                }
+                self.assertEqual(
+                    object_property_terms,
+                    EXPECTED_OBJECT_PROPERTY_DEFERRALS,
                 )
 
                 datatype_terms = {
@@ -163,6 +205,26 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     EXPECTED_DATATYPE_TERMS,
                 )
 
+                self.assertEqual(
+                    set(deferred),
+                    (
+                        EXPECTED_CLASS_DEFERRALS
+                        | EXPECTED_OBJECT_PROPERTY_DEFERRALS
+                        | EXPECTED_DATATYPE_TERMS
+                    ),
+                )
+
+                sensor = deferred["sosa:Sensor"]
+                self.assertEqual(sensor["subject_kind"], "class")
+                self.assertIn(
+                    "next CCO release",
+                    sensor["reasoning"],
+                )
+                self.assertIn(
+                    "forthcoming SOSA 2023 Edition",
+                    sensor["reasoning"],
+                )
+
                 for subject in EXPECTED_DATATYPE_TERMS:
                     self.assertEqual(
                         deferred[subject]["reasoning"],
@@ -173,7 +235,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["explicitly_unmapped_rows"]
                 }
-                self.assertEqual(len(explicitly_unmapped), 49)
+                self.assertEqual(len(explicitly_unmapped), 48)
                 self.assertEqual(
                     len(explicitly_unmapped),
                     len(summary["explicitly_unmapped_rows"]),
@@ -184,6 +246,10 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertIn(
                     "sosa:isSampleOf",
+                    explicitly_unmapped,
+                )
+                self.assertNotIn(
+                    "sosa:phenomenonTime",
                     explicitly_unmapped,
                 )
 
@@ -227,6 +293,14 @@ class CheckSosaNextMappingTests(unittest.TestCase):
             for path in protected_paths
         }
         self.assertEqual(before, after)
+        self.assertEqual(
+            checker.coms.PREFIX_FILES,
+            original_prefix_files,
+        )
+        self.assertEqual(
+            checker.coms.SOURCE_IMPORTS,
+            original_source_imports,
+        )
 
 
 if __name__ == "__main__":

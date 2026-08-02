@@ -343,7 +343,6 @@ def run_check(
 
     source_hashes = validate_source_pins()
     source_graph = build_merged_source(merged_source_path)
-    configure_coms_resolver(merged_source_path)
 
     rows, workbook_stats = coms.read_workbook(WORKBOOK)
     coms.validate_workbook_row_ids(rows, workbook_stats)
@@ -433,11 +432,20 @@ def run_check(
     active_stats = coms.WorkbookStats(
         worksheets_read=list(workbook_stats.worksheets_read),
     )
-    processed = coms.validate_and_process_rows(
-        active_rows,
-        coms.Resolver(),
-        active_stats,
-    )
+
+    previous_prefix_files = dict(coms.PREFIX_FILES)
+    previous_source_imports = tuple(coms.SOURCE_IMPORTS)
+    configure_coms_resolver(merged_source_path)
+
+    try:
+        processed = coms.validate_and_process_rows(
+            active_rows,
+            coms.Resolver(),
+            active_stats,
+        )
+    finally:
+        coms.PREFIX_FILES = previous_prefix_files
+        coms.SOURCE_IMPORTS = previous_source_imports
 
     active_graph = render_active_ontology(
         processed,
