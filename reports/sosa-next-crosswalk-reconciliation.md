@@ -87,6 +87,37 @@
 6. Do not transfer the current-SOSA sample-property simplicity rationale to SOSA-next.
 7. Route non-DL representation intent to a separately governed rule, SHACL, or annotation layer.
 
+## Evidence-based dispositions for the first active set
+
+This phase reviews the eleven active COMS mappings whose external corrected axioms contain no retained BFO/CCO mapping.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:actsOn` | `deactivate` | The source relation has an Actuator subject, whereas bfo:has_participant has a process domain. The current subproperty axiom can therefore classify an actuator as a process. |
+| `sosa:actsOnProperty` | `deactivate` | cco:affects has a continuant range, whereas sosa:Property includes the ProcessProfile branch. The current mapping can therefore impose continuant typing on an occurrent property. |
+| `sosa:forProperty` | `deactivate` | The chain cco:described_by o cco:is_about captures an entity being described by information that is about a property. It does not establish that the entity acts on or observes that property, which is the intended meaning of sosa:forProperty. This semantic mismatch applies regardless of the CCO version. |
+| `sosa:hasOperatingConditions` | `deactivate` | The chain bfo:bearer_of o cco:is_subject_of concludes in an Information Content Entity, whereas the SOSA-next relation ranges over OperatingConditions, Observation, or ObservationCollection. The chain does not express the source relation. |
+| `sosa:hasSystemCapability` | `deactivate` | The chain bfo:bearer_of o cco:is_subject_of concludes in an Information Content Entity, whereas the SOSA-next relation ranges over Observation or ObservationCollection. The chain does not express the source relation. |
+| `sosa:hosts` | `defer_decision` | The chain is valid OWL and compositionally well typed, but it infers that a platform hosts every participant in a realization of something the platform bears. Whether that breadth is acceptable requires a modeling decision. |
+| `sosa:implementedBy` | `adapt` | Replace the misdirected chain with cco:prescribes o cco:has_agent. The pinned CCO confirms that prescribes is inverse to prescribed_by and has_agent is inverse to agent_in. |
+| `sosa:implements` | `adapt` | Replace the category-incompatible chain with cco:agent_in o cco:prescribed_by. This follows the path from a system through an execution in which it is an agent to the procedure prescribing that execution. |
+| `sosa:madeByActuator` | `retain` | The SOSA domain and range agree with cco:has_agent: an Actuation or ActuationCollection process has an Actuator as its agent. |
+| `sosa:observedProperty` | `deactivate` | cco:has_input has a continuant range, whereas sosa:Property includes the ProcessProfile branch. The current mapping can impose continuant typing on an occurrent property. |
+| `sosa:observes` | `deactivate` | The source relation has a Sensor subject, whereas bfo:has_participant has a process domain. The current subproperty axiom can therefore classify a sensor as a process. |
+
+### Disposition totals
+
+- Retain: **1**
+- Adapt: **2**
+- Deactivate: **7**
+- Defer for a modeling decision: **1**
+
+These are audit dispositions only. No COMS row or ontology product is changed in this phase.
+
+### `sosa:forProperty` correction
+
+The current `cco:described_by o cco:is_about` chain is deactivated on semantic grounds, not because of a version-specific inconsistency. Description/aboutness does not entail that the described entity acts on or observes the property.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
@@ -102,4 +133,4 @@
 
 The complete row-level comparison is recorded in `reports/sosa-next-crosswalk-reconciliation.csv`.
 
-No mapping disposition in that CSV is final until reviewed against the pinned source and target ontologies.
+Rows with a non-empty `validated_disposition` field have completed this audit phase. Those dispositions remain report-only evidence until implemented and revalidated in COMS; all other rows remain preliminary.
