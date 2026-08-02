@@ -288,6 +288,28 @@ The output-of-a-Sampling semantics remain represented on the appropriate Samplin
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the Procedure-family decision set
+
+The exact pinned CCO contains `cco:ont00000965`, labelled `Directive Information Content Entity`. It does not contain a class labelled `Prescriptive Information Content Entity`. The target class is itself defined using a `prescribes some Entity` restriction.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:Procedure` | `adapt` | Replace the current composite mapping with the single axiom sosa:Procedure rdfs:subClassOf cco:DirectiveInformationContentEntity. The exact pinned target is cco:ont00000965, labelled Directive Information Content Entity, not Prescriptive Information Content Entity. Remove the additional cco:prescribes some bfo:Process restriction because the source definition does not require every reusable Procedure to prescribe an actual Process. The weaker existential inherited from the CCO target's own definition remains. |
+| `sosa:ActuatingProcedure` | `deactivate` | Remove the cco:prescribes restriction and rely on the native ActuatingProcedure subClassOf Procedure hierarchy. The source definition supports the specialization: an ActuatingProcedure specifies how to make an Actuation. The current existential nevertheless entails an actual Actuation, while the external universal over the broad CCO prescribes relation would require every entity for which the directive serves as a rule, guide, or model to be an Actuation. Neither CCO restriction safely expresses the source specialization. |
+| `sosa:ObservingProcedure` | `deactivate` | Remove the cco:prescribes restriction and rely on the native ObservingProcedure subClassOf Procedure hierarchy. The source definition supports the specialization: an ObservingProcedure specifies how to make an Observation. The current existential nevertheless entails an actual Observation, while the external universal over the broad CCO prescribes relation would require every entity for which the directive serves as a rule, guide, or model to be an Observation. Neither CCO restriction safely expresses the source specialization. |
+| `sosa:SamplingProcedure` | `deactivate` | Remove the cco:prescribes restriction and rely on the native SamplingProcedure subClassOf Procedure hierarchy. The source definition supports the specialization: a SamplingProcedure specifies how to make a Sampling. The current existential nevertheless entails an actual Sampling, while the external universal over the broad CCO prescribes relation would require every entity for which the directive serves as a rule, guide, or model to be a Sampling. Neither CCO restriction safely expresses the source specialization. |
+
+### Disposition totals
+
+- Adapt: **1**
+- Deactivate: **3**
+
+The general Procedure mapping retains only the direct subclass relation to CCO's Directive Information Content Entity and removes the additional Process-specific existential.
+
+The three specialized procedure rows receive no additional cross-ontology restriction. Their native SOSA subclass relations and definitions preserve the distinction between actuating, observing, and sampling procedures. The current existentials entail actual executions, while the proposed universals use the broader semantics of `cco:prescribes`; neither safely formalizes that source specialization.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
