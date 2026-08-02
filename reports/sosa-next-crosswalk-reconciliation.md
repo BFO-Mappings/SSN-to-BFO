@@ -158,6 +158,28 @@ The `already_represented` disposition means that the external workbook introduce
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the BFO/CCO-bearing syntactic-repair set
+
+The external `Syntactic repair` label does not by itself establish that the corrected axiom has appropriate semantic strength. These dispositions use the exact pinned SOSA-next and CCO definitions together with the project's modeling decisions.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:Actuator` | `adapt` | Replace the current composite subclass mapping with sosa:Actuator rdfs:subClassOf bfo:MaterialEntity. Remove the bearer_of, has_realization, and agent_in existential restrictions. This preserves the project's deliberate materiality commitment without requiring an actual Actuation. |
+| `sosa:Battery` | `already_represented` | The pinned SOSA-next source already asserts Battery subClassOf System. The governed COMS row supplies the same additional BFO commitment as the external corrected axiom: bearer_of some Function. |
+| `sosa:Sampler` | `adapt` | Replace the current equivalent-class mapping with sosa:Sampler rdfs:subClassOf bfo:MaterialEntity. Remove the reverse implication and the bearer_of, has_realization, and agent_in existential restrictions. This preserves the project's deliberate materiality commitment without requiring an actual Sampling. |
+| `sosa:Stimulus` | `adapt` | Replace the equivalent-class axiom with a one-way subclass axiom. Every SOSA Stimulus may be modeled as a CCO Cause that is cause of some Observation, but not every cause of an Observation is thereby a SOSA Stimulus. |
+| `sosa:Sensor` | `preserve_deferral` | Do not adopt the proposed equivalence against the current pinned CCO. Its Sensor class is a Transducer designed to convert incoming energy into a corresponding output signal, whereas SOSA-next Sensor also includes humans, software-based systems, and simulation systems. Reconsider only after an explicit target-version decision. |
+
+### Disposition totals
+
+- Already represented: **1**
+- Adapt: **3**
+- Preserve existing deferral: **1**
+
+`sosa:Actuator` and `sosa:Sampler` are retained as explicit subclasses of `bfo:MaterialEntity`, but the stronger realization, actual-agent, and equivalence commitments are removed.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
