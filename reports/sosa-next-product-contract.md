@@ -142,8 +142,11 @@ The temporary `active-mappings.ttl` emitted by
 `tools/check_sosa_next_mapping.py` remains a validation artifact. It is not a
 maintained or published ontology product.
 
-A consumer that needs the complete modular mapping can load the CCO extension,
-which transitively imports the BFO mapping and alignment core.
+A consumer that needs the complete set of project mapping axioms can load the
+CCO extension, which transitively imports the BFO mapping and alignment core.
+These project products do not import the external SOSA, BFO, or CCO ontologies;
+a consumer that needs a complete reasoning closure must load the governed source
+and target dependencies separately.
 
 ### BFO projection
 
