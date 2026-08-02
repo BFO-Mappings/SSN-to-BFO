@@ -180,6 +180,25 @@ The external `Syntactic repair` label does not by itself establish that the corr
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the semantic-redesign class set
+
+These three rows were assessed against the exact pinned SOSA-next hierarchy, property signatures, definitions, and BFO/CCO targets.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:FeatureOfInterest` | `adapt` | Widen the current equivalent-class filler from Observation-or-Sampling-or-Actuation to Execution-or-ExecutionCollection-or-Deployment. This matches the exact pinned isFeatureOfInterestOf signature: the narrower execution classes are already subclasses of Execution, and their collection classes are subclasses of ExecutionCollection. |
+| `sosa:Platform` | `adapt` | Replace the current equivalence with sosa:Platform owl:equivalentClass sosa:Asset and bfo:MaterialEntity and (sosa:hosts some sosa:Asset). The pinned definition characterizes a Platform as an Asset that hosts other Assets, particularly Systems and Platforms; the external System-or-Platform filler is therefore still too narrow. The MaterialEntity conjunct preserves the project's existing materiality commitment. |
+| `sosa:SpatialSample` | `deactivate` | Remove the active cross-ontology restriction and retain the native SpatialSample subClassOf Sample axiom. The source defines spatiality through the sample's own location and shape. Neither requiring the represented FeatureOfInterest to occupy a spatial region nor requiring production by a Sampling whose FeatureOfInterest occupies a spatial region captures that defining condition. |
+
+### Disposition totals
+
+- Adapt: **2**
+- Deactivate: **1**
+
+`sosa:FeatureOfInterest` accepts the external widening. `sosa:Platform` retains the material-entity equivalence but uses the exact native genus and filler, `sosa:Asset`. `sosa:SpatialSample` receives no replacement BFO/CCO axiom because neither proposed restriction captures the source's location-and-shape criterion.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
