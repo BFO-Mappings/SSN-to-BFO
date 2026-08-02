@@ -337,15 +337,15 @@ These are the final unresolved rows carrying BFO or CCO commitments in the exter
 | Term | Validated disposition | Evidence basis |
 |---|---|---|
 | `sosa:Property` | `adapt` | Weaken the current equivalence to sosa:Property rdfs:subClassOf (bfo:SpecificallyDependentContinuant or bfo:ProcessProfile). The two-branch union remains the project's necessary upper bound for continuant and occurrent properties, but the reverse implications are unsupported: not every specifically dependent continuant or process profile is a SOSA Property. |
-| `sosa:SampleCollection` | `adapt` | Replace the current ObjectAggregate and has_member_part mapping with the single axiom sosa:SampleCollection rdfs:subClassOf bfo:Continuant. ObjectAggregate and member parthood incorrectly impose materiality. The proposed has_continuant_part restriction is also omitted because SOSA collection membership does not by itself establish BFO continuant parthood. The broad Continuant classification preserves the contrast with the process-oriented execution collection classes. |
+| `sosa:SampleCollection` | `adapt` | Adopt the external corrected mapping: sosa:SampleCollection rdfs:subClassOf bfo:Continuant and (bfo:has_continuant_part some (sosa:Sample or sosa:SampleCollection)). This removes the material-only ObjectAggregate and has_member_part commitments while retaining an existential continuant-parthood interpretation for at least one Sample or nested SampleCollection. This is a deliberate project-level formalization of SOSA collection membership; no universal parthood restriction is asserted. |
 
 ### Disposition totals
 
 - Adapt: **2**
 
-`sosa:Property` retains the continuant-or-process-profile upper bound but no longer classifies every member of those BFO categories as a SOSA Property.
+`sosa:Property` retains the specifically-dependent-continuant-or-process-profile upper bound, but the mapping is weakened from equivalence to subclassing.
 
-`sosa:SampleCollection` is retained as a Continuant without material ObjectAggregate classification or a BFO parthood restriction. SOSA membership remains source-native.
+`sosa:SampleCollection` adopts the external corrected mapping to `bfo:Continuant` with at least one `bfo:has_continuant_part` that is a `sosa:Sample` or nested `sosa:SampleCollection`. The prior material-only aggregate and member-parthood commitments are removed.
 
 With these dispositions, every external row that introduces, changes, or removes a BFO/CCO commitment has completed row-level review.
 
