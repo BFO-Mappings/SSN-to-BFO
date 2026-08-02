@@ -199,6 +199,28 @@ These three rows were assessed against the exact pinned SOSA-next hierarchy, pro
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the semantic-redesign input/output set
+
+These rows distinguish Procedure-level input and output specifications from concrete inputs and outputs of an Execution. The exact CCO relations require Process subjects and Continuant inputs or outputs.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:hasInput` | `deactivate` | Remove the cco:has_input superproperty. The source relation runs from a Procedure, which is mapped as a prescriptive information content entity, whereas CCO has_input has a Process domain. No direct CCO superproperty expresses a Procedure-to-required-input-specification relation. |
+| `sosa:hasInputValue` | `deactivate` | Remove the cco:has_input superproperty. Although the source subject is an Execution or ExecutionCollection, SOSA only states that the object assigns a value to an input used in the execution. It does not entail the stronger CCO condition that the object is a Continuant whose presence at the beginning is necessary for the Process to start. |
+| `sosa:hasOutput` | `deactivate` | Remove the cco:is_output_of superproperty. The source relation runs from a Procedure to an output specification, while is_output_of runs from a Continuant output to the Process that produced it. A Procedure is not that process, and the current mapping also reverses the relation. |
+| `sosa:hasResult` | `adapt` | Replace cco:is_output_of with cco:has_output. The SOSA relation runs from an Execution or ExecutionCollection to its result, matching the CCO Process-to-Continuant output direction. The current mapping uses the inverse direction. |
+
+### Disposition totals
+
+- Adapt: **1**
+- Deactivate: **3**
+
+The exact pinned SOSA-next closure contained no relevant cardinality restrictions or property-chain axioms for these property families. The external workbook's simplicity rationale was therefore not independently reproduced, but no replacement property chain is adopted.
+
+`sosa:hasResult` is the only direct CCO mapping retained: its superproperty changes from `cco:is_output_of` to the correct process-to-output relation `cco:has_output`.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
