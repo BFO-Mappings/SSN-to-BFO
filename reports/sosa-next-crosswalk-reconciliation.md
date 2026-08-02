@@ -351,6 +351,24 @@ With these dispositions, every external row that introduces, changes, or removes
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Audit-scope disposition for source-native-only rows
+
+The remaining 51 external rows contain no BFO or CCO commitment in either the external proposal or the governed COMS row. They are therefore closed under a common `out_of_scope_source_native` disposition rather than treated as candidate cross-ontology mappings.
+
+| External verdict | Deferred | Explicitly unmapped | Total |
+|---|---:|---:|---:|
+| Decision needed (default in place) | 0 | 1 | 1 |
+| Not DL-expressible | 0 | 1 | 1 |
+| OK as-is | 4 | 35 | 39 |
+| Semantic redesign | 0 | 5 | 5 |
+| Syntactic repair | 0 | 5 | 5 |
+| **Total** | **4** | **47** | **51** |
+
+This disposition does not endorse or reject the external source-native axioms as changes to SOSA itself. It records that declarations, source-native domains and ranges, inverse relations, source property hierarchies, collection rules, and similar schema content are outside this mapping project's cross-ontology COMS scope.
+
+The four existing deferred rows remain deferred. The other 47 rows remain explicitly unmapped. No source ontology, COMS mapping row, or generated ontology product is changed.
+
+All 115 external rows now have a validated reconciliation disposition.
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
