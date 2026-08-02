@@ -248,6 +248,25 @@ The inverse quality relation `sosa:qualityOf` remains `already_represented` unde
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the phenomenon-time semantic-redesign pair
+
+The pinned source establishes that both properties are object properties and inverses. They relate an Execution to the temporal entity to which its result applies, rather than to the temporal region occupied by the Execution itself.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:phenomenonOccurred` | `adapt` | Replace the current rdfs:range bfo:TemporalRegion axiom with rdfs:domain bfo:TemporalRegion. The native inverse orientation runs from a temporal entity to an Execution or ExecutionCollection. No BFO or CCO temporal relation is adopted as a superproperty because the temporal entity is the time to which the result pertains, not necessarily the temporal region occupied by the Execution. |
+| `sosa:phenomenonTime` | `adapt` | Replace the explicitly unmapped disposition with rdfs:range bfo:TemporalRegion. The pinned source declares phenomenonTime as an owl:ObjectProperty from an Execution or ExecutionCollection to the time at which its result applies. Retain no BFO or CCO temporal superproperty, because this time may differ from the Execution's own occupied temporal region. |
+
+### Disposition totals
+
+- Adapt: **2**
+
+The resulting cross-ontology commitments are limited to `sosa:phenomenonTime rdfs:range bfo:TemporalRegion` and `sosa:phenomenonOccurred rdfs:domain bfo:TemporalRegion`. No BFO or CCO temporal object property is asserted as a superproperty.
+
+The external note characterizing `sosa:phenomenonTime` as a datatype property is rejected as inconsistent with the pinned source, which declares it an `owl:ObjectProperty` and gives it an object-property inverse.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
