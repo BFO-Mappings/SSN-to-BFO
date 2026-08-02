@@ -267,6 +267,27 @@ The external note characterizing `sosa:phenomenonTime` as a datatype property is
 
 These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
 
+## Evidence-based dispositions for the not-DL-expressible cross-ontology set
+
+These rows cannot be repaired by retaining their current direct BFO/CCO superproperties. Two incorrectly treat Samples as production processes; the third requires a conditional choice between distinct BFO relations.
+
+| Term | Validated disposition | Evidence basis |
+|---|---|---|
+| `sosa:featureHasUltimateSample` | `deactivate` | Remove the cco:is_output_of superproperty. The source relation runs from a FeatureOfInterest to an ultimate Sample or SampleCollection. It does not relate a Continuant output to the Sampling process that produced it. The current mapping would instead place the source and target into the CCO output-to-process signature. |
+| `sosa:hasOriginalSample` | `deactivate` | Remove the cco:is_output_of superproperty. The source relation runs from one Sample to another Sample identified as its original. It does not relate an output to the Sampling process that produced it, and the CCO mapping would incorrectly type the target Sample as a Process. |
+| `sosa:hasProperty` | `retain_unmapped` | Retain the explicitly unmapped status. sosa:Property may be either a bfo:SpecificallyDependentContinuant or a bfo:ProcessProfile. The corresponding relations would be bfo:bearer_of for the continuant branch and an occurrent-parthood relation for the process-profile branch. OWL cannot select the appropriate superproperty according to the filler type, so no single sound BFO superproperty is asserted. |
+
+### Disposition totals
+
+- Deactivate: **2**
+- Retain explicitly unmapped: **1**
+
+The output-of-a-Sampling semantics remain represented on the appropriate Sampling and Sample mappings rather than being asserted directly between a FeatureOfInterest or Sample and another Sample.
+
+`sosa:hasProperty` remains available for a later rule, SHACL, or other conditional representation layer that can distinguish the continuant and process-profile branches.
+
+These remain report-only dispositions. No COMS row or ontology product is changed in this phase.
+
 ## Unmatched inventory
 
 - Every external BFO/CCO term matched a governed COMS term, directly or through an approved namespace alias.
