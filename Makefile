@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -35,6 +35,8 @@ compile:
 		tools/robot_verify_pilot.py \
 		tools/check_coms_mapping.py \
 		tools/check_sosa_next_mapping.py \
+		tools/generate_sosa_next_products.py \
+		tools/check_sosa_next_products.py \
 		tools/watch_coms_mapping.py \
 		tools/publication_metadata.py \
 		tools/check_publication_metadata.py \
@@ -46,6 +48,7 @@ compile:
 		tools/rehearse_release.py \
 		tests/test_generate_mapping_from_coms.py \
 		tests/test_check_sosa_next_mapping.py \
+		tests/test_sosa_next_products.py \
 		tests/test_robot_diff_pilot.py \
 		tests/test_robot_extract_pilot.py \
 		tests/test_robot_query_equivalence_pilot.py \
@@ -96,6 +99,13 @@ check-placeholder-catalog-migration:
 check-sosa-next:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_check_sosa_next_mapping.py'
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_next_mapping.py
+
+generate-sosa-next-products:
+	PYTHONDONTWRITEBYTECODE=1 python tools/generate_sosa_next_products.py --write-maintained
+
+check-sosa-next-products:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_next_products.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_next_products.py
 
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py

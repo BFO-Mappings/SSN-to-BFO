@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression gates for retired current placeholders and development catalogs."""
+"""Regression gates for retired placeholders and development catalogs."""
 
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ REMOVED_PATHS = (
     "imports/catalog-v001.xml",
     "releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl",
     "releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl",
+    "releases/sosa-next/sosa-bfo-directmappings.ttl",
+    "releases/sosa-next/sosa-cco-directmappings.ttl",
     "src/current-ssn-sosa/catalog-v001.xml",
     "src/current-ssn-sosa/ssn-sosa-mappings-edit.ttl",
     "src/current-ssn-sosa/sparql/artifact-metadata.rq",
@@ -45,12 +47,16 @@ RETIRED_PLACEHOLDER_HASHES = frozenset(
     {
         "397fc7a1566afddc271fee066dc55311f9b61c4be887212be84d6ae9462df3e8",
         "33e616a74bd959fec6128779dddee7fb52e2faca8f5669d9ff5faab079a408f1",
+        "0e814b9e9bdb03cca73bb15e307b2d0ca13424f0c19775aa0feaf440c2879a18",
+        "1bf9de31bf344c9b90c673cf3bab05467a7bb1026f8cb36d27e25cb9fabcfd2b",
     }
 )
 RETIRED_REFERENCE_TERMS = (
     *REMOVED_PATHS,
     "ssn-sosa-bfo-directmappings.ttl",
     "ssn-sosa-cco-directmappings.ttl",
+    "sosa-bfo-directmappings.ttl",
+    "sosa-cco-directmappings.ttl",
     "ssn-sosa-mappings-edit.ttl",
     "artifact-metadata.rq",
     "derive-bfo-from-cco",
@@ -61,12 +67,17 @@ RETIRED_REFERENCE_TERMS = (
     "https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/bfo",
     "https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/cco",
     "https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/edit",
+    "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo",
+    "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco",
+    "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit",
 )
 HISTORICAL_REFERENCE_ALLOWLIST = frozenset(
     {
         "reports/current-ssn-sosa-release-readiness-audit.md",
         "reports/prov-functional-parity-audit.md",
+        "reports/publication-product-and-import-policy.md",
         "reports/sosa-import-closure-fidelity-audit.md",
+        "reports/sosa-next-product-contract.md",
     }
 )
 NEGATIVE_GUARD_PATHS = frozenset(
@@ -76,14 +87,22 @@ NEGATIVE_GUARD_PATHS = frozenset(
     }
 )
 
-SOSA_NEXT_HASHES = {
-    "releases/sosa-next/sosa-bfo-directmappings.ttl":
-        "0e814b9e9bdb03cca73bb15e307b2d0ca13424f0c19775aa0feaf440c2879a18",
-    "releases/sosa-next/sosa-cco-directmappings.ttl":
-        "1bf9de31bf344c9b90c673cf3bab05467a7bb1026f8cb36d27e25cb9fabcfd2b",
+SOSA_NEXT_ARTIFACT_HASHES = {
+    "releases/sosa-next/sosa-alignment-core.ttl":
+        "413018bbca9abc276102ddc97a3cfbf2803d170ef8c98f778869c2c89ae2425a",
+    "releases/sosa-next/sosa-bfo-mapping.ttl":
+        "b4e5c485ecb176472384ed97dbaa83d384c340340fa896d04ea54d9d2fc34e93",
+    "releases/sosa-next/sosa-cco-extension.ttl":
+        "e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69",
     "src/sosa-next/sosa-mappings-edit.ttl":
-        "7a27a32b8e76af2d57bf8ded5fe8b7e61ad67792c36ba3e3917d1279f8cd63d3",
+        "ddf851c7888c0152635598f5a9cffe8b53285a4e4e4247a9f4e84eb35bcb7ac8",
 }
+
+SOSA_NEXT_RELEASE_FILES = (
+    "../../releases/sosa-next/sosa-alignment-core.ttl",
+    "../../releases/sosa-next/sosa-bfo-mapping.ttl",
+    "../../releases/sosa-next/sosa-cco-extension.ttl",
+)
 DEPENDENCY_HASHES = {
     "imports/cco.ttl": "3ad8f098ecb3d7ca27464a1edf2795b90c69573843447d51f090e6f1b30694f4",
     "imports/sosa.ttl": "0dad03b30c7fdd085e2629dfc0ebd10bb1dacbda73b2c375fb295ab6861ffb33",
@@ -146,15 +165,23 @@ SOSA_NEXT_CATALOG_MAPPINGS = (
         "../../imports/cco.ttl",
     ),
     (
-        "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo",
-        "../../releases/sosa-next/sosa-bfo-directmappings.ttl",
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/alignment-core",
+        "../../releases/sosa-next/sosa-alignment-core.ttl",
     ),
     (
-        "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco",
-        "../../releases/sosa-next/sosa-cco-directmappings.ttl",
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/bfo-mapping",
+        "../../releases/sosa-next/sosa-bfo-mapping.ttl",
     ),
     (
-        "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit",
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/cco-extension",
+        "../../releases/sosa-next/sosa-cco-extension.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/edit",
         "sosa-mappings-edit.ttl",
     ),
 )
@@ -209,16 +236,43 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
                 occurrences[relative] = matched
         self.assertEqual(set(occurrences), set(HISTORICAL_REFERENCE_ALLOWLIST), occurrences)
 
-    def test_sosa_next_scaffold_ttl_is_byte_preserved_and_parseable(self) -> None:
-        for relative, expected_hash in SOSA_NEXT_HASHES.items():
+    def test_sosa_next_products_and_editor_are_byte_preserved_and_parseable(self) -> None:
+        for relative, expected_hash in SOSA_NEXT_ARTIFACT_HASHES.items():
             with self.subTest(path=relative):
                 path = REPO_ROOT / relative
-                self.assertTrue(stat.S_ISREG(path.lstat().st_mode))
-                self.assertEqual(sha256(path), expected_hash)
+                self.assertTrue(
+                    stat.S_ISREG(
+                        path.lstat().st_mode
+                    )
+                )
+                self.assertEqual(
+                    sha256(path),
+                    expected_hash,
+                )
                 self.assertGreater(
-                    len(Graph().parse(path, format="turtle")),
+                    len(
+                        Graph().parse(
+                            path,
+                            format="turtle",
+                        )
+                    ),
                     0,
                 )
+
+    def test_sosa_next_makefile_exposes_exact_maintained_products(self) -> None:
+        output = subprocess.check_output(
+            [
+                "make",
+                "-s",
+                "output-release-filepaths",
+            ],
+            cwd=REPO_ROOT / "src/sosa-next",
+            text=True,
+        )
+        self.assertEqual(
+            tuple(output.splitlines()),
+            SOSA_NEXT_RELEASE_FILES,
+        )
 
     def test_pinned_dependencies_are_preserved_parseable_and_logically_nonempty(self) -> None:
         parsed: dict[str, Graph] = {}

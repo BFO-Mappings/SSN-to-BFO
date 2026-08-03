@@ -3,8 +3,10 @@
 ## Status
 
 This document defines the development-product contract for the governed
-forthcoming SOSA mapping. It precedes implementation of maintained ontology
-generation and does not itself publish a formal release.
+forthcoming SOSA mapping. Its initial maintained implementation is generated
+by `tools/generate_sosa_next_products.py` and validated by the focused
+SOSA-next product checker and repository validation suite. It does not
+publish a formal release.
 
 The temporary term `sosa-next` identifies the development track only. A formal
 release must replace it in package paths and ontology IRIs with the approved
@@ -13,7 +15,7 @@ source-version identity. No production path or ontology IRI may retain
 
 ## Authoritative inputs
 
-The maintained products will be generated from:
+The maintained products are generated from:
 
 - `mappings/SOSA-next-to-BFO-COMS.xlsx`, as the sole editable mapping source;
 - the pinned SOSA-next source closure under `src/sosa-next/imports/`;
@@ -21,13 +23,13 @@ The maintained products will be generated from:
 - repository-governed BFO and CCO imports;
 - the canonical COMS row-identity and expression-processing machinery.
 
-The existing files
+The former files
 
 - `releases/sosa-next/sosa-bfo-directmappings.ttl`; and
 - `releases/sosa-next/sosa-cco-directmappings.ttl`
 
-are inactive scaffolds, not mapping authorities. They will be removed only when
-their generated replacements have passed all product gates.
+were inactive scaffolds, not mapping authorities. They are retired only after
+their generated replacements pass the maintained-product gates.
 
 ## Governed baseline
 
@@ -118,6 +120,19 @@ Required project import:
 
 `http://www.sks.ai/SSN2BFO/development/sosa-next/bfo-mapping`
 
+## Implemented development import graph
+
+The maintained development import graph is:
+
+- `sosa-cco-extension.ttl` imports `sosa-bfo-mapping.ttl`;
+- `sosa-bfo-mapping.ttl` imports `sosa-alignment-core.ttl`;
+- `sosa-alignment-core.ttl` imports no project ontology.
+
+The editor shell imports only the CCO extension and therefore obtains the
+BFO mapping and alignment core transitively. The maintained products do not
+import external SOSA, BFO, or CCO ontologies; validation and consumers load
+the governed source and target dependencies separately.
+
 ## Direct-axiom partition
 
 Every one of the 45 active authoritative axioms must occur directly in exactly
@@ -164,29 +179,19 @@ A BFO projection may be introduced only through a separate policy change that:
 
 ## Generation architecture
 
-The implementation should introduce a dedicated SOSA-next generation adapter,
-provisionally:
+The implementation uses the dedicated SOSA-next generation adapter:
 
 `tools/generate_sosa_next_products.py`
 
-The adapter may reuse pure COMS, canonical-identity, disposition, modular
-rendering, and validation functions. It must not alter the behavior or
-configuration contract of the current-SOSA generator.
+The adapter reuses pure COMS, canonical-identity, product-classification,
+modular-rendering, and publication-header functions without changing the
+current-SOSA generator contract.
 
-Any temporary change to shared COMS resolver configuration must:
-
-1. snapshot both `PREFIX_FILES` and `SOURCE_IMPORTS`;
-2. install the SOSA-next configuration only for the required operation;
-3. restore both values in a `finally` block;
-4. be covered by a direct state-restoration regression test.
-
-Generation must be transactional:
-
-1. build all products under an external or owned temporary directory;
-2. validate all candidate products;
-3. compare two independent candidate builds byte for byte;
-4. atomically replace all maintained products only after every gate passes;
-5. replace none of the maintained products after any failure.
+Generation is transactional: it builds and validates independent candidates,
+requires byte-identical results, validates the three reasoning profiles, and
+atomically replaces the maintained products only after every gate passes.
+Temporary COMS resolver configuration is restored after both success and
+failure.
 
 ## Canonical serialization and metadata
 
