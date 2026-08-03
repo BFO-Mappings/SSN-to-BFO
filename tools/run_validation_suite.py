@@ -407,6 +407,8 @@ def compile_check() -> StepResult:
             "tools/validate_robot_reconstruction.py",
             "tools/check_coms_mapping.py",
             "tools/check_sosa_next_mapping.py",
+            "tools/generate_sosa_next_products.py",
+            "tools/check_sosa_next_products.py",
             "tools/watch_coms_mapping.py",
             "tools/publication_metadata.py",
             "tools/check_publication_metadata.py",
@@ -418,6 +420,7 @@ def compile_check() -> StepResult:
             "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_check_sosa_next_mapping.py",
+            "tests/test_sosa_next_products.py",
             "tests/test_robot_template_generation_pilot.py",
             "tests/test_robot_property_chain_generation_pilot.py",
             "tests/test_robot_diff_pilot.py",
@@ -516,6 +519,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_check_sosa_next_mapping.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-next maintained-product focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_next_products.py",
                 ],
             )
         )
@@ -798,6 +817,18 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tools/check_sosa_next_mapping.py",
                     "--output-dir",
                     str(tmp_dir / "sosa-next-mapping-check"),
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-next maintained-product check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_next_products.py",
+                    "--output-dir",
+                    str(tmp_dir / "sosa-next-product-check"),
                 ],
             )
         )

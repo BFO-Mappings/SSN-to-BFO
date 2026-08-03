@@ -1,11 +1,10 @@
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@base <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit> .
+@base <http://www.sks.ai/SSN2BFO/development/sosa-next/edit> .
 
-<https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit>
+<http://www.sks.ai/SSN2BFO/development/sosa-next/edit>
   a             owl:Ontology ;
   rdfs:label    "Editor's file for forthcoming SOSA-only to BFO/CCO mappings"@en ;
-  rdfs:comment  "Insert completed forthcoming SOSA-only → BFO/CCO development mapping content here."@en ;
-  owl:imports   <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo> ,
-                <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco> ;
+  rdfs:comment  "Development editor shell; governed maintained mapping axioms are generated from mappings/SOSA-next-to-BFO-COMS.xlsx."@en ;
+  owl:imports   <http://www.sks.ai/SSN2BFO/development/sosa-next/cco-extension> ;
 .
