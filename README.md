@@ -24,6 +24,47 @@ For reproducible use, prefer the tagged release assets rather than files from an
 
 See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships among these products.
 
+## SOSA-next maintained development products
+
+The repository also maintains a governed development track for the forthcoming
+SOSA source. These products are generated from
+`mappings/SOSA-next-to-BFO-COMS.xlsx`:
+
+| Product | File | Use when |
+| --- | --- | --- |
+| SOSA-next alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | You need the import-free target-neutral project layer |
+| SOSA-next BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | You need the governed BFO-bearing mappings |
+| SOSA-next CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | You need the complete layered SOSA-next project stack |
+
+The project import chain is:
+
+```text
+SOSA-next CCO extension
+  -> SOSA-next BFO mapping
+    -> SOSA-next alignment core
+```
+
+For development use in an ontology editor, load
+`src/sosa-next/sosa-mappings-edit.ttl` with
+`src/sosa-next/catalog-v001.xml`. The editor imports the CCO extension and
+obtains the other project modules transitively. External SOSA, BFO, and CCO
+dependencies remain separate consumer or validation inputs.
+
+These files are maintained authoritative development artifacts, but they are
+not part of the current formal release. The temporary `sosa-next` identity must
+be replaced by the approved source-version identity before formal publication.
+
+Focused development validation:
+
+```bash
+make check-sosa-next
+make check-sosa-next-products
+make check-sosa-next-consumer-stack
+```
+
+See [SOSA-next Development Products](src/sosa-next/docs/README.md) and the
+[formal-release integration audit](reports/sosa-next-formal-release-integration-audit.md).
+
 ## Release
 
 The current governed release is [`v2026-07-18`](https://github.com/BFO-Mappings/SSN-to-BFO/releases/tag/v2026-07-18).

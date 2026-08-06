@@ -10,6 +10,8 @@ It includes:
 - COMS row-identity validation
 - product-disposition validation
 - modular-product tests
+- SOSA-next maintained-product tests
+- SOSA-next catalog consumer-stack tests
 - publication-metadata validation
 - formal release-context and rendering tests
 - release-package, archive, and rehearsal tests
@@ -46,17 +48,66 @@ make check
 
 ## Dependency and catalog policy
 
-No development XML catalog is required.
+The current SSN/SOSA COMS transaction does not require a
+development XML catalog. It explicitly loads pinned local dependencies under
+`imports/` and resolves maintained current-track project imports through
+governed local paths.
 
-Validation explicitly loads the pinned local Turtle dependencies under `imports/` and resolves project-module imports through governed local paths.
+The SOSA-next development track has a separate governed catalog at
+`src/sosa-next/catalog-v001.xml`. It resolves:
 
-`imports/cco.ttl` is a flattened merged CCO/BFO validation dependency. It is not a placeholder, mapping authority, or imported component of every published product.
+- nine pinned forthcoming-SOSA source files;
+- the governed merged CCO/BFO validation dependency;
+- the three maintained SOSA-next project products;
+- the SOSA-next editor shell.
 
-The XML catalog inside a formal release package is different from a development catalog. It maps exactly the five immutable same-release version IRIs to package-relative products.
+The maintained SOSA-next project products import only other SOSA-next project
+products. They do not import the external source or target dependencies
+resolved by the catalog.
+
+`imports/cco.ttl` remains a flattened merged CCO/BFO validation dependency. It
+is not a placeholder, mapping authority, or serialized import of every
+published product.
+
+The XML catalog inside a formal current-track release package is a different
+artifact. It maps exactly the five immutable same-release version IRIs to
+package-relative products. The development SOSA-next catalog is not currently
+copied into a formal package.
+
+## SOSA-next development validation
+
+The forthcoming-SOSA workbook and its three maintained products have separate
+focused gates:
+
+```bash
+make check-sosa-next
+make check-sosa-next-products
+make check-sosa-next-consumer-stack
+```
+
+`make check-sosa-next` validates the 119 governed workbook rows, 45 active
+mappings, 26 deferred mappings, 48 explicitly unmapped rows, canonical
+identity, and a clean HermiT result for the integrated active mapping.
+
+`make check-sosa-next-products` independently rebuilds the three products,
+requires byte-identical candidate builds, validates exact hashes and triple
+counts, reconstructs the 273-triple logical graph, checks transactional
+rollback behavior, and requires zero named unsatisfiable classes in all three
+product-specific reasoning profiles.
+
+`make check-sosa-next-consumer-stack` resolves every catalog target locally,
+parses all dependency and project entries, verifies the exact project import
+graph, loads the editor closure, and confirms that external dependencies remain
+separate from the maintained project imports.
+
+These checks are included in `make check` and hosted CI. They validate
+maintained development artifacts only; they do not create a formal version
+IRI, manifest, package, archive, tag, GitHub release, or persistent-IRI
+deployment.
 
 ## Publication metadata
 
-`config/publication-metadata.toml` is the sole editable publication-metadata source.
+`config/publication-metadata.toml` is the sole editable publication-metadata source for the current five-product formal-release track.
 
 Development-mode validation:
 
@@ -85,7 +136,7 @@ Formal renderers:
 
 ## Release package
 
-`tools/build_release.py` builds a deterministic candidate package only at an explicit absent output directory.
+`tools/build_release.py` builds a deterministic current-track candidate package only at an explicit absent output directory.
 
 `tools/check_release.py validate --package-dir PATH` validates an existing package read-only.
 

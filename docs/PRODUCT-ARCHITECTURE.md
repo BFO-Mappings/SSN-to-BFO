@@ -137,10 +137,72 @@ Development artifacts emit exactly seven governed annotations:
 
 Formal release rendering retains the stable ontology IRI, replaces the development authority status with the immutable-release status, and adds the governed formal release identity.
 
-## Inactive source scaffolding
+## Retired current-track scaffolding
 
-The former current-track editor, direct-mapping shells, development catalog, and ungoverned hierarchy-projection analysis have been retired.
+The former current-track editor, direct-mapping shells,
+development catalog, and ungoverned hierarchy-projection analysis have been
+retired.
 
-The separate `sosa-next` scaffold remains intentionally retained but inactive. Its temporary editor source, catalog, release shells, and optional local targets do not participate in current generation, validation, package construction, or publication.
+## SOSA-next maintained development track
 
-The inactive scaffold is not an alias or compatibility layer for the maintained current-track products.
+The separate SOSA-next track is now an active maintained development track,
+not inactive scaffolding. Its sole editable mapping authority is
+`mappings/SOSA-next-to-BFO-COMS.xlsx`.
+
+It consists of exactly three generated ontology products:
+
+| Product | Path | Direct axioms | Total triples |
+| --- | --- | ---: | ---: |
+| Alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | 0 | 8 |
+| BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 166 |
+| CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | 24 | 125 |
+
+Their import graph is:
+
+```text
+SOSA-next alignment core
+          ↑
+SOSA-next BFO mapping
+          ↑
+SOSA-next CCO extension
+          ↑
+SOSA-next editor shell
+```
+
+The three maintained products contain 45 canonical authoritative axioms. Their
+logical union has 273 triples and is isomorphic to the integrated active
+mapping graph used during validation. The catalog-resolved editor stack,
+including ontology metadata and project imports, contains 303 distinct
+triples.
+
+The alignment core imports no project or external ontology. The BFO mapping
+imports only the alignment core. The CCO extension imports only the BFO
+mapping. The editor shell imports only the CCO extension. External SOSA, BFO,
+and CCO dependencies are resolved separately by consumers or assembled only
+in temporary validation closures; their triples are not serialized into the
+maintained project products.
+
+The initial SOSA-next product set intentionally has no integrated ontology and
+no BFO-projection product. Those products require separate consumer and
+governance justification rather than automatic duplication of the current
+SSN/SOSA architecture.
+
+Focused validation:
+
+```bash
+make check-sosa-next
+make check-sosa-next-products
+make check-sosa-next-consumer-stack
+```
+
+The SOSA-next products are not yet formal-release products. Current release
+metadata, manifest, package, archive, and rehearsal tooling remain authoritative
+only for the five-product current SSN/SOSA track. Formal publication is blocked
+until the temporary `sosa-next` path and ontology-IRI component is replaced by
+an approved source-version identity and the release machinery is deliberately
+extended.
+
+The earlier `reports/publication-product-and-import-policy.md` records the
+pre-activation lifecycle policy. For the implemented SOSA-next development
+track, `reports/sosa-next-product-contract.md` is the controlling product
+contract.
