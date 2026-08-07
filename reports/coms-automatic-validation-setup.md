@@ -67,7 +67,9 @@ The manifest excludes itself and `SHA256SUMS` from `included_files`; `SHA256SUMS
 
 COMS is the sole editable mapping authority, and the integrated ontology plus four maintained modules replace the former current-track editor, direct-mapping shells, and ungoverned hierarchy-projection analysis. Those obsolete paths and their active Make targets are retired rather than preserved as aliases, wrappers, diagnostics, or compatibility promises.
 
-No development XML catalog is required. Validation explicitly loads the five pinned local dependency files and locally resolves maintained project-module imports. `imports/cco.ttl` remains a full flattened merged CCO/BFO validation dependency, not a placeholder, while the `sosa-next` editor, catalog, and release shells remain intentionally retained and inactive.
+The current SSN/SOSA COMS transaction requires no development XML catalog: it explicitly loads its pinned local dependencies and resolves maintained current-track project imports through governed local paths. `imports/cco.ttl` remains a full flattened merged CCO/BFO validation dependency, not a placeholder.
+
+The SOSA-next track is separately active as a maintained development track. `src/sosa-next/catalog-v001.xml` resolves its pinned source closure, merged CCO/BFO validation dependency, three maintained products, and editor shell. The SOSA-next generator and checker enforce deterministic products, exact import boundaries, product-specific reasoning closures, and catalog-resolved consumer loading. This development activation does not add SOSA-next products to the current formal package or release machinery.
 
 The catalog generated inside a formal release package is unaffected: it remains package-relative, maps exactly the five immutable version IRIs in governed product order, and is byte-validated with the rest of the 13-file package. This migration does not configure redirects, deploy persistent IRIs, choose an actual release identity, or publish a release.
 

@@ -421,6 +421,7 @@ def compile_check() -> StepResult:
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_check_sosa_next_mapping.py",
             "tests/test_sosa_next_products.py",
+            "tests/test_sosa_next_consumer_stack.py",
             "tests/test_robot_template_generation_pilot.py",
             "tests/test_robot_property_chain_generation_pilot.py",
             "tests/test_robot_diff_pilot.py",
@@ -535,6 +536,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_sosa_next_products.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-next catalog consumer-stack focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_next_consumer_stack.py",
                 ],
             )
         )

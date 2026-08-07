@@ -1,0 +1,240 @@
+# SOSA-next Formal-Release Integration Audit
+
+## Purpose
+
+This audit identifies the changes required to move the three maintained
+SOSA-next development products into a deterministic formal release. It does
+not approve a source-version identity and does not modify release metadata,
+manifest, package, archive, rehearsal, or publication code.
+
+## Current development baseline
+
+The maintained development products are:
+
+| Product | Path | Direct axioms | Logical triples | Total triples |
+| --- | --- | ---: | ---: | ---: |
+| Alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | 0 | 0 | 8 |
+| BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 157 | 166 |
+| CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | 24 | 116 | 125 |
+
+The three products contain 45 canonical authoritative axioms. Their logical
+union contains 273 triples and is isomorphic to the integrated active mapping
+graph used for validation.
+
+The catalog-resolved editor closure is:
+
+```text
+editor
+  -> CCO extension
+    -> BFO mapping
+      -> alignment core
+```
+
+That local project stack contains 303 distinct triples. Maintained project
+products import no external source or target ontology.
+
+## Formal-publication blocker
+
+The temporary component `sosa-next` is not an approved source-version identity.
+Before formal publication, the project must approve an immutable identity for
+the mapped SOSA source and replace `sosa-next` in:
+
+- package paths;
+- stable ontology IRIs;
+- formal version-IRI suffixes;
+- catalog mappings;
+- release notes and user documentation;
+- manifest product records and source evidence.
+
+No formal-release implementation should guess this identity.
+
+## Current formal-release authority
+
+The existing formal-release system is intentionally specific to the current
+SSN/SOSA track:
+
+- publication metadata defines exactly five products in canonical order:
+  integrated, alignment core, strict BFO mapping, BFO projection, and CCO
+  extension;
+- the manifest schema and Python model require those five product records;
+- package construction requires the current-track product paths;
+- the package layout contains 13 regular files;
+- the package catalog maps five same-release version IRIs;
+- the archive authority requires 17 members, including the
+  `current-ssn-sosa/` directory;
+- release rehearsal expects the current package directories and rebuilds the
+  same package and archive twice;
+- release notes require current-track headings, counts, import graph, and BFO
+  projection notice.
+
+The SOSA-next development products must not be inserted into those fixed
+inventories piecemeal.
+
+## Required integration decisions
+
+### Track identity and release scope
+
+Approve:
+
+1. the immutable SOSA source-version identity;
+2. the package directory name;
+3. the stable ontology-IRI namespace;
+4. whether the formal release contains only the three modular products or any
+   additional consumer artifact;
+5. whether current-track and forthcoming-track products are released together
+   or as separate release packages.
+
+The existing three-product contract excludes an integrated ontology and BFO
+projection unless separately justified.
+
+### Publication metadata
+
+The current metadata loader requires one exact five-product inventory. Formal
+integration therefore requires one of these governed designs:
+
+- a track-specific publication-metadata document for the SOSA source version;
+- or a generalized metadata schema with explicit track records and a canonical
+  product order per track.
+
+The design must preserve strict rejection of unknown fields, duplicate paths,
+duplicate stable IRIs, unsafe paths, and noncanonical ordering.
+
+### Formal rendering
+
+Formal rendering must:
+
+- preserve each approved stable ontology IRI;
+- add immutable same-release version IRIs;
+- substitute immutable-release authority status;
+- add release date and version information;
+- rewrite only project imports to same-release version IRIs;
+- preserve the development logical graph;
+- prohibit temporary development identities;
+- validate each product independently and as a project stack.
+
+### Manifest and schema
+
+The manifest model and JSON schema must gain a deliberate SOSA-source-version
+product inventory. Required evidence includes:
+
+- workbook identity and SHA-256;
+- all pinned source-file identities and SHA-256 values;
+- generator, checker, canonicalization, and publication modules;
+- development and formal product hashes;
+- exact direct-axiom and triple counts;
+- project import counts;
+- product-specific reasoning results;
+- catalog-consumption validation;
+- toolchain identity.
+
+A schema revision may be preferable to overloading schema version 1.
+
+### Package layout
+
+A formal package needs an explicit canonical layout. At minimum it requires:
+
+- license;
+- release notes;
+- checksum inventory;
+- the three formal ontology products;
+- a package-relative project catalog;
+- canonical manifest;
+- governed SOSA-next COMS workbook;
+- governed publication metadata;
+- sufficient pinned-source evidence to identify the mapped source closure.
+
+The project must decide whether pinned external ontology files are recorded
+only by identity and hash, as in the current release, or redistributed when
+their licenses permit. No dependency should be copied implicitly.
+
+### Package catalog
+
+The package catalog must map exactly the formal same-release version IRIs to
+the three package-relative products. It must not contain:
+
+- development IRIs;
+- the temporary `sosa-next` identity;
+- remote dependency redirects;
+- the editor shell unless that shell is explicitly approved as a release
+  artifact.
+
+### Archive
+
+Archive integration requires a new canonical member inventory, member count,
+directory inventory, and test authority. Existing raw-USTAR invariants should
+remain unchanged:
+
+- deterministic member order;
+- fixed metadata and zero timestamps;
+- canonical octal fields;
+- zero padding;
+- exactly two terminal zero records;
+- external lowercase SHA-256 sidecar.
+
+### Release notes
+
+The release-note template must describe:
+
+- the approved SOSA source version;
+- the three included products;
+- consumer selection guidance;
+- the project import graph;
+- active, deferred, and explicitly unmapped counts;
+- reasoning and catalog-consumption validation;
+- known limitations;
+- the absence of integrated and projection products;
+- dependency and license scope;
+- deterministic reproduction commands.
+
+### Release rehearsal and CI
+
+Rehearsal must build and validate two isolated copies of the new formal
+package and archive from the same commit, with network access blocked, then
+compare every retained byte. Hosted CI should validate development products
+continuously but should not create a formal package without explicit release
+context and approved release notes.
+
+## Recommended implementation sequence
+
+1. **Approve the immutable SOSA source-version identity.**
+2. **Choose separate-package versus combined-package publication.**
+3. **Define track-specific publication metadata and formal product order.**
+4. **Implement formal rendering and same-release import rewriting.**
+5. **Add a new manifest/schema authority and exact evidence model.**
+6. **Implement package construction and read-only package validation.**
+7. **Implement the canonical package catalog.**
+8. **Extend deterministic archive construction and validation.**
+9. **Add release notes, rehearsal, and hosted-CI regressions.**
+10. **Run a synthetic release context before any actual publication.**
+
+Each stage should preserve current-track release bytes and behavior.
+
+## Acceptance criteria for a future formal-release PR
+
+A future implementation is ready only when:
+
+1. no path, ontology IRI, catalog entry, or release note retains `sosa-next`;
+2. all formal products are deterministic across independent processes;
+3. formal rendering preserves the development logical graphs;
+4. same-release project imports resolve wholly inside the package;
+5. external dependencies are identified and governed without accidental
+   network resolution;
+6. manifest, package, catalog, archive, and sidecar bytes are canonical;
+7. two isolated rehearsals produce byte-identical results;
+8. all product reasoning profiles have zero named unsatisfiable classes;
+9. current-track release behavior and bytes remain unchanged;
+10. the actual source-version identity and release notes have been explicitly
+    approved.
+
+## Non-goals of this branch
+
+This release-readiness branch does not:
+
+- select the final SOSA source-version identity;
+- change `config/publication-metadata.toml`;
+- change release manifest or schema code;
+- change package, archive, or rehearsal code;
+- add SOSA-next products to the current formal release;
+- modify the SOSA-next workbook;
+- resolve deferred or explicitly unmapped rows;
+- publish a release or deploy persistent IRIs.

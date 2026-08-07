@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -49,6 +49,7 @@ compile:
 		tests/test_generate_mapping_from_coms.py \
 		tests/test_check_sosa_next_mapping.py \
 		tests/test_sosa_next_products.py \
+		tests/test_sosa_next_consumer_stack.py \
 		tests/test_robot_diff_pilot.py \
 		tests/test_robot_extract_pilot.py \
 		tests/test_robot_query_equivalence_pilot.py \
@@ -106,6 +107,9 @@ generate-sosa-next-products:
 check-sosa-next-products:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_next_products.py'
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_next_products.py
+
+check-sosa-next-consumer-stack:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_next_consumer_stack.py'
 
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py
