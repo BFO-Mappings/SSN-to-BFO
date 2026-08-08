@@ -23,6 +23,7 @@ PROTECTED_PATHS = (
     products.METADATA_PATH,
     *products.CURRENT_SOSA_PRODUCTS.values(),
     *products.MAINTAINED_PRODUCTS.values(),
+    checker.products.mapping_checker.SOURCE_VERSION_CONFIG,
     *checker.products.mapping_checker.SOURCE_FILES,
 )
 

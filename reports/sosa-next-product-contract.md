@@ -8,9 +8,11 @@ by `tools/generate_sosa_next_products.py` and validated by the focused
 SOSA-next product checker and repository validation suite. It does not
 publish a formal release.
 
-The temporary term `sosa-next` identifies the development track only. A formal
-release must replace it in package paths and ontology IRIs with the approved
-source-version identity. No production path or ontology IRI may retain
+The approved immutable source-version identity is
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, governed by `config/sosa-source-version.toml`. The
+temporary term `sosa-next` remains the development alias only. A formal release
+must replace it in track-specific package paths and ontology IRIs with the
+approved identity. No formal production path or ontology IRI may retain
 `sosa-next`.
 
 ## Authoritative inputs
@@ -18,6 +20,8 @@ source-version identity. No production path or ontology IRI may retain
 The maintained products are generated from:
 
 - `mappings/SOSA-next-to-BFO-COMS.xlsx`, as the sole editable mapping source;
+- `config/sosa-source-version.toml`, as the machine-readable source-version
+  authority;
 - the pinned SOSA-next source closure under `src/sosa-next/imports/`;
 - `src/sosa-next/catalog-v001.xml`;
 - repository-governed BFO and CCO imports;
@@ -253,7 +257,8 @@ The first maintained-product implementation must satisfy all of the following:
 7. two independent builds produce byte-identical products;
 8. all product hashes and exact triple counts are asserted by focused tests;
 9. all three reasoning profiles have zero named unsatisfiable classes;
-10. the pinned SOSA-next source files remain byte-identical;
+10. the approved source-version authority validates and the pinned SOSA-next
+    source files remain byte-identical;
 11. the current-SOSA maintained products remain byte-identical;
 12. the current-SOSA generator and release tests remain unchanged in behavior;
 13. temporary COMS resolver configuration is restored after success and
@@ -275,7 +280,7 @@ The current-SOSA byte-preservation gate must protect:
 
 Formal release integration is a later phase. Before release:
 
-- the approved SOSA source-version identity must replace `sosa-next` in package
+- `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` must replace `sosa-next` in formal track-specific package
   paths and ontology IRIs;
 - release products must receive date-based version IRIs under
   `http://www.sks.ai/SSN2BFO/releases/<release-id>/`;

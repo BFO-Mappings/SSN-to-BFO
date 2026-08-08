@@ -1,0 +1,56 @@
+schema_version = 1
+status = "approved"
+source_identity = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda"
+development_alias = "sosa-next"
+edition_label = "Semantic Sensor Network Ontology - 2023 Edition"
+edition_version_iri = "http://www.w3.org/ns/sosa/2023/"
+w3c_tr_iri = "https://www.w3.org/TR/vocab-ssn-2023/"
+upstream_repository = "https://github.com/w3c/sdw-sosa-ssn"
+upstream_commit = "af425a0454ec00512a5ebfa2873fe35a077f5fda"
+upstream_commit_date = "2026-07-22"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa.ttl"
+upstream_path = "ssn/rdf/ontology/core/sosa.ttl"
+sha256 = "a1875d19988b0bd17e5cd3a61f76440b6e0f7b1e07bd30237e6fb7341c170305"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa-common.ttl"
+upstream_path = "ssn/rdf/ontology/core/sosa-common.ttl"
+sha256 = "31bb4a6fb3d4b8b7612998744f73b5a8194d34ef866184460ed22dc0f78a91aa"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa-observation.ttl"
+upstream_path = "ssn/rdf/ontology/core/sosa-observation.ttl"
+sha256 = "da6b3b2304a491c45a8822e70529f72c1d73606dda9a8b73b0c5360313ab30c3"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa-actuation.ttl"
+upstream_path = "ssn/rdf/ontology/core/sosa-actuation.ttl"
+sha256 = "18c840cba0a4e148048e6147cb2b5fa9b36bbf09dcb60802ce65d3ecfb3175c5"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa-sampling.ttl"
+upstream_path = "ssn/rdf/ontology/core/sosa-sampling.ttl"
+sha256 = "82e59f8354debaff6cdcb3e354397ea17318e4bc45dc7a8a005c1fa5404d2d70"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa-deprecated.ttl"
+upstream_path = "ssn/rdf/ontology/core/sosa-deprecated.ttl"
+sha256 = "5a99055ea8938f0e9384b81ad3ac1b3eaa13aaf50c54e308cab9551c88392987"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sosa-system.ttl"
+upstream_path = "ssn/rdf/ontology/extensions/sosa-system.ttl"
+sha256 = "1ac64f168163b7e6139bf632a07e35112837a58021ff706688d2c626e9cc1caf"
+
+[[source_files]]
+local_path = "src/sosa-next/imports/sample-relations.ttl"
+upstream_path = "ssn/rdf/ontology/extensions/sample-relations.ttl"
+sha256 = "0f9c8561626e9c75cb364d3c0f6cdb3197e9e72b6727b095309fc3fb1d605e32"
+
+[local_overlay]
+path = "src/sosa-next/imports/sosa-source-declaration-overlay.ttl"
+sha256 = "5cee7b4c6799df0ebff5f4c503b7495fce67f940c53711a2aecfa6896f8d3af2"
+bound_upstream_commit = "af425a0454ec00512a5ebfa2873fe35a077f5fda"
+purpose = "Locally declares sosa:Battery as an OWL class without modifying the pinned W3C source bytes."

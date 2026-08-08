@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import shutil
@@ -15,6 +14,7 @@ from rdflib.collection import Collection
 
 import generate_mapping_from_coms as coms
 import robot_reconstruction_validation as robot_validation
+import sosa_source_version as source_version
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -22,39 +22,26 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = REPO_ROOT / "mappings/SOSA-next-to-BFO-COMS.xlsx"
 CATALOG = REPO_ROOT / "src/sosa-next/catalog-v001.xml"
 
-SOURCE_FILES = (
-    REPO_ROOT / "src/sosa-next/imports/sosa.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sosa-common.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sosa-observation.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sosa-actuation.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sosa-sampling.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sosa-deprecated.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sosa-system.ttl",
-    REPO_ROOT / "src/sosa-next/imports/sample-relations.ttl",
-    REPO_ROOT
-    / "src/sosa-next/imports/sosa-source-declaration-overlay.ttl",
+SOURCE_VERSION_AUTHORITY = (
+    source_version.load_source_version_authority()
+)
+SOURCE_VERSION_CONFIG = source_version.CONFIG_PATH
+SOURCE_IDENTITY = SOURCE_VERSION_AUTHORITY.source_identity
+
+SOURCE_FILES = tuple(
+    REPO_ROOT / item.local_path
+    for item in SOURCE_VERSION_AUTHORITY.source_files
+) + (
+    REPO_ROOT / SOURCE_VERSION_AUTHORITY.overlay_path,
 )
 
 PINNED_SOURCE_SHA256 = {
-    SOURCE_FILES[0]:
-        "a1875d19988b0bd17e5cd3a61f76440b6e0f7b1e07bd30237e6fb7341c170305",
-    SOURCE_FILES[1]:
-        "31bb4a6fb3d4b8b7612998744f73b5a8194d34ef866184460ed22dc0f78a91aa",
-    SOURCE_FILES[2]:
-        "da6b3b2304a491c45a8822e70529f72c1d73606dda9a8b73b0c5360313ab30c3",
-    SOURCE_FILES[3]:
-        "18c840cba0a4e148048e6147cb2b5fa9b36bbf09dcb60802ce65d3ecfb3175c5",
-    SOURCE_FILES[4]:
-        "82e59f8354debaff6cdcb3e354397ea17318e4bc45dc7a8a005c1fa5404d2d70",
-    SOURCE_FILES[5]:
-        "5a99055ea8938f0e9384b81ad3ac1b3eaa13aaf50c54e308cab9551c88392987",
-    SOURCE_FILES[6]:
-        "1ac64f168163b7e6139bf632a07e35112837a58021ff706688d2c626e9cc1caf",
-    SOURCE_FILES[7]:
-        "0f9c8561626e9c75cb364d3c0f6cdb3197e9e72b6727b095309fc3fb1d605e32",
-    SOURCE_FILES[8]:
-        "5cee7b4c6799df0ebff5f4c503b7495fce67f940c53711a2aecfa6896f8d3af2",
+    REPO_ROOT / item.local_path: item.sha256
+    for item in SOURCE_VERSION_AUTHORITY.source_files
 }
+PINNED_SOURCE_SHA256[
+    REPO_ROOT / SOURCE_VERSION_AUTHORITY.overlay_path
+] = SOURCE_VERSION_AUTHORITY.overlay_sha256
 
 ONTOLOGY_IRI = URIRef(
     "http://www.sks.ai/SSN2BFO/development/sosa-next/active-mappings"
@@ -80,37 +67,13 @@ SOURCE_NAMESPACES = {
 }
 
 
-def sha256_file(path: Path) -> str:
-    """Return a bounded-memory SHA-256 digest."""
-
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def validate_source_pins() -> dict[str, str]:
-    """Require every governed source file to match its pinned digest."""
+    """Validate governed source bytes through the source authority."""
 
-    actual = {}
-
-    for path, expected in PINNED_SOURCE_SHA256.items():
-        if not path.is_file():
-            raise RuntimeError(f"Required pinned source is missing: {path}")
-
-        digest = sha256_file(path)
-        relative_path = path.relative_to(REPO_ROOT).as_posix()
-        actual[relative_path] = digest
-
-        if digest != expected:
-            raise RuntimeError(
-                f"Pinned source SHA-256 mismatch for {relative_path}: "
-                f"expected {expected}, got {digest}"
-            )
-
-    return actual
-
+    return source_version.validate_source_version_files(
+        SOURCE_VERSION_AUTHORITY,
+        REPO_ROOT,
+    )
 
 def resolve_robot(robot_path: str | None) -> str:
     """Resolve an explicit ROBOT path or use the governed installer."""
@@ -342,6 +305,9 @@ def run_check(
     summary_path = output_dir / "summary.json"
 
     source_hashes = validate_source_pins()
+    source_authority_sha256 = source_version.sha256_file(
+        SOURCE_VERSION_CONFIG
+    )
     source_graph = build_merged_source(merged_source_path)
 
     rows, workbook_stats = coms.read_workbook(WORKBOOK)
@@ -485,6 +451,19 @@ def run_check(
         "workbook": str(WORKBOOK),
         "catalog": str(CATALOG),
         "robot_path": robot,
+        "source_identity": SOURCE_IDENTITY,
+        "source_version_authority": (
+            SOURCE_VERSION_CONFIG.relative_to(REPO_ROOT).as_posix()
+        ),
+        "source_version_authority_sha256": (
+            source_authority_sha256
+        ),
+        "source_edition_version_iri": (
+            SOURCE_VERSION_AUTHORITY.edition_version_iri
+        ),
+        "source_upstream_commit": (
+            SOURCE_VERSION_AUTHORITY.upstream_commit
+        ),
         "source_files": [str(path) for path in SOURCE_FILES],
         "source_sha256": source_hashes,
         "source_triple_count": len(source_graph),

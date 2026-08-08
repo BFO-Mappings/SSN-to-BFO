@@ -6,9 +6,11 @@ The SOSA-next track is a governed maintained development track for the
 forthcoming SOSA source. It is generated from
 `mappings/SOSA-next-to-BFO-COMS.xlsx`.
 
-The temporary name `sosa-next` identifies the development track. It is not an
-approved formal source-version identity and must not appear in a formal release
-path or ontology IRI.
+The approved immutable source-version identity is
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, governed by `config/sosa-source-version.toml` and bound
+to W3C upstream commit `af425a0454ec00512a5ebfa2873fe35a077f5fda`. The temporary name `sosa-next`
+remains the development alias used by the current development paths and ontology
+IRIs. It must not be used as the track identity in a future formal release.
 
 ## Products
 
@@ -62,10 +64,15 @@ dependencies separately.
 Run:
 
 ```bash
+make check-sosa-source-version
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
 ```
+
+The source-version checker enforces the approved source identity, exact hashes
+for all eight upstream files and the local declaration overlay, the root SOSA
+edition version IRI, and the overlay's binding to the approved upstream commit.
 
 The product checker enforces:
 
@@ -93,9 +100,12 @@ The consumer-stack checker enforces:
 
 These products are not part of the current formal release package. Current
 release metadata, manifest, package, archive, and rehearsal tooling remains
-specific to the current five-product SSN/SOSA track.
+specific to the current five-product SSN/SOSA track. Future formal integration
+must replace the `sosa-next` development alias with `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` in
+formal track-specific paths and ontology IRIs.
 
 See:
 
+- `reports/sosa-source-version-identity-decision.md`
 - `reports/sosa-next-product-contract.md`
 - `reports/sosa-next-formal-release-integration-audit.md`
