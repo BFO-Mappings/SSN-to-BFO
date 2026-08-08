@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-source-version
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-source-version check-sosa-release-scope
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -36,6 +36,8 @@ compile:
 		tools/check_coms_mapping.py \
 		tools/sosa_source_version.py \
 		tools/check_sosa_source_version.py \
+		tools/sosa_release_scope.py \
+		tools/check_sosa_release_scope.py \
 		tools/check_sosa_next_mapping.py \
 		tools/generate_sosa_next_products.py \
 		tools/check_sosa_next_products.py \
@@ -50,6 +52,7 @@ compile:
 		tools/rehearse_release.py \
 		tests/test_generate_mapping_from_coms.py \
 		tests/test_sosa_source_version.py \
+		tests/test_sosa_release_scope.py \
 		tests/test_check_sosa_next_mapping.py \
 		tests/test_sosa_next_products.py \
 		tests/test_sosa_next_consumer_stack.py \
@@ -103,6 +106,10 @@ check-placeholder-catalog-migration:
 check-sosa-source-version:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_source_version.py'
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_source_version.py
+
+check-sosa-release-scope: check-sosa-source-version
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_release_scope.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_release_scope.py
 
 check-sosa-next: check-sosa-source-version
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_check_sosa_next_mapping.py'
