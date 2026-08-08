@@ -88,24 +88,28 @@ SSN/SOSA track:
 The SOSA-next development products must not be inserted into those fixed
 inventories piecemeal.
 
-## Resolved package-scope decision
+## Resolved package boundary and superseded fixed inventory
 
 The track identity is resolved as
 `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`.
 
-The package scope is also resolved:
+The source-version track remains a separate formal package.
 
-- the source-version track is published as a separate formal package;
-- its formal ontology-product order is alignment core, BFO mapping, then CCO
-  extension;
-- no integrated ontology is included;
-- no BFO-projection product is included;
-- the current five-product SSN/SOSA formal package contract remains unchanged.
+The earlier fixed three-product inventory is superseded by the uniform
+product-role policy in `config/product-role-policy.toml`.
 
-`config/sosa-release-scope.toml` is the machine-readable authority and
-`reports/sosa-release-package-scope-decision.md` records the rationale.
+The current SOSA-2023 formal target is:
 
-Any additional formal ontology product requires a separate governance decision.
+- Integrated;
+- BFO Mapping;
+- CCO Extension.
+
+Alignment Core is omitted while it has no direct target-neutral axiom.
+BFO Projection is omitted while no weakened consequence is approved.
+
+The current five-product formal machinery is now pending migration to the same
+role policy before the next official current-track release; its import-only BFO
+Projection is not part of the target formal inventory.
 
 ### Publication metadata
 
@@ -202,7 +206,7 @@ The release-note template must describe:
 - active, deferred, and explicitly unmapped counts;
 - reasoning and catalog-consumption validation;
 - known limitations;
-- the absence of integrated and projection products;
+- the inclusion and omission rationale for every product role;
 - dependency and license scope;
 - deterministic reproduction commands.
 
@@ -240,7 +244,7 @@ A future implementation is ready only when:
 6. manifest, package, catalog, archive, and sidecar bytes are canonical;
 7. two isolated rehearsals produce byte-identical results;
 8. all product reasoning profiles have zero named unsatisfiable classes;
-9. current-track release behavior and bytes remain unchanged;
+9. current-track governed mapping content remains unchanged while its formal product inventory is migrated explicitly to the shared role policy;
 10. the formal package records the approved source-version authority and the
     release notes have been explicitly approved.
 

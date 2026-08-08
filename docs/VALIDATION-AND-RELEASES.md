@@ -86,6 +86,7 @@ focused gates:
 
 ```bash
 make check-sosa-source-version
+make check-product-role-policy
 make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
@@ -97,11 +98,15 @@ identity, exact source and overlay hashes, root SOSA edition version IRI, and
 overlay binding to the approved full upstream commit. It performs no network
 resolution.
 
-`make check-sosa-release-scope` validates that the approved formal publication
-model is a separate package with exactly three ontology products in canonical
-order, excludes integrated and BFO-projection products, uses the approved source
-identity as the formal track component, and preserves the current formal package
-contract unchanged.
+`make check-product-role-policy` validates the uniform five-role product
+taxonomy and the rule that a role is materialized only for direct logical
+content or a distinct consumer function.
+
+`make check-sosa-release-scope` validates that the approved publication model
+remains a separate source-version package, that its formal target inventory is
+derived from the product-role policy, and that the current formal package is
+marked pending migration to the same role policy before its next official
+release.
 
 `make check-sosa-next` depends on the source-version gate and validates the 119
 governed workbook rows, 45 active

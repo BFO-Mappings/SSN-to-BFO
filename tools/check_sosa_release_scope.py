@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the approved SOSA formal-package scope authority."""
+"""Validate the governed SOSA formal package-scope authority."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ def run_check() -> dict[str, object]:
         "development_alias": scope.development_alias,
         "publication_model": scope.publication_model,
         "formal_track_component": scope.formal_track_component,
-        "product_order": scope.product_order,
-        "integrated_product": scope.integrated_product,
-        "bfo_projection_product": scope.bfo_projection_product,
+        "product_role_policy": scope.product_role_policy,
+        "formal_product_order": scope.formal_product_order,
+        "omitted_product_roles": scope.omitted_product_roles,
         "current_track_formal_release": (
             scope.current_track_formal_release
         ),
@@ -42,16 +42,16 @@ def main() -> int:
         f"{summary['formal_track_component']}"
     )
     print(
-        "Product order: "
-        + ", ".join(summary["product_order"])
+        "Product-role policy: "
+        f"{summary['product_role_policy']}"
     )
     print(
-        "Integrated product: "
-        f"{summary['integrated_product']}"
+        "Formal product order: "
+        + ", ".join(summary["formal_product_order"])
     )
     print(
-        "BFO projection product: "
-        f"{summary['bfo_projection_product']}"
+        "Omitted product roles: "
+        + ", ".join(summary["omitted_product_roles"])
     )
     print(
         "Current-track formal release: "
