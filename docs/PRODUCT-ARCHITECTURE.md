@@ -202,14 +202,21 @@ make check-sosa-next-products
 make check-sosa-next-consumer-stack
 ```
 
-The SOSA-next products are not yet formal-release products. Current release
-metadata, manifest, package, archive, and rehearsal tooling remain authoritative
-only for the five-product current SSN/SOSA track. The source identity is resolved
-as `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, and the formal package
-scope is resolved as a separate three-product package containing alignment core,
-BFO mapping, and CCO extension. The current five-product formal package remains
-unchanged. Future formal integration must replace the `sosa-next` development
-alias with the approved identity in source-version formal paths and ontology IRIs.
+The maintained SOSA-next development products have not yet been migrated to
+the uniform product-role policy. All mapping tracks use the same five product
+roles, but a role is materialized only for direct product-specific logical
+content or a distinct consumer function.
+
+The current-track formal target is Integrated, Alignment Core, BFO Mapping,
+and CCO Extension; its import-only BFO Projection is pending retirement before
+the next official release.
+
+The SOSA-2023 formal target is Integrated, BFO Mapping, and CCO Extension. Its
+current zero-direct-axiom Alignment Core is scheduled for retirement, and BFO
+Projection remains omitted until a weakened consequence is approved. The
+source-version track remains a separate package and uses
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` as its formal track
+identity.
 
 The earlier `reports/publication-product-and-import-policy.md` records the
 pre-activation lifecycle policy. For the implemented SOSA-next development

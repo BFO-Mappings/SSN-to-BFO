@@ -65,6 +65,7 @@ Run:
 
 ```bash
 make check-sosa-source-version
+make check-product-role-policy
 make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
@@ -99,14 +100,14 @@ The consumer-stack checker enforces:
 
 ## Formal-release status
 
-These products are not part of the current formal release package. Their formal
-publication model is approved as a separate three-product package containing
-alignment core, BFO mapping, and CCO extension. Current release metadata,
-manifest, package, archive, and rehearsal tooling remains specific to the current
-five-product SSN/SOSA track and remains unchanged. Future formal integration must
-replace the `sosa-next` development alias with
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` in source-version formal
-paths and ontology IRIs.
+These maintained development products have not yet been migrated to the
+uniform product-role policy. The formal SOSA-2023 target inventory is
+Integrated, BFO Mapping, and CCO Extension. The current zero-direct-axiom
+Alignment Core is temporary and is scheduled for retirement during the
+generation migration; BFO Projection remains omitted until a weakened
+consequence is approved. The source-version package remains separate, and
+formal paths and ontology IRIs must use the approved immutable source identity
+rather than the `sosa-next` development alias.
 
 See:
 

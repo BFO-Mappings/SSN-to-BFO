@@ -22,6 +22,11 @@ For reproducible use, prefer the tagged release assets rather than files from an
 | Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | You want the target-neutral SSN/SOSA alignment layer |
 | BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | You need the designated projection layer; it currently adds no direct mapping axioms |
 
+The current BFO Projection remains a maintained development artifact pending
+the product-role migration, but because it currently contributes no direct
+weakened projection axiom it is not targeted for the next official formal
+release.
+
 See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships among these products.
 
 ## SOSA-next maintained development products
@@ -59,15 +64,17 @@ obtains the other project modules transitively. External SOSA, BFO, and CCO
 dependencies remain separate consumer or validation inputs.
 
 These files are maintained authoritative development artifacts, but they are
-not part of the current formal release. `sosa-next` remains the development
-alias in the current paths and ontology IRIs. Future formal-release integration
-must replace that alias with `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` in formal track-specific
-paths and ontology IRIs.
+not yet the final formal product inventory. Under the uniform product-role
+policy, the formal SOSA-2023 target is Integrated, BFO Mapping, and CCO
+Extension. The current zero-axiom Alignment Core is scheduled for retirement
+from that track, while BFO Projection remains omitted until a weakened
+consequence is approved. `sosa-next` remains only the development alias.
 
 Focused development validation:
 
 ```bash
 make check-sosa-source-version
+make check-product-role-policy
 make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products

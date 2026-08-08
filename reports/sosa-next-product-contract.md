@@ -181,6 +181,30 @@ A BFO projection may be introduced only through a separate policy change that:
 - maintains a separate product and import boundary;
 - adds exact reconstruction and reasoning tests.
 
+## Formal target under the uniform product-role policy
+
+The maintained development artifacts above remain unchanged until a dedicated
+generation migration is performed.
+
+For formal publication, the controlling repository-wide policy is
+`reports/product-role-inclusion-policy.md`.
+
+The current SOSA-2023 formal target inventory is:
+
+1. Integrated;
+2. BFO Mapping;
+3. CCO Extension.
+
+The maintained zero-direct-axiom Alignment Core is not justified as a formal
+product merely to preserve an import boundary and is scheduled for retirement
+during the implementation migration.
+
+BFO Projection remains absent because no weakened consequence is approved.
+
+Integrated is newly justified as the distinct complete consumer entry point;
+its exact dependency imports and deterministic rendering must be implemented
+and validated in the later product-generation milestone.
+
 ## Generation architecture
 
 The implementation uses the dedicated SOSA-next generation adapter:

@@ -1,0 +1,37 @@
+schema_version = 1
+status = "approved"
+role_order = ["integrated", "alignment_core", "strict_bfo_mapping", "bfo_projection", "cco_extension"]
+materialization_rule = "direct_logical_content_or_distinct_consumer_function"
+empty_role_boundary_is_sufficient = false
+
+[roles.integrated]
+human_label = "Integrated"
+inclusion_basis = "distinct_consumer_function"
+
+[roles.alignment_core]
+human_label = "Alignment Core"
+inclusion_basis = "direct_product_specific_logical_content"
+
+[roles.strict_bfo_mapping]
+human_label = "BFO Mapping"
+inclusion_basis = "direct_product_specific_logical_content"
+
+[roles.bfo_projection]
+human_label = "BFO Projection"
+inclusion_basis = "direct_product_specific_logical_content"
+
+[roles.cco_extension]
+human_label = "CCO Extension"
+inclusion_basis = "direct_product_specific_logical_content"
+
+[[tracks]]
+track_key = "current-ssn-sosa"
+formal_product_order = ["integrated", "alignment_core", "strict_bfo_mapping", "cco_extension"]
+omitted_product_roles = ["bfo_projection"]
+role_status = { integrated = "materialize_consumer_function", alignment_core = "materialize_direct_content", strict_bfo_mapping = "materialize_direct_content", bfo_projection = "omit_no_substantive_content_or_distinct_function", cco_extension = "materialize_direct_content" }
+
+[[tracks]]
+track_key = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda"
+formal_product_order = ["integrated", "strict_bfo_mapping", "cco_extension"]
+omitted_product_roles = ["alignment_core", "bfo_projection"]
+role_status = { integrated = "materialize_consumer_function", alignment_core = "omit_no_substantive_content_or_distinct_function", strict_bfo_mapping = "materialize_direct_content", bfo_projection = "omit_no_substantive_content_or_distinct_function", cco_extension = "materialize_direct_content" }

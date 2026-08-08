@@ -408,6 +408,8 @@ def compile_check() -> StepResult:
             "tools/check_coms_mapping.py",
             "tools/sosa_source_version.py",
             "tools/check_sosa_source_version.py",
+            "tools/product_role_policy.py",
+            "tools/check_product_role_policy.py",
             "tools/sosa_release_scope.py",
             "tools/check_sosa_release_scope.py",
             "tools/check_sosa_next_mapping.py",
@@ -424,6 +426,7 @@ def compile_check() -> StepResult:
             "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_sosa_source_version.py",
+            "tests/test_product_role_policy.py",
             "tests/test_sosa_release_scope.py",
             "tests/test_check_sosa_next_mapping.py",
             "tests/test_sosa_next_products.py",
@@ -526,6 +529,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_sosa_source_version.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Uniform product-role policy focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_product_role_policy.py",
                 ],
             )
         )
@@ -870,6 +889,16 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                 [
                     sys.executable,
                     "tools/check_sosa_source_version.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Uniform product-role policy check",
+                [
+                    sys.executable,
+                    "tools/check_product_role_policy.py",
                 ],
             )
         )
