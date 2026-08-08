@@ -149,6 +149,12 @@ The separate SOSA-next track is now an active maintained development track,
 not inactive scaffolding. Its sole editable mapping authority is
 `mappings/SOSA-next-to-BFO-COMS.xlsx`.
 
+Its approved immutable source-version identity is
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. `config/sosa-source-version.toml` is the machine-readable
+source authority. The existing `sosa-next` component remains only the
+development alias and continues to identify the current development paths and
+ontology IRIs until formal-release integration.
+
 It consists of exactly three generated ontology products:
 
 | Product | Path | Direct axioms | Total triples |
@@ -190,6 +196,7 @@ SSN/SOSA architecture.
 Focused validation:
 
 ```bash
+make check-sosa-source-version
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
@@ -197,10 +204,12 @@ make check-sosa-next-consumer-stack
 
 The SOSA-next products are not yet formal-release products. Current release
 metadata, manifest, package, archive, and rehearsal tooling remain authoritative
-only for the five-product current SSN/SOSA track. Formal publication is blocked
-until the temporary `sosa-next` path and ontology-IRI component is replaced by
-an approved source-version identity and the release machinery is deliberately
-extended.
+only for the five-product current SSN/SOSA track. The source-identity prerequisite
+is resolved as `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Formal integration must replace the
+`sosa-next` development alias with that exact identity in formal track-specific
+paths and ontology IRIs and deliberately extend the release machinery. The next
+unresolved publication decision is separate-package versus combined-package
+publication.
 
 The earlier `reports/publication-product-and-import-policy.md` records the
 pre-activation lifecycle policy. For the implemented SOSA-next development

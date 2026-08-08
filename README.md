@@ -28,7 +28,15 @@ See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships a
 
 The repository also maintains a governed development track for the forthcoming
 SOSA source. These products are generated from
-`mappings/SOSA-next-to-BFO-COMS.xlsx`:
+`mappings/SOSA-next-to-BFO-COMS.xlsx`.
+
+The mapped source snapshot has the approved immutable project identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Its machine-readable authority is
+`config/sosa-source-version.toml`, which binds the development track to W3C
+`sdw-sosa-ssn` commit `af425a0454ec00512a5ebfa2873fe35a077f5fda` and the governed local declaration
+overlay.
+
+The maintained development products are:
 
 | Product | File | Use when |
 | --- | --- | --- |
@@ -51,18 +59,22 @@ obtains the other project modules transitively. External SOSA, BFO, and CCO
 dependencies remain separate consumer or validation inputs.
 
 These files are maintained authoritative development artifacts, but they are
-not part of the current formal release. The temporary `sosa-next` identity must
-be replaced by the approved source-version identity before formal publication.
+not part of the current formal release. `sosa-next` remains the development
+alias in the current paths and ontology IRIs. Future formal-release integration
+must replace that alias with `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` in formal track-specific
+paths and ontology IRIs.
 
 Focused development validation:
 
 ```bash
+make check-sosa-source-version
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
 ```
 
-See [SOSA-next Development Products](src/sosa-next/docs/README.md) and the
+See the [source-version identity decision](reports/sosa-source-version-identity-decision.md),
+[SOSA-next Development Products](src/sosa-next/docs/README.md), and the
 [formal-release integration audit](reports/sosa-next-formal-release-integration-audit.md).
 
 ## Release

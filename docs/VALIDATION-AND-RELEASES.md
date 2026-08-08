@@ -56,10 +56,15 @@ governed local paths.
 The SOSA-next development track has a separate governed catalog at
 `src/sosa-next/catalog-v001.xml`. It resolves:
 
-- nine pinned forthcoming-SOSA source files;
+- eight byte-pinned upstream SOSA files plus one governed local declaration
+  overlay;
 - the governed merged CCO/BFO validation dependency;
 - the three maintained SOSA-next project products;
 - the SOSA-next editor shell.
+
+`config/sosa-source-version.toml` is the machine-readable authority for the
+approved source identity `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, the full upstream W3C commit,
+the eight upstream source-file hashes, and the separately governed overlay.
 
 The maintained SOSA-next project products import only other SOSA-next project
 products. They do not import the external source or target dependencies
@@ -80,12 +85,19 @@ The forthcoming-SOSA workbook and its three maintained products have separate
 focused gates:
 
 ```bash
+make check-sosa-source-version
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
 ```
 
-`make check-sosa-next` validates the 119 governed workbook rows, 45 active
+`make check-sosa-source-version` validates the approved immutable source
+identity, exact source and overlay hashes, root SOSA edition version IRI, and
+overlay binding to the approved full upstream commit. It performs no network
+resolution.
+
+`make check-sosa-next` depends on the source-version gate and validates the 119
+governed workbook rows, 45 active
 mappings, 26 deferred mappings, 48 explicitly unmapped rows, canonical
 identity, and a clean HermiT result for the integrated active mapping.
 

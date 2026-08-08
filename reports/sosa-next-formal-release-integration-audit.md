@@ -3,9 +3,13 @@
 ## Purpose
 
 This audit identifies the changes required to move the three maintained
-SOSA-next development products into a deterministic formal release. It does
-not approve a source-version identity and does not modify release metadata,
-manifest, package, archive, rehearsal, or publication code.
+SOSA-next development products into a deterministic formal release. The
+source-version identity prerequisite that was unresolved when this audit was
+created is now approved and recorded by
+`config/sosa-source-version.toml` and
+`reports/sosa-source-version-identity-decision.md`. This audit still does not
+modify release metadata, manifest, package, archive, rehearsal, or publication
+code.
 
 ## Current development baseline
 
@@ -33,20 +37,34 @@ editor
 That local project stack contains 303 distinct triples. Maintained project
 products import no external source or target ontology.
 
-## Formal-publication blocker
+## Resolved source-identity prerequisite
 
-The temporary component `sosa-next` is not an approved source-version identity.
-Before formal publication, the project must approve an immutable identity for
-the mapped SOSA source and replace `sosa-next` in:
+The approved immutable source-version identity is:
 
-- package paths;
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`
+
+It denotes the Semantic Sensor Network Ontology - 2023 Edition source snapshot
+pinned to the full W3C upstream commit:
+
+`af425a0454ec00512a5ebfa2873fe35a077f5fda`
+
+`config/sosa-source-version.toml` is the machine-readable authority. The
+development alias remains `sosa-next`; current development paths and ontology
+IRIs are intentionally not renamed by the source-identity milestone.
+
+During future formal-release integration, the exact approved identity must
+replace `sosa-next` in:
+
+- track-specific package paths;
 - stable ontology IRIs;
 - formal version-IRI suffixes;
 - catalog mappings;
 - release notes and user documentation;
 - manifest product records and source evidence.
 
-No formal-release implementation should guess this identity.
+Abbreviated commit identities are not permitted. This resolves the
+source-identity selection prerequisite but does not itself perform any
+formal-release integration.
 
 ## Current formal-release authority
 
@@ -74,15 +92,17 @@ inventories piecemeal.
 
 ### Track identity and release scope
 
-Approve:
+The track identity is resolved as
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Any formal track-specific path or stable ontology-IRI
+namespace that replaces the development alias must use that exact component
+unless a later explicit governance change supersedes this decision.
 
-1. the immutable SOSA source-version identity;
-2. the package directory name;
-3. the stable ontology-IRI namespace;
-4. whether the formal release contains only the three modular products or any
-   additional consumer artifact;
-5. whether current-track and forthcoming-track products are released together
-   or as separate release packages.
+The remaining release-scope decisions are:
+
+1. whether the approved source-version track is published as a separate package
+   or combined with the current SSN/SOSA track;
+2. whether its formal release contains only the three modular products or an
+   additional separately approved consumer artifact.
 
 The existing three-product contract excludes an integrated ontology and BFO
 projection unless separately justified.
@@ -196,16 +216,15 @@ context and approved release notes.
 
 ## Recommended implementation sequence
 
-1. **Approve the immutable SOSA source-version identity.**
-2. **Choose separate-package versus combined-package publication.**
-3. **Define track-specific publication metadata and formal product order.**
-4. **Implement formal rendering and same-release import rewriting.**
-5. **Add a new manifest/schema authority and exact evidence model.**
-6. **Implement package construction and read-only package validation.**
-7. **Implement the canonical package catalog.**
-8. **Extend deterministic archive construction and validation.**
-9. **Add release notes, rehearsal, and hosted-CI regressions.**
-10. **Run a synthetic release context before any actual publication.**
+1. **Choose separate-package versus combined-package publication.**
+2. **Define track-specific publication metadata and formal product order.**
+3. **Implement formal rendering and same-release import rewriting.**
+4. **Add a new manifest/schema authority and exact evidence model.**
+5. **Implement package construction and read-only package validation.**
+6. **Implement the canonical package catalog.**
+7. **Extend deterministic archive construction and validation.**
+8. **Add release notes, rehearsal, and hosted-CI regressions.**
+9. **Run a synthetic release context before any actual publication.**
 
 Each stage should preserve current-track release bytes and behavior.
 
@@ -213,7 +232,7 @@ Each stage should preserve current-track release bytes and behavior.
 
 A future implementation is ready only when:
 
-1. no path, ontology IRI, catalog entry, or release note retains `sosa-next`;
+1. no formal track-specific package path, formal ontology IRI, package catalog entry, or release note retains `sosa-next`;
 2. all formal products are deterministic across independent processes;
 3. formal rendering preserves the development logical graphs;
 4. same-release project imports resolve wholly inside the package;
@@ -223,14 +242,14 @@ A future implementation is ready only when:
 7. two isolated rehearsals produce byte-identical results;
 8. all product reasoning profiles have zero named unsatisfiable classes;
 9. current-track release behavior and bytes remain unchanged;
-10. the actual source-version identity and release notes have been explicitly
-    approved.
+10. the formal package records the approved source-version authority and the
+    release notes have been explicitly approved.
 
-## Non-goals of this branch
+## Non-goals of the source-identity milestone
 
-This release-readiness branch does not:
+The source-identity milestone does not:
 
-- select the final SOSA source-version identity;
+- rename the current `sosa-next` development paths or ontology IRIs;
 - change `config/publication-metadata.toml`;
 - change release manifest or schema code;
 - change package, archive, or rehearsal code;

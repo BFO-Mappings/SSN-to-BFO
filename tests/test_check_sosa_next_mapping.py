@@ -18,6 +18,7 @@ import check_sosa_next_mapping as checker  # noqa: E402
 GOVERNED_INPUTS = (
     REPO_ROOT / "mappings/SOSA-next-to-BFO-COMS.xlsx",
     REPO_ROOT / "src/sosa-next/catalog-v001.xml",
+    checker.SOURCE_VERSION_CONFIG,
     *checker.SOURCE_FILES,
 )
 
@@ -118,6 +119,26 @@ class CheckSosaNextMappingTests(unittest.TestCase):
 
             for summary in (first, second):
                 self.assertTrue(summary["passed"], summary)
+                self.assertEqual(
+                    summary["source_identity"],
+                    checker.SOURCE_IDENTITY,
+                )
+                self.assertEqual(
+                    summary["source_version_authority"],
+                    "config/sosa-source-version.toml",
+                )
+                self.assertEqual(
+                    summary["source_version_authority_sha256"],
+                    sha256(checker.SOURCE_VERSION_CONFIG),
+                )
+                self.assertEqual(
+                    summary["source_edition_version_iri"],
+                    checker.SOURCE_VERSION_AUTHORITY.edition_version_iri,
+                )
+                self.assertEqual(
+                    summary["source_upstream_commit"],
+                    checker.SOURCE_VERSION_AUTHORITY.upstream_commit,
+                )
                 self.assertEqual(summary["source_triple_count"], 1207)
                 self.assertEqual(
                     summary["source_sha256"],
@@ -254,6 +275,11 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
 
             stable_sections = (
+                "source_identity",
+                "source_version_authority",
+                "source_version_authority_sha256",
+                "source_edition_version_iri",
+                "source_upstream_commit",
                 "source_sha256",
                 "source_triple_count",
                 "governed_row_count",
