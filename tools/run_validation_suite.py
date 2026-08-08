@@ -408,6 +408,8 @@ def compile_check() -> StepResult:
             "tools/check_coms_mapping.py",
             "tools/sosa_source_version.py",
             "tools/check_sosa_source_version.py",
+            "tools/sosa_release_scope.py",
+            "tools/check_sosa_release_scope.py",
             "tools/check_sosa_next_mapping.py",
             "tools/generate_sosa_next_products.py",
             "tools/check_sosa_next_products.py",
@@ -422,6 +424,7 @@ def compile_check() -> StepResult:
             "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
             "tests/test_sosa_source_version.py",
+            "tests/test_sosa_release_scope.py",
             "tests/test_check_sosa_next_mapping.py",
             "tests/test_sosa_next_products.py",
             "tests/test_sosa_next_consumer_stack.py",
@@ -523,6 +526,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_sosa_source_version.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA formal package-scope focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_release_scope.py",
                 ],
             )
         )
@@ -851,6 +870,16 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                 [
                     sys.executable,
                     "tools/check_sosa_source_version.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA formal package-scope check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_release_scope.py",
                 ],
             )
         )

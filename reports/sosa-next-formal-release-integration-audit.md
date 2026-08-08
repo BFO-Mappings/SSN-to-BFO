@@ -88,24 +88,24 @@ SSN/SOSA track:
 The SOSA-next development products must not be inserted into those fixed
 inventories piecemeal.
 
-## Required integration decisions
-
-### Track identity and release scope
+## Resolved package-scope decision
 
 The track identity is resolved as
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Any formal track-specific path or stable ontology-IRI
-namespace that replaces the development alias must use that exact component
-unless a later explicit governance change supersedes this decision.
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`.
 
-The remaining release-scope decisions are:
+The package scope is also resolved:
 
-1. whether the approved source-version track is published as a separate package
-   or combined with the current SSN/SOSA track;
-2. whether its formal release contains only the three modular products or an
-   additional separately approved consumer artifact.
+- the source-version track is published as a separate formal package;
+- its formal ontology-product order is alignment core, BFO mapping, then CCO
+  extension;
+- no integrated ontology is included;
+- no BFO-projection product is included;
+- the current five-product SSN/SOSA formal package contract remains unchanged.
 
-The existing three-product contract excludes an integrated ontology and BFO
-projection unless separately justified.
+`config/sosa-release-scope.toml` is the machine-readable authority and
+`reports/sosa-release-package-scope-decision.md` records the rationale.
+
+Any additional formal ontology product requires a separate governance decision.
 
 ### Publication metadata
 
@@ -216,15 +216,14 @@ context and approved release notes.
 
 ## Recommended implementation sequence
 
-1. **Choose separate-package versus combined-package publication.**
-2. **Define track-specific publication metadata and formal product order.**
-3. **Implement formal rendering and same-release import rewriting.**
-4. **Add a new manifest/schema authority and exact evidence model.**
-5. **Implement package construction and read-only package validation.**
-6. **Implement the canonical package catalog.**
-7. **Extend deterministic archive construction and validation.**
-8. **Add release notes, rehearsal, and hosted-CI regressions.**
-9. **Run a synthetic release context before any actual publication.**
+1. **Define track-specific publication metadata for the separate package.**
+2. **Implement formal rendering and same-release import rewriting.**
+3. **Add a source-version manifest/schema authority and exact evidence model.**
+4. **Implement separate-package construction and read-only validation.**
+5. **Implement the canonical package catalog.**
+6. **Implement the separate package's deterministic archive authority.**
+7. **Add release notes, rehearsal, and hosted-CI regressions.**
+8. **Run a synthetic source-version release context before actual publication.**
 
 Each stage should preserve current-track release bytes and behavior.
 

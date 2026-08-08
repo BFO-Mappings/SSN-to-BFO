@@ -1,0 +1,10 @@
+schema_version = 1
+status = "approved"
+source_identity = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda"
+development_alias = "sosa-next"
+publication_model = "separate_package"
+formal_track_component = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda"
+product_order = ["alignment_core", "strict_bfo_mapping", "cco_extension"]
+integrated_product = false
+bfo_projection_product = false
+current_track_formal_release = "unchanged"

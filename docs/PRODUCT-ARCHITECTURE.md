@@ -204,12 +204,12 @@ make check-sosa-next-consumer-stack
 
 The SOSA-next products are not yet formal-release products. Current release
 metadata, manifest, package, archive, and rehearsal tooling remain authoritative
-only for the five-product current SSN/SOSA track. The source-identity prerequisite
-is resolved as `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Formal integration must replace the
-`sosa-next` development alias with that exact identity in formal track-specific
-paths and ontology IRIs and deliberately extend the release machinery. The next
-unresolved publication decision is separate-package versus combined-package
-publication.
+only for the five-product current SSN/SOSA track. The source identity is resolved
+as `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, and the formal package
+scope is resolved as a separate three-product package containing alignment core,
+BFO mapping, and CCO extension. The current five-product formal package remains
+unchanged. Future formal integration must replace the `sosa-next` development
+alias with the approved identity in source-version formal paths and ontology IRIs.
 
 The earlier `reports/publication-product-and-import-policy.md` records the
 pre-activation lifecycle policy. For the implemented SOSA-next development

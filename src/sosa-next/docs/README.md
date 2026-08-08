@@ -65,6 +65,7 @@ Run:
 
 ```bash
 make check-sosa-source-version
+make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
@@ -98,14 +99,18 @@ The consumer-stack checker enforces:
 
 ## Formal-release status
 
-These products are not part of the current formal release package. Current
-release metadata, manifest, package, archive, and rehearsal tooling remains
-specific to the current five-product SSN/SOSA track. Future formal integration
-must replace the `sosa-next` development alias with `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` in
-formal track-specific paths and ontology IRIs.
+These products are not part of the current formal release package. Their formal
+publication model is approved as a separate three-product package containing
+alignment core, BFO mapping, and CCO extension. Current release metadata,
+manifest, package, archive, and rehearsal tooling remains specific to the current
+five-product SSN/SOSA track and remains unchanged. Future formal integration must
+replace the `sosa-next` development alias with
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` in source-version formal
+paths and ontology IRIs.
 
 See:
 
 - `reports/sosa-source-version-identity-decision.md`
+- `reports/sosa-release-package-scope-decision.md`
 - `reports/sosa-next-product-contract.md`
 - `reports/sosa-next-formal-release-integration-audit.md`

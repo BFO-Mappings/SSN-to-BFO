@@ -68,12 +68,14 @@ Focused development validation:
 
 ```bash
 make check-sosa-source-version
+make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
 ```
 
 See the [source-version identity decision](reports/sosa-source-version-identity-decision.md),
+[formal package-scope decision](reports/sosa-release-package-scope-decision.md),
 [SOSA-next Development Products](src/sosa-next/docs/README.md), and the
 [formal-release integration audit](reports/sosa-next-formal-release-integration-audit.md).
 
