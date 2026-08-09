@@ -4,7 +4,7 @@ config.ONTOLOGY_FILE      := sosa-mappings-edit.ttl
 config.ONTOLOGY_PREFIX    := sosa-next
 config.ONTOLOGY_IRI       := http://www.sks.ai/SSN2BFO/development/sosa-next
 config.RELEASE_FILES      := \
-	../../releases/sosa-next/sosa-alignment-core.ttl \
+	../../releases/sosa-next/sosa-integrated.ttl \
 	../../releases/sosa-next/sosa-bfo-mapping.ttl \
 	../../releases/sosa-next/sosa-cco-extension.ttl
 

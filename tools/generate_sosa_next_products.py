@@ -37,15 +37,20 @@ GENERATED_NOTICE = (
 )
 
 PRODUCT_ORDER = (
-    "alignment_core",
+    "integrated",
+    "strict_bfo_mapping",
+    "cco_extension",
+)
+
+MODULAR_PRODUCT_ORDER = (
     "strict_bfo_mapping",
     "cco_extension",
 )
 
 MAINTAINED_PRODUCTS = {
-    "alignment_core": (
+    "integrated": (
         REPO_ROOT
-        / "releases/sosa-next/sosa-alignment-core.ttl"
+        / "releases/sosa-next/sosa-integrated.ttl"
     ),
     "strict_bfo_mapping": (
         REPO_ROOT
@@ -56,6 +61,11 @@ MAINTAINED_PRODUCTS = {
         / "releases/sosa-next/sosa-cco-extension.ttl"
     ),
 }
+
+RETIRED_MAINTAINED_PRODUCTS = (
+    REPO_ROOT
+    / "releases/sosa-next/sosa-alignment-core.ttl",
+)
 
 CURRENT_SOSA_PRODUCTS = {
     "integrated": REPO_ROOT / "SSN2BFO.ttl",
@@ -92,36 +102,67 @@ EXPECTED_CURRENT_SOSA_SHA256 = {
 }
 
 PRODUCT_SPECS: dict[str, dict[str, Any]] = {
-    "alignment_core": {
-        "filename": "sosa-alignment-core.ttl",
+    "integrated": {
+        "filename": "sosa-integrated.ttl",
         "maintained_path": (
-            "releases/sosa-next/sosa-alignment-core.ttl"
+            "releases/sosa-next/sosa-integrated.ttl"
         ),
         "ontology_iri": (
             "http://www.sks.ai/SSN2BFO/"
-            "development/sosa-next/alignment-core"
+            "development/sosa-next/integrated"
         ),
-        "release_iri_suffix": "sosa-next/alignment-core",
-        "label": "SOSA-next Alignment Core",
+        "release_iri_suffix": "sosa-next/integrated",
+        "label": "SOSA-next Integrated Mapping",
         "description": (
-            "Provides the import-free target-neutral module "
-            "for the governed forthcoming SOSA mapping. "
-            "No direct target-neutral mapping axiom is "
-            "currently active."
+            "Directly asserts the complete governed axiom set "
+            "for the forthcoming SOSA mapping and imports the "
+            "governed SOSA, BFO, and CCO dependencies required "
+            "for the complete consumer entry point."
         ),
-        "imports": (),
-        "prefixes": modular_products.PREFIXES,
-        "categories": frozenset({"target_neutral"}),
-        "axiom_count": 0,
-        "logical_triple_count": 0,
-        "total_triple_count": 8,
+        "imports": (
+            "http://www.w3.org/ns/sosa/",
+            "http://www.w3.org/ns/sosa/systems/",
+            "http://www.w3.org/ns/sosa/sampling/",
+            (
+                "http://www.sks.ai/SSN2BFO/"
+                "development/sosa-next/"
+                "source-declaration-overlay"
+            ),
+            (
+                "https://www.commoncoreontologies.org/"
+                "CommonCoreOntologiesMerged"
+            ),
+        ),
+        "prefixes": (
+            ("cco", "https://www.commoncoreontologies.org/"),
+            ("bfo", "http://purl.obolibrary.org/obo/"),
+            ("adms", "http://www.w3.org/ns/adms#"),
+            ("dcterms", "http://purl.org/dc/terms/"),
+            ("owl", "http://www.w3.org/2002/07/owl#"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("sampling", "http://www.w3.org/ns/sosa/sampling/"),
+            ("sosa", "http://www.w3.org/ns/sosa/"),
+            ("ssn", "http://www.w3.org/ns/ssn/"),
+            ("ssn-system", "http://www.w3.org/ns/ssn/systems/"),
+        ),
+        "categories": frozenset(
+            {
+                "bfo_bearing",
+                "cco_bearing",
+                "mixed_bfo_cco",
+            }
+        ),
+        "axiom_count": 45,
+        "logical_triple_count": 273,
+        "total_triple_count": 286,
         "body_sha256": (
-            "e3b0c44298fc1c149afbf4c8996fb924"
-            "27ae41e4649b934ca495991b7852b855"
+            "1af672af4cb5b8d8069c15b529bbef8d"
+            "a044d6e69389677c435d0d47996408e9"
         ),
         "sha256": (
-            "413018bbca9abc276102ddc97a3cfbf2"
-            "803d170ef8c98f778869c2c89ae2425a"
+            "7ce45659e4d84ac089ae90c3279fa46d"
+            "169d763ec487c34cb3c533eb0e6c197c"
         ),
     },
     "strict_bfo_mapping": {
@@ -136,26 +177,34 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
         "release_iri_suffix": "sosa-next/bfo-mapping",
         "label": "SOSA-next BFO Mapping",
         "description": (
-            "Directly asserts the governed BFO-bearing "
-            "axioms for the forthcoming SOSA mapping and "
-            "imports the SOSA-next alignment core."
+            "Directly asserts the governed BFO-bearing axioms "
+            "for the forthcoming SOSA mapping without importing "
+            "another project product."
         ),
-        "imports": (
-            "http://www.sks.ai/SSN2BFO/"
-            "development/sosa-next/alignment-core",
+        "imports": (),
+        "prefixes": (
+            ("bfo", "http://purl.obolibrary.org/obo/"),
+            ("adms", "http://www.w3.org/ns/adms#"),
+            ("dcterms", "http://purl.org/dc/terms/"),
+            ("owl", "http://www.w3.org/2002/07/owl#"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("sampling", "http://www.w3.org/ns/sosa/sampling/"),
+            ("sosa", "http://www.w3.org/ns/sosa/"),
+            ("ssn", "http://www.w3.org/ns/ssn/"),
+            ("ssn-system", "http://www.w3.org/ns/ssn/systems/"),
         ),
-        "prefixes": modular_products.STRICT_BFO_PREFIXES,
         "categories": frozenset({"bfo_bearing"}),
         "axiom_count": 21,
         "logical_triple_count": 157,
-        "total_triple_count": 166,
+        "total_triple_count": 165,
         "body_sha256": (
             "e8ebb11880e44fb2b4665b0741e838cf"
             "a300ad7cfd54faf14c930f80c22ee7da"
         ),
         "sha256": (
-            "b4e5c485ecb176472384ed97dbaa83d3"
-            "84c340340fa896d04ea54d9d2fc34e93"
+            "67bb58ea543e654ace41c0d1a393b2a3"
+            "f92426c693f5100f0aa3ba35f3b005d2"
         ),
     },
     "cco_extension": {
@@ -170,15 +219,29 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
         "release_iri_suffix": "sosa-next/cco-extension",
         "label": "SOSA-next CCO Extension",
         "description": (
-            "Directly asserts the governed CCO-bearing and "
-            "mixed BFO/CCO axioms for the forthcoming SOSA "
-            "mapping and imports the SOSA-next BFO mapping."
+            "Directly asserts the governed CCO-bearing and mixed "
+            "BFO/CCO axioms for the forthcoming SOSA mapping and "
+            "imports the SOSA-next BFO mapping."
         ),
         "imports": (
-            "http://www.sks.ai/SSN2BFO/"
-            "development/sosa-next/bfo-mapping",
+            (
+                "http://www.sks.ai/SSN2BFO/"
+                "development/sosa-next/bfo-mapping"
+            ),
         ),
-        "prefixes": modular_products.CCO_EXTENSION_PREFIXES,
+        "prefixes": (
+            ("cco", "https://www.commoncoreontologies.org/"),
+            ("bfo", "http://purl.obolibrary.org/obo/"),
+            ("adms", "http://www.w3.org/ns/adms#"),
+            ("dcterms", "http://purl.org/dc/terms/"),
+            ("owl", "http://www.w3.org/2002/07/owl#"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("sampling", "http://www.w3.org/ns/sosa/sampling/"),
+            ("sosa", "http://www.w3.org/ns/sosa/"),
+            ("ssn", "http://www.w3.org/ns/ssn/"),
+            ("ssn-system", "http://www.w3.org/ns/ssn/systems/"),
+        ),
         "categories": frozenset(
             {
                 "cco_bearing",
@@ -189,8 +252,8 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
         "logical_triple_count": 116,
         "total_triple_count": 125,
         "body_sha256": (
-            "3b0d64f9036585febd548e5c404f31e"
-            "8ec718bd12faf9fa6e4cc9d62c7f6fee4"
+            "3b0d64f9036585febd548e5c404f31e8"
+            "ec718bd12faf9fa6e4cc9d62c7f6fee4"
         ),
         "sha256": (
             "e65e96f15a55e19fc43be8dbda6e5635"
@@ -200,7 +263,6 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
 }
 
 CATEGORY_TO_PRODUCT = {
-    "target_neutral": "alignment_core",
     "bfo_bearing": "strict_bfo_mapping",
     "cco_bearing": "cco_extension",
     "mixed_bfo_cco": "cco_extension",
@@ -843,7 +905,13 @@ def build_candidate(
     product_paths: dict[str, Path] = {}
 
     for product_key in PRODUCT_ORDER:
-        supplied = records[product_key]
+        if product_key == "integrated":
+            supplied = [
+                *records["strict_bfo_mapping"],
+                *records["cco_extension"],
+            ]
+        else:
+            supplied = records[product_key]
 
         if reverse_input:
             supplied = list(reversed(supplied))
@@ -872,13 +940,13 @@ def build_candidate(
 
     combined = Graph()
 
-    for graph in logical_graphs.values():
-        for triple in graph:
+    for product_key in MODULAR_PRODUCT_ORDER:
+        for triple in logical_graphs[product_key]:
             combined.add(triple)
 
     summed = sum(
-        len(graph)
-        for graph in logical_graphs.values()
+        len(logical_graphs[product_key])
+        for product_key in MODULAR_PRODUCT_ORDER
     )
 
     if summed != 273 or len(combined) != 273:
@@ -916,6 +984,15 @@ def build_candidate(
         raise RuntimeError(
             "The modular product union differs from "
             "the integrated active mapping graph."
+        )
+
+    if not isomorphic(
+        logical_graphs["integrated"],
+        reference_logical,
+    ):
+        raise RuntimeError(
+            "The maintained Integrated product differs "
+            "from the integrated active mapping graph."
         )
 
     summary = {
@@ -1018,16 +1095,15 @@ def reason_products(
     }
 
     profiles = {
-        "alignment_core": build_reasoning_closure(
+        "integrated": build_reasoning_closure(
             (
-                serialized["alignment_core"],
+                serialized["integrated"],
             ),
-            include_target_dependency=False,
+            include_target_dependency=True,
         ),
         "strict_bfo_mapping": build_reasoning_closure(
             (
                 serialized["strict_bfo_mapping"],
-                serialized["alignment_core"],
             ),
             include_target_dependency=True,
         ),
@@ -1035,7 +1111,6 @@ def reason_products(
             (
                 serialized["cco_extension"],
                 serialized["strict_bfo_mapping"],
-                serialized["alignment_core"],
             ),
             include_target_dependency=True,
         ),
@@ -1188,6 +1263,12 @@ def maintained_products_are_fresh(
         ):
             return False
 
+    if any(
+        path.exists()
+        for path in RETIRED_MAINTAINED_PRODUCTS
+    ):
+        return False
+
     return True
 
 
@@ -1295,11 +1376,40 @@ def write_maintained_products(
             for key in PRODUCT_ORDER
         }
 
-        replace_outputs_atomically(
-            candidate_paths,
-            MAINTAINED_PRODUCTS,
-            transaction_dir=transaction_dir,
-        )
+        retired_bytes = {
+            path: path.read_bytes()
+            for path in RETIRED_MAINTAINED_PRODUCTS
+            if path.is_file()
+        }
+
+        def finalize_migration() -> None:
+            for path in RETIRED_MAINTAINED_PRODUCTS:
+                path.unlink(missing_ok=True)
+
+            if not maintained_products_are_fresh(
+                summary
+            ):
+                raise RuntimeError(
+                    "Maintained SOSA-next products differ "
+                    "from the validated candidate build or "
+                    "a retired product remains materialized."
+                )
+
+        try:
+            replace_outputs_atomically(
+                candidate_paths,
+                MAINTAINED_PRODUCTS,
+                transaction_dir=transaction_dir,
+                post_replace=finalize_migration,
+            )
+        except Exception:
+            for path, payload in retired_bytes.items():
+                path.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+                path.write_bytes(payload)
+            raise
 
         if not maintained_products_are_fresh(
             summary

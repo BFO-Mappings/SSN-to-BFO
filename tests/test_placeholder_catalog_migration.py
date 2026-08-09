@@ -88,18 +88,18 @@ NEGATIVE_GUARD_PATHS = frozenset(
 )
 
 SOSA_NEXT_ARTIFACT_HASHES = {
-    "releases/sosa-next/sosa-alignment-core.ttl":
-        "413018bbca9abc276102ddc97a3cfbf2803d170ef8c98f778869c2c89ae2425a",
+    "releases/sosa-next/sosa-integrated.ttl":
+        "7ce45659e4d84ac089ae90c3279fa46d169d763ec487c34cb3c533eb0e6c197c",
     "releases/sosa-next/sosa-bfo-mapping.ttl":
-        "b4e5c485ecb176472384ed97dbaa83d384c340340fa896d04ea54d9d2fc34e93",
+        "67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2",
     "releases/sosa-next/sosa-cco-extension.ttl":
         "e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69",
     "src/sosa-next/sosa-mappings-edit.ttl":
-        "ddf851c7888c0152635598f5a9cffe8b53285a4e4e4247a9f4e84eb35bcb7ac8",
+        "805b990d778bbd83abfcb3d63a696e8a14d894adc479ec4bc4382d8d89e366e4",
 }
 
 SOSA_NEXT_RELEASE_FILES = (
-    "../../releases/sosa-next/sosa-alignment-core.ttl",
+    "../../releases/sosa-next/sosa-integrated.ttl",
     "../../releases/sosa-next/sosa-bfo-mapping.ttl",
     "../../releases/sosa-next/sosa-cco-extension.ttl",
 )
@@ -164,8 +164,8 @@ SOSA_NEXT_CATALOG_MAPPINGS = (
     ),
     (
         "http://www.sks.ai/SSN2BFO/development/"
-        "sosa-next/alignment-core",
-        "../../releases/sosa-next/sosa-alignment-core.ttl",
+        "sosa-next/integrated",
+        "../../releases/sosa-next/sosa-integrated.ttl",
     ),
     (
         "http://www.sks.ai/SSN2BFO/development/"

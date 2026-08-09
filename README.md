@@ -27,44 +27,49 @@ See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships a
 
 ## SOSA-next maintained development products
 
-The repository also maintains a governed development track for the forthcoming
-SOSA source. These products are generated from
+The repository also maintains the governed development track for the approved
+SOSA 2023 source snapshot. These products are generated from
 `mappings/SOSA-next-to-BFO-COMS.xlsx`.
 
 The mapped source snapshot has the approved immutable project identity
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Its machine-readable authority is
-`config/sosa-source-version.toml`, which binds the development track to W3C
-`sdw-sosa-ssn` commit `af425a0454ec00512a5ebfa2873fe35a077f5fda` and the governed local declaration
-overlay.
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. Its machine-readable
+authority is `config/sosa-source-version.toml`, which binds the development
+track to W3C `sdw-sosa-ssn` commit
+`af425a0454ec00512a5ebfa2873fe35a077f5fda` and the governed local declaration
+overlay. `sosa-next` remains only the development alias used in current
+development paths and ontology IRIs.
 
 The maintained development products are:
 
 | Product | File | Use when |
 | --- | --- | --- |
-| SOSA-next alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | You need the import-free target-neutral project layer |
-| SOSA-next BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | You need the governed BFO-bearing mappings |
-| SOSA-next CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | You need the complete layered SOSA-next project stack |
+| SOSA-next Integrated Mapping | `releases/sosa-next/sosa-integrated.ttl` | You want the complete governed mapping plus its governed SOSA/BFO/CCO dependency imports |
+| SOSA-next BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | You want only the governed BFO-bearing mapping axioms |
+| SOSA-next CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | You want the modular CCO-bearing layer over the BFO Mapping |
 
-The project import chain is:
+The modular project import graph is:
 
 ```text
-SOSA-next CCO extension
-  -> SOSA-next BFO mapping
-    -> SOSA-next alignment core
+SOSA-next CCO Extension
+  -> SOSA-next BFO Mapping
 ```
+
+The BFO Mapping imports no project ontology. The Integrated Mapping is a
+separate complete consumer entry point: it directly asserts all 45 governed
+mapping axioms and imports the governed SOSA root, SOSA Systems, SOSA Sampling,
+source-declaration overlay, and merged CCO/BFO dependency.
 
 For development use in an ontology editor, load
 `src/sosa-next/sosa-mappings-edit.ttl` with
-`src/sosa-next/catalog-v001.xml`. The editor imports the CCO extension and
-obtains the other project modules transitively. External SOSA, BFO, and CCO
-dependencies remain separate consumer or validation inputs.
+`src/sosa-next/catalog-v001.xml`. The editor imports the Integrated Mapping.
+The catalog also exposes the BFO Mapping and CCO Extension as independently
+loadable modular products.
 
-These files are maintained authoritative development artifacts, but they are
-not yet the final formal product inventory. Under the uniform product-role
-policy, the formal SOSA-2023 target is Integrated, BFO Mapping, and CCO
-Extension. The current zero-axiom Alignment Core is scheduled for retirement
-from that track, while BFO Projection remains omitted until a weakened
-consequence is approved. `sosa-next` remains only the development alias.
+The uniform product-role migration is complete for this development track.
+All five roles remain governed, but Alignment Core is omitted because there is
+no active target-neutral axiom and BFO Projection is omitted because no
+weakened-but-sound BFO consequence is approved. The materialized product set is
+therefore Integrated, BFO Mapping, and CCO Extension.
 
 Focused development validation:
 

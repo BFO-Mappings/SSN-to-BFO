@@ -48,41 +48,46 @@ make check
 
 ## Dependency and catalog policy
 
-The current SSN/SOSA COMS transaction does not require a
-development XML catalog. It explicitly loads pinned local dependencies under
-`imports/` and resolves maintained current-track project imports through
-governed local paths.
+The current SSN/SOSA COMS transaction does not require a development XML
+catalog. It explicitly loads pinned local dependencies under `imports/` and
+resolves maintained current-track project imports through governed local paths.
 
 The SOSA-next development track has a separate governed catalog at
-`src/sosa-next/catalog-v001.xml`. It resolves:
+`src/sosa-next/catalog-v001.xml`. It resolves 14 local targets:
 
-- eight byte-pinned upstream SOSA files plus one governed local declaration
-  overlay;
-- the governed merged CCO/BFO validation dependency;
-- the three maintained SOSA-next project products;
+- eight byte-pinned upstream SOSA files;
+- one governed local source-declaration overlay;
+- the governed merged CCO/BFO dependency;
+- Integrated, BFO Mapping, and CCO Extension;
 - the SOSA-next editor shell.
 
 `config/sosa-source-version.toml` is the machine-readable authority for the
-approved source identity `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, the full upstream W3C commit,
-the eight upstream source-file hashes, and the separately governed overlay.
+approved source identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, the full upstream W3C
+commit, the eight upstream source-file hashes, and the separately governed
+overlay.
 
-The maintained SOSA-next project products import only other SOSA-next project
-products. They do not import the external source or target dependencies
-resolved by the catalog.
+The Integrated Mapping imports the five governed dependency IRIs required for
+its complete-consumer function: SOSA root, SOSA Systems, SOSA Sampling, the
+source-declaration overlay, and merged CCO/BFO. The modular BFO Mapping is
+import-free, while the CCO Extension imports only the BFO Mapping. The editor
+imports only Integrated.
 
-`imports/cco.ttl` remains a flattened merged CCO/BFO validation dependency. It
-is not a placeholder, mapping authority, or serialized import of every
-published product.
+Catalog resolution keeps all of those imports local during development and
+testing. The BFO and CCO modular products remain independently resolvable.
+
+`imports/cco.ttl` remains the governed flattened merged CCO/BFO dependency. It
+is not a mapping authority or a manually maintained mapping product.
 
 The XML catalog inside a formal current-track release package is a different
-artifact. It maps exactly the five immutable same-release version IRIs to
-package-relative products. The development SOSA-next catalog is not currently
-copied into a formal package.
+artifact. It maps exactly the four immutable current-track same-release version
+IRIs to package-relative products. The SOSA-next development catalog is not
+copied into that package.
 
 ## SOSA-next development validation
 
-The forthcoming-SOSA workbook and its three maintained products have separate
-focused gates:
+The SOSA-2023 workbook and its three maintained development products have
+separate focused gates:
 
 ```bash
 make check-sosa-source-version
@@ -102,32 +107,36 @@ resolution.
 taxonomy and the rule that a role is materialized only for direct logical
 content or a distinct consumer function.
 
-`make check-sosa-release-scope` validates that the approved publication model
-remains a separate source-version package, that its formal target inventory is
-derived from the product-role policy, and that the current formal package is
-marked pending migration to the same role policy before its next official
-release.
+`make check-sosa-release-scope` validates the separate source-version package
+boundary and its materialized target: Integrated, BFO Mapping, and CCO
+Extension. Alignment Core and BFO Projection remain governed omitted roles.
 
-`make check-sosa-next` depends on the source-version gate and validates the 119
-governed workbook rows, 45 active
+`make check-sosa-next` validates the 119 governed workbook rows, 45 active
 mappings, 26 deferred mappings, 48 explicitly unmapped rows, canonical
 identity, and a clean HermiT result for the integrated active mapping.
 
-`make check-sosa-next-products` independently rebuilds the three products,
-requires byte-identical candidate builds, validates exact hashes and triple
-counts, reconstructs the 273-triple logical graph, checks transactional
-rollback behavior, and requires zero named unsatisfiable classes in all three
-product-specific reasoning profiles.
+`make check-sosa-next-products` independently rebuilds Integrated, BFO Mapping,
+and CCO Extension; requires byte-identical candidate builds; validates exact
+hashes and triple counts; verifies that the 273-triple BFO+CCO modular logical
+union is isomorphic to the 273-logical-triple Integrated Mapping; checks
+transactional rollback; requires the retired Alignment Core artifact to remain
+absent; and requires zero named unsatisfiable classes in all three reasoning
+profiles.
+
+The fixed reasoning closures contain:
+
+- 15,127 triples for Integrated;
+- 15,011 triples for BFO Mapping;
+- 15,135 triples for CCO Extension.
 
 `make check-sosa-next-consumer-stack` resolves every catalog target locally,
-parses all dependency and project entries, verifies the exact project import
-graph, loads the editor closure, and confirms that external dependencies remain
-separate from the maintained project imports.
+parses all dependency and project entries, verifies the exact Integrated and
+modular import boundaries, loads the 290-triple editor project closure, and
+confirms that BFO Mapping and CCO Extension remain independently resolvable.
 
 These checks are included in `make check` and hosted CI. They validate
-maintained development artifacts only; they do not create a formal version
-IRI, manifest, package, archive, tag, GitHub release, or persistent-IRI
-deployment.
+maintained development artifacts only; they do not create a formal version IRI,
+manifest, package, archive, tag, GitHub release, or persistent-IRI deployment.
 
 ## Publication metadata
 

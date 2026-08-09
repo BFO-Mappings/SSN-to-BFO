@@ -140,82 +140,85 @@ retired.
 
 ## SOSA-next maintained development track
 
-The separate SOSA-next track is now an active maintained development track,
-not inactive scaffolding. Its sole editable mapping authority is
-`mappings/SOSA-next-to-BFO-COMS.xlsx`.
+The separate SOSA-next track is an active maintained development track whose
+sole editable mapping authority is `mappings/SOSA-next-to-BFO-COMS.xlsx`.
 
 Its approved immutable source-version identity is
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`. `config/sosa-source-version.toml` is the machine-readable
-source authority. The existing `sosa-next` component remains only the
-development alias and continues to identify the current development paths and
-ontology IRIs until formal-release integration.
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`.
+`config/sosa-source-version.toml` is the machine-readable source authority.
+The `sosa-next` component remains only the development alias for current
+development paths and ontology IRIs.
 
-It consists of exactly three generated ontology products:
+The uniform product-role migration is complete. The track materializes exactly
+three ontology products:
 
-| Product | Path | Direct axioms | Total triples |
-| --- | --- | ---: | ---: |
-| Alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | 0 | 8 |
-| BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 166 |
-| CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | 24 | 125 |
+| Product | Path | Direct axioms | Logical triples | Total triples |
+| --- | --- | ---: | ---: | ---: |
+| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 45 | 273 | 286 |
+| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 157 | 165 |
+| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 24 | 116 | 125 |
 
-Their import graph is:
+The Integrated Mapping is the distinct complete consumer entry point. It
+directly asserts all 45 canonical authoritative axioms and imports exactly the
+governed SOSA root, SOSA Systems, SOSA Sampling, source-declaration overlay,
+and merged CCO/BFO dependency.
+
+The modular project graph is independent of that complete entry point:
 
 ```text
-SOSA-next alignment core
-          ↑
-SOSA-next BFO mapping
-          ↑
-SOSA-next CCO extension
-          ↑
-SOSA-next editor shell
+SOSA-next CCO Extension
+          |
+          v
+SOSA-next BFO Mapping
 ```
 
-The three maintained products contain 45 canonical authoritative axioms. Their
-logical union has 273 triples and is isomorphic to the integrated active
-mapping graph used during validation. The catalog-resolved editor stack,
-including ontology metadata and project imports, contains 303 distinct
-triples.
+The BFO Mapping imports no ontology. The CCO Extension imports only the BFO
+Mapping. Their logical union contains 273 triples and is isomorphic to the
+Integrated Mapping's 273 logical triples.
 
-The alignment core imports no project or external ontology. The BFO mapping
-imports only the alignment core. The CCO extension imports only the BFO
-mapping. The editor shell imports only the CCO extension. External SOSA, BFO,
-and CCO dependencies are resolved separately by consumers or assembled only
-in temporary validation closures; their triples are not serialized into the
-maintained project products.
+The editor shell imports only the Integrated Mapping:
 
-The initial SOSA-next product set intentionally has no integrated ontology and
-no BFO-projection product. Those products require separate consumer and
-governance justification rather than automatic duplication of the current
-SSN/SOSA architecture.
+```text
+SOSA-next editor shell
+          |
+          v
+SOSA-next Integrated Mapping
+```
+
+The resulting local editor project closure contains 290 distinct triples.
+`src/sosa-next/catalog-v001.xml` contains 14 local mappings covering the
+governed source and target dependencies, all three maintained products, and
+the editor shell. The BFO Mapping and CCO Extension remain independently
+catalog-resolvable modular products.
+
+Alignment Core remains a governed role but is non-materialized because the
+current SOSA-2023 mapping has zero target-neutral authoritative axioms. BFO
+Projection likewise remains governed but non-materialized because no approved
+weakened-but-sound BFO consequence exists.
+
+The maintained product hashes are:
+
+| Product | SHA-256 |
+| --- | --- |
+| Integrated | `7ce45659e4d84ac089ae90c3279fa46d169d763ec487c34cb3c533eb0e6c197c` |
+| BFO Mapping | `67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2` |
+| CCO Extension | `e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69` |
+
+The source-version track remains a separate future formal package. Formal
+publication must replace the `sosa-next` development alias in track-specific
+formal paths and ontology IRIs with
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`.
 
 Focused validation:
 
 ```bash
 make check-sosa-source-version
+make check-product-role-policy
+make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
 ```
 
-The maintained SOSA-next development products have not yet been migrated to
-the uniform product-role policy. All mapping tracks use the same five product
-roles, but a role is materialized only for direct product-specific logical
-content or a distinct consumer function.
-
-The current-track implementation now follows the uniform product-role policy.
-Its materialized products are Integrated, Alignment Core, BFO Mapping, and CCO
-Extension. BFO Projection remains a governed role but is omitted because no
-weakened BFO consequence is currently approved, and the former import-only
-ontology has been retired.
-
-The SOSA-2023 formal target is Integrated, BFO Mapping, and CCO Extension. Its
-current zero-direct-axiom Alignment Core is scheduled for retirement, and BFO
-Projection remains omitted until a weakened consequence is approved. The
-source-version track remains a separate package and uses
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` as its formal track
-identity.
-
-The earlier `reports/publication-product-and-import-policy.md` records the
-pre-activation lifecycle policy. For the implemented SOSA-next development
-track, `reports/sosa-next-product-contract.md` is the controlling product
-contract.
+For the implemented development contract, see
+`reports/sosa-next-product-contract.md`.
