@@ -54,7 +54,6 @@ PACKAGE_FILE_PATHS = (
     "catalog-v001.xml",
     "current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     "evidence/coms-product-dispositions.json",
     "manifest.json",
@@ -71,7 +70,6 @@ PRODUCT_PACKAGE_PATHS = {
     "integrated": "SSN2BFO.ttl",
     "alignment_core": "current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "strict_bfo_mapping": "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "bfo_projection": "current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "cco_extension": "current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 }
 BYTE_AFFECTING_MODULES = (
@@ -107,13 +105,11 @@ DEVELOPMENT_OUTPUT_PATHS = (
     "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
     "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
-    "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
 )
 GOVERNED_CLOSURE_COUNTS = {
     "integrated": 105,
     "alignment_core": 29,
     "strict_bfo_mapping": 48,
-    "bfo_projection": 48,
     "cco_extension": 105,
 }
 REQUIRED_RELEASE_NOTE_HEADINGS = (
@@ -654,7 +650,6 @@ def formal_product_bytes(rendered) -> dict[str, bytes]:
         "integrated": rendered.integrated.serialized_bytes,
         "alignment_core": rendered.alignment_core.serialized_bytes,
         "strict_bfo_mapping": rendered.strict_bfo_mapping.serialized_bytes,
-        "bfo_projection": rendered.bfo_projection.serialized_bytes,
         "cco_extension": rendered.cco_extension.serialized_bytes,
     }
 
@@ -715,12 +710,6 @@ def run_independent_reasoning(
                 paths["alignment_core"],
                 temporary_root / "strict-bfo",
             ),
-            "bfo_projection": coms.run_bfo_projection_hermit(
-                paths["bfo_projection"],
-                paths["strict_bfo_mapping"],
-                paths["alignment_core"],
-                temporary_root / "bfo-projection",
-            ),
             "cco_extension": coms.run_cco_extension_hermit(
                 paths["cco_extension"],
                 paths["strict_bfo_mapping"],
@@ -770,7 +759,6 @@ def collect_product_records(rendered, metadata, context) -> tuple[ReleaseManifes
         "integrated": rendered.integrated,
         "alignment_core": rendered.alignment_core,
         "strict_bfo_mapping": rendered.strict_bfo_mapping,
-        "bfo_projection": rendered.bfo_projection,
         "cco_extension": rendered.cco_extension,
     }
     metadata_by_key = {value.key: value for value in metadata.products}
@@ -840,7 +828,6 @@ def collect_included_files(package_dir: Path) -> tuple[ReleaseManifestIncludedFi
         "catalog-v001.xml": "formal version-IRI catalog",
         "current-ssn-sosa/ssn-sosa-alignment-core.ttl": "formal alignment-core ontology product",
         "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl": "formal strict-BFO ontology product",
-        "current-ssn-sosa/ssn-sosa-bfo-projection.ttl": "formal BFO-projection ontology product",
         "current-ssn-sosa/ssn-sosa-cco-extension.ttl": "formal CCO-extension ontology product",
         "evidence/coms-product-dispositions.json": "governed product-disposition evidence",
         "sources/SSN2BFO-COMS.xlsx": "governed COMS workbook",
@@ -1006,7 +993,7 @@ def compare_complete_packages(
     first: Path,
     second: Path,
 ) -> tuple[ReleasePackageIssue, ...]:
-    """Compare the normalized complete 13-file inventories of two package candidates."""
+    """Compare the normalized complete 12-file inventories of two package candidates."""
 
     issues: list[ReleasePackageIssue] = []
     observed: list[tuple[str, ...]] = []

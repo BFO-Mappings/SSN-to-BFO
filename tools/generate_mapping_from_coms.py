@@ -42,13 +42,11 @@ from product_dispositions import (
     validate_disposition_file,
 )
 from modular_products import (
-    BFO_PROJECTION_KEY,
     ModularReasoningResult,
     ModularProductError,
     ModularProductResult,
     ProductDispositionReconciliation,
     build_alignment_core,
-    build_bfo_projection,
     build_cco_extension,
     build_fixed_source_closure,
     build_fixed_validation_closure,
@@ -58,7 +56,6 @@ from modular_products import (
     select_product_axioms,
     serialize_modular_product,
     validate_alignment_core,
-    validate_bfo_projection,
     validate_cco_extension,
     validate_strict_bfo_mapping,
 )
@@ -398,7 +395,6 @@ class FormalProductSet:
     integrated: RenderedOntologyProduct
     alignment_core: ModularProductResult
     strict_bfo_mapping: ModularProductResult
-    bfo_projection: ModularProductResult
     cco_extension: ModularProductResult
     reconciliations: tuple[ProductDispositionReconciliation, ...]
 
@@ -1368,7 +1364,7 @@ def render_formal_product_set(
     publication_metadata: PublicationMetadata,
     context: FormalReleaseContext,
 ) -> FormalProductSet:
-    """Render all five formal products in memory from one governed input state."""
+    """Render all four formal products in memory from one governed input state."""
 
     validated_context = validate_formal_release_context(context)
     canonical_rows = tuple(
@@ -1444,11 +1440,6 @@ def render_formal_product_set(
         publication_metadata,
         validated_context,
     )
-    projection = build_bfo_projection(
-        by_key["bfo_projection"].selected_axioms,
-        publication_metadata,
-        validated_context,
-    )
     cco = build_cco_extension(
         by_key["cco_extension"].selected_axioms,
         publication_metadata,
@@ -1457,10 +1448,9 @@ def render_formal_product_set(
     expected_totals = {
         "alignment_core": 64,
         "strict_bfo_mapping": 137,
-        "bfo_projection": 12,
         "cco_extension": 936,
     }
-    for result in (core, strict, projection, cco):
+    for result in (core, strict, cco):
         expected_total = expected_totals[result.metadata.product_key]
         if result.total_triple_count != expected_total:
             raise GenerationError(
@@ -1477,17 +1467,6 @@ def render_formal_product_set(
             context=validated_context,
         ),
         "strict_bfo_mapping": validate_strict_bfo_mapping(
-            strict.serialized_bytes,
-            by_key["strict_bfo_mapping"].selected_axioms,
-            core.serialized_bytes,
-            by_key["alignment_core"].selected_axioms,
-            publication_metadata,
-            integrated_graph=root_graph,
-            context=validated_context,
-        ),
-        "bfo_projection": validate_bfo_projection(
-            projection.serialized_bytes,
-            by_key["bfo_projection"],
             strict.serialized_bytes,
             by_key["strict_bfo_mapping"].selected_axioms,
             core.serialized_bytes,
@@ -1535,7 +1514,6 @@ def render_formal_product_set(
         integrated=integrated,
         alignment_core=core,
         strict_bfo_mapping=strict,
-        bfo_projection=projection,
         cco_extension=cco,
         reconciliations=reconciliations,
     )
@@ -1688,10 +1666,6 @@ STRICT_BFO_HERMIT_PROFILE = HermitRunProfile(
 CCO_EXTENSION_HERMIT_PROFILE = HermitRunProfile(
     graph_filename="cco-extension-pinned-merged-cco-bfo-closure.ttl",
     reasoned_filename="cco-extension-pinned-merged-cco-bfo-closure-reasoned.ttl",
-)
-BFO_PROJECTION_HERMIT_PROFILE = HermitRunProfile(
-    graph_filename="bfo-projection-pinned-merged-cco-bfo-closure.ttl",
-    reasoned_filename="bfo-projection-pinned-merged-cco-bfo-closure-reasoned.ttl",
 )
 
 
@@ -1999,32 +1973,6 @@ def run_cco_extension_hermit(
     )
 
 
-def run_bfo_projection_hermit(
-    generated_path: Path,
-    strict_bfo_path: Path,
-    alignment_core_path: Path,
-    tmp_dir: Path,
-) -> HermitResult:
-    """Independently reason over projection, strict, core, and pinned dependencies."""
-
-    closure = build_fixed_validation_closure(
-        (
-            generated_path.read_bytes(),
-            strict_bfo_path.read_bytes(),
-            alignment_core_path.read_bytes(),
-        ),
-        (
-            REPO_ROOT / BFO_VALIDATION_DEPENDENCY,
-            *(REPO_ROOT / path for path in SOURCE_IMPORTS),
-        ),
-    )
-
-    return _run_hermit_closure(
-        generated_path,
-        closure,
-        tmp_dir,
-        BFO_PROJECTION_HERMIT_PROFILE,
-    )
 
 
 def build_and_write_alignment_core(
@@ -2131,73 +2079,6 @@ def build_and_write_strict_bfo_mapping(
     return result, hermit
 
 
-def build_and_write_bfo_projection(
-    processed_rows: list[ProcessedRow],
-    identity_audits: list[CanonicalRowAudit],
-    disposition_document: DispositionDocument,
-    publication_metadata: PublicationMetadata,
-    integrated_graph: Graph,
-    alignment_core_result: ModularProductResult,
-    strict_bfo_result: ModularProductResult,
-    strict_bfo_hermit: HermitResult,
-    output_path: Path,
-) -> tuple[
-    ModularProductResult,
-    ProductDispositionReconciliation,
-    ModularReasoningResult,
-]:
-    """Build the import-only projection after exact disposition reconciliation."""
-
-    try:
-        canonical_rows = [canonical_input_for_processed_row(item) for item in processed_rows]
-        reconciliation = reconcile_product_axioms(
-            BFO_PROJECTION_KEY,
-            canonical_rows,
-            identity_audits,
-            disposition_document,
-        )
-        alignment_selected = tuple(
-            axiom
-            for row in alignment_core_result.selected_rows
-            for axiom in row.axioms
-        )
-        strict_selected = tuple(
-            axiom
-            for row in strict_bfo_result.selected_rows
-            for axiom in row.axioms
-        )
-        reasoning_result = ModularReasoningResult(
-            source_product_key="strict_bfo_mapping",
-            source_product_sha256=strict_bfo_result.sha256,
-            closure_triple_count=strict_bfo_hermit.closure_triple_count,
-            return_code=strict_bfo_hermit.return_code,
-            reasoned_output_produced=strict_bfo_hermit.reasoned_output_produced,
-            owl_nothing_count=strict_bfo_hermit.owl_nothing_count,
-            named_unsatisfiable_count=len(strict_bfo_hermit.unsat_classes),
-        )
-        result = build_bfo_projection(
-            reconciliation.selected_axioms,
-            publication_metadata,
-        )
-        structural_issues = validate_bfo_projection(
-            result.serialized_bytes,
-            reconciliation,
-            strict_bfo_result.serialized_bytes,
-            strict_selected,
-            alignment_core_result.serialized_bytes,
-            alignment_selected,
-            publication_metadata,
-            integrated_graph=integrated_graph,
-            strict_reasoning_result=reasoning_result,
-        )
-        if structural_issues:
-            raise ModularProductError(structural_issues)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(serialize_modular_product(result))
-    except (ModularProductError, PublicationMetadataError) as exc:
-        output_path.unlink(missing_ok=True)
-        raise GenerationError(str(exc)) from exc
-    return result, reconciliation, reasoning_result
 
 
 def build_and_write_cco_extension(
@@ -2713,11 +2594,6 @@ def write_generation_report(
     strict_bfo_path: Path | None = None,
     strict_bfo_sha256: str = "unavailable",
     strict_bfo_hermit: HermitResult | None = None,
-    bfo_projection_result: ModularProductResult | None = None,
-    bfo_projection_reconciliation: ProductDispositionReconciliation | None = None,
-    bfo_projection_path: Path | None = None,
-    bfo_projection_sha256: str = "unavailable",
-    bfo_projection_reasoning: ModularReasoningResult | None = None,
     cco_extension_result: ModularProductResult | None = None,
     cco_extension_path: Path | None = None,
     cco_extension_sha256: str = "unavailable",
@@ -2757,8 +2633,6 @@ def write_generation_report(
         f"| alignment-core Turtle SHA-256 | `{alignment_core_sha256}` |",
         f"| maintained strict-BFO path | `{strict_bfo_path or 'unavailable'}` |",
         f"| strict-BFO Turtle SHA-256 | `{strict_bfo_sha256}` |",
-        f"| maintained BFO-projection path | `{bfo_projection_path or 'unavailable'}` |",
-        f"| BFO-projection Turtle SHA-256 | `{bfo_projection_sha256}` |",
         f"| maintained CCO-extension path | `{cco_extension_path or 'unavailable'}` |",
         f"| CCO-extension Turtle SHA-256 | `{cco_extension_sha256}` |",
         "",
@@ -2930,56 +2804,6 @@ def write_generation_report(
             "- Formal-release metadata and identity remain deferred.",
         ]
 
-    if bfo_projection_result is None or bfo_projection_reconciliation is None:
-        bfo_projection_lines = [
-            "## BFO Projection",
-            "",
-            "- Generation and validation: unavailable",
-        ]
-    else:
-        totals = {
-            (value.target_category, value.status, value.reason_code): value.count
-            for value in bfo_projection_reconciliation.disposition_totals
-        }
-        bfo_projection_lines = [
-            "## BFO Projection",
-            "",
-            "This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.",
-            "",
-            f"- Path: `{bfo_projection_path}`",
-            f"- Stable ontology IRI: `{bfo_projection_result.metadata.stable_ontology_iri}`",
-            f"- Direct governed projection axioms: {bfo_projection_result.governed_axiom_count}",
-            f"- Direct logical mapping triples: {bfo_projection_result.logical_triple_count}",
-            f"- Ontology declaration triples: {bfo_projection_result.ontology_declaration_triple_count}",
-            f"- Import triples: {bfo_projection_result.import_triple_count}",
-            f"- Descriptive metadata annotations: {bfo_projection_result.metadata_annotation_count}",
-            f"- Total RDF triples: {bfo_projection_result.total_triple_count}",
-            "- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`",
-            f"- Target-neutral provided transitively: {totals.get(('target_neutral', 'provided_transitively', None), 0)}",
-            f"- BFO-bearing provided through import: {totals.get(('bfo_bearing', 'provided_through_import', None), 0)}",
-            f"- CCO-bearing deferred without transformation rule: {totals.get(('cco_bearing', 'deferred', 'NO_APPROVED_TRANSFORMATION_RULE'), 0)}",
-            f"- Mixed BFO/CCO deferred without transformation rule: {totals.get(('mixed_bfo_cco', 'deferred', 'NO_APPROVED_TRANSFORMATION_RULE'), 0)}",
-            "- Imported strict-BFO governed axioms: 19",
-            "- Transitively imported alignment-core governed axioms: 29",
-            "- Project-module closure governed axioms: 48",
-            "- Project graph triples retaining imports: 204",
-            "- Import-stripped local project graph triples: 202",
-            "- Strict/alignment-core governed overlap: 0",
-            "- CCO-extension governed axioms in projection closure: 0",
-            "- Direct graph and integrated-root/project-module reconciliation: PASS",
-            "- Deterministic serialization: PASS",
-            f"- Reused strict-BFO closure triple count: {'n/a' if bfo_projection_reasoning is None else bfo_projection_reasoning.closure_triple_count}",
-            f"- Reused strict-BFO HermiT return code: {'n/a' if bfo_projection_reasoning is None else bfo_projection_reasoning.return_code}",
-            f"- Reused strict-BFO reasoned output produced: {'no' if bfo_projection_reasoning is None else 'yes' if bfo_projection_reasoning.reasoned_output_produced else 'no'}",
-            f"- Reused strict-BFO named unsatisfiable classes: {'n/a' if bfo_projection_reasoning is None else bfo_projection_reasoning.named_unsatisfiable_count}",
-            "- Reasoning result: PASS (reused from the same-transaction strict-BFO pinned merged CCO/BFO validation closure after exact project-closure equivalence validation)",
-            "- Projection-specific HermiT invocation: none",
-            "- Zero direct projection axioms is intentional and complete for the current governed policy.",
-            "- No transformation rule, weakened consequence, or projected axiom is approved.",
-            "- Future direct projected axioms require governed transformation rules and proof obligations.",
-            "- Formal-release metadata and identity remain deferred.",
-        ]
-
     if cco_extension_result is None:
         cco_extension_lines = [
             "## CCO Extension",
@@ -3111,7 +2935,6 @@ def write_generation_report(
             "",
             *strict_bfo_lines,
             "",
-            *bfo_projection_lines,
             "",
             *cco_extension_lines,
             "",
@@ -3322,11 +3145,6 @@ def write_summary_json(
     strict_bfo_path: Path | None = None,
     strict_bfo_sha256: str = "unavailable",
     strict_bfo_hermit: HermitResult | None = None,
-    bfo_projection_result: ModularProductResult | None = None,
-    bfo_projection_reconciliation: ProductDispositionReconciliation | None = None,
-    bfo_projection_path: Path | None = None,
-    bfo_projection_sha256: str = "unavailable",
-    bfo_projection_reasoning: ModularReasoningResult | None = None,
     cco_extension_result: ModularProductResult | None = None,
     cco_extension_path: Path | None = None,
     cco_extension_sha256: str = "unavailable",
@@ -3402,45 +3220,6 @@ def write_summary_json(
             "hermit_result": "FAIL" if strict_bfo_hermit is None else "PASS" if strict_bfo_hermit.passed else "FAIL",
             "closure_triple_count": None if strict_bfo_hermit is None else strict_bfo_hermit.closure_triple_count,
             "named_unsat_count": None if strict_bfo_hermit is None else len(strict_bfo_hermit.unsat_classes),
-        },
-        "bfo_projection_path": None if bfo_projection_path is None else str(bfo_projection_path),
-        "bfo_projection_sha256": bfo_projection_sha256,
-        "bfo_projection": None
-        if bfo_projection_result is None or bfo_projection_reconciliation is None
-        else {
-            "product_key": bfo_projection_result.metadata.product_key,
-            "stable_ontology_iri": bfo_projection_result.metadata.stable_ontology_iri,
-            "governed_axiom_count": bfo_projection_result.governed_axiom_count,
-            "logical_triple_count": bfo_projection_result.logical_triple_count,
-            "ontology_declaration_triple_count": bfo_projection_result.ontology_declaration_triple_count,
-            "import_triple_count": bfo_projection_result.import_triple_count,
-            "metadata_annotation_count": bfo_projection_result.metadata_annotation_count,
-            "total_triple_count": bfo_projection_result.total_triple_count,
-            "provided_transitively_count": 29,
-            "provided_through_import_count": 19,
-            "deferred_no_transformation_rule_count": 55,
-            "project_closure_governed_axiom_count": 48,
-            "project_graph_triple_count": 204,
-            "local_project_graph_triple_count": 202,
-            "reasoning_reused_from": None
-            if bfo_projection_reasoning is None
-            else bfo_projection_reasoning.source_product_key,
-            "reasoning_source_sha256": None
-            if bfo_projection_reasoning is None
-            else bfo_projection_reasoning.source_product_sha256,
-            "reasoning_closure_triple_count": None
-            if bfo_projection_reasoning is None
-            else bfo_projection_reasoning.closure_triple_count,
-            "reasoning_return_code": None
-            if bfo_projection_reasoning is None
-            else bfo_projection_reasoning.return_code,
-            "reasoned_output_produced": False
-            if bfo_projection_reasoning is None
-            else bfo_projection_reasoning.reasoned_output_produced,
-            "named_unsat_count": None
-            if bfo_projection_reasoning is None
-            else bfo_projection_reasoning.named_unsatisfiable_count,
-            "projection_specific_hermit_invoked": False,
         },
         "cco_extension_path": None if cco_extension_path is None else str(cco_extension_path),
         "cco_extension_sha256": cco_extension_sha256,
@@ -3585,11 +3364,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Generated strict SSN/SOSA-to-BFO mapping Turtle path.",
     )
     parser.add_argument(
-        "--bfo-projection-output",
-        required=True,
-        help="Generated import-only SSN/SOSA BFO-projection Turtle path.",
-    )
-    parser.add_argument(
         "--cco-extension-output",
         required=True,
         help="Generated SSN/SOSA CCO-extension Turtle path.",
@@ -3630,10 +3404,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Strict-BFO path displayed in reports. Defaults to the actual --strict-bfo-output path.",
     )
     parser.add_argument(
-        "--report-bfo-projection-path",
-        help="BFO-projection path displayed in reports. Defaults to the actual --bfo-projection-output path.",
-    )
-    parser.add_argument(
         "--report-cco-extension-path",
         help="CCO-extension path displayed in reports. Defaults to the actual --cco-extension-output path.",
     )
@@ -3650,7 +3420,6 @@ def main(argv: list[str] | None = None) -> int:
     disposition_report_path = REPO_ROOT / args.disposition_report if not Path(args.disposition_report).is_absolute() else Path(args.disposition_report)
     alignment_core_output_path = REPO_ROOT / args.alignment_core_output if not Path(args.alignment_core_output).is_absolute() else Path(args.alignment_core_output)
     strict_bfo_output_path = REPO_ROOT / args.strict_bfo_output if not Path(args.strict_bfo_output).is_absolute() else Path(args.strict_bfo_output)
-    bfo_projection_output_path = REPO_ROOT / args.bfo_projection_output if not Path(args.bfo_projection_output).is_absolute() else Path(args.bfo_projection_output)
     cco_extension_output_path = REPO_ROOT / args.cco_extension_output if not Path(args.cco_extension_output).is_absolute() else Path(args.cco_extension_output)
     coverage_report_path = REPO_ROOT / args.coverage_report if not Path(args.coverage_report).is_absolute() else Path(args.coverage_report)
     diff_report_path = REPO_ROOT / args.diff_report if not Path(args.diff_report).is_absolute() else Path(args.diff_report)
@@ -3659,7 +3428,6 @@ def main(argv: list[str] | None = None) -> int:
     report_disposition_path = Path(args.report_disposition_path) if args.report_disposition_path else disposition_report_path
     report_alignment_core_path = Path(args.report_alignment_core_path) if args.report_alignment_core_path else alignment_core_output_path
     report_strict_bfo_path = Path(args.report_strict_bfo_path) if args.report_strict_bfo_path else strict_bfo_output_path
-    report_bfo_projection_path = Path(args.report_bfo_projection_path) if args.report_bfo_projection_path else bfo_projection_output_path
     report_cco_extension_path = Path(args.report_cco_extension_path) if args.report_cco_extension_path else cco_extension_output_path
     summary_json_path = None
     if args.summary_json:
@@ -3675,7 +3443,6 @@ def main(argv: list[str] | None = None) -> int:
     disposition_sha256 = "unavailable"
     alignment_core_sha256 = "unavailable"
     strict_bfo_sha256 = "unavailable"
-    bfo_projection_sha256 = "unavailable"
     cco_extension_sha256 = "unavailable"
 
     stats = WorkbookStats()
@@ -3691,9 +3458,6 @@ def main(argv: list[str] | None = None) -> int:
     alignment_core_hermit: HermitResult | None = None
     strict_bfo_result: ModularProductResult | None = None
     strict_bfo_hermit: HermitResult | None = None
-    bfo_projection_result: ModularProductResult | None = None
-    bfo_projection_reconciliation: ProductDispositionReconciliation | None = None
-    bfo_projection_reasoning: ModularReasoningResult | None = None
     cco_extension_result: ModularProductResult | None = None
     cco_extension_hermit: HermitResult | None = None
 
@@ -3747,22 +3511,6 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.tmp_dir) / "strict-bfo",
         )
         strict_bfo_sha256 = sha256_file(strict_bfo_output_path)
-        (
-            bfo_projection_result,
-            bfo_projection_reconciliation,
-            bfo_projection_reasoning,
-        ) = build_and_write_bfo_projection(
-            processed,
-            identity_audits,
-            disposition_document,
-            publication_metadata,
-            graph,
-            alignment_core_result,
-            strict_bfo_result,
-            strict_bfo_hermit,
-            bfo_projection_output_path,
-        )
-        bfo_projection_sha256 = sha256_file(bfo_projection_output_path)
         cco_extension_result, cco_extension_hermit = build_and_write_cco_extension(
             processed,
             identity_audits,
@@ -3824,11 +3572,6 @@ def main(argv: list[str] | None = None) -> int:
         strict_bfo_path=report_strict_bfo_path,
         strict_bfo_sha256=strict_bfo_sha256,
         strict_bfo_hermit=strict_bfo_hermit,
-        bfo_projection_result=bfo_projection_result,
-        bfo_projection_reconciliation=bfo_projection_reconciliation,
-        bfo_projection_path=report_bfo_projection_path,
-        bfo_projection_sha256=bfo_projection_sha256,
-        bfo_projection_reasoning=bfo_projection_reasoning,
         cco_extension_result=cco_extension_result,
         cco_extension_path=report_cco_extension_path,
         cco_extension_sha256=cco_extension_sha256,
@@ -3865,11 +3608,6 @@ def main(argv: list[str] | None = None) -> int:
             strict_bfo_path=report_strict_bfo_path,
             strict_bfo_sha256=strict_bfo_sha256,
             strict_bfo_hermit=strict_bfo_hermit,
-            bfo_projection_result=bfo_projection_result,
-            bfo_projection_reconciliation=bfo_projection_reconciliation,
-            bfo_projection_path=report_bfo_projection_path,
-            bfo_projection_sha256=bfo_projection_sha256,
-            bfo_projection_reasoning=bfo_projection_reasoning,
             cco_extension_result=cco_extension_result,
             cco_extension_path=report_cco_extension_path,
             cco_extension_sha256=cco_extension_sha256,
@@ -3889,8 +3627,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote {alignment_core_output_path}")
     if strict_bfo_output_path.exists():
         print(f"Wrote {strict_bfo_output_path}")
-    if bfo_projection_output_path.exists():
-        print(f"Wrote {bfo_projection_output_path}")
     if cco_extension_output_path.exists():
         print(f"Wrote {cco_extension_output_path}")
     print(f"Worksheets read: {', '.join(stats.worksheets_read) or 'none'}")
@@ -3932,13 +3668,6 @@ def main(argv: list[str] | None = None) -> int:
             "Strict-BFO pinned merged CCO/BFO closure HermiT: "
             f"{'PASS' if strict_bfo_hermit.passed else 'FAIL'}"
         )
-    if bfo_projection_result is not None:
-        print(f"BFO-projection governed axioms: {bfo_projection_result.governed_axiom_count}")
-        print(f"BFO-projection logical triples: {bfo_projection_result.logical_triple_count}")
-        print(f"BFO-projection total triples: {bfo_projection_result.total_triple_count}")
-        print(f"BFO-projection SHA-256: {bfo_projection_result.sha256}")
-    if bfo_projection_reasoning is not None:
-        print("BFO-projection strict-BFO reasoning reuse: PASS")
     if cco_extension_result is not None:
         print(f"CCO-extension governed axioms: {cco_extension_result.governed_axiom_count}")
         print(f"CCO-extension logical triples: {cco_extension_result.logical_triple_count}")

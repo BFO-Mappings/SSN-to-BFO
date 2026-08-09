@@ -116,8 +116,6 @@ MAINTAINED_PRODUCT_HASHES = {
         "17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770",
     "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl":
         "676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af",
-    "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl":
-        "b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0",
     "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl":
         "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5",
 }
@@ -354,7 +352,7 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
             for key in publication_metadata.PRODUCT_ORDER
         )
         self.assertEqual(entries, expected)
-        self.assertEqual(len(entries), 5)
+        self.assertEqual(len(entries), 4)
         for _, target in entries:
             self.assertFalse(PurePosixPath(target).is_absolute())
             self.assertNotIn("\\", target)
@@ -364,9 +362,9 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
             with self.subTest(path=relative):
                 self.assertEqual(sha256(REPO_ROOT / relative), expected_hash)
 
-    def test_package_and_archive_layout_authorities_remain_13_and_17_members(self) -> None:
-        self.assertEqual(len(build_release.PACKAGE_FILE_PATHS), 13)
-        self.assertEqual(len(release_archive.ARCHIVE_MEMBER_TEMPLATES), 17)
+    def test_package_and_archive_layout_authorities_remain_12_and_16_members(self) -> None:
+        self.assertEqual(len(build_release.PACKAGE_FILE_PATHS), 12)
+        self.assertEqual(len(release_archive.ARCHIVE_MEMBER_TEMPLATES), 16)
         self.assertEqual(
             release_archive.canonical_member_names("2099-01-02"),
             tuple(

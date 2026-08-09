@@ -77,10 +77,12 @@ BFO Projection is omitted because no direct weakened projection axiom is
 currently approved and its import-only closure is already supplied by the
 strict BFO mapping.
 
-The existing maintained import-only BFO-projection artifact remains in the
-repository until a separate implementation migration removes it from current
-generation and formal-release machinery. This policy changes publication
-intent before changing maintained bytes.
+The current-track implementation migration is complete. The former
+import-only BFO-Projection artifact has been removed from maintained generation,
+formal rendering, release packaging, archive construction, and maintained
+ontology bytes. The `bfo_projection` role remains governed with zero approved
+direct axioms and may be materialized later only if substantive weakened
+consequences satisfy this policy.
 
 ## SOSA 2023 source-version target inventory
 
@@ -121,21 +123,26 @@ It does not supersede:
 - the decision to keep the SOSA source-version track in a separate package;
 - the use of `strict_bfo_mapping` as the canonical machine key.
 
-## Migration rule
+## Migration status
 
-Governance is changed before implementation.
+Governance was changed before implementation.
 
-A subsequent implementation milestone must:
+The current SSN/SOSA migration is now complete:
 
-- remove the current import-only BFO Projection from formal publication
-  metadata, manifest/schema inventories, package/catalog/archive inventories,
-  reasoning-result inventories, release notes, and maintained generation if no
-  development-only reason remains;
+- publication metadata contains four materialized products;
+- formal rendering, manifests, packages, catalogs, archives, and reasoning
+  inventories omit the zero-direct-axiom BFO Projection role;
+- maintained COMS generation no longer writes a BFO-Projection ontology;
+- `tests/test_bfo_projection.py` retains role/disposition reconciliation
+  coverage without serialization, validation, or reasoning machinery;
+- governed mapping axioms and dispositions are preserved.
+
+The SOSA-2023 source-version migration remains a separate subsequent
+implementation milestone. It must:
+
 - add a SOSA-2023 Integrated product with a distinct complete-consumer role;
 - retire the zero-direct-axiom SOSA-2023 Alignment Core and remove the
   BFO-mapping import edge to it;
 - update the SOSA-2023 editor/catalog consumer stack accordingly;
-- preserve all governed mapping axioms and mapping dispositions;
+- preserve all governed mapping axioms and mapping dispositions; and
 - prove byte changes are exactly those required by the product-role migration.
-
-No ontology-product bytes are changed by this policy milestone itself.

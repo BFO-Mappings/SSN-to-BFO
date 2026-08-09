@@ -290,7 +290,11 @@ The first maintained-product implementation must satisfy all of the following:
 14. no tracked file is changed in checker-only mode;
 15. the full repository unit-test suite passes.
 
-The current-SOSA byte-preservation gate must protect:
+The current-SOSA byte-preservation gate below records the pre-migration
+current-track boundary that this SOSA-next implementation was originally
+required to preserve. In particular, the BFO-Projection row is historical:
+the later current-track product-role migration intentionally retired that
+import-only artifact while preserving the four retained current products.
 
 | Product | Required SHA-256 |
 |---|---|

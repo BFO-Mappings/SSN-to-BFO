@@ -16,7 +16,7 @@ CONFIG_PATH = REPO_ROOT / "config/sosa-release-scope.toml"
 
 EXPECTED_PUBLICATION_MODEL = "separate_package"
 EXPECTED_ROLE_POLICY_PATH = "config/product-role-policy.toml"
-EXPECTED_CURRENT_TRACK_STATE = "pending_product_role_policy_migration"
+EXPECTED_CURRENT_TRACK_STATE = "product_role_policy_migration_complete"
 
 
 @dataclass(frozen=True)
@@ -169,7 +169,7 @@ def load_release_scope(
     )
     if current_track_state != EXPECTED_CURRENT_TRACK_STATE:
         raise RuntimeError(
-            "current_track_formal_release: expected pending role-policy migration"
+            "current_track_formal_release: expected completed role-policy migration"
         )
 
     return SosaReleaseScope(

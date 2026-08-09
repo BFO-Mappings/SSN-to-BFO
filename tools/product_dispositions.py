@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+import product_role_policy
 from coms_row_identity import (
     CANONICALIZATION_VERSION,
     AuthoritativeAxiomIdentity,
@@ -87,7 +88,7 @@ SUPPORTED_PREDICATE_IRIS = frozenset(
         "http://www.w3.org/2000/01/rdf-schema#range",
     }
 )
-POLICY_PRODUCTS = frozenset(
+SUPPORTED_POLICY_PRODUCTS = frozenset(
     {
         "integrated",
         "alignment_core",
@@ -96,6 +97,20 @@ POLICY_PRODUCTS = frozenset(
         "cco_extension",
     }
 )
+
+PRODUCT_ROLE_ORDER = tuple(
+    product_role_policy.load_product_role_policy().role_order
+)
+POLICY_PRODUCTS = frozenset(PRODUCT_ROLE_ORDER)
+
+if (
+    len(PRODUCT_ROLE_ORDER) != len(POLICY_PRODUCTS)
+    or POLICY_PRODUCTS != SUPPORTED_POLICY_PRODUCTS
+):
+    raise RuntimeError(
+        "product-role policy role_order must contain each supported "
+        "disposition role exactly once"
+    )
 
 
 @dataclass(frozen=True)
@@ -530,7 +545,9 @@ def build_disposition_document(
     """Build canonical disposition evidence from resolved COMS row inputs."""
 
     _validate_hashes(input_hashes)
-    product_keys = tuple(product.key for product in publication_metadata.products)
+    # Publication metadata remains provenance input, but materialized
+    # ontology products do not define the disposition-role taxonomy.
+    product_keys = PRODUCT_ROLE_ORDER
     rows: list[DispositionRowRecord] = []
     issues: list[ValidationIssue] = []
     seen_rows: set[str] = set()

@@ -679,7 +679,7 @@ def run_validation_suite(args: argparse.Namespace) -> int:
     if results[-1].passed:
         results.append(
             run_command(
-                "BFO-projection modular-product focused tests",
+                "BFO-projection role reconciliation focused tests",
                 [
                     sys.executable,
                     "-m",

@@ -24,7 +24,6 @@ INCLUDED_PATHS = (
     "catalog-v001.xml",
     "current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     "evidence/coms-product-dispositions.json",
     "sources/SSN2BFO-COMS.xlsx",
@@ -158,7 +157,7 @@ class ReleaseManifestTests(unittest.TestCase):
         self.serialized = manifest.canonical_manifest_bytes(self.manifest)
         self.document = json.loads(self.serialized)
         self.schema = json.loads(
-            (REPO_ROOT / "config/release-manifest-schema-v1.json").read_text()
+            (REPO_ROOT / "config/release-manifest-schema-v2.json").read_text()
         )
 
     def assert_python_accepts(self, document) -> None:
@@ -167,8 +166,8 @@ class ReleaseManifestTests(unittest.TestCase):
     def assert_python_rejects(self, document) -> None:
         self.assertTrue(manifest.validate_release_manifest_document(document))
 
-    def test_models_are_frozen_and_schema_version_is_one(self) -> None:
-        self.assertEqual(self.manifest.schema_version, 1)
+    def test_models_are_frozen_and_schema_version_is_two(self) -> None:
+        self.assertEqual(self.manifest.schema_version, 2)
         with self.assertRaises(dataclasses.FrozenInstanceError):
             self.manifest.release_identifier = "changed"  # type: ignore[misc]
 
@@ -338,7 +337,7 @@ class ReleaseManifestTests(unittest.TestCase):
                 )
                 self.assertEqual(observed, expected)
         hermit = self.schema["$defs"]["validation"]["properties"]["hermit_results"]
-        self.assertEqual((hermit["minItems"], hermit["maxItems"]), (5, 5))
+        self.assertEqual((hermit["minItems"], hermit["maxItems"]), (4, 4))
         self.assertFalse(hermit["items"])
         self.assertEqual(
             tuple(
@@ -363,7 +362,7 @@ class ReleaseManifestTests(unittest.TestCase):
         self.assertEqual(tuple(document), manifest.TOP_LEVEL_FIELDS)
         self.assertTrue(self.serialized.endswith(b"\n"))
         self.assertFalse(self.serialized.endswith(b"\n\n"))
-        self.assertIn(b'  "schema_version": 1', self.serialized)
+        self.assertIn(b'  "schema_version": 2', self.serialized)
         self.assertNotIn(b"manifest_sha256", self.serialized)
         self.assertNotIn(b"sha256sums_sha256", self.serialized)
 
@@ -438,8 +437,8 @@ class ReleaseManifestTests(unittest.TestCase):
 
     def test_duplicate_json_field_is_rejected(self) -> None:
         duplicate = self.serialized.replace(
-            b'{\n  "schema_version": 1,',
-            b'{\n  "schema_version": 1,\n  "schema_version": 1,',
+            b'{\n  "schema_version": 2,',
+            b'{\n  "schema_version": 2,\n  "schema_version": 2,',
             1,
         )
         with self.assertRaises(manifest.ReleaseManifestError) as raised:
@@ -514,10 +513,10 @@ class ReleaseManifestTests(unittest.TestCase):
         ]
         self.assertEqual(
             (hermit_schema["minItems"], hermit_schema["maxItems"]),
-            (5, 5),
+            (4, 4),
         )
         self.assertFalse(hermit_schema["items"])
-        self.assertEqual(len(hermit_schema["prefixItems"]), 5)
+        self.assertEqual(len(hermit_schema["prefixItems"]), 4)
         mutations = []
         for index in range(len(manifest.FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS) - 1):
             swapped = json.loads(self.serialized)
@@ -560,7 +559,7 @@ class ReleaseManifestTests(unittest.TestCase):
         mutations.append(("sixth dependency", extra_dependency))
         extra_product = json.loads(self.serialized)
         extra_product["products"].append(dict(extra_product["products"][0]))
-        mutations.append(("sixth product", extra_product))
+        mutations.append(("fifth product", extra_product))
         extra_included = json.loads(self.serialized)
         extra_included["included_files"].append(
             {**extra_included["included_files"][0], "path": "extra.txt"}
@@ -633,7 +632,7 @@ class ReleaseManifestTests(unittest.TestCase):
             manifest.INCLUDED_FILE_PATH_ORDER,
         )
         paths = {value.path for value in self.manifest.included_files}
-        self.assertEqual(len(paths), 11)
+        self.assertEqual(len(paths), 10)
         self.assertNotIn("manifest.json", paths)
         self.assertNotIn("SHA256SUMS", paths)
         document = json.loads(self.serialized)

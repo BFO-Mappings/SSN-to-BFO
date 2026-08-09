@@ -677,24 +677,6 @@ def run_pilot(
             ),
             coms.CCO_EXTENSION_HERMIT_PROFILE,
         ),
-        (
-            "bfo_projection",
-            REPO_ROOT
-            / "releases/current-ssn-sosa/"
-            "ssn-sosa-bfo-projection.ttl",
-            (
-                REPO_ROOT
-                / "releases/current-ssn-sosa/"
-                "ssn-sosa-bfo-projection.ttl",
-                REPO_ROOT
-                / "releases/current-ssn-sosa/"
-                "ssn-sosa-bfo-mapping.ttl",
-                REPO_ROOT
-                / "releases/current-ssn-sosa/"
-                "ssn-sosa-alignment-core.ttl",
-            ),
-            coms.BFO_PROJECTION_HERMIT_PROFILE,
-        ),
     )
 
     reasoning: dict[str, object] = {}

@@ -2,7 +2,7 @@
 
 ## Maintained current-track products
 
-The current SSN/SOSA track consists of one integrated ontology and four maintained modular products generated from governed COMS.
+The current SSN/SOSA track consists of one integrated ontology and three maintained modular products generated from governed COMS.
 
 ### Integrated mapping
 
@@ -60,25 +60,26 @@ Focused validation:
 make check-strict-bfo-mapping
 ```
 
-### BFO projection
+### BFO Projection role
 
-Path:
+BFO Projection remains one of the five product roles, but it is not currently
+materialized as an ontology product.
 
-```text
-releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl
-```
+The role is reserved for weakened but sound BFO consequences approved through
+governed transformation policy. Its current approved direct-axiom count is
+zero. An import-only ontology does not provide a distinct consumer function,
+because loading the strict BFO mapping already supplies the same project-module
+closure.
 
-The BFO projection imports only the strict BFO mapping. It currently asserts zero direct projection axioms because no governed CCO-to-BFO transformation or weakened-consequence rule has been approved.
+The former import-only BFO Projection ontology has therefore been retired from
+maintained generation, formal rendering, package construction, and release
+validation. Role reconciliation remains governed through
+`reports/coms-product-dispositions.json` and tested by
+`tests/test_bfo_projection.py`.
 
-Its project-module closure is therefore the same 48 governed axioms supplied by the strict BFO mapping and alignment core.
-
-Future projection axioms require governed transformation rules and explicit proof obligations.
-
-Focused validation:
-
-```bash
-make check-bfo-projection
-```
+A future BFO Projection ontology may be materialized only when at least one
+approved weakened consequence is assigned directly to the role and the
+product-role inclusion policy is satisfied.
 
 ### CCO extension
 
@@ -88,12 +89,12 @@ Path:
 releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl
 ```
 
-The CCO extension directly asserts 57 governed axioms:
+The CCO extension directly asserts 55 governed axioms:
 
 - 25 CCO-bearing axioms
-- 32 mixed BFO/CCO axioms
+- 30 mixed BFO/CCO axioms
 
-It imports only the strict BFO mapping, whose alignment-core import completes the 105-axiom project-module closure without duplicating either imported layer.
+It imports only the strict BFO mapping, whose alignment-core import completes the 103-axiom project-module closure without duplicating either imported layer.
 
 The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations.
 
@@ -110,12 +111,6 @@ alignment core
       ↑
 strict BFO mapping
       ↑
-BFO projection
-
-alignment core
-      ↑
-strict BFO mapping
-      ↑
 CCO extension
 ```
 
@@ -123,7 +118,7 @@ The integrated ontology is a separate complete product rather than the root of t
 
 ## Development metadata
 
-`config/publication-metadata.toml` governs the five product paths, stable ontology IRIs, release suffixes, labels, descriptions, product types, license, repository reference, authority statuses, and generated-file warning.
+`config/publication-metadata.toml` governs the four materialized product paths, stable ontology IRIs, release suffixes, labels, descriptions, product types, license, repository reference, authority statuses, and generated-file warning. The separate product-role policy governs all five product roles, including non-materialized `bfo_projection`.
 
 Development artifacts emit exactly seven governed annotations:
 
@@ -207,9 +202,11 @@ the uniform product-role policy. All mapping tracks use the same five product
 roles, but a role is materialized only for direct product-specific logical
 content or a distinct consumer function.
 
-The current-track formal target is Integrated, Alignment Core, BFO Mapping,
-and CCO Extension; its import-only BFO Projection is pending retirement before
-the next official release.
+The current-track implementation now follows the uniform product-role policy.
+Its materialized products are Integrated, Alignment Core, BFO Mapping, and CCO
+Extension. BFO Projection remains a governed role but is omitted because no
+weakened BFO consequence is currently approved, and the former import-only
+ontology has been retired.
 
 The SOSA-2023 formal target is Integrated, BFO Mapping, and CCO Extension. Its
 current zero-direct-axiom Alignment Core is scheduled for retirement, and BFO

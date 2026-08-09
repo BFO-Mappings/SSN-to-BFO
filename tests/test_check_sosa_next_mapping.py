@@ -29,8 +29,6 @@ CURRENT_PRODUCTS = (
     REPO_ROOT
     / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
     REPO_ROOT
-    / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
-    REPO_ROOT
     / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 )
 

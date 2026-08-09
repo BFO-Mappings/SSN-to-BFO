@@ -83,18 +83,6 @@ POLICY_PRODUCTS = {
         ),
         "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/strict-bfo-mapping",
     },
-    "bfo_projection": {
-        "path": "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
-        "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection",
-        "release_iri_suffix": "current-ssn-sosa/bfo-projection",
-        "label": "SSN/SOSA BFO Projection",
-        "description": (
-            "Imports the strict BFO mapping and is the designated product for approved "
-            "weaker but sound BFO consequences; no direct projection axiom is currently "
-            "approved."
-        ),
-        "product_type_iri": "http://www.sks.ai/SSN2BFO/product-type/bfo-projection",
-    },
     "cco_extension": {
         "path": "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension",
@@ -118,7 +106,7 @@ def render_toml(
     raw_overrides: dict[tuple[str, str], str] | None = None,
     publication_raw_overrides: dict[str, str] | None = None,
     release_base_raw: str | None = None,
-    schema_raw: str = "3",
+    schema_raw: str = "4",
 ) -> str:
     overrides = raw_overrides or {}
     publication_overrides = publication_raw_overrides or {}
@@ -180,13 +168,13 @@ class MetadataTestCase(unittest.TestCase):
 class ConfigurationTests(MetadataTestCase):
     def test_actual_repository_config_passes(self) -> None:
         loaded = metadata.load_metadata(ACTUAL_CONFIG)
-        self.assertEqual(loaded.schema_version, 3)
+        self.assertEqual(loaded.schema_version, 4)
         self.assertEqual(tuple(product.key for product in loaded.products), metadata.PRODUCT_ORDER)
 
-    def test_minimal_complete_schema_3_document_passes(self) -> None:
+    def test_minimal_complete_schema_4_document_passes(self) -> None:
         loaded = metadata.load_metadata(self.write(render_toml()))
-        self.assertEqual(loaded.schema_version, 3)
-        self.assertEqual(len(loaded.products), 5)
+        self.assertEqual(loaded.schema_version, 4)
+        self.assertEqual(len(loaded.products), 4)
 
     def test_actual_config_is_locked_to_approved_policy_values(self) -> None:
         loaded = metadata.load_metadata(ACTUAL_CONFIG)
@@ -229,13 +217,13 @@ class ConfigurationTests(MetadataTestCase):
         self.assert_issue("schema_version =\n", "TOML_PARSE")
 
     def test_missing_top_level_field(self) -> None:
-        content = render_toml().replace("schema_version = 3\n\n", "")
+        content = render_toml().replace("schema_version = 4\n\n", "")
         self.assert_issue(content, "MISSING_FIELD", "metadata.schema_version")
 
     def test_unknown_top_level_field(self) -> None:
         content = render_toml().replace(
-            "schema_version = 3\n",
-            "schema_version = 3\nunknown = true\n",
+            "schema_version = 4\n",
+            "schema_version = 4\nunknown = true\n",
         )
         self.assert_issue(content, "UNKNOWN_FIELD", "metadata.unknown")
 
@@ -265,9 +253,9 @@ class ConfigurationTests(MetadataTestCase):
 
     def test_missing_product(self) -> None:
         self.assert_issue(
-            render_toml(omit_products=frozenset({"bfo_projection"})),
+            render_toml(omit_products=frozenset({"cco_extension"})),
             "MISSING_FIELD",
-            "products.bfo_projection",
+            "products.cco_extension",
         )
 
     def test_extra_product(self) -> None:
@@ -309,7 +297,7 @@ class ConfigurationTests(MetadataTestCase):
         self.assert_issue(render_toml(schema_raw="true"), "WRONG_TYPE", "schema_version")
 
     def test_prior_and_unknown_schema_are_rejected(self) -> None:
-        for value in ("1", "2", "4"):
+        for value in ("1", "2", "3", "5"):
             with self.subTest(value=value):
                 self.assert_issue(
                     render_toml(schema_raw=value),
@@ -359,13 +347,11 @@ class OntologyMetadataEmissionTests(unittest.TestCase):
         imports = {
             "alignment_core": (),
             "strict_bfo_mapping": (modular.ALIGNMENT_CORE_IMPORT_IRI,),
-            "bfo_projection": (modular.STRICT_BFO_IMPORT_IRI,),
             "cco_extension": (modular.STRICT_BFO_IMPORT_IRI,),
         }[product_key]
         prefixes = {
             "alignment_core": modular.PREFIXES,
             "strict_bfo_mapping": modular.STRICT_BFO_PREFIXES,
-            "bfo_projection": modular.BFO_PROJECTION_PREFIXES,
             "cco_extension": modular.CCO_EXTENSION_PREFIXES,
         }[product_key]
         return imports, modular.GENERATED_NOTICE, prefixes, None
@@ -454,9 +440,6 @@ class OntologyMetadataEmissionTests(unittest.TestCase):
             "alignment_core": (),
             "strict_bfo_mapping": (
                 POLICY_PRODUCTS["alignment_core"]["stable_ontology_iri"],
-            ),
-            "bfo_projection": (
-                POLICY_PRODUCTS["strict_bfo_mapping"]["stable_ontology_iri"],
             ),
             "cco_extension": (
                 POLICY_PRODUCTS["strict_bfo_mapping"]["stable_ontology_iri"],
@@ -624,7 +607,7 @@ class OntologyMetadataEmissionTests(unittest.TestCase):
                 )
                 self.assertIn(expected_code, {issue.code for issue in issues})
 
-    def test_canonical_serialized_header_is_shared_by_all_five_products(self) -> None:
+    def test_canonical_serialized_header_is_shared_by_all_four_products(self) -> None:
         for product in self.loaded.products:
             with self.subTest(product=product.key):
                 imports, notice, prefixes, import_terms = self.serialization_parameters(product.key)
@@ -737,37 +720,51 @@ class OntologyMetadataEmissionTests(unittest.TestCase):
             {issue.code for issue in self.serialized_issues(reordered_imports, "integrated")},
         )
 
-        projection = (REPO_ROOT / POLICY_PRODUCTS["bfo_projection"]["path"]).read_bytes()
-        missing_prefix = projection.replace(
+        cco_extension = (REPO_ROOT / POLICY_PRODUCTS["cco_extension"]["path"]).read_bytes()
+        missing_prefix = cco_extension.replace(
             b"@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n",
             b"",
             1,
         )
-        noncanonical_language = projection.replace(b'"@en', b'"@EN', 1)
+        noncanonical_language = cco_extension.replace(b'"@en', b'"@EN', 1)
         label_line = next(
-            line for line in projection.splitlines() if line.startswith(b"    rdfs:label ")
+            line for line in cco_extension.splitlines() if line.startswith(b"    rdfs:label ")
         )
         literal_value = label_line.split(b"rdfs:label ", 1)[1].removesuffix(b" ;")
-        noncanonical_literal = projection.replace(
+        noncanonical_literal = cco_extension.replace(
             literal_value,
             b'"""' + literal_value[1:-4] + b'"""@en',
             1,
         )
-        for name, candidate in (
-            ("missing canonical prefix", missing_prefix),
-            ("noncanonical language tag", noncanonical_language),
-            ("noncanonical literal", noncanonical_literal),
+        for name, candidate, expected_code in (
+            ("missing canonical prefix", missing_prefix, "TURTLE_PARSE"),
+            (
+                "noncanonical language tag",
+                noncanonical_language,
+                "NONCANONICAL_ONTOLOGY_HEADER",
+            ),
+            (
+                "noncanonical literal",
+                noncanonical_literal,
+                "NONCANONICAL_ONTOLOGY_HEADER",
+            ),
         ):
             with self.subTest(case=name):
                 self.assertIn(
-                    "NONCANONICAL_ONTOLOGY_HEADER",
-                    {issue.code for issue in self.serialized_issues(candidate, "bfo_projection")},
+                    expected_code,
+                    {
+                        issue.code
+                        for issue in self.serialized_issues(
+                            candidate,
+                            "cco_extension",
+                        )
+                    },
                 )
 
-        malformed = projection.replace(label_line, b'    rdfs:label "unterminated@en ;', 1)
+        malformed = cco_extension.replace(label_line, b'    rdfs:label "unterminated@en ;', 1)
         self.assertIn(
             "TURTLE_PARSE",
-            {issue.code for issue in self.serialized_issues(malformed, "bfo_projection")},
+            {issue.code for issue in self.serialized_issues(malformed, "cco_extension")},
         )
 
 
@@ -1061,7 +1058,7 @@ class DevelopmentModeTests(MetadataTestCase):
 
         rendered = first.getvalue()
         expected_lines = (
-            "Schema version: 3",
+            "Schema version: 4",
             f"Project title: {PUBLICATION_VALUES['project_title']}",
             f"Default language: {PUBLICATION_VALUES['default_language']}",
             f"Release IRI base: {PUBLICATION_VALUES['release_iri_base']}",
@@ -1074,7 +1071,7 @@ class DevelopmentModeTests(MetadataTestCase):
             ),
             f"Development status IRI: {PUBLICATION_VALUES['development_status_iri']}",
             f"Formal release status IRI: {PUBLICATION_VALUES['formal_release_status_iri']}",
-            "Canonical product count: 5",
+            "Canonical product count: 4",
             "Canonical product order: " + ", ".join(metadata.PRODUCT_ORDER),
         )
         for line in expected_lines:
@@ -1226,7 +1223,7 @@ class VersionIriTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.loaded = metadata.load_metadata(ACTUAL_CONFIG)
 
-    def test_all_five_approved_version_iri_forms(self) -> None:
+    def test_all_four_approved_version_iri_forms(self) -> None:
         context = parse_formal_release_context(
             "2026-07-14",
             "2026-07-14",
@@ -1237,7 +1234,6 @@ class VersionIriTests(unittest.TestCase):
             "integrated": f"{RELEASE_BASE}/2026-07-14/integrated",
             "alignment_core": f"{RELEASE_BASE}/2026-07-14/current-ssn-sosa/alignment-core",
             "strict_bfo_mapping": f"{RELEASE_BASE}/2026-07-14/current-ssn-sosa/bfo-mapping",
-            "bfo_projection": f"{RELEASE_BASE}/2026-07-14/current-ssn-sosa/bfo-projection",
             "cco_extension": f"{RELEASE_BASE}/2026-07-14/current-ssn-sosa/cco-extension",
         }
         observed = {
@@ -1377,7 +1373,7 @@ class ErrorAndCliTests(MetadataTestCase):
         code = checker.main([], stdout=output)
         self.assertEqual(code, 0)
         self.assertIn(f"Metadata SHA-256: {metadata.sha256_file(ACTUAL_CONFIG)}", output.getvalue())
-        self.assertIn("Canonical product count: 5", output.getvalue())
+        self.assertIn("Canonical product count: 4", output.getvalue())
 
     def test_release_cli_success(self) -> None:
         output = io.StringIO()
@@ -1397,7 +1393,7 @@ class ErrorAndCliTests(MetadataTestCase):
             stdout=output,
         )
         self.assertEqual(code, 0)
-        self.assertEqual(output.getvalue().count("Version IRI ["), 5)
+        self.assertEqual(output.getvalue().count("Version IRI ["), 4)
         self.assertIn("Git tag existence/binding", output.getvalue())
 
     def test_tag_mismatch_cli_failure(self) -> None:

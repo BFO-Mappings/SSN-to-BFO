@@ -131,7 +131,7 @@ deployment.
 
 ## Publication metadata
 
-`config/publication-metadata.toml` is the sole editable publication-metadata source for the current five-product formal-release track.
+`config/publication-metadata.toml` is the sole editable publication-metadata source for the current four-product formal-release track. The uniform product-role policy separately governs five conceptual roles; `bfo_projection` is currently non-materialized.
 
 Development-mode validation:
 
@@ -164,7 +164,7 @@ Formal renderers:
 
 `tools/check_release.py validate --package-dir PATH` validates an existing package read-only.
 
-A formal package contains exactly 13 regular files:
+A formal package contains exactly 12 regular files:
 
 ```text
 <release-id>/
@@ -175,7 +175,6 @@ A formal package contains exactly 13 regular files:
   catalog-v001.xml
   current-ssn-sosa/ssn-sosa-alignment-core.ttl
   current-ssn-sosa/ssn-sosa-bfo-mapping.ttl
-  current-ssn-sosa/ssn-sosa-bfo-projection.ttl
   current-ssn-sosa/ssn-sosa-cco-extension.ttl
   evidence/coms-product-dispositions.json
   manifest.json
