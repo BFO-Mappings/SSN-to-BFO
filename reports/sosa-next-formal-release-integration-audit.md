@@ -2,14 +2,17 @@
 
 ## Purpose
 
-This audit identifies the changes required to move the three maintained
-SOSA-next development products into a deterministic formal release. The
-source-version identity prerequisite that was unresolved when this audit was
-created is now approved and recorded by
-`config/sosa-source-version.toml` and
-`reports/sosa-source-version-identity-decision.md`. This audit still does not
-modify release metadata, manifest, package, archive, rehearsal, or publication
-code.
+This audit identifies the remaining changes required to move the implemented
+three-product SOSA-2023 development architecture into a deterministic formal
+release.
+
+The immutable source identity and product-role inventory are resolved. The
+development product-role migration is also complete: Integrated, BFO Mapping,
+and CCO Extension are materialized, while Alignment Core and BFO Projection
+remain governed omitted roles.
+
+This audit does not itself modify release metadata, manifest, package, archive,
+rehearsal, or publication code.
 
 ## Current development baseline
 
@@ -17,25 +20,30 @@ The maintained development products are:
 
 | Product | Path | Direct axioms | Logical triples | Total triples |
 | --- | --- | ---: | ---: | ---: |
-| Alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | 0 | 0 | 8 |
-| BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 157 | 166 |
-| CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | 24 | 116 | 125 |
+| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 45 | 273 | 286 |
+| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 157 | 165 |
+| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 24 | 116 | 125 |
 
-The three products contain 45 canonical authoritative axioms. Their logical
-union contains 273 triples and is isomorphic to the integrated active mapping
-graph used for validation.
+Integrated directly contains all 45 canonical authoritative axioms. The BFO
+Mapping plus CCO Extension modular union also contains 273 logical triples and
+is isomorphic to Integrated.
 
 The catalog-resolved editor closure is:
 
 ```text
 editor
-  -> CCO extension
-    -> BFO mapping
-      -> alignment core
+  -> Integrated
 ```
 
-That local project stack contains 303 distinct triples. Maintained project
-products import no external source or target ontology.
+That local project stack contains 290 distinct triples.
+
+Integrated imports the governed SOSA root, SOSA Systems, SOSA Sampling,
+source-declaration overlay, and merged CCO/BFO dependency. The BFO Mapping has
+no import. The CCO Extension imports only the BFO Mapping.
+
+Alignment Core is non-materialized because there is no active target-neutral
+axiom. BFO Projection is non-materialized because no weakened consequence is
+approved.
 
 ## Resolved source-identity prerequisite
 
@@ -68,25 +76,22 @@ formal-release integration.
 
 ## Current formal-release authority
 
-The existing formal-release system is intentionally specific to the current
-SSN/SOSA track:
+The existing formal-release system remains specific to the current SSN/SOSA
+track, but it now follows the uniform product-role policy:
 
-- publication metadata defines exactly five products in canonical order:
-  integrated, alignment core, strict BFO mapping, BFO projection, and CCO
-  extension;
-- the manifest schema and Python model require those five product records;
-- package construction requires the current-track product paths;
-- the package layout contains 13 regular files;
-- the package catalog maps five same-release version IRIs;
-- the archive authority requires 17 members, including the
-  `current-ssn-sosa/` directory;
-- release rehearsal expects the current package directories and rebuilds the
-  same package and archive twice;
-- release notes require current-track headings, counts, import graph, and BFO
-  projection notice.
+- publication metadata defines four materialized current-track products:
+  Integrated, Alignment Core, Strict BFO Mapping, and CCO Extension;
+- BFO Projection remains governed but non-materialized;
+- manifest schema version 2 and the Python release model require those four
+  product records;
+- package construction uses the four current-track product paths;
+- the package contains 12 regular files;
+- the package catalog maps four same-release version IRIs;
+- the archive authority requires 16 members;
+- release rehearsal rebuilds and compares the same package and archive twice.
 
-The SOSA-next development products must not be inserted into those fixed
-inventories piecemeal.
+The SOSA-2023 products must continue to be integrated as a separate formal
+package rather than inserted into the current-track inventories piecemeal.
 
 ## Resolved package boundary and superseded fixed inventory
 
@@ -107,9 +112,9 @@ The current SOSA-2023 formal target is:
 Alignment Core is omitted while it has no direct target-neutral axiom.
 BFO Projection is omitted while no weakened consequence is approved.
 
-The current five-product formal machinery is now pending migration to the same
-role policy before the next official current-track release; its import-only BFO
-Projection is not part of the target formal inventory.
+The current-track formal machinery already follows the same role policy. Its
+four materialized products exclude BFO Projection, which remains governed but
+non-materialized.
 
 ### Publication metadata
 

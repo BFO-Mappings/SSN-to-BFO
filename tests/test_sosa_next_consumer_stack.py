@@ -17,9 +17,9 @@ CATALOG_NAMESPACE = (
     "urn:oasis:names:tc:entity:xmlns:xml:catalog"
 )
 
-ALIGNMENT_CORE = (
+INTEGRATED = (
     "http://www.sks.ai/SSN2BFO/"
-    "development/sosa-next/alignment-core"
+    "development/sosa-next/integrated"
 )
 BFO_MAPPING = (
     "http://www.sks.ai/SSN2BFO/"
@@ -35,16 +35,16 @@ EDITOR = (
 )
 
 PROJECT_IRIS = (
-    ALIGNMENT_CORE,
+    INTEGRATED,
     BFO_MAPPING,
     CCO_EXTENSION,
     EDITOR,
 )
 
 EXPECTED_PROJECT_PATHS = {
-    ALIGNMENT_CORE: (
+    INTEGRATED: (
         REPO_ROOT
-        / "releases/sosa-next/sosa-alignment-core.ttl"
+        / "releases/sosa-next/sosa-integrated.ttl"
     ),
     BFO_MAPPING: (
         REPO_ROOT
@@ -60,25 +60,40 @@ EXPECTED_PROJECT_PATHS = {
     ),
 }
 
+EXPECTED_INTEGRATED_IMPORTS = frozenset(
+    {
+        "http://www.w3.org/ns/sosa/",
+        "http://www.w3.org/ns/sosa/systems/",
+        "http://www.w3.org/ns/sosa/sampling/",
+        (
+            "http://www.sks.ai/SSN2BFO/"
+            "development/sosa-next/"
+            "source-declaration-overlay"
+        ),
+        (
+            "https://www.commoncoreontologies.org/"
+            "CommonCoreOntologiesMerged"
+        ),
+    }
+)
+
 EXPECTED_IMPORTS = {
-    ALIGNMENT_CORE: frozenset(),
-    BFO_MAPPING: frozenset({ALIGNMENT_CORE}),
+    INTEGRATED: EXPECTED_INTEGRATED_IMPORTS,
+    BFO_MAPPING: frozenset(),
     CCO_EXTENSION: frozenset({BFO_MAPPING}),
-    EDITOR: frozenset({CCO_EXTENSION}),
+    EDITOR: frozenset({INTEGRATED}),
 }
 
 EXPECTED_TRIPLE_COUNTS = {
-    ALIGNMENT_CORE: 8,
-    BFO_MAPPING: 166,
+    INTEGRATED: 286,
+    BFO_MAPPING: 165,
     CCO_EXTENSION: 125,
     EDITOR: 4,
 }
 
 EXPECTED_EDITOR_CLOSURE = (
     EDITOR,
-    CCO_EXTENSION,
-    BFO_MAPPING,
-    ALIGNMENT_CORE,
+    INTEGRATED,
 )
 
 EXPECTED_DEPENDENCY_IRIS = frozenset(
@@ -273,6 +288,7 @@ class SosaNextConsumerStackTests(unittest.TestCase):
                         URIRef(ontology_iri),
                         OWL.imports,
                     )
+                    if str(imported) in PROJECT_IRIS
                 )
             )
 
@@ -287,7 +303,7 @@ class SosaNextConsumerStackTests(unittest.TestCase):
             for triple in graphs[ontology_iri]:
                 combined.add(triple)
 
-        self.assertEqual(len(combined), 303)
+        self.assertEqual(len(combined), 290)
 
     def test_external_dependencies_remain_separate_inputs(
         self,
@@ -301,25 +317,45 @@ class SosaNextConsumerStackTests(unittest.TestCase):
 
         graphs = load_project_graphs(catalog)
 
-        observed_project_imports = frozenset(
+        observed_integrated_imports = frozenset(
             str(imported)
-            for graph in graphs.values()
-            for _, _, imported in graph.triples(
-                (
-                    None,
-                    OWL.imports,
-                    None,
-                )
+            for imported in graphs[
+                INTEGRATED
+            ].objects(
+                URIRef(INTEGRATED),
+                OWL.imports,
+            )
+        )
+
+        self.assertEqual(
+            observed_integrated_imports,
+            EXPECTED_INTEGRATED_IMPORTS,
+        )
+        self.assertTrue(
+            observed_integrated_imports
+            <= EXPECTED_DEPENDENCY_IRIS
+        )
+
+        observed_modular_imports = frozenset(
+            str(imported)
+            for ontology_iri in (
+                BFO_MAPPING,
+                CCO_EXTENSION,
+            )
+            for imported in graphs[
+                ontology_iri
+            ].objects(
+                URIRef(ontology_iri),
+                OWL.imports,
             )
         )
 
         self.assertTrue(
-            observed_project_imports
+            observed_modular_imports
             <= frozenset(PROJECT_IRIS)
         )
-
         self.assertTrue(
-            observed_project_imports
+            observed_modular_imports
             .isdisjoint(EXPECTED_DEPENDENCY_IRIS)
         )
 

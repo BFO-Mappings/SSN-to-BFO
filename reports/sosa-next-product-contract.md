@@ -56,29 +56,34 @@ direct ontology axiom.
 
 ## Maintained development products
 
-The initial SOSA-next product set consists of exactly three maintained ontology
-products.
+The implemented SOSA-next development set consists of exactly three
+materialized ontology products and follows the uniform product-role policy.
 
-### Alignment core
+### Integrated
 
 Development path:
 
-`releases/sosa-next/sosa-alignment-core.ttl`
+`releases/sosa-next/sosa-integrated.ttl`
 
 Development ontology IRI:
 
-`http://www.sks.ai/SSN2BFO/development/sosa-next/alignment-core`
+`http://www.sks.ai/SSN2BFO/development/sosa-next/integrated`
 
 Contract:
 
-- contains each active target-neutral axiom whose referenced logical
-  vocabulary is confined to the governed SOSA source namespaces;
-- contains no BFO-bearing or CCO-bearing mapping axiom;
-- contains no `owl:imports` assertion;
-- has exactly one `owl:Ontology` declaration;
+- directly contains all 45 active canonical authoritative mapping axioms;
+- contains 273 logical triples and 286 total triples;
+- imports exactly the governed SOSA root, SOSA Systems, SOSA Sampling,
+  source-declaration overlay, and merged CCO/BFO dependency IRIs;
+- provides the distinct complete consumer entry point for the track;
+- contains exactly one `owl:Ontology` declaration;
 - contains no `owl:versionIRI` in the maintained development artifact.
 
-### BFO mapping
+Required SHA-256:
+
+`7ce45659e4d84ac089ae90c3279fa46d169d763ec487c34cb3c533eb0e6c197c`
+
+### BFO Mapping
 
 Development path:
 
@@ -90,17 +95,19 @@ Development ontology IRI:
 
 Contract:
 
-- contains each active BFO-bearing axiom that contains no CCO term;
-- imports only the SOSA-next alignment core;
+- directly contains the 21 BFO-bearing authoritative axioms that contain no
+  CCO term;
+- contains 157 logical triples and 165 total triples;
+- imports no project or external ontology;
 - does not transform, weaken, or strengthen a governed authoritative axiom;
-- has exactly one `owl:Ontology` declaration;
+- contains exactly one `owl:Ontology` declaration;
 - contains no `owl:versionIRI` in the maintained development artifact.
 
-Required project import:
+Required SHA-256:
 
-`http://www.sks.ai/SSN2BFO/development/sosa-next/alignment-core`
+`67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2`
 
-### CCO extension
+### CCO Extension
 
 Development path:
 
@@ -112,98 +119,94 @@ Development ontology IRI:
 
 Contract:
 
-- contains each active axiom that references a CCO term, including mixed
-  BFO/CCO axioms;
-- imports only the SOSA-next BFO mapping;
-- does not duplicate a direct alignment-core or BFO-mapping axiom;
+- directly contains the 24 CCO-bearing and mixed BFO/CCO authoritative axioms;
+- contains 116 logical triples and 125 total triples;
+- imports only the SOSA-next BFO Mapping;
 - does not transform, weaken, or strengthen a governed authoritative axiom;
-- has exactly one `owl:Ontology` declaration;
+- contains exactly one `owl:Ontology` declaration;
 - contains no `owl:versionIRI` in the maintained development artifact.
 
-Required project import:
+Required SHA-256:
 
-`http://www.sks.ai/SSN2BFO/development/sosa-next/bfo-mapping`
+`e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69`
 
 ## Implemented development import graph
 
-The maintained development import graph is:
+The complete-consumer graph is:
 
-- `sosa-cco-extension.ttl` imports `sosa-bfo-mapping.ttl`;
-- `sosa-bfo-mapping.ttl` imports `sosa-alignment-core.ttl`;
-- `sosa-alignment-core.ttl` imports no project ontology.
+```text
+editor shell
+  -> Integrated
+       -> governed SOSA/BFO/CCO dependencies
+```
 
-The editor shell imports only the CCO extension and therefore obtains the
-BFO mapping and alignment core transitively. The maintained products do not
-import external SOSA, BFO, or CCO ontologies; validation and consumers load
-the governed source and target dependencies separately.
+The modular project graph is:
 
-## Direct-axiom partition
+```text
+CCO Extension
+  -> BFO Mapping
+```
 
-Every one of the 45 active authoritative axioms must occur directly in exactly
-one maintained product:
+The BFO Mapping has no import. The CCO Extension imports only the BFO Mapping.
+The Integrated Mapping imports no project product.
 
-1. target-neutral source axiom → alignment core;
-2. BFO-bearing axiom without a CCO term → BFO mapping;
-3. CCO-bearing or mixed BFO/CCO axiom → CCO extension.
+The catalog resolves all three maintained products, the editor shell, the
+governed pinned SOSA source modules and declaration overlay, and the merged
+CCO/BFO dependency.
 
-The three direct-axiom sets must be pairwise disjoint, and their union must
-equal the complete active authoritative axiom set.
+The editor-plus-Integrated project closure contains exactly 290 distinct
+triples.
 
-A row's product classification must be derived from its canonical
-authoritative axiom rather than from lexical matching against the workbook
-cell text.
+## Axiom accounting
 
-## Excluded initial products
+The Integrated product directly contains all 45 active authoritative axioms.
 
-### Integrated ontology
+The modular partition is pairwise disjoint:
 
-The temporary `active-mappings.ttl` emitted by
-`tools/check_sosa_next_mapping.py` remains a validation artifact. It is not a
-maintained or published ontology product.
+1. 21 BFO-bearing axioms without CCO terms -> BFO Mapping;
+2. 24 CCO-bearing or mixed BFO/CCO axioms -> CCO Extension.
 
-A consumer that needs the complete set of project mapping axioms can load the
-CCO extension, which transitively imports the BFO mapping and alignment core.
-These project products do not import the external SOSA, BFO, or CCO ontologies;
-a consumer that needs a complete reasoning closure must load the governed source
-and target dependencies separately.
+There are currently zero target-neutral authoritative axioms, so Alignment Core
+has no direct logical content and is not materialized.
 
-### BFO projection
+The BFO Mapping plus CCO Extension logical union contains 273 triples and is
+isomorphic to the Integrated Mapping's 273 logical triples.
 
-The initial SOSA-next product set contains no BFO-projection product. No
-weakened or transformed BFO consequence has yet been approved as a separate
+A row's product classification is derived from its canonical authoritative
+axiom rather than lexical matching against workbook cell text.
+
+## Omitted product roles
+
+### Alignment Core
+
+Alignment Core remains a governed role but is not materialized because the
+current governed mapping has zero direct target-neutral axioms. The former
+zero-axiom development shell has been retired.
+
+### BFO Projection
+
+BFO Projection remains a governed role but is not materialized because no
+weakened or transformed BFO consequence has been approved as a separate
 governed product axiom.
 
-A BFO projection may be introduced only through a separate policy change that:
-
-- identifies the approved consequence for each source RowID;
-- records its relationship to the authoritative axiom;
-- proves that the projected axiom is entailed;
-- maintains a separate product and import boundary;
-- adds exact reconstruction and reasoning tests.
+A BFO Projection may be introduced only through a separate policy change that
+identifies approved consequences, records their relationships to authoritative
+axioms, proves entailment, and adds exact reconstruction and reasoning tests.
 
 ## Formal target under the uniform product-role policy
 
-The maintained development artifacts above remain unchanged until a dedicated
-generation migration is performed.
-
-For formal publication, the controlling repository-wide policy is
-`reports/product-role-inclusion-policy.md`.
-
-The current SOSA-2023 formal target inventory is:
+The implemented development materialization now matches the SOSA-2023 formal
+target inventory:
 
 1. Integrated;
 2. BFO Mapping;
 3. CCO Extension.
 
-The maintained zero-direct-axiom Alignment Core is not justified as a formal
-product merely to preserve an import boundary and is scheduled for retirement
-during the implementation migration.
+Alignment Core and BFO Projection remain governed omitted roles.
 
-BFO Projection remains absent because no weakened consequence is approved.
-
-Integrated is newly justified as the distinct complete consumer entry point;
-its exact dependency imports and deterministic rendering must be implemented
-and validated in the later product-generation milestone.
+Formal publication remains a separate later phase. It must replace the
+`sosa-next` development alias in formal track-specific paths and ontology IRIs
+with the approved immutable source-version identity.
 
 ## Generation architecture
 
@@ -239,70 +242,83 @@ and product-type IRIs. Formal-release-only metadata, including
 
 ## Validation closures
 
-Reasoning validation may assemble temporary closures, but closure triples must
-not be serialized into maintained products.
+Reasoning validation assembles temporary fixed closures; closure triples are
+not serialized into maintained products.
 
-Required reasoning profiles:
+Required reasoning profiles are:
 
-- alignment core with the unmodified pinned SOSA-next source closure;
-- BFO mapping with the alignment core, pinned SOSA-next source closure, and
-  governed BFO validation closure;
-- CCO extension with the BFO mapping, alignment core, pinned SOSA-next source
-  closure, and governed merged CCO/BFO validation closure.
+- Integrated plus the governed pinned SOSA and merged CCO/BFO dependencies:
+  15,127 closure triples;
+- BFO Mapping plus the governed pinned SOSA and merged CCO/BFO dependencies:
+  15,011 closure triples;
+- CCO Extension plus BFO Mapping and the governed pinned SOSA and merged
+  CCO/BFO dependencies: 15,135 closure triples.
 
-Every profile must complete successfully with zero named unsatisfiable classes.
+Each profile must complete successfully with return code 0, produce reasoned
+output, and contain zero named unsatisfiable classes.
 
-## Required implementation surface
+## Implemented migration surface
 
-The product implementation PR is expected to add or update only the minimum
-surface needed for:
+The product-role migration updates only the development surfaces required to
+materialize the approved roles:
 
 - `tools/generate_sosa_next_products.py`;
-- a focused SOSA-next product checker;
-- focused SOSA-next modular-product tests;
-- Makefile generation and check targets;
-- the three generated maintained products;
-- removal of the two obsolete direct-mapping scaffold files;
-- documentation of the development import graph.
+- the focused SOSA-next product checker and tests;
+- `releases/sosa-next/sosa-integrated.ttl`;
+- `releases/sosa-next/sosa-bfo-mapping.ttl`;
+- `releases/sosa-next/sosa-cco-extension.ttl`;
+- retirement of `releases/sosa-next/sosa-alignment-core.ttl`;
+- `src/sosa-next/catalog-v001.xml`;
+- `src/sosa-next/sosa-mappings-edit.ttl`;
+- the catalog consumer-stack tests;
+- development and governance documentation.
 
 Release package, release manifest, release archive, and formal publication
-integration are explicitly deferred.
+integration remain explicitly deferred.
 
 ## Acceptance gates
 
-The first maintained-product implementation must satisfy all of the following:
+The maintained product-role implementation must satisfy all of the following:
 
 1. the governed workbook remains 119 rows with 119 unique RowIDs;
 2. all 45 active mappings produce 45 canonical authoritative axioms;
-3. all 45 axioms are assigned directly to exactly one product;
-4. all 26 deferred rows produce no direct axiom;
-5. all 48 explicitly unmapped rows produce no direct axiom;
-6. all three products have canonical ontology metadata and import boundaries;
-7. two independent builds produce byte-identical products;
-8. all product hashes and exact triple counts are asserted by focused tests;
-9. all three reasoning profiles have zero named unsatisfiable classes;
-10. the approved source-version authority validates and the pinned SOSA-next
-    source files remain byte-identical;
-11. the current-SOSA maintained products remain byte-identical;
-12. the current-SOSA generator and release tests remain unchanged in behavior;
-13. temporary COMS resolver configuration is restored after success and
+3. all 26 deferred rows produce no direct axiom;
+4. all 48 explicitly unmapped rows produce no direct axiom;
+5. Integrated directly contains all 45 authoritative axioms;
+6. BFO Mapping directly contains exactly 21 BFO-bearing axioms;
+7. CCO Extension directly contains exactly 24 CCO-bearing or mixed axioms;
+8. the BFO+CCO modular logical union contains 273 triples and is isomorphic
+   to Integrated's 273 logical triples;
+9. two independent builds produce byte-identical maintained products;
+10. the exact product hashes and triple counts are asserted by focused tests;
+11. the three reasoning closures are exactly 15,127, 15,011, and 15,135
+    triples and have zero named unsatisfiable classes;
+12. `releases/sosa-next/sosa-alignment-core.ttl` is absent;
+13. the editor imports Integrated and its local project closure contains
+    exactly 290 distinct triples;
+14. the BFO Mapping has no import and the CCO Extension imports only BFO
+    Mapping;
+15. the approved source-version authority validates and all pinned SOSA source
+    bytes remain unchanged;
+16. the four retained current SSN/SOSA products remain byte-identical;
+17. temporary COMS resolver configuration is restored after success and
     failure;
-14. no tracked file is changed in checker-only mode;
-15. the full repository unit-test suite passes.
+18. checker-only mode changes no tracked file;
+19. the full repository validation suite passes.
 
-The current-SOSA byte-preservation gate below records the pre-migration
-current-track boundary that this SOSA-next implementation was originally
-required to preserve. In particular, the BFO-Projection row is historical:
-the later current-track product-role migration intentionally retired that
-import-only artifact while preserving the four retained current products.
+The preserved current SSN/SOSA hashes are:
 
 | Product | Required SHA-256 |
 |---|---|
 | `SSN2BFO.ttl` | `c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11` |
 | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | `17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770` |
 | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | `676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af` |
-| `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | `b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0` |
 | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | `2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5` |
+
+Earlier versions of this contract also recorded the former current-track
+BFO-Projection hash. That row is historical evidence only: the current-track
+product-role migration intentionally retired that import-only artifact while
+preserving the four retained current products.
 
 ## Formal-release transition
 

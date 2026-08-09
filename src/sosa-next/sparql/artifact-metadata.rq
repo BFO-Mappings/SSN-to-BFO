@@ -3,7 +3,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?ontology ?violation WHERE {
   VALUES ?ontology {
-    <http://www.sks.ai/SSN2BFO/development/sosa-next/alignment-core>
+    <http://www.sks.ai/SSN2BFO/development/sosa-next/integrated>
     <http://www.sks.ai/SSN2BFO/development/sosa-next/bfo-mapping>
     <http://www.sks.ai/SSN2BFO/development/sosa-next/cco-extension>
     <http://www.sks.ai/SSN2BFO/development/sosa-next/edit>

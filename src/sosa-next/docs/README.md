@@ -16,28 +16,38 @@ IRIs. It must not be used as the track identity in a future formal release.
 
 | Product | Path | Ontology IRI |
 | --- | --- | --- |
-| Alignment core | `releases/sosa-next/sosa-alignment-core.ttl` | `http://www.sks.ai/SSN2BFO/development/sosa-next/alignment-core` |
-| BFO mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | `http://www.sks.ai/SSN2BFO/development/sosa-next/bfo-mapping` |
-| CCO extension | `releases/sosa-next/sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/development/sosa-next/cco-extension` |
+| Integrated | `releases/sosa-next/sosa-integrated.ttl` | `http://www.sks.ai/SSN2BFO/development/sosa-next/integrated` |
+| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | `http://www.sks.ai/SSN2BFO/development/sosa-next/bfo-mapping` |
+| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/development/sosa-next/cco-extension` |
 
-The project import chain is:
+The modular project graph is:
 
 ```text
-CCO extension
-  owl:imports -> BFO mapping
-    owl:imports -> alignment core
+CCO Extension
+  owl:imports -> BFO Mapping
 ```
 
-The alignment core currently asserts no target-neutral mapping axiom but
-provides the stable import boundary required by the product contract.
+The BFO Mapping imports no project or external ontology.
 
-The initial product set has no integrated ontology and no BFO-projection
-product.
+The Integrated Mapping directly asserts all 45 governed mapping axioms and
+imports the governed SOSA root, SOSA Systems, SOSA Sampling,
+source-declaration overlay, and merged CCO/BFO dependency. It is the distinct
+complete consumer entry point required by the product-role policy.
+
+Alignment Core remains a governed role but is not materialized because no
+target-neutral authoritative axiom is active. BFO Projection remains governed
+but non-materialized because no weakened consequence is approved.
 
 ## Consumer loading
 
-For the complete project mapping stack, load the CCO extension. Its project
-imports provide the BFO mapping and alignment core transitively.
+For the complete governed mapping and its governed external dependencies, load:
+
+```text
+releases/sosa-next/sosa-integrated.ttl
+```
+
+For modular use, load the BFO Mapping directly, or load the CCO Extension to
+obtain the CCO-bearing layer over the BFO Mapping.
 
 For development use in Protégé or another catalog-aware ontology editor, load:
 
@@ -51,13 +61,11 @@ with:
 src/sosa-next/catalog-v001.xml
 ```
 
-The editor imports only the CCO extension.
+The editor imports only the Integrated Mapping.
 
-The catalog also resolves the pinned forthcoming-SOSA source files and the
-governed merged CCO/BFO validation dependency. Those external source and target
-ontologies are not imported by the maintained project products. A consumer
-that requires their declarations or full semantics must load the applicable
-dependencies separately.
+The catalog independently resolves Integrated, BFO Mapping, CCO Extension, the
+pinned SOSA source files, the governed source-declaration overlay, and the
+merged CCO/BFO dependency.
 
 ## Validation
 
@@ -78,36 +86,38 @@ edition version IRI, and the overlay's binding to the approved upstream commit.
 
 The product checker enforces:
 
-- 119 governed rows and 119 unique RowIDs;
-- 45 active canonical authoritative axioms;
-- 26 deferred rows with no direct axiom;
-- 48 explicitly unmapped rows with no direct axiom;
-- exact product partitioning;
-- deterministic byte-identical independent builds;
-- canonical metadata and project import boundaries;
-- exact product hashes and triple counts;
-- a 273-triple modular logical union;
-- zero named unsatisfiable classes in all reasoning profiles;
-- current-track byte preservation.
+- 119 governed rows and 45 canonical authoritative axioms;
+- exact deterministic bytes for Integrated, BFO Mapping, and CCO Extension;
+- 273 logical triples in Integrated;
+- an isomorphic 273-triple BFO+CCO modular union;
+- exact reasoning closures of 15,127, 15,011, and 15,135 triples;
+- zero named unsatisfiable classes;
+- absence of the retired Alignment Core artifact;
+- preservation of current SSN/SOSA and pinned SOSA source bytes.
 
 The consumer-stack checker enforces:
 
 - 14 unique local catalog mappings;
 - parseable catalog targets;
-- the exact editor-to-product import closure;
-- 303 distinct triples in the local editor project stack;
-- no external dependency import from a maintained project product.
+- `editor -> Integrated` as the complete project closure;
+- exactly 290 distinct triples in that editor project stack;
+- exact Integrated external imports;
+- import-free BFO Mapping;
+- `CCO Extension -> BFO Mapping`;
+- independent catalog resolution of all three materialized products.
 
 ## Formal-release status
 
-These maintained development products have not yet been migrated to the
-uniform product-role policy. The formal SOSA-2023 target inventory is
-Integrated, BFO Mapping, and CCO Extension. The current zero-direct-axiom
-Alignment Core is temporary and is scheduled for retirement during the
-generation migration; BFO Projection remains omitted until a weakened
-consequence is approved. The source-version package remains separate, and
-formal paths and ontology IRIs must use the approved immutable source identity
-rather than the `sosa-next` development alias.
+The development product-role migration is complete and the materialized
+development inventory now matches the formal SOSA-2023 target: Integrated,
+BFO Mapping, and CCO Extension.
+
+Alignment Core and BFO Projection remain governed omitted roles.
+
+Formal publication is still a separate phase. The source-version package
+remains separate, and formal paths and ontology IRIs must use
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` rather than the
+`sosa-next` development alias.
 
 See:
 

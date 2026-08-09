@@ -65,24 +65,28 @@ BFO Projection is omitted while it has no approved weakened BFO consequence.
 
 ## Current-track consequence
 
-The earlier requirement that the current five-product formal package remain
-unchanged is also superseded.
+The current SSN/SOSA release machinery has completed its migration to the
+uniform product-role policy. It materializes Integrated, Alignment Core, BFO
+Mapping, and CCO Extension, while omitting BFO Projection.
 
-Before the next official current-track release, its formal inventory must be
-migrated to the uniform product-role policy. The current import-only BFO
-Projection is therefore not approved for that future formal package unless a
-direct weakened projection consequence is approved before release.
+The SOSA-2023 maintained development architecture now follows the same
+role-based inclusion criterion: Integrated, BFO Mapping, and CCO Extension are
+materialized, while Alignment Core and BFO Projection remain governed omitted
+roles.
 
-This governance change does not itself alter current product bytes or formal
-release machinery.
+## Remaining implementation milestones
 
-## Next implementation milestones
+The first two role-policy migrations are complete:
 
-Implementation should proceed separately:
+1. current SSN/SOSA product-role migration — complete;
+2. SOSA-2023 maintained product-role migration — complete.
 
-1. migrate maintained/current formal machinery to the role policy;
-2. migrate the SOSA-2023 maintained product set;
-3. define source-version publication metadata and formal rendering;
-4. implement its separate manifest, package, catalog, archive, and rehearsal.
+Remaining formal-publication work should proceed separately:
 
-No ontology bytes are changed by this decision record.
+3. define SOSA-2023 source-version publication metadata and formal rendering;
+4. implement its separate manifest, package, catalog, archive, and rehearsal;
+5. validate and approve an actual formal source-version release before
+   publication.
+
+No current-track release machinery should be repurposed piecemeal for the
+source-version package.

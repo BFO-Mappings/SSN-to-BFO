@@ -141,23 +141,32 @@ class SosaNextProductTests(unittest.TestCase):
                 273,
             )
 
+            self.assertEqual(
+                tuple(products.PRODUCT_ORDER),
+                (
+                    "integrated",
+                    "strict_bfo_mapping",
+                    "cco_extension",
+                ),
+            )
+
             expected = {
-                "alignment_core": {
-                    "axiom_count": 0,
-                    "logical_triple_count": 0,
-                    "total_triple_count": 8,
+                "integrated": {
+                    "axiom_count": 45,
+                    "logical_triple_count": 273,
+                    "total_triple_count": 286,
                     "sha256": (
-                        "413018bbca9abc276102ddc97a3cfbf2"
-                        "803d170ef8c98f778869c2c89ae2425a"
+                        "7ce45659e4d84ac089ae90c3279fa46d"
+                        "169d763ec487c34cb3c533eb0e6c197c"
                     ),
                 },
                 "strict_bfo_mapping": {
                     "axiom_count": 21,
                     "logical_triple_count": 157,
-                    "total_triple_count": 166,
+                    "total_triple_count": 165,
                     "sha256": (
-                        "b4e5c485ecb176472384ed97dbaa83d3"
-                        "84c340340fa896d04ea54d9d2fc34e93"
+                        "67bb58ea543e654ace41c0d1a393b2a3"
+                        "f92426c693f5100f0aa3ba35f3b005d2"
                     ),
                 },
                 "cco_extension": {
@@ -169,6 +178,12 @@ class SosaNextProductTests(unittest.TestCase):
                         "1ef40bbd6e0fa9368a240e83c5d6bb69"
                     ),
                 },
+            }
+
+            expected_closures = {
+                "integrated": 15127,
+                "strict_bfo_mapping": 15011,
+                "cco_extension": 15135,
             }
 
             for product_key, values in (
@@ -212,6 +227,22 @@ class SosaNextProductTests(unittest.TestCase):
                     ],
                     [],
                 )
+                self.assertEqual(
+                    reasoning[
+                        "closure_triple_count"
+                    ],
+                    expected_closures[product_key],
+                )
+
+            self.assertFalse(
+                any(
+                    path.exists()
+                    for path in (
+                        products
+                        .RETIRED_MAINTAINED_PRODUCTS
+                    )
+                )
+            )
 
             stored = json.loads(
                 (

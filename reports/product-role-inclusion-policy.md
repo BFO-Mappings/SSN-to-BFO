@@ -88,25 +88,25 @@ consequences satisfy this policy.
 
 For
 `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`,
-the formal target inventory is:
+the materialized development and formal target inventory is:
 
 1. Integrated;
 2. BFO Mapping;
 3. CCO Extension.
 
-Alignment Core is omitted because the current governed mapping contains no
-direct target-neutral alignment axiom.
+Alignment Core is omitted because the governed mapping contains no direct
+target-neutral alignment axiom.
 
 BFO Projection is omitted because no weakened BFO consequence is approved.
 
-Integrated is included because it is intended to provide the distinct complete
-consumer entry point for the source-version track, including governed source
-and target dependency loading. The exact implementation and formal rendering
-of that entry point remains a later milestone.
+Integrated is materialized because it provides the distinct complete consumer
+entry point for the source-version track, including governed source and target
+dependency loading. It directly asserts all 45 authoritative mapping axioms.
 
-The currently maintained three-product development set is not changed by this
-policy-only milestone. Its empty Alignment Core remains temporarily until the
-subsequent generation migration.
+The development generation migration is complete. The former zero-axiom
+Alignment Core has been retired, the BFO Mapping no longer imports it, the
+editor/catalog stack uses Integrated as its complete entry point, and the
+three materialized products now match the uniform product-role policy.
 
 ## Relationship to prior decisions
 
@@ -137,12 +137,14 @@ The current SSN/SOSA migration is now complete:
   coverage without serialization, validation, or reasoning machinery;
 - governed mapping axioms and dispositions are preserved.
 
-The SOSA-2023 source-version migration remains a separate subsequent
-implementation milestone. It must:
+The SOSA-2023 source-version product-role migration is also complete:
 
-- add a SOSA-2023 Integrated product with a distinct complete-consumer role;
-- retire the zero-direct-axiom SOSA-2023 Alignment Core and remove the
-  BFO-mapping import edge to it;
-- update the SOSA-2023 editor/catalog consumer stack accordingly;
-- preserve all governed mapping axioms and mapping dispositions; and
-- prove byte changes are exactly those required by the product-role migration.
+- the Integrated development product provides the distinct complete-consumer
+  role and directly asserts all 45 authoritative axioms;
+- the zero-direct-axiom Alignment Core is retired;
+- the BFO Mapping has no project import;
+- the CCO Extension imports only the BFO Mapping;
+- the editor imports Integrated and the catalog resolves all three materialized
+  products;
+- all governed mapping axioms and mapping dispositions are preserved; and
+- the current SSN/SOSA products and pinned SOSA source bytes remain unchanged.
