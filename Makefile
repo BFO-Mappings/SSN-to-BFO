@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-source-version check-product-role-policy check-sosa-release-scope
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-source-version check-product-role-policy check-sosa-release-scope
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -154,10 +154,6 @@ check-strict-bfo-mapping:
 
 check-cco-extension:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_cco_extension.py'
-	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
-
-check-bfo-projection:
-	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_bfo_projection.py'
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 watch-coms:

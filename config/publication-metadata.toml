@@ -1,4 +1,4 @@
-schema_version = 3
+schema_version = 4
 
 [publication]
 project_title = "SSN-to-BFO"
@@ -34,14 +34,6 @@ release_iri_suffix = "current-ssn-sosa/bfo-mapping"
 label = "SSN/SOSA Strict BFO Mapping"
 description = "Directly asserts governed BFO-bearing axioms without weakening and imports the SSN/SOSA alignment core."
 product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/strict-bfo-mapping"
-
-[products.bfo_projection]
-path = "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl"
-stable_ontology_iri = "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
-release_iri_suffix = "current-ssn-sosa/bfo-projection"
-label = "SSN/SOSA BFO Projection"
-description = "Imports the strict BFO mapping and is the designated product for approved weaker but sound BFO consequences; no direct projection axiom is currently approved."
-product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/bfo-projection"
 
 [products.cco_extension]
 path = "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl"

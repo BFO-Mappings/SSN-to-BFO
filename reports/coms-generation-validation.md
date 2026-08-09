@@ -9,22 +9,20 @@ Freshness is determined from content hashes, not file timestamps.
 | Item | Value |
 |---|---|
 | workbook SHA-256 | `e32c6b5691bf4aa00b4ec564731e0364edc2567658bb21c46f83c1e3f0d9a4f6` |
-| generator SHA-256 | `3fda2ca2f882bfc258ca2c88f03a17e4ffaadd3403694d9e9795002000df9340` |
+| generator SHA-256 | `c7f734dc133ba253e31c745e8871d93c5c6dc229ae096b44a11b046c54f5b0c6` |
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
-| product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
-| modular-products module SHA-256 | `42db8279852476e37b5fd9a9e2c55cd6084bdfaedf828ca97a6023e67063c396` |
-| publication metadata SHA-256 | `189e4a6b2dbbb1dcb77a8a9c8984458d4ef74a6838dc72a090f47a1cbe61e645` |
-| generation timestamp (UTC) | `2026-07-30T05:25:02+00:00` |
+| product-disposition module SHA-256 | `b54b483176520f639c0e79a823a031757190eacedb2a2012932d5cba86d25eaf` |
+| modular-products module SHA-256 | `8874e996c243dde4dcedaf3701629048b5430168318f8710e4b537649a9cb0fb` |
+| publication metadata SHA-256 | `bb818ab88d2dbcfd8a11eddcfc846c81609c4e9a9c6819def44f950da423e8f9` |
+| generation timestamp (UTC) | `2026-08-09T01:58:23+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
 | generated ontology SHA-256 | `c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11` |
 | maintained product-disposition path | `reports/coms-product-dispositions.json` |
-| product-disposition JSON SHA-256 | `b23b1128985f062245f2234509b969a665a14128cf9dc7682e7943c7a347a639` |
+| product-disposition JSON SHA-256 | `b2ca3313cc26c5c5484f50ca7a43843df65d716f5269639258273ae42c9f415a` |
 | maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |
 | alignment-core Turtle SHA-256 | `17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770` |
 | maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |
 | strict-BFO Turtle SHA-256 | `676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af` |
-| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |
-| BFO-projection Turtle SHA-256 | `b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0` |
 | maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |
 | CCO-extension Turtle SHA-256 | `2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5` |
 
@@ -346,42 +344,6 @@ This is the maintained authoritative development artifact at the approved produc
 - The 55 CCO-bearing or mixed axioms remain deferred; no transformation or projection is implemented.
 - Formal-release metadata and identity remain deferred.
 
-## BFO Projection
-
-This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.
-
-- Path: `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl`
-- Stable ontology IRI: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection`
-- Direct governed projection axioms: 0
-- Direct logical mapping triples: 0
-- Ontology declaration triples: 1
-- Import triples: 1
-- Descriptive metadata annotations: 7
-- Total RDF triples: 9
-- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`
-- Target-neutral provided transitively: 29
-- BFO-bearing provided through import: 19
-- CCO-bearing deferred without transformation rule: 25
-- Mixed BFO/CCO deferred without transformation rule: 30
-- Imported strict-BFO governed axioms: 19
-- Transitively imported alignment-core governed axioms: 29
-- Project-module closure governed axioms: 48
-- Project graph triples retaining imports: 204
-- Import-stripped local project graph triples: 202
-- Strict/alignment-core governed overlap: 0
-- CCO-extension governed axioms in projection closure: 0
-- Direct graph and integrated-root/project-module reconciliation: PASS
-- Deterministic serialization: PASS
-- Reused strict-BFO closure triple count: 14988
-- Reused strict-BFO HermiT return code: 0
-- Reused strict-BFO reasoned output produced: yes
-- Reused strict-BFO named unsatisfiable classes: 0
-- Reasoning result: PASS (reused from the same-transaction strict-BFO pinned merged CCO/BFO validation closure after exact project-closure equivalence validation)
-- Projection-specific HermiT invocation: none
-- Zero direct projection axioms is intentional and complete for the current governed policy.
-- No transformation rule, weakened consequence, or projected axiom is approved.
-- Future direct projected axioms require governed transformation rules and proof obligations.
-- Formal-release metadata and identity remain deferred.
 
 ## CCO Extension
 
@@ -596,4 +558,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 14.64
+- Runtime seconds: 14.36

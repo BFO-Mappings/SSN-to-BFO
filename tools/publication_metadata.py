@@ -24,12 +24,11 @@ from release_context import (
 )
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 PRODUCT_ORDER = (
     "integrated",
     "alignment_core",
     "strict_bfo_mapping",
-    "bfo_projection",
     "cco_extension",
 )
 TOP_LEVEL_FIELDS = ("schema_version", "publication", "products")
@@ -230,7 +229,7 @@ def release_project_imports(
         return ()
     if product_key == "strict_bfo_mapping":
         return (release_version_iri(metadata, "alignment_core", context),)
-    if product_key in {"bfo_projection", "cco_extension"}:
+    if product_key == "cco_extension":
         return (release_version_iri(metadata, "strict_bfo_mapping", context),)
     raise PublicationMetadataError(
         [_issue("UNKNOWN_PRODUCT", f"products.{product_key}", "product is not governed")]
@@ -853,9 +852,9 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
 
     issues: list[ValidationIssue] = []
     if type(metadata.schema_version) is not int:
-        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 3"))
+        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 4"))
     elif metadata.schema_version != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 3"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 4"))
 
     publication = metadata.publication
     for attribute in PUBLICATION_FIELDS:
@@ -871,7 +870,7 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
             _issue(
                 "UNSUPPORTED_LANGUAGE",
                 "publication.default_language",
-                "schema version 3 requires the exact language code 'en'",
+                "schema version 4 requires the exact language code 'en'",
             )
         )
     if (
@@ -1032,7 +1031,7 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
 
 
 def load_metadata(path: str | Path) -> PublicationMetadata:
-    """Load UTF-8 TOML and return validated schema-3 metadata."""
+    """Load UTF-8 TOML and return validated schema-4 metadata."""
 
     source = Path(path)
     try:
@@ -1052,9 +1051,9 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
     schema_version = top.get("schema_version")
     if type(schema_version) is not int:
         if "schema_version" in top:
-            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 3"))
+            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 4"))
     elif schema_version != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 3"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 4"))
 
     publication_table = (
         _table(top["publication"], "publication", PUBLICATION_FIELDS, issues)
@@ -1123,7 +1122,7 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
 
 
 def validate_release_identifier(value: str) -> str:
-    """Compatibility wrapper for the schema-3 date-only release grammar."""
+    """Compatibility wrapper for the schema-4 date-only release grammar."""
 
     try:
         return validate_context_release_identifier(value)

@@ -46,7 +46,7 @@ class SosaReleaseScopeTests(unittest.TestCase):
         )
         self.assertEqual(
             value.current_track_formal_release,
-            "pending_product_role_policy_migration",
+            "product_role_policy_migration_complete",
         )
 
     def test_old_three_product_inventory_is_rejected(self) -> None:

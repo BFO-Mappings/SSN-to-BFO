@@ -40,7 +40,6 @@ FORMAL_HASHES = {
     "SSN2BFO.ttl": "1e933f8bcf80a3479dc5eba88ccc0f3dfefd3b83c248ddfffd8222d2b5a57954",
     "current-ssn-sosa/ssn-sosa-alignment-core.ttl": "c40ec6372eeb43d37fb7fc4775535574ac4a4ee1e218fbe6e840e35b0ba20716",
     "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl": "68a91fc766a7ce8ace367d63d70b22f30adfdbb88a41cf9a622d2db956a69be9",
-    "current-ssn-sosa/ssn-sosa-bfo-projection.ttl": "9c995fa0b6d8e3acfabbd495515fe36ffec58c4f353249ee9f3ee195c74b9673",
     "current-ssn-sosa/ssn-sosa-cco-extension.ttl": "b8645db9d6c8cf49f8b223ce0bd37c65bffed9aac8bf6d41f53d37b51a38d300",
 }
 NOTES_PATH = REPO_ROOT / "release-notes/SYNTHETIC-2099-01-02.md"
@@ -53,7 +52,7 @@ def synthetic_notes_text(suffix: str = "") -> str:
         "Product selection guidance": "Consumers must use the governed product descriptions and policy rather than this synthetic fixture as release guidance.",
         "Governed axiom and closure summary": "The package builder records governed counts from the repository inputs deterministically.",
         "Import graph": "The formal package catalog records only the governed package-relative product graph.",
-        "BFO projection notice": "The package preserves the governed import-only BFO projection policy.",
+        "BFO projection notice": "BFO Projection is omitted because no weakened BFO consequence is currently approved.",
         "Validation summary": "The fixture is accepted by the real deterministic package builder and checker.",
         "Known limitations": "This fixture does not announce or authorize a real publication.",
         "Deferred functionality": "Actual release selection, publication, and deployment remain outside this fixture.",
@@ -176,7 +175,6 @@ class ReleasePackageTests(unittest.TestCase):
                 ("integrated", 1, 4, 7, 3, 1102, 1117, 103, 105),
                 ("alignment_core", 1, 0, 7, 3, 53, 64, 29, 29),
                 ("strict_bfo_mapping", 1, 1, 7, 3, 125, 137, 19, 48),
-                ("bfo_projection", 1, 1, 7, 3, 0, 12, 0, 48),
                 ("cco_extension", 1, 1, 7, 3, 924, 936, 55, 105),
             ],
         )
@@ -194,18 +192,42 @@ class ReleasePackageTests(unittest.TestCase):
         self.assertNotIn("SHA256SUMS", included)
         self.assertNotIn("manifest_sha256", (self.package / "manifest.json").read_text())
 
-    def test_formal_products_parse_and_projection_is_import_only(self) -> None:
+    def test_formal_products_parse_and_projection_is_not_packaged(self) -> None:
         for product in self.manifest.products:
-            graph = Graph().parse(self.package / product.path, format="turtle")
-            self.assertEqual(len(graph), product.total_triple_count)
-        projection = Graph().parse(
-            self.package / build.PRODUCT_PACKAGE_PATHS["bfo_projection"], format="turtle"
-        )
+            graph = Graph().parse(
+                self.package / product.path,
+                format="turtle",
+            )
+            self.assertEqual(
+                len(graph),
+                product.total_triple_count,
+            )
+
         self.assertEqual(
-            set(projection.objects(None, OWL.imports)),
-            {URIRef(self.manifest.products[3].imports[0])},
+            tuple(
+                product.key
+                for product in self.manifest.products
+            ),
+            release_manifest.PRODUCT_ORDER,
         )
-        self.assertEqual(self.manifest.products[3].direct_governed_axiom_count, 0)
+        self.assertNotIn(
+            "bfo_projection",
+            build.PRODUCT_PACKAGE_PATHS,
+        )
+        self.assertNotIn(
+            "bfo_projection",
+            tuple(
+                product.key
+                for product in self.manifest.products
+            ),
+        )
+        self.assertFalse(
+            (
+                self.package
+                / "current-ssn-sosa"
+                / "ssn-sosa-bfo-projection.ttl"
+            ).exists()
+        )
 
     def test_manifest_records_exact_inputs_dependencies_environment_and_reasoning(self) -> None:
         expected_inputs = build.collect_inputs(
@@ -304,7 +326,7 @@ class ReleasePackageTests(unittest.TestCase):
                     Path(directory),
                     toolchain,
                 )
-        self.assertEqual(len(observed), 5)
+        self.assertEqual(len(observed), 4)
         self.assertTrue(all(value.status == "PASS" for value in results))
 
     def test_release_notes_validation_boundaries(self) -> None:
@@ -519,7 +541,7 @@ class ReleasePackageTests(unittest.TestCase):
         self.assertFalse(any(path.name.startswith(build.TEMP_PREFIX) for path in parent.iterdir()))
         self.assertFalse(build.development_snapshot_issues(REPO_ROOT, before))
 
-    def test_validator_independently_reconstructs_and_compares_all_thirteen_files(self) -> None:
+    def test_validator_independently_reconstructs_and_compares_all_twelve_files(self) -> None:
         parent, package = self.copy_package()
         original_copy = build._copy_package_inputs
 

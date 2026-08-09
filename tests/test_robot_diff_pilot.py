@@ -18,7 +18,6 @@ MAINTAINED_PRODUCTS = (
     REPO_ROOT / "SSN2BFO.ttl",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 )
 

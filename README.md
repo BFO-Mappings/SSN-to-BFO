@@ -20,14 +20,10 @@ For reproducible use, prefer the tagged release assets rather than files from an
 | Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | You want the governed BFO mapping without CCO-bearing axioms |
 | CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | You want the modular BFO and CCO mapping stack |
 | Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | You want the target-neutral SSN/SOSA alignment layer |
-| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | You need the designated projection layer; it currently adds no direct mapping axioms |
 
-The current BFO Projection remains a maintained development artifact pending
-the product-role migration, but because it currently contributes no direct
-weakened projection axiom it is not targeted for the next official formal
-release.
+BFO Projection remains a governed product role, but it is not currently materialized as an ontology. No weakened-but-sound BFO consequence is approved for that role, and the strict BFO mapping already provides the import-only closure that the former projection artifact exposed.
 
-See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships among these products.
+See [Product Architecture](docs/PRODUCT-ARCHITECTURE.md) for the relationships among the materialized products and the non-materialized product roles.
 
 ## SOSA-next maintained development products
 

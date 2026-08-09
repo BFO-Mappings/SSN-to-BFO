@@ -69,11 +69,6 @@ CURRENT_SOSA_PRODUCTS = {
         / "releases/current-ssn-sosa/"
         "ssn-sosa-bfo-mapping.ttl"
     ),
-    "bfo_projection": (
-        REPO_ROOT
-        / "releases/current-ssn-sosa/"
-        "ssn-sosa-bfo-projection.ttl"
-    ),
     "cco_extension": (
         REPO_ROOT
         / "releases/current-ssn-sosa/"
@@ -90,9 +85,6 @@ EXPECTED_CURRENT_SOSA_SHA256 = {
     ),
     "strict_bfo_mapping": (
         "676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af"
-    ),
-    "bfo_projection": (
-        "b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0"
     ),
     "cco_extension": (
         "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5"

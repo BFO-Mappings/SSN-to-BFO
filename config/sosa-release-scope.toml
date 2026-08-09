@@ -7,4 +7,4 @@ formal_track_component = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda"
 product_role_policy = "config/product-role-policy.toml"
 formal_product_order = ["integrated", "strict_bfo_mapping", "cco_extension"]
 omitted_product_roles = ["alignment_core", "bfo_projection"]
-current_track_formal_release = "pending_product_role_policy_migration"
+current_track_formal_release = "product_role_policy_migration_complete"

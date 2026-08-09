@@ -168,7 +168,7 @@ class ProductDispositionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
-        cls.product_order = tuple(product.key for product in cls.metadata.products)
+        cls.product_order = dispositions.PRODUCT_ROLE_ORDER
 
     def build(self, *rows: dispositions.DispositionRowInput) -> dispositions.DispositionDocument:
         return dispositions.build_disposition_document(rows, self.metadata, hashes())
@@ -253,6 +253,62 @@ class ProductDispositionTests(unittest.TestCase):
         self.assertEqual(
             sum(len(row.authoritative_axioms) == 1 for row in document.rows),
             103,
+        )
+
+    def test_role_order_is_independent_of_materialized_products(self) -> None:
+        reduced_metadata = replace(
+            self.metadata,
+            products=tuple(
+                product
+                for product in self.metadata.products
+                if product.key != "bfo_projection"
+            ),
+        )
+
+        materialized_order = tuple(
+            product.key
+            for product in reduced_metadata.products
+        )
+
+        self.assertNotIn(
+            "bfo_projection",
+            materialized_order,
+        )
+
+        document = dispositions.build_disposition_document(
+            [row_input()],
+            reduced_metadata,
+            hashes(),
+        )
+
+        self.assertEqual(
+            document.product_order,
+            dispositions.PRODUCT_ROLE_ORDER,
+        )
+        self.assertEqual(
+            dispositions.PRODUCT_ROLE_ORDER,
+            (
+                "integrated",
+                "alignment_core",
+                "strict_bfo_mapping",
+                "bfo_projection",
+                "cco_extension",
+            ),
+        )
+        self.assertIn(
+            "bfo_projection",
+            document.product_order,
+        )
+
+        axiom_dispositions = dict(
+            document.rows[0]
+            .authoritative_axioms[0]
+            .product_dispositions
+        )
+
+        self.assertIn(
+            "bfo_projection",
+            axiom_dispositions,
         )
 
     def test_exact_disposition_matrix(self) -> None:
@@ -682,13 +738,9 @@ class ProductDispositionTests(unittest.TestCase):
     def test_disposition_build_does_not_read_modular_ttl_mapping_authorities(self) -> None:
         products = {product.key: product for product in self.metadata.products}
         modular_paths = {
-            (REPO_ROOT / products[key].path).resolve()
-            for key in (
-                "alignment_core",
-                "strict_bfo_mapping",
-                "bfo_projection",
-                "cco_extension",
-            )
+            (REPO_ROOT / product.path).resolve()
+            for product in self.metadata.products
+            if product.key != "integrated"
         }
         original_open = Path.open
 
@@ -702,7 +754,10 @@ class ProductDispositionTests(unittest.TestCase):
 
         self.assertEqual(document.summary.governed_row_count, 1)
         self.assertEqual(document.summary.authoritative_axiom_count, 1)
-        self.assertEqual(document.product_order, tuple(products))
+        self.assertEqual(
+            document.product_order,
+            dispositions.PRODUCT_ROLE_ORDER,
+        )
 
 
 if __name__ == "__main__":
