@@ -21,6 +21,10 @@ import check_sosa_next_mapping as mapping_checker
 import generate_mapping_from_coms as coms
 import modular_products
 import publication_metadata
+from release_context import (
+    FormalReleaseContext,
+    validate_formal_release_context,
+)
 from product_dispositions import (
     axiom_input_from_canonical_row,
     classify_target_category,
@@ -30,6 +34,26 @@ from product_dispositions import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = REPO_ROOT / "mappings/SOSA-next-to-BFO-COMS.xlsx"
 METADATA_PATH = REPO_ROOT / "config/publication-metadata.toml"
+
+SOSA_2023_PUBLICATION_METADATA_PATH = (
+    REPO_ROOT
+    / "config/sosa-2023-publication-metadata.toml"
+)
+
+FORMAL_GENERATED_NOTICE = (
+    "# Generated from the governed SOSA 2023 COMS mapping and "
+    "publication metadata. Do not edit this ontology directly."
+)
+
+FORMAL_INTEGRATED_EXTERNAL_IMPORTS = (
+    "http://www.w3.org/ns/sosa/",
+    "http://www.w3.org/ns/sosa/systems/",
+    "http://www.w3.org/ns/sosa/sampling/",
+    (
+        "https://www.commoncoreontologies.org/"
+        "CommonCoreOntologiesMerged"
+    ),
+)
 
 GENERATED_NOTICE = (
     "# Generated from mappings/SOSA-next-to-BFO-COMS.xlsx. "
@@ -877,6 +901,312 @@ def serialize_product(
     }
 
     return serialized, logical, result
+
+
+
+def load_sosa_2023_publication_metadata() -> Any:
+    """Load the governed SOSA-2023 formal-publication authority."""
+
+    return publication_metadata.load_metadata(
+        SOSA_2023_PUBLICATION_METADATA_PATH,
+        product_order=PRODUCT_ORDER,
+    )
+
+
+def formal_product_imports(
+    metadata: Any,
+    product_key: str,
+    context: FormalReleaseContext,
+) -> tuple[str, ...]:
+    """Return the exact SOSA-2023 formal ontology import contract."""
+
+    validated_context = validate_formal_release_context(
+        context
+    )
+
+    if product_key == "integrated":
+        return FORMAL_INTEGRATED_EXTERNAL_IMPORTS
+
+    if product_key == "strict_bfo_mapping":
+        return ()
+
+    if product_key == "cco_extension":
+        return (
+            publication_metadata.release_version_iri(
+                metadata,
+                "strict_bfo_mapping",
+                validated_context,
+            ),
+        )
+
+    raise RuntimeError(
+        f"Unsupported SOSA-2023 formal product: {product_key}"
+    )
+
+
+def serialize_formal_product(
+    metadata: Any,
+    context: FormalReleaseContext,
+    product_key: str,
+    records: list[dict[str, Any]],
+) -> tuple[bytes, Graph, dict[str, Any]]:
+    """Render one immutable-context SOSA-2023 product in memory."""
+
+    validated_context = validate_formal_release_context(
+        context
+    )
+
+    spec = PRODUCT_SPECS[product_key]
+
+    observed_categories = {
+        record["category"]
+        for record in records
+    }
+
+    if not observed_categories <= spec["categories"]:
+        raise RuntimeError(
+            f"{product_key}: prohibited formal categories "
+            f"{sorted(observed_categories - spec['categories'])}"
+        )
+
+    if len(records) != spec["axiom_count"]:
+        raise RuntimeError(
+            f"{product_key}: expected "
+            f"{spec['axiom_count']} formal axioms; "
+            f"found {len(records)}"
+        )
+
+    body = body_bytes(records)
+    body_hash = sha256_bytes(body)
+
+    if body_hash != spec["body_sha256"]:
+        raise RuntimeError(
+            f"{product_key}: formal axiom-body hash mismatch\n"
+            f"Expected: {spec['body_sha256']}\n"
+            f"Actual:   {body_hash}"
+        )
+
+    imports = formal_product_imports(
+        metadata,
+        product_key,
+        validated_context,
+    )
+
+    header = (
+        publication_metadata
+        .render_ontology_header_bytes(
+            metadata,
+            product_key,
+            imports,
+            generated_notice=FORMAL_GENERATED_NOTICE,
+            prefixes=spec["prefixes"],
+            context=validated_context,
+        )
+    )
+
+    serialized = (
+        header
+        if not body
+        else header + b"\n" + body
+    )
+
+    issues = (
+        publication_metadata
+        .validate_serialized_ontology_header(
+            serialized,
+            metadata,
+            product_key,
+            imports,
+            generated_notice=FORMAL_GENERATED_NOTICE,
+            prefixes=spec["prefixes"],
+            mode="release",
+            context=validated_context,
+        )
+    )
+
+    if issues:
+        rendered = "\n".join(
+            (
+                f"{issue.code}: {issue.field}: "
+                f"{issue.message}"
+            )
+            for issue in issues
+        )
+
+        raise RuntimeError(
+            f"{product_key}: formal metadata validation "
+            f"failed:\n{rendered}"
+        )
+
+    graph = Graph()
+    graph.parse(
+        data=serialized.decode("utf-8"),
+        format="turtle",
+    )
+
+    logical = (
+        publication_metadata
+        .strip_emitted_ontology_header(
+            graph,
+            metadata,
+            product_key,
+            imports,
+            validated_context,
+        )
+    )
+
+    if len(logical) != spec["logical_triple_count"]:
+        raise RuntimeError(
+            f"{product_key}: expected "
+            f"{spec['logical_triple_count']} formal logical "
+            f"triples; found {len(logical)}"
+        )
+
+    formal_metadata_count = len(
+        publication_metadata.ontology_metadata_triples(
+            metadata,
+            product_key,
+            validated_context,
+        )
+    )
+
+    if formal_metadata_count != 10:
+        raise RuntimeError(
+            f"{product_key}: expected 10 formal ontology "
+            f"metadata annotations; found {formal_metadata_count}"
+        )
+
+    expected_total = (
+        spec["logical_triple_count"]
+        + 1
+        + len(imports)
+        + formal_metadata_count
+    )
+
+    if len(graph) != expected_total:
+        raise RuntimeError(
+            f"{product_key}: expected {expected_total} formal "
+            f"triples; found {len(graph)}"
+        )
+
+    if b"sosa-next" in serialized:
+        raise RuntimeError(
+            f"{product_key}: formal serialization retains "
+            "the temporary sosa-next development identity"
+        )
+
+    product_hash = sha256_bytes(serialized)
+
+    result = {
+        "product_key": product_key,
+        "stable_ontology_iri": (
+            next(
+                product.stable_ontology_iri
+                for product in metadata.products
+                if product.key == product_key
+            )
+        ),
+        "version_iri": (
+            publication_metadata.release_version_iri(
+                metadata,
+                product_key,
+                validated_context,
+            )
+        ),
+        "imports": imports,
+        "axiom_count": len(records),
+        "logical_triple_count": len(logical),
+        "total_triple_count": len(graph),
+        "body_sha256": body_hash,
+        "sha256": product_hash,
+        "byte_size": len(serialized),
+        "serialized_bytes": serialized,
+        "logical_graph": logical,
+    }
+
+    return serialized, logical, result
+
+
+def render_formal_product_set(
+    processed: list[coms.ProcessedRow],
+    context: FormalReleaseContext,
+    *,
+    reverse_input: bool = False,
+) -> dict[str, Any]:
+    """Render all three SOSA-2023 formal products without writing them."""
+
+    validated_context = validate_formal_release_context(
+        context
+    )
+
+    metadata = load_sosa_2023_publication_metadata()
+
+    records, categories = build_product_records(
+        processed
+    )
+
+    products: dict[str, dict[str, Any]] = {}
+    logical_graphs: dict[str, Graph] = {}
+
+    for product_key in PRODUCT_ORDER:
+        if product_key == "integrated":
+            supplied = [
+                *records["strict_bfo_mapping"],
+                *records["cco_extension"],
+            ]
+        else:
+            supplied = list(records[product_key])
+
+        if reverse_input:
+            supplied = list(reversed(supplied))
+
+        _, logical, result = serialize_formal_product(
+            metadata,
+            validated_context,
+            product_key,
+            supplied,
+        )
+
+        products[product_key] = result
+        logical_graphs[product_key] = logical
+
+    modular_union = Graph()
+
+    for product_key in MODULAR_PRODUCT_ORDER:
+        for triple in logical_graphs[product_key]:
+            modular_union.add(triple)
+
+    modular_sum = sum(
+        len(logical_graphs[product_key])
+        for product_key in MODULAR_PRODUCT_ORDER
+    )
+
+    if modular_sum != 273 or len(modular_union) != 273:
+        raise RuntimeError(
+            "Expected 273 SOSA-2023 formal modular logical "
+            f"triples; sum={modular_sum}, "
+            f"distinct={len(modular_union)}"
+        )
+
+    if not isomorphic(
+        modular_union,
+        logical_graphs["integrated"],
+    ):
+        raise RuntimeError(
+            "The formal BFO+CCO modular union differs from "
+            "the formal Integrated logical graph."
+        )
+
+    return {
+        "context": validated_context,
+        "metadata": metadata,
+        "category_counts": categories,
+        "products": products,
+        "combined_logical_triple_count": len(
+            modular_union
+        ),
+        "logical_union_isomorphic": True,
+    }
 
 
 def build_candidate(

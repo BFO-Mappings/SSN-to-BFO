@@ -116,30 +116,51 @@ The current-track formal machinery already follows the same role policy. Its
 four materialized products exclude BFO Projection, which remains governed but
 non-materialized.
 
-### Publication metadata
+### Publication metadata — implemented
 
-The current metadata loader requires one exact five-product inventory. Formal
-integration therefore requires one of these governed designs:
+The repository now has a separate governed SOSA-2023 publication-metadata
+authority at `config/sosa-2023-publication-metadata.toml`.
 
-- a track-specific publication-metadata document for the SOSA source version;
-- or a generalized metadata schema with explicit track records and a canonical
-  product order per track.
+The common metadata loader remains backward-compatible with the current
+four-product default inventory and can accept an explicit canonical product
+order for another governed track. The SOSA-2023 authority contains exactly
+Integrated, BFO Mapping, and CCO Extension, with stable ontology IRIs and
+release-IRI suffixes rooted in the approved immutable source identity.
 
-The design must preserve strict rejection of unknown fields, duplicate paths,
-duplicate stable IRIs, unsafe paths, and noncanonical ordering.
+The metadata `path` fields identify the maintained development source products
+used by the renderer; they are not formal package-relative paths. Canonical
+package paths remain part of the separate package-construction milestone.
 
-### Formal rendering
+### Formal rendering — implemented
 
-Formal rendering must:
+`tools/generate_sosa_next_products.py` now provides a pure in-memory
+SOSA-2023 formal renderer. Under an explicit formal release context it:
 
-- preserve each approved stable ontology IRI;
-- add immutable same-release version IRIs;
-- substitute immutable-release authority status;
-- add release date and version information;
-- rewrite only project imports to same-release version IRIs;
-- preserve the development logical graph;
-- prohibit temporary development identities;
-- validate each product independently and as a project stack.
+- preserves the approved immutable stable ontology IRIs;
+- adds date-based same-release version IRIs;
+- substitutes immutable-release authority status;
+- adds release date and version information;
+- preserves each development logical graph;
+- renders deterministic bytes independent of input order;
+- prohibits `sosa-next` and `/development/` identities from formal ontology
+  bytes;
+- keeps formal BFO Mapping import-free;
+- rewrites the CCO Extension project edge to the same-release formal BFO
+  Mapping version IRI;
+- publishes Integrated with the official SOSA root, Systems, Sampling, and
+  merged CCO/BFO imports;
+- keeps the local source-declaration overlay as governed validation/source
+  evidence rather than a published ontology import.
+
+The fixed synthetic `2099-01-02` byte contract is:
+
+| Product | Logical triples | Total triples | SHA-256 |
+| --- | ---: | ---: | --- |
+| Integrated | 273 | 288 | `81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae` |
+| BFO Mapping | 157 | 168 | `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c` |
+| CCO Extension | 116 | 128 | `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b` |
+
+These capabilities do not yet construct a formal package.
 
 ### Manifest and schema
 
@@ -156,7 +177,7 @@ product inventory. Required evidence includes:
 - catalog-consumption validation;
 - toolchain identity.
 
-A schema revision may be preferable to overloading schema version 1.
+The current formal-release authority is manifest schema version 2. The SOSA-2023 package should either receive a deliberate schema revision or a separate schema authority rather than being inserted into the current-track inventory implicitly.
 
 ### Package layout
 
@@ -225,14 +246,16 @@ context and approved release notes.
 
 ## Recommended implementation sequence
 
-1. **Define track-specific publication metadata for the separate package.**
-2. **Implement formal rendering and same-release import rewriting.**
-3. **Add a source-version manifest/schema authority and exact evidence model.**
-4. **Implement separate-package construction and read-only validation.**
-5. **Implement the canonical package catalog.**
-6. **Implement the separate package's deterministic archive authority.**
-7. **Add release notes, rehearsal, and hosted-CI regressions.**
-8. **Run a synthetic source-version release context before actual publication.**
+1. **Completed:** define track-specific SOSA-2023 publication metadata.
+2. **Completed:** implement deterministic formal rendering and same-release
+   project-import rewriting.
+3. **Next:** add a source-version manifest/schema authority and exact evidence
+   model.
+4. **Then:** implement separate-package construction and read-only validation.
+5. **Then:** implement the canonical package catalog.
+6. **Then:** implement the separate package's deterministic archive authority.
+7. **Then:** add release notes, rehearsal, and hosted-CI regressions.
+8. **Finally:** run a release-context rehearsal before actual publication.
 
 Each stage should preserve current-track release bytes and behavior.
 

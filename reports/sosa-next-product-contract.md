@@ -204,9 +204,10 @@ target inventory:
 
 Alignment Core and BFO Projection remain governed omitted roles.
 
-Formal publication remains a separate later phase. It must replace the
-`sosa-next` development alias in formal track-specific paths and ontology IRIs
-with the approved immutable source-version identity.
+Formal package publication remains a later phase, but formal publication
+metadata and pure ontology rendering are now implemented. Formal stable
+ontology IRIs and version-IRI suffixes use the approved immutable source-version
+identity and contain no `sosa-next` development alias.
 
 ## Generation architecture
 
@@ -239,6 +240,27 @@ Each maintained product must use deterministic UTF-8 Turtle with:
 Development metadata must use the repository's existing publication vocabulary
 and product-type IRIs. Formal-release-only metadata, including
 `owl:versionIRI`, must not appear in maintained development artifacts.
+
+The separate formal publication authority is
+`config/sosa-2023-publication-metadata.toml`. The pure formal renderer preserves
+the development logical graphs while replacing development ontology identity
+with the approved immutable stable identity and adding formal status,
+`owl:versionIRI`, `owl:versionInfo`, and `dcterms:issued`.
+
+Formal Integrated imports the official SOSA root, Systems, Sampling, and merged
+CCO/BFO IRIs. The source-declaration overlay remains governed source and
+validation evidence but is not a published formal import. Formal BFO Mapping
+is import-free. Formal CCO Extension imports the same-release formal BFO
+Mapping version IRI.
+
+Under the synthetic `2099-01-02` release context, the exact formal hashes are:
+
+- Integrated:
+  `81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae`;
+- BFO Mapping:
+  `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c`;
+- CCO Extension:
+  `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b`.
 
 ## Validation closures
 
@@ -322,16 +344,23 @@ preserving the four retained current products.
 
 ## Formal-release transition
 
-Formal release integration is a later phase. Before release:
+Publication metadata and pure formal ontology rendering are implemented.
 
-- `sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` must replace `sosa-next` in formal track-specific package
-  paths and ontology IRIs;
-- release products must receive date-based version IRIs under
-  `http://www.sks.ai/SSN2BFO/releases/<release-id>/`;
-- the package catalog must resolve project and dependency imports offline;
-- release manifests, checksums, archives, and rehearsal must be extended
-  without changing the current-SOSA package contract;
-- no placeholder or development ontology IRI may enter the formal archive.
+Remaining formal-release integration work is:
+
+- define the SOSA-2023 manifest/schema authority and exact release evidence;
+- define canonical formal package-relative paths that use the immutable source
+  identity rather than the `sosa-next` development alias;
+- construct and validate the separate formal package;
+- generate a package catalog resolving the three same-release formal products;
+- add canonical checksums, archive construction, release notes, and isolated
+  release rehearsal;
+- preserve offline dependency governance and prevent accidental network
+  resolution;
+- keep all placeholder and development ontology IRIs out of the formal package.
+
+No formal package, archive, tag, GitHub release, or persistent-IRI deployment is
+created by the current rendering milestone.
 
 ## Non-goals
 

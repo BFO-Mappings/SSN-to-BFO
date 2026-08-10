@@ -204,10 +204,46 @@ The maintained product hashes are:
 | BFO Mapping | `67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2` |
 | CCO Extension | `e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69` |
 
-The source-version track remains a separate future formal package. Formal
-publication must replace the `sosa-next` development alias in track-specific
-formal paths and ontology IRIs with
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`.
+The source-version track remains a separate future formal package, but its
+publication-metadata and formal-rendering layers are now implemented.
+
+`config/sosa-2023-publication-metadata.toml` governs the three formal product
+identities. Formal stable ontology IRIs and date-based version-IRI suffixes use
+the immutable source identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`; no formal ontology header
+retains the `sosa-next` development alias.
+
+The pure formal renderer preserves the three development logical graphs and
+uses this formal import graph:
+
+```text
+Formal Integrated
+  -> SOSA
+  -> SOSA Systems
+  -> SOSA Sampling
+  -> merged CCO/BFO
+
+Formal CCO Extension
+  -> same-release Formal BFO Mapping
+
+Formal BFO Mapping
+  -> no ontology import
+```
+
+The development-only source-declaration overlay remains governed source and
+validation evidence but is deliberately not a published formal import.
+
+Under the fixed synthetic `2099-01-02` release context, the formal bytes are
+locked at:
+
+| Product | Logical triples | Total triples | SHA-256 |
+| --- | ---: | ---: | --- |
+| Integrated | 273 | 288 | `81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae` |
+| BFO Mapping | 157 | 168 | `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c` |
+| CCO Extension | 116 | 128 | `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b` |
+
+Package paths, manifest/schema evidence, package catalog, archive, release
+notes, rehearsal, and actual publication remain future formal-package work.
 
 Focused validation:
 
@@ -218,7 +254,8 @@ make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
+make check-sosa-2023-publication-rendering
 ```
 
-For the implemented development contract, see
+For the development and formal-rendering contract, see
 `reports/sosa-next-product-contract.md`.
