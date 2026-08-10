@@ -205,7 +205,24 @@ The maintained product hashes are:
 | CCO Extension | `e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69` |
 
 The source-version track remains a separate future formal package, but its
-publication-metadata and formal-rendering layers are now implemented.
+publication-metadata, formal-rendering, and release-manifest evidence layers are now implemented.
+
+The separate manifest authority is
+`config/sosa-2023-release-manifest-schema-v1.json`, implemented by
+`tools/sosa_2023_release_manifest.py`. It deliberately leaves the
+current-track schema-v2 authority unchanged rather than generalizing the two
+release tracks back into one inventory.
+
+Its canonical product inventory is exactly Integrated, Strict BFO Mapping, and
+CCO Extension. Formal HermiT closure evidence is fixed at 15,130, 15,014, and
+15,141 triples respectively. The manifest model also governs source-version
+and pinned-source evidence, development and formal product evidence, exact
+formal imports and prospective package paths, byte-affecting modules,
+validation-environment identity, and the prospective included-file inventory.
+
+The source-declaration overlay remains governed source/validation evidence; it
+is not a formal ontology import. The manifest authority defines what the
+future SOSA-2023 package must prove, but does not yet build that package.
 
 `config/sosa-2023-publication-metadata.toml` governs the three formal product
 identities. Formal stable ontology IRIs and date-based version-IRI suffixes use
@@ -242,8 +259,9 @@ locked at:
 | BFO Mapping | 157 | 168 | `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c` |
 | CCO Extension | 116 | 128 | `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b` |
 
-Package paths, manifest/schema evidence, package catalog, archive, release
-notes, rehearsal, and actual publication remain future formal-package work.
+Formal package paths and manifest/schema evidence are now governed. Package
+construction, package catalog, archive, release notes, rehearsal, and actual
+publication remain future formal-package work.
 
 Focused validation:
 

@@ -161,6 +161,35 @@ These checks are included in `make check` and hosted CI. The formal-rendering
 gate operates entirely in memory and does not create a manifest, package,
 archive, tag, GitHub release, or persistent-IRI deployment.
 
+### SOSA-2023 release-manifest evidence validation
+
+`make check-sosa-2023-release-manifest` validates the separate SOSA-2023
+manifest/schema evidence authority without constructing a release package.
+The authority consists of
+`config/sosa-2023-release-manifest-schema-v1.json`,
+`tools/sosa_2023_release_manifest.py`, and its focused regression contract.
+
+The canonical manifest product order is Integrated, Strict BFO Mapping, and
+CCO Extension. Product-specific formal HermiT closure evidence is fixed at
+15,130, 15,014, and 15,141 triples respectively.
+
+The evidence model records 28 governed inputs: the SOSA-2023 COMS workbook,
+publication metadata, source-version and release-scope authorities,
+product-role policy, all three maintained development products, all eight
+pinned W3C source files, the local source-declaration overlay, release inputs,
+and the byte-affecting implementation modules. It also records four formal
+external dependencies and an 11-member prospective included-file inventory.
+
+Formal product/package identities use the immutable
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda` identity. Paths containing
+the `sosa-next` development alias remain permissible only as governed
+development or pinned-source evidence; they are prohibited from formal product
+and included-file identities.
+
+This milestone governs manifest evidence only. Package construction, package
+catalog generation, checksum production, archive construction, release
+rehearsal, and publication remain later milestones.
+
 ## Publication metadata
 
 Publication metadata is track-specific.
@@ -206,7 +235,7 @@ immutable-release authority status, add `owl:versionIRI`, plain
 development logical graph.
 
 The SOSA-2023 renderer is currently a pure in-memory rendering capability. It
-does not yet define or construct the separate formal package.
+now defines the separate SOSA-2023 release-manifest evidence authority, but does not yet construct the formal package.
 
 ## Release package
 

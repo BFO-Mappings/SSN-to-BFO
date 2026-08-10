@@ -164,8 +164,7 @@ These capabilities do not yet construct a formal package.
 
 ### Manifest and schema
 
-The manifest model and JSON schema must gain a deliberate SOSA-source-version
-product inventory. Required evidence includes:
+The separate SOSA-2023 manifest model and JSON schema now define the deliberate source-version product inventory. Governed evidence includes:
 
 - workbook identity and SHA-256;
 - all pinned source-file identities and SHA-256 values;
@@ -177,7 +176,21 @@ product inventory. Required evidence includes:
 - catalog-consumption validation;
 - toolchain identity.
 
-The current formal-release authority is manifest schema version 2. The SOSA-2023 package should either receive a deliberate schema revision or a separate schema authority rather than being inserted into the current-track inventory implicitly.
+The current-track formal-release authority remains manifest schema version 2 and is unchanged. SOSA-2023 now has the separate authority `config/sosa-2023-release-manifest-schema-v1.json`, implemented by `tools/sosa_2023_release_manifest.py`. This preserves the separate-package publication model rather than inserting SOSA-2023 into the current-track manifest inventory.
+
+Implemented manifest evidence now fixes:
+
+- product order: Integrated, Strict BFO Mapping, CCO Extension;
+- formal fixed-closure HermiT counts: 15,130 / 15,014 / 15,141;
+- 28 governed input-evidence records;
+- four external formal dependency records;
+- an 11-member prospective included-file inventory;
+- immutable source-version formal package paths with no `sosa-next` identity;
+- preservation of the current manifest schema-v2 and current release tooling.
+
+The authority is intentionally pre-package: it validates the canonical
+manifest/evidence contract without constructing a release directory,
+`manifest.json`, package catalog, checksum inventory, or archive.
 
 ### Package layout
 
@@ -249,7 +262,7 @@ context and approved release notes.
 1. **Completed:** define track-specific SOSA-2023 publication metadata.
 2. **Completed:** implement deterministic formal rendering and same-release
    project-import rewriting.
-3. **Next:** add a source-version manifest/schema authority and exact evidence
+3. **Completed:** add a source-version manifest/schema authority and exact evidence
    model.
 4. **Then:** implement separate-package construction and read-only validation.
 5. **Then:** implement the canonical package catalog.

@@ -433,6 +433,7 @@ def compile_check() -> StepResult:
             "tests/test_sosa_next_consumer_stack.py",
             "tests/test_sosa_2023_publication_metadata.py",
             "tests/test_sosa_2023_release_rendering.py",
+            "tests/test_sosa_2023_release_manifest.py",
             "tests/test_robot_template_generation_pilot.py",
             "tests/test_robot_property_chain_generation_pilot.py",
             "tests/test_robot_diff_pilot.py",
@@ -643,6 +644,22 @@ def run_validation_suite(args: argparse.Namespace) -> int:
                     "tests",
                     "-p",
                     "test_sosa_2023_release_rendering.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 release-manifest focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_2023_release_manifest.py",
                 ],
             )
         )

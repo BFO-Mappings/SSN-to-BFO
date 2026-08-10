@@ -346,9 +346,15 @@ preserving the four retained current products.
 
 Publication metadata and pure formal ontology rendering are implemented.
 
+The SOSA-2023 release-manifest/schema evidence authority is now implemented as
+a separate schema-v1 contract. It governs the exact three-product inventory,
+immutable formal identities and prospective package paths, formal import
+graph, source/development evidence, validation environment, and
+product-specific HermiT closure counts of 15,130 / 15,014 / 15,141. It does
+not yet construct a formal package.
+
 Remaining formal-release integration work is:
 
-- define the SOSA-2023 manifest/schema authority and exact release evidence;
 - define canonical formal package-relative paths that use the immutable source
   identity rather than the `sosa-next` development alias;
 - construct and validate the separate formal package;
