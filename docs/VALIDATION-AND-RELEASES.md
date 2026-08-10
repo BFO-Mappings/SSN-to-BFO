@@ -12,6 +12,7 @@ It includes:
 - modular-product tests
 - SOSA-next maintained-product tests
 - SOSA-next catalog consumer-stack tests
+- SOSA-2023 publication-metadata and formal-rendering tests
 - publication-metadata validation
 - formal release-context and rendering tests
 - release-package, archive, and rehearsal tests
@@ -84,10 +85,10 @@ artifact. It maps exactly the four immutable current-track same-release version
 IRIs to package-relative products. The SOSA-next development catalog is not
 copied into that package.
 
-## SOSA-next development validation
+## SOSA-2023 validation
 
-The SOSA-2023 workbook and its three maintained development products have
-separate focused gates:
+The SOSA-2023 workbook, maintained development products, and formal-rendering
+contract have separate focused gates:
 
 ```bash
 make check-sosa-source-version
@@ -96,6 +97,7 @@ make check-sosa-release-scope
 make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
+make check-sosa-2023-publication-rendering
 ```
 
 `make check-sosa-source-version` validates the approved immutable source
@@ -123,49 +125,88 @@ transactional rollback; requires the retired Alignment Core artifact to remain
 absent; and requires zero named unsatisfiable classes in all three reasoning
 profiles.
 
-The fixed reasoning closures contain:
+The fixed development reasoning closures contain:
 
 - 15,127 triples for Integrated;
 - 15,011 triples for BFO Mapping;
 - 15,135 triples for CCO Extension.
 
-`make check-sosa-next-consumer-stack` resolves every catalog target locally,
-parses all dependency and project entries, verifies the exact Integrated and
-modular import boundaries, loads the 290-triple editor project closure, and
-confirms that BFO Mapping and CCO Extension remain independently resolvable.
+`make check-sosa-next-consumer-stack` resolves every development catalog target
+locally, parses all dependency and project entries, verifies the exact
+Integrated and modular import boundaries, loads the 290-triple editor project
+closure, and confirms that BFO Mapping and CCO Extension remain independently
+resolvable.
 
-These checks are included in `make check` and hosted CI. They validate
-maintained development artifacts only; they do not create a formal version IRI,
-manifest, package, archive, tag, GitHub release, or persistent-IRI deployment.
+`make check-sosa-2023-publication-rendering` validates the separate
+SOSA-2023 publication-metadata authority and renders all three formal products
+twice under a fixed synthetic release context. It requires exact stable and
+version IRIs, exact formal import boundaries, preservation of the development
+logical graphs, byte-identical independent renders, and the locked synthetic
+formal byte contract:
+
+- Integrated: 273 logical triples, 288 total triples,
+  SHA-256 `81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae`;
+- Strict BFO Mapping: 157 logical triples, 168 total triples,
+  SHA-256 `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c`;
+- CCO Extension: 116 logical triples, 128 total triples,
+  SHA-256 `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b`.
+
+The formal Integrated product imports the official SOSA root, Systems, and
+Sampling IRIs plus merged CCO/BFO. The local source-declaration overlay remains
+governed source/validation evidence but is not a published ontology import.
+Formal BFO Mapping is import-free. Formal CCO Extension imports the same-release
+formal BFO Mapping version IRI.
+
+These checks are included in `make check` and hosted CI. The formal-rendering
+gate operates entirely in memory and does not create a manifest, package,
+archive, tag, GitHub release, or persistent-IRI deployment.
 
 ## Publication metadata
 
-`config/publication-metadata.toml` is the sole editable publication-metadata source for the current four-product formal-release track. The uniform product-role policy separately governs five conceptual roles; `bfo_projection` is currently non-materialized.
+Publication metadata is track-specific.
 
-Development-mode validation:
+`config/publication-metadata.toml` remains the sole editable metadata authority
+for the current four-product formal-release track.
+
+`config/sosa-2023-publication-metadata.toml` is the separate metadata authority
+for the three-product SOSA-2023 formal target. Its canonical product order is
+Integrated, Strict BFO Mapping, and CCO Extension. Its stable ontology IRIs and
+release-IRI suffixes use the approved immutable source-version identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`; formal ontology headers
+contain no `sosa-next` or `/development/` identity.
+
+The common metadata loader defaults to the current-track product order for
+backward compatibility and accepts an explicit canonical product order for a
+separate governed track. Existing current-track metadata bytes and formal
+rendering remain unchanged.
+
+Current-track development-mode validation remains:
 
 ```bash
 make check-publication-metadata
 python tools/check_publication_metadata.py
 ```
 
-Formal rendering requires:
+SOSA-2023 publication metadata and rendering are validated together by:
 
-- a real `YYYY-MM-DD` release identifier
-- the matching release date
-- a `vYYYY-MM-DD` Git tag
-- a full lowercase 40-hex source commit
+```bash
+make check-sosa-2023-publication-rendering
+```
 
-Formal renderers:
+Formal rendering requires a complete release context:
 
-- preserve stable ontology IRIs
-- use immutable-release authority status
-- add `owl:versionIRI`
-- add plain `owl:versionInfo`
-- add `dcterms:issued` as `xsd:date`
-- rewrite modular imports to same-release version IRIs
+- a real `YYYY-MM-DD` release identifier;
+- the matching release date;
+- a `vYYYY-MM-DD` Git tag;
+- a full lowercase 40-hex source commit.
 
-`make check-release-rendering` validates deterministic bytes, logical-graph preservation, closure counts, and independent HermiT consistency.
+Both formal rendering systems preserve stable ontology IRIs, use the
+immutable-release authority status, add `owl:versionIRI`, plain
+`owl:versionInfo`, and `dcterms:issued` as `xsd:date`, and preserve the
+development logical graph.
+
+The SOSA-2023 renderer is currently a pure in-memory rendering capability. It
+does not yet define or construct the separate formal package.
 
 ## Release package
 

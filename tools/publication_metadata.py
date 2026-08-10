@@ -847,7 +847,11 @@ def _iri_validation(
         issues.append(_issue(code, field, problem))
 
 
-def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, ...]:
+def validate_metadata(
+    metadata: PublicationMetadata,
+    *,
+    product_order: tuple[str, ...] = PRODUCT_ORDER,
+) -> tuple[ValidationIssue, ...]:
     """Return semantic issues in deterministic policy order."""
 
     issues: list[ValidationIssue] = []
@@ -950,11 +954,11 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
         )
 
     keys = tuple(product.key for product in metadata.products)
-    if set(keys) != set(PRODUCT_ORDER) or len(keys) != len(PRODUCT_ORDER):
+    if set(keys) != set(product_order) or len(keys) != len(product_order):
         issues.append(
-            _issue("PRODUCT_SET", "products", "expected exactly: " + ", ".join(PRODUCT_ORDER))
+            _issue("PRODUCT_SET", "products", "expected exactly: " + ", ".join(product_order))
         )
-    elif keys != PRODUCT_ORDER:
+    elif keys != product_order:
         issues.append(_issue("PRODUCT_ORDER", "products", "products are not in canonical order"))
 
     for product in metadata.products:
@@ -1030,7 +1034,11 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
     return tuple(issues)
 
 
-def load_metadata(path: str | Path) -> PublicationMetadata:
+def load_metadata(
+    path: str | Path,
+    *,
+    product_order: tuple[str, ...] = PRODUCT_ORDER,
+) -> PublicationMetadata:
     """Load UTF-8 TOML and return validated schema-4 metadata."""
 
     source = Path(path)
@@ -1067,16 +1075,16 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
     }
 
     products_table = (
-        _table(top["products"], "products", PRODUCT_ORDER, issues)
+        _table(top["products"], "products", product_order, issues)
         if "products" in top
         else {}
     )
-    if set(products_table) == set(PRODUCT_ORDER) and tuple(products_table) != PRODUCT_ORDER:
+    if set(products_table) == set(product_order) and tuple(products_table) != product_order:
         issues.append(_issue("PRODUCT_ORDER", "products", "products are not in canonical order"))
 
     release_base = publication_values.get("release_iri_base")
     products: list[ProductPublicationMetadata] = []
-    for key in PRODUCT_ORDER:
+    for key in product_order:
         if key not in products_table:
             continue
         product_table = _table(
@@ -1115,7 +1123,10 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
         publication=publication,
         products=tuple(products),
     )
-    semantic_issues = validate_metadata(metadata)
+    semantic_issues = validate_metadata(
+        metadata,
+        product_order=product_order,
+    )
     if semantic_issues:
         raise PublicationMetadataError(semantic_issues)
     return metadata
