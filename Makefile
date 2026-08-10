@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-2023-publication-rendering check-sosa-source-version check-product-role-policy check-sosa-release-scope
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-2023-publication-rendering check-sosa-2023-release-manifest check-sosa-source-version check-product-role-policy check-sosa-release-scope
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -61,6 +61,7 @@ compile:
 		tests/test_sosa_next_consumer_stack.py \
 		tests/test_sosa_2023_publication_metadata.py \
 		tests/test_sosa_2023_release_rendering.py \
+		tests/test_sosa_2023_release_manifest.py \
 		tests/test_robot_diff_pilot.py \
 		tests/test_robot_extract_pilot.py \
 		tests/test_robot_query_equivalence_pilot.py \
@@ -137,6 +138,9 @@ check-sosa-next-consumer-stack:
 check-sosa-2023-publication-rendering:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_2023_publication_metadata.py'
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_2023_release_rendering.py'
+
+check-sosa-2023-release-manifest:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_2023_release_manifest.py'
 
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py
