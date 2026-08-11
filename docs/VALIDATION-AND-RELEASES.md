@@ -230,14 +230,18 @@ immutable source-version identity so that a SOSA-2023 archive cannot collide
 with a current-track archive for the same release date. The lowercase SHA-256
 sidecar remains outside the archive.
 
-For the synthetic `2099-01-02` contract, the real-package archive is exactly
-146,432 bytes with SHA-256
-`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`;
-the sidecar is exactly 140 bytes. The permanent regression builds the real
-13-file package, constructs the archive twice, requires byte-identical archive
-and sidecar outputs, validates the raw USTAR framing and member authority, and
-requires archive validation to leave the package, archive, and sidecar
-unchanged.
+For the synthetic `2099-01-02` contract, the permanent regression builds the
+real 13-file package, constructs the archive twice from those same package
+bytes, and requires byte-identical archive and sidecar outputs. It validates
+the raw USTAR framing and member authority and requires archive validation to
+leave the package, archive, and sidecar unchanged.
+
+The package manifest deliberately records the actual validation environment,
+including Python and Java runtime identity. Consequently, complete package
+bytes—and therefore the whole-archive SHA-256 and potentially its padded byte
+size—may differ across validated environments. The archive contract does not
+claim a cross-environment whole-archive hash or size. The sidecar remains
+exactly 140 bytes under the governed filename and checksum grammar.
 
 These gates are included in `make check` and hosted CI. Isolated SOSA-2023
 release rehearsal and actual publication remain later milestones.

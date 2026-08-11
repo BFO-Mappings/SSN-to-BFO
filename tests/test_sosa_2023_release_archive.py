@@ -718,18 +718,8 @@ class Sosa2023RealPackageArchiveIntegrationTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            len(first_bytes),
-            146432,
-        )
-
-        self.assertEqual(
             len(first_sidecar),
             140,
-        )
-
-        self.assertEqual(
-            first.archive_sha256,
-            "d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc",
         )
 
         self.assertEqual(

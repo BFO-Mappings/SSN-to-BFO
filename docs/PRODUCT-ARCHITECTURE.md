@@ -307,12 +307,15 @@ zero record padding, exactly two terminal zero-filled 512-byte records, and a
 lowercase external SHA-256 sidecar. Publication of an archive/sidecar pair uses
 one no-replace directory rename.
 
-The real-package regression builds the actual synthetic 13-file package twice
-into independent archive outputs and locks the resulting archive at 146,432
-bytes with SHA-256
-`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`.
-The sidecar is 140 bytes. Archive validation is read-only and preserves the
-package, archive, and sidecar bytes and mtimes.
+The real-package regression builds the actual synthetic 13-file package and
+constructs two independent archive outputs from that same package. The archive
+and sidecar pairs must be byte-identical. `manifest.json` deliberately records
+the actual validation environment, including Python and Java runtime identity,
+so a complete package—and therefore its archive digest and potentially its
+padded archive size—may differ across validated environments. No
+cross-environment whole-archive digest or byte-size lock is claimed. The
+sidecar is 140 bytes under the governed filename grammar. Archive validation is
+read-only and preserves the package, archive, and sidecar bytes and mtimes.
 
 Isolated release rehearsal, approval of an actual release context and release
 notes, and publication remain future formal-release work.

@@ -270,12 +270,16 @@ This prevents collision with the current-track
 name field while the formal ontology members themselves retain the complete
 immutable track identity.
 
-The real-package synthetic contract is fixed at 146,432 archive bytes,
-140 sidecar bytes, and archive SHA-256
-`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`.
-Two independent archive constructions from the actual 13-file package are
-byte-identical. Validation is read-only and leaves the package, archive, and
-sidecar unchanged.
+The real-package synthetic contract requires two independent archive
+constructions from the same actual 13-file package to be byte-identical, with
+a canonical 140-byte checksum sidecar. Validation is read-only and leaves the
+package, archive, and sidecar unchanged.
+
+The package manifest intentionally records the actual validation environment,
+including Python and Java runtime identity. Therefore complete package bytes,
+the resulting whole-archive SHA-256, and potentially the padded archive size
+are environment-specific evidence rather than a cross-environment fixed-byte
+contract.
 
 ### Release notes
 

@@ -379,9 +379,14 @@ The deterministic archive authority now binds the 13-file package to a
 canonical 16-member raw POSIX USTAR stream. Its external asset filename includes
 the full immutable source-version identity, while the internal archive root uses
 `SOSA-2023-<release-id>/` so all governed member names fit the canonical
-100-byte raw-USTAR name field. The fixed synthetic real-package contract is
-146,432 archive bytes, 140 sidecar bytes, and SHA-256
-`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`.
+100-byte raw-USTAR name field. The synthetic real-package contract requires
+two independent archives of the same complete package bytes to be identical
+and uses a canonical 140-byte sidecar.
+
+The package manifest records the actual validation environment, including
+Python and Java runtime identity. Whole-package bytes and therefore the
+whole-archive digest and potentially padded archive size are not fixed across
+different validated environments.
 
 Remaining formal-release integration work is:
 
