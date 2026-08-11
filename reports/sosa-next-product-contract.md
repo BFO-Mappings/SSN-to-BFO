@@ -295,8 +295,10 @@ materialize the approved roles:
 - the catalog consumer-stack tests;
 - development and governance documentation.
 
-Release package, release manifest, release archive, and formal publication
-integration remain explicitly deferred.
+The SOSA-2023 release manifest and deterministic package engine are now
+implemented separately from this maintained-development surface. Deterministic
+archive authority, isolated release rehearsal, and actual publication remain
+deferred.
 
 ## Acceptance gates
 
@@ -344,29 +346,47 @@ preserving the four retained current products.
 
 ## Formal-release transition
 
-Publication metadata and pure formal ontology rendering are implemented.
+Publication metadata, pure formal ontology rendering, the separate
+SOSA-2023 release-manifest/schema authority, deterministic package
+construction, canonical package catalog, checksums, and read-only package
+validation are implemented.
 
-The SOSA-2023 release-manifest/schema evidence authority is now implemented as
-a separate schema-v1 contract. It governs the exact three-product inventory,
-immutable formal identities and prospective package paths, formal import
-graph, source/development evidence, validation environment, and
-product-specific HermiT closure counts of 15,130 / 15,014 / 15,141. It does
-not yet construct a formal package.
+The schema-v1 manifest contract governs the exact three-product inventory,
+immutable formal identities and package paths, formal import graph,
+source/development evidence, validation environment, 31 governed inputs, four
+external dependency records, an 11-member included-file evidence inventory,
+and product-specific HermiT closure counts of 15,130 / 15,014 / 15,141.
+
+The package runtime, builder, and checker are themselves governed as
+byte-affecting non-packaged manifest inputs. They remain separate from the
+current-track release engine.
+
+The complete SOSA-2023 package contains 13 regular files and 12 checksum
+entries. Its catalog maps exactly the three same-release formal version IRIs.
+Construction requires two byte-identical complete builds. Read-only validation
+can reconstruct the package from its copied workbook and publication metadata
+and requires 13/13 byte identity without mutating the retained package.
+
+The pinned Sampling dependency declares
+`http://www.w3.org/ns/sosa/sam/`; the formal Integrated product separately
+imports `http://www.w3.org/ns/sosa/sampling/`.
+
+`release-notes/SOSA-2023-SYNTHETIC-2099-01-02.md` is a deterministic
+package-engineering fixture, not a release announcement or publication
+decision.
 
 Remaining formal-release integration work is:
 
-- define canonical formal package-relative paths that use the immutable source
-  identity rather than the `sosa-next` development alias;
-- construct and validate the separate formal package;
-- generate a package catalog resolving the three same-release formal products;
-- add canonical checksums, archive construction, release notes, and isolated
-  release rehearsal;
-- preserve offline dependency governance and prevent accidental network
-  resolution;
-- keep all placeholder and development ontology IRIs out of the formal package.
+- implement the separate package's deterministic archive authority;
+- add isolated release rehearsal and archive equivalence checks;
+- approve actual release notes and an actual release context;
+- perform the final release rehearsal before publication and persistent-IRI
+  deployment.
 
-No formal package, archive, tag, GitHub release, or persistent-IRI deployment is
-created by the current rendering milestone.
+No formal SOSA-2023 package or archive is committed to the repository, and no
+tag, GitHub release, or persistent-IRI deployment is created by this package
+construction milestone. Focused tests create only temporary synthetic package
+outputs.
 
 ## Non-goals
 

@@ -62,6 +62,9 @@ INPUT_KEY_ORDER = (
     "module_generate_sosa_next_products",
     "manifest_schema",
     "module_sosa_2023_release_manifest",
+    "module_sosa_2023_release_runtime",
+    "module_sosa_2023_build_release",
+    "module_sosa_2023_check_release",
 )
 DEPENDENCY_KEY_ORDER = (
     "sosa",
@@ -1022,6 +1025,21 @@ INPUT_POLICIES = (
         "tools/sosa_2023_release_manifest.py",
         None,
     ),
+    (
+        "module_sosa_2023_release_runtime",
+        "tools/sosa_2023_release_runtime.py",
+        None,
+    ),
+    (
+        "module_sosa_2023_build_release",
+        "tools/sosa_2023_build_release.py",
+        None,
+    ),
+    (
+        "module_sosa_2023_check_release",
+        "tools/sosa_2023_check_release.py",
+        None,
+    ),
 )
 
 DEPENDENCY_POLICIES = (
@@ -1041,7 +1059,7 @@ DEPENDENCY_POLICIES = (
         "sosa_sampling",
         "formal external SOSA Sampling ontology dependency",
         "src/sosa-next/imports/sosa-sampling.ttl",
-        "http://www.w3.org/ns/sosa/sampling/",
+        "http://www.w3.org/ns/sosa/sam/",
     ),
     (
         "merged_cco_bfo",

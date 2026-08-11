@@ -204,8 +204,10 @@ The maintained product hashes are:
 | BFO Mapping | `67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2` |
 | CCO Extension | `e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69` |
 
-The source-version track remains a separate future formal package, but its
-publication-metadata, formal-rendering, and release-manifest evidence layers are now implemented.
+The source-version track remains a separate formal package. Its
+publication-metadata, formal-rendering, release-manifest, deterministic
+package-construction, canonical package-catalog, checksum, and read-only
+package-validation layers are now implemented.
 
 The separate manifest authority is
 `config/sosa-2023-release-manifest-schema-v1.json`, implemented by
@@ -215,20 +217,23 @@ release tracks back into one inventory.
 
 Its canonical product inventory is exactly Integrated, Strict BFO Mapping, and
 CCO Extension. Formal HermiT closure evidence is fixed at 15,130, 15,014, and
-15,141 triples respectively. The manifest model also governs source-version
-and pinned-source evidence, development and formal product evidence, exact
-formal imports and prospective package paths, byte-affecting modules,
-validation-environment identity, and the prospective included-file inventory.
+15,141 triples respectively. The manifest records 31 governed inputs, including
+the SOSA-2023 package runtime, builder, and checker as byte-affecting
+non-packaged evidence. It also records four external dependency records and an
+11-member included-file evidence inventory.
 
 The source-declaration overlay remains governed source/validation evidence; it
-is not a formal ontology import. The manifest authority defines what the
-future SOSA-2023 package must prove, but does not yet build that package.
+is not a formal ontology import. The pinned Sampling dependency file declares
+`http://www.w3.org/ns/sosa/sam/`; this dependency identity is intentionally
+distinct from the formal Integrated product import
+`http://www.w3.org/ns/sosa/sampling/`.
 
 `config/sosa-2023-publication-metadata.toml` governs the three formal product
 identities. Formal stable ontology IRIs and date-based version-IRI suffixes use
 the immutable source identity
-`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`; no formal ontology header
-retains the `sosa-next` development alias.
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`; no formal ontology header,
+formal package path, or package catalog entry retains the `sosa-next`
+development alias.
 
 The pure formal renderer preserves the three development logical graphs and
 uses this formal import graph:
@@ -259,9 +264,28 @@ locked at:
 | BFO Mapping | 157 | 168 | `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c` |
 | CCO Extension | 116 | 128 | `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b` |
 
-Formal package paths and manifest/schema evidence are now governed. Package
-construction, package catalog, archive, release notes, rehearsal, and actual
-publication remain future formal-package work.
+The separate package engine is implemented by
+`tools/sosa_2023_release_runtime.py`, `tools/sosa_2023_build_release.py`, and
+`tools/sosa_2023_check_release.py`. A complete SOSA-2023 package contains 13
+regular files: 11 manifest-evidenced members plus `manifest.json` and
+`SHA256SUMS`. The checksum inventory covers exactly 12 files and excludes only
+`SHA256SUMS` itself.
+
+The canonical package catalog maps exactly the three same-release formal
+version IRIs to their package-relative products. Package construction performs
+two complete independent builds, requires byte identity across all 13 files,
+runs fixed-closure HermiT validation, and publishes the candidate only after a
+read-only package check succeeds. The checker independently reconstructs the
+formal products from the packaged workbook and packaged publication metadata;
+full reconstruction must reproduce all 13 files byte-for-byte without changing
+the retained package.
+
+`release-notes/SOSA-2023-SYNTHETIC-2099-01-02.md` is a deterministic
+package-engineering fixture only. It is not an actual release announcement,
+tag, publication decision, or deployment.
+
+Archive authority, release rehearsal, actual release-context selection, and
+publication remain future formal-release work.
 
 Focused validation:
 
@@ -273,6 +297,8 @@ make check-sosa-next
 make check-sosa-next-products
 make check-sosa-next-consumer-stack
 make check-sosa-2023-publication-rendering
+make check-sosa-2023-release-manifest
+make check-sosa-2023-package
 ```
 
 For the development and formal-rendering contract, see

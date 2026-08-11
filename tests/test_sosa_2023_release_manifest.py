@@ -503,6 +503,93 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
             pinned_keys <= set(records)
         )
 
+    def test_dependency_ontology_identities_match_pinned_files(self) -> None:
+        from rdflib import Graph, OWL, RDF, URIRef
+
+        for (
+            key,
+            _role,
+            source_path,
+            expected_ontology_iri,
+        ) in manifest.DEPENDENCY_POLICIES:
+            with self.subTest(dependency=key):
+                graph = Graph().parse(
+                    REPO_ROOT / source_path,
+                    format="turtle",
+                )
+
+                observed = tuple(
+                    sorted(
+                        str(value)
+                        for value in graph.subjects(
+                            RDF.type,
+                            OWL.Ontology,
+                        )
+                        if isinstance(value, URIRef)
+                    )
+                )
+
+                self.assertEqual(
+                    observed,
+                    (expected_ontology_iri,),
+                )
+
+
+    def test_package_engine_modules_are_governed_inputs(self) -> None:
+        records = {
+            value.key: value
+            for value in self.value.inputs
+        }
+
+        expected = (
+            (
+                "module_sosa_2023_release_runtime",
+                "tools/sosa_2023_release_runtime.py",
+            ),
+            (
+                "module_sosa_2023_build_release",
+                "tools/sosa_2023_build_release.py",
+            ),
+            (
+                "module_sosa_2023_check_release",
+                "tools/sosa_2023_check_release.py",
+            ),
+        )
+
+        self.assertEqual(
+            len(self.value.inputs),
+            31,
+        )
+
+        for key, source_path in expected:
+            with self.subTest(input=key):
+                record = records[key]
+                content = (
+                    REPO_ROOT / source_path
+                ).read_bytes()
+
+                self.assertEqual(
+                    record.source_path,
+                    source_path,
+                )
+                self.assertIsNone(
+                    record.package_path,
+                )
+                self.assertEqual(
+                    record.sha256,
+                    sha256(content),
+                )
+                self.assertEqual(
+                    record.byte_size,
+                    len(content),
+                )
+
+                self.assertNotIn(
+                    source_path,
+                    manifest.INCLUDED_FILE_PATH_ORDER,
+                )
+
+
     def test_exact_policy_mutations_are_rejected(self) -> None:
         variants = []
 
