@@ -129,7 +129,8 @@ release-IRI suffixes rooted in the approved immutable source identity.
 
 The metadata `path` fields identify the maintained development source products
 used by the renderer; they are not formal package-relative paths. Canonical
-package paths remain part of the separate package-construction milestone.
+formal package paths are now governed separately by the SOSA-2023 manifest and
+package-construction authority.
 
 ### Formal rendering — implemented
 
@@ -182,44 +183,62 @@ Implemented manifest evidence now fixes:
 
 - product order: Integrated, Strict BFO Mapping, CCO Extension;
 - formal fixed-closure HermiT counts: 15,130 / 15,014 / 15,141;
-- 28 governed input-evidence records;
+- 31 governed input-evidence records, including the package runtime, builder,
+  and checker as byte-affecting non-packaged inputs;
 - four external formal dependency records;
-- an 11-member prospective included-file inventory;
+- an 11-member included-file evidence inventory;
 - immutable source-version formal package paths with no `sosa-next` identity;
 - preservation of the current manifest schema-v2 and current release tooling.
 
-The authority is intentionally pre-package: it validates the canonical
-manifest/evidence contract without constructing a release directory,
-`manifest.json`, package catalog, checksum inventory, or archive.
+The Sampling dependency record uses the ontology identity declared by the
+pinned file, `http://www.w3.org/ns/sosa/sam/`. The formal Integrated product
+continues to import `http://www.w3.org/ns/sosa/sampling/`; dependency evidence
+and formal import identity are deliberately distinct.
 
-### Package layout
+The package-construction layer is now implemented by
+`tools/sosa_2023_release_runtime.py`, `tools/sosa_2023_build_release.py`, and
+`tools/sosa_2023_check_release.py`. It remains separate from the current-track
+package engine.
 
-A formal package needs an explicit canonical layout. At minimum it requires:
+### Package layout — implemented
+
+The canonical SOSA-2023 package contains exactly 13 regular files:
 
 - license;
-- release notes;
-- checksum inventory;
+- SOSA-2023 synthetic/approved release notes;
+- `SHA256SUMS`;
 - the three formal ontology products;
-- a package-relative project catalog;
-- canonical manifest;
-- governed SOSA-next COMS workbook;
-- governed publication metadata;
-- sufficient pinned-source evidence to identify the mapped source closure.
+- a three-entry package-relative formal catalog;
+- canonical `manifest.json`;
+- the governed SOSA-2023 COMS workbook;
+- product-role policy;
+- SOSA-2023 publication metadata;
+- release-scope policy;
+- immutable source-version evidence.
 
-The project must decide whether pinned external ontology files are recorded
-only by identity and hash, as in the current release, or redistributed when
-their licenses permit. No dependency should be copied implicitly.
+The manifest included-file inventory contains 11 members. `manifest.json` and
+`SHA256SUMS` are excluded from that inventory to avoid circular evidence.
+`SHA256SUMS` covers exactly the other 12 files and excludes itself.
 
-### Package catalog
+External dependencies are recorded by exact identity, path, hash, and byte
+size; they are not redistributed as package members.
 
-The package catalog must map exactly the formal same-release version IRIs to
-the three package-relative products. It must not contain:
+Package construction performs two independent complete builds under the same
+formal release context, runs the three fixed HermiT profiles for each build,
+and requires all 13 package files to be byte-identical before publication of a
+candidate output directory.
 
-- development IRIs;
-- the temporary `sosa-next` identity;
-- remote dependency redirects;
-- the editor shell unless that shell is explicitly approved as a release
-  artifact.
+The read-only checker validates layout, copied inputs, same-input formal
+reconstruction, manifest evidence, dependency evidence, validation environment,
+catalog bytes, checksums, development-artifact nonmutation, and local-path
+leakage. Full reconstruction must reproduce all 13 files byte-for-byte while
+leaving the retained package bytes and mtimes unchanged.
+
+### Package catalog — implemented
+
+The package catalog maps exactly the three formal same-release version IRIs to
+the three package-relative products. It contains no development IRIs,
+`sosa-next` identity, remote dependency redirects, or editor-shell entry.
 
 ### Archive
 
@@ -251,11 +270,16 @@ The release-note template must describe:
 
 ### Release rehearsal and CI
 
-Rehearsal must build and validate two isolated copies of the new formal
-package and archive from the same commit, with network access blocked, then
-compare every retained byte. Hosted CI should validate development products
-continuously but should not create a formal package without explicit release
-context and approved release notes.
+The focused hosted/local package regression now constructs only the fixed
+synthetic SOSA-2023 package in temporary storage, validates its fixed HermiT
+closures, and exercises full read-only reconstruction. It does not retain or
+publish a real release artifact.
+
+Formal release rehearsal remains future work. It must build and validate
+isolated copies of the package and future archive from the exact requested
+commit with network access blocked, then compare every retained byte. A real
+package must not be retained, tagged, uploaded, or deployed without an explicit
+approved release context and approved release notes.
 
 ## Recommended implementation sequence
 
@@ -264,11 +288,11 @@ context and approved release notes.
    project-import rewriting.
 3. **Completed:** add a source-version manifest/schema authority and exact evidence
    model.
-4. **Then:** implement separate-package construction and read-only validation.
-5. **Then:** implement the canonical package catalog.
-6. **Then:** implement the separate package's deterministic archive authority.
-7. **Then:** add release notes, rehearsal, and hosted-CI regressions.
-8. **Finally:** run a release-context rehearsal before actual publication.
+4. **Completed:** implement separate-package construction and read-only validation.
+5. **Completed:** implement the canonical package catalog and checksum inventory.
+6. **Next:** implement the separate package's deterministic archive authority.
+7. **Then:** add isolated release rehearsal and archive regressions.
+8. **Finally:** approve a real release context and release notes, rehearse, and publish.
 
 Each stage should preserve current-track release bytes and behavior.
 

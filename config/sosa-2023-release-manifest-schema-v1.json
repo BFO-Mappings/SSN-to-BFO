@@ -42,8 +42,8 @@
     },
     "inputs": {
       "type": "array",
-      "minItems": 28,
-      "maxItems": 28,
+      "minItems": 31,
+      "maxItems": 31,
       "prefixItems": [
         {
           "allOf": [
@@ -601,6 +601,66 @@
               }
             }
           ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "module_sosa_2023_release_runtime"
+                },
+                "package_path": {
+                  "const": null
+                },
+                "source_path": {
+                  "const": "tools/sosa_2023_release_runtime.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "module_sosa_2023_build_release"
+                },
+                "package_path": {
+                  "const": null
+                },
+                "source_path": {
+                  "const": "tools/sosa_2023_build_release.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "module_sosa_2023_check_release"
+                },
+                "package_path": {
+                  "const": null
+                },
+                "source_path": {
+                  "const": "tools/sosa_2023_check_release.py"
+                }
+              }
+            }
+          ]
         }
       ],
       "items": false
@@ -850,7 +910,7 @@
                   "const": "src/sosa-next/imports/sosa-sampling.ttl"
                 },
                 "ontology_iri": {
-                  "const": "http://www.w3.org/ns/sosa/sampling/"
+                  "const": "http://www.w3.org/ns/sosa/sam/"
                 }
               }
             }
