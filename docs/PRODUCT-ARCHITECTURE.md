@@ -284,8 +284,38 @@ the retained package.
 package-engineering fixture only. It is not an actual release announcement,
 tag, publication decision, or deployment.
 
-Archive authority, release rehearsal, actual release-context selection, and
-publication remain future formal-release work.
+The separate deterministic archive authority is now implemented by
+`tools/sosa_2023_release_archive.py`. It serializes the complete 13-file
+SOSA-2023 package as a canonical 16-member raw POSIX USTAR stream: one archive
+root, the immutable-track product directory, the `sources` directory, and all
+13 regular package files.
+
+Published archive evidence is track-disambiguated. For the fixed synthetic
+release context the archive and sidecar are:
+
+- `SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-2099-01-02.tar`
+- `SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-2099-01-02.tar.sha256`
+
+The internal archive root is `SOSA-2023-2099-01-02/`. The shorter internal
+root keeps every governed raw-USTAR member name within the 100-byte name field,
+while the three formal ontology paths inside the archive continue to carry the
+full immutable source-version identity.
+
+Archive bytes preserve the current release-engine hardening contract: fixed
+member order, canonical raw USTAR headers, fixed modes and zero timestamps,
+zero record padding, exactly two terminal zero-filled 512-byte records, and a
+lowercase external SHA-256 sidecar. Publication of an archive/sidecar pair uses
+one no-replace directory rename.
+
+The real-package regression builds the actual synthetic 13-file package twice
+into independent archive outputs and locks the resulting archive at 146,432
+bytes with SHA-256
+`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`.
+The sidecar is 140 bytes. Archive validation is read-only and preserves the
+package, archive, and sidecar bytes and mtimes.
+
+Isolated release rehearsal, approval of an actual release context and release
+notes, and publication remain future formal-release work.
 
 Focused validation:
 
@@ -299,6 +329,7 @@ make check-sosa-next-consumer-stack
 make check-sosa-2023-publication-rendering
 make check-sosa-2023-release-manifest
 make check-sosa-2023-package
+make check-sosa-2023-release-archive
 ```
 
 For the development and formal-rendering contract, see

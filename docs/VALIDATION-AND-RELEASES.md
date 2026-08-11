@@ -12,7 +12,7 @@ It includes:
 - modular-product tests
 - SOSA-next maintained-product tests
 - SOSA-next catalog consumer-stack tests
-- SOSA-2023 publication-metadata, formal-rendering, manifest, and package tests
+- SOSA-2023 publication-metadata, formal-rendering, manifest, package, and archive tests
 - publication-metadata validation
 - formal release-context and rendering tests
 - release-package, archive, and rehearsal tests
@@ -101,6 +101,7 @@ make check-sosa-next-consumer-stack
 make check-sosa-2023-publication-rendering
 make check-sosa-2023-release-manifest
 make check-sosa-2023-package
+make check-sosa-2023-release-archive
 ```
 
 `make check-sosa-source-version` validates the approved immutable source
@@ -213,13 +214,33 @@ The full reconstruction regression requires 13/13 byte identity while preserving
 the original package bytes and mtimes.
 
 `release-notes/SOSA-2023-SYNTHETIC-2099-01-02.md` is a deterministic test
-fixture only. Package tests create only temporary synthetic packages; they do
-not create a tag, GitHub release, release archive, persistent-IRI deployment,
+fixture only. Package and archive tests create only temporary synthetic
+artifacts; they do not create a tag, GitHub release, persistent-IRI deployment,
 or actual publication.
 
-These gates are included in `make check` and hosted CI. SOSA-2023 deterministic
-archive authority, isolated release rehearsal, and actual publication remain
-later milestones.
+`make check-sosa-2023-release-archive` validates the separate deterministic
+SOSA-2023 archive authority in `tools/sosa_2023_release_archive.py`. It retains
+the raw-POSIX-USTAR hardening of the current-track archive engine while binding
+it to the separate 13-file SOSA-2023 package and its exact two-directory
+internal structure.
+
+The canonical archive contains 16 members and uses the internal top level
+`SOSA-2023-<release-id>/`. The external archive filename includes the full
+immutable source-version identity so that a SOSA-2023 archive cannot collide
+with a current-track archive for the same release date. The lowercase SHA-256
+sidecar remains outside the archive.
+
+For the synthetic `2099-01-02` contract, the real-package archive is exactly
+146,432 bytes with SHA-256
+`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`;
+the sidecar is exactly 140 bytes. The permanent regression builds the real
+13-file package, constructs the archive twice, requires byte-identical archive
+and sidecar outputs, validates the raw USTAR framing and member authority, and
+requires archive validation to leave the package, archive, and sidecar
+unchanged.
+
+These gates are included in `make check` and hosted CI. Isolated SOSA-2023
+release rehearsal and actual publication remain later milestones.
 
 ## Publication metadata
 

@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-2023-publication-rendering check-sosa-2023-release-manifest check-sosa-2023-package check-sosa-source-version check-product-role-policy check-sosa-release-scope
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-2023-publication-rendering check-sosa-2023-release-manifest check-sosa-2023-package check-sosa-2023-release-archive check-sosa-source-version check-product-role-policy check-sosa-release-scope
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -52,6 +52,7 @@ compile:
 		tools/sosa_2023_release_runtime.py \
 		tools/sosa_2023_build_release.py \
 		tools/sosa_2023_check_release.py \
+		tools/sosa_2023_release_archive.py \
 		tools/build_release.py \
 		tools/check_release.py \
 		tools/release_archive.py \
@@ -68,6 +69,7 @@ compile:
 		tests/test_sosa_2023_release_manifest.py \
 		tests/test_sosa_2023_release_runtime.py \
 		tests/test_sosa_2023_build_release.py \
+		tests/test_sosa_2023_release_archive.py \
 		tests/test_robot_diff_pilot.py \
 		tests/test_robot_extract_pilot.py \
 		tests/test_robot_query_equivalence_pilot.py \
@@ -150,6 +152,9 @@ check-sosa-2023-release-manifest:
 
 check-sosa-2023-package:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest tests.test_sosa_2023_release_runtime tests.test_sosa_2023_build_release
+
+check-sosa-2023-release-archive:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest tests.test_sosa_2023_release_archive
 
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py

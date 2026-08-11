@@ -240,18 +240,42 @@ The package catalog maps exactly the three formal same-release version IRIs to
 the three package-relative products. It contains no development IRIs,
 `sosa-next` identity, remote dependency redirects, or editor-shell entry.
 
-### Archive
+### Archive — implemented
 
-Archive integration requires a new canonical member inventory, member count,
-directory inventory, and test authority. Existing raw-USTAR invariants should
-remain unchanged:
+The separate deterministic archive authority is implemented by
+`tools/sosa_2023_release_archive.py` with permanent regression coverage in
+`tests/test_sosa_2023_release_archive.py`.
 
-- deterministic member order;
-- fixed metadata and zero timestamps;
-- canonical octal fields;
-- zero padding;
-- exactly two terminal zero records;
-- external lowercase SHA-256 sidecar.
+The canonical archive is a raw uncompressed POSIX USTAR stream with exactly 16
+members: the archive root, two package directories, and the complete 13-file
+SOSA-2023 package. It preserves the existing release-engine invariants:
+
+- deterministic explicit member order independent of package traversal;
+- fixed file and directory modes;
+- zero uid, gid, device identifiers, and modification times;
+- canonical octal numeric fields and header checksums;
+- zero-filled file-record padding;
+- exactly two terminal zero-filled 512-byte EOF records with no trailing data;
+- rejection of duplicate, reordered, unsafe, special-type, or noncanonical
+  members;
+- an exact lowercase external SHA-256 sidecar;
+- no-replace atomic publication of the complete archive/sidecar pair.
+
+The external asset filename includes the complete immutable source-version
+identity:
+`SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-<release-id>.tar`.
+This prevents collision with the current-track
+`SSN2BFO-<release-id>.tar` asset. The internal archive root is the shorter
+`SOSA-2023-<release-id>/`; this keeps all raw-USTAR names within the 100-byte
+name field while the formal ontology members themselves retain the complete
+immutable track identity.
+
+The real-package synthetic contract is fixed at 146,432 archive bytes,
+140 sidecar bytes, and archive SHA-256
+`d0cd2ffc14b7e67ae0656e5519de8226170e57fac8e27cf33f5dd4ad7f644ffc`.
+Two independent archive constructions from the actual 13-file package are
+byte-identical. Validation is read-only and leaves the package, archive, and
+sidecar unchanged.
 
 ### Release notes
 
@@ -276,8 +300,8 @@ closures, and exercises full read-only reconstruction. It does not retain or
 publish a real release artifact.
 
 Formal release rehearsal remains future work. It must build and validate
-isolated copies of the package and future archive from the exact requested
-commit with network access blocked, then compare every retained byte. A real
+isolated copies of the package and archive from the exact requested commit
+with network access blocked, then compare every retained byte. A real
 package must not be retained, tagged, uploaded, or deployed without an explicit
 approved release context and approved release notes.
 
@@ -290,8 +314,8 @@ approved release context and approved release notes.
    model.
 4. **Completed:** implement separate-package construction and read-only validation.
 5. **Completed:** implement the canonical package catalog and checksum inventory.
-6. **Next:** implement the separate package's deterministic archive authority.
-7. **Then:** add isolated release rehearsal and archive regressions.
+6. **Completed:** implement the separate package's deterministic archive authority.
+7. **Next:** add isolated release rehearsal and archive equivalence checks.
 8. **Finally:** approve a real release context and release notes, rehearse, and publish.
 
 Each stage should preserve current-track release bytes and behavior.
