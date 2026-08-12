@@ -303,11 +303,21 @@ synthetic SOSA-2023 package in temporary storage, validates its fixed HermiT
 closures, and exercises full read-only reconstruction. It does not retain or
 publish a real release artifact.
 
-Formal release rehearsal remains future work. It must build and validate
-isolated copies of the package and archive from the exact requested commit
-with network access blocked, then compare every retained byte. A real
-package must not be retained, tagged, uploaded, or deployed without an explicit
-approved release context and approved release notes.
+The separate formal release-rehearsal authority is now implemented by
+`tools/sosa_2023_rehearse_release.py`, with focused regression coverage in
+`tests/test_sosa_2023_release_rehearsal.py`. It binds the requested source
+commit to the clean invoking HEAD, creates two isolated detached local clones,
+blocks Python socket access during package and archive phases, rechecks
+candidate checkout integrity after every phase, and independently builds and
+validates the complete package and archive in both candidates. Rehearsal
+requires byte-identical complete packages, equal parsed manifest models, and
+byte-identical archives and sidecars before any output can be retained.
+
+Verify mode retains no release output. Build mode removes the isolated
+candidate roots before publication and can retain output only at an explicit
+absent external destination through atomic no-replace publication. The
+rehearsal does not approve a real release context or release notes and does not
+create a tag, GitHub release, upload, or persistent-IRI deployment.
 
 ## Recommended implementation sequence
 
@@ -319,8 +329,8 @@ approved release context and approved release notes.
 4. **Completed:** implement separate-package construction and read-only validation.
 5. **Completed:** implement the canonical package catalog and checksum inventory.
 6. **Completed:** implement the separate package's deterministic archive authority.
-7. **Next:** add isolated release rehearsal and archive equivalence checks.
-8. **Finally:** approve a real release context and release notes, rehearse, and publish.
+7. **Completed:** add isolated release rehearsal and archive equivalence checks.
+8. **Finally:** approve a real release context and release notes, perform the final real rehearsal, and publish.
 
 Each stage should preserve current-track release bytes and behavior.
 
