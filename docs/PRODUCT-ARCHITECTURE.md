@@ -317,8 +317,25 @@ cross-environment whole-archive digest or byte-size lock is claimed. The
 sidecar is 140 bytes under the governed filename grammar. Archive validation is
 read-only and preserves the package, archive, and sidecar bytes and mtimes.
 
-Isolated release rehearsal, approval of an actual release context and release
-notes, and publication remain future formal-release work.
+The separate isolated release-rehearsal authority is now implemented by
+`tools/sosa_2023_rehearse_release.py`. It requires the requested source commit
+to equal the clean invoking checkout HEAD, constructs two isolated detached
+local clones without hard links, removes their remotes, and gives each
+candidate private HOME, XDG, Python bytecode-cache, and validated toolchain
+surfaces. Python socket access is blocked during candidate package and archive
+phases.
+
+Each candidate independently builds and validates the complete 13-file package,
+then builds and validates its canonical 16-member archive and checksum sidecar.
+Candidate checkout integrity is rechecked after every phase. Rehearsal succeeds
+only when complete package bytes and parsed manifests agree across the two
+candidates and archive and sidecar bytes are identical. Verify mode retains no
+release output. Build mode can retain output only after the isolated proof
+succeeds, through atomic no-replace publication to an explicit absent external
+destination.
+
+Approval of an actual release context and release notes, the final real
+rehearsal, and publication remain future formal-release work.
 
 Focused validation:
 
@@ -333,6 +350,7 @@ make check-sosa-2023-publication-rendering
 make check-sosa-2023-release-manifest
 make check-sosa-2023-package
 make check-sosa-2023-release-archive
+make check-sosa-2023-release-rehearsal
 ```
 
 For the development and formal-rendering contract, see

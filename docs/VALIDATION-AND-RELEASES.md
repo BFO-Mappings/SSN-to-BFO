@@ -243,8 +243,21 @@ size—may differ across validated environments. The archive contract does not
 claim a cross-environment whole-archive hash or size. The sidecar remains
 exactly 140 bytes under the governed filename and checksum grammar.
 
-These gates are included in `make check` and hosted CI. Isolated SOSA-2023
-release rehearsal and actual publication remain later milestones.
+`make check-sosa-2023-release-rehearsal` validates the separate SOSA-2023
+clean-source rehearsal authority in `tools/sosa_2023_rehearse_release.py`.
+The rehearsal requires the requested source commit to equal the clean invoking
+HEAD and builds two isolated detached local clones with Python socket access
+blocked. Each candidate independently builds and validates the complete package
+and its archive and sidecar, with checkout integrity checked after every phase.
+Complete package bytes and parsed manifests must agree across candidates, and
+archive and sidecar bytes must be identical. Verify mode retains no output;
+build mode can publish only after the isolated proof succeeds, to an explicit
+absent external destination through atomic no-replace publication.
+
+These SOSA-2023 gates, including the separate release-rehearsal focused gate,
+are included in `make check` and hosted CI. Approval of a real release context
+and release notes, the final real rehearsal, and actual publication remain
+later milestones.
 
 ## Publication metadata
 

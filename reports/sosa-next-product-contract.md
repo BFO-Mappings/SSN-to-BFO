@@ -295,10 +295,13 @@ materialize the approved roles:
 - the catalog consumer-stack tests;
 - development and governance documentation.
 
-The SOSA-2023 release manifest, deterministic package engine, and separate
-deterministic archive authority are now implemented independently from this
-maintained-development surface. Isolated release rehearsal and actual
-publication remain deferred.
+The SOSA-2023 release manifest, deterministic package engine, separate
+deterministic archive authority, and isolated release-rehearsal authority are
+now implemented independently from this maintained-development surface.
+Actual publication remains deferred. The rehearsal authority is
+`tools/sosa_2023_rehearse_release.py`; it proves two isolated exact-commit
+package-and-archive candidates equivalent before any retained build-mode output
+can be atomically published.
 
 ## Acceptance gates
 
@@ -390,15 +393,15 @@ different validated environments.
 
 Remaining formal-release integration work is:
 
-- add isolated release rehearsal and archive equivalence checks;
 - approve actual release notes and an actual release context;
-- perform the final release rehearsal before publication and persistent-IRI
-  deployment.
+- perform the final real release rehearsal against that approved context before
+  publication and persistent-IRI deployment.
 
 No formal SOSA-2023 package or archive is committed to the repository, and no
-tag, GitHub release, or persistent-IRI deployment is created by this archive
-authority milestone. Focused tests create only temporary synthetic package,
-archive, and sidecar outputs.
+tag, GitHub release, or persistent-IRI deployment is created by this
+release-rehearsal milestone. Verify mode retains no release output; focused
+tests use temporary fixtures, and build mode requires an explicit absent
+external destination after the isolated proof succeeds.
 
 ## Non-goals
 
