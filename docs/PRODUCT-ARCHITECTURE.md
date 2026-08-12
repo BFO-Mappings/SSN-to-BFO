@@ -284,8 +284,41 @@ the retained package.
 package-engineering fixture only. It is not an actual release announcement,
 tag, publication decision, or deployment.
 
-Archive authority, release rehearsal, actual release-context selection, and
-publication remain future formal-release work.
+The separate deterministic archive authority is now implemented by
+`tools/sosa_2023_release_archive.py`. It serializes the complete 13-file
+SOSA-2023 package as a canonical 16-member raw POSIX USTAR stream: one archive
+root, the immutable-track product directory, the `sources` directory, and all
+13 regular package files.
+
+Published archive evidence is track-disambiguated. For the fixed synthetic
+release context the archive and sidecar are:
+
+- `SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-2099-01-02.tar`
+- `SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-2099-01-02.tar.sha256`
+
+The internal archive root is `SOSA-2023-2099-01-02/`. The shorter internal
+root keeps every governed raw-USTAR member name within the 100-byte name field,
+while the three formal ontology paths inside the archive continue to carry the
+full immutable source-version identity.
+
+Archive bytes preserve the current release-engine hardening contract: fixed
+member order, canonical raw USTAR headers, fixed modes and zero timestamps,
+zero record padding, exactly two terminal zero-filled 512-byte records, and a
+lowercase external SHA-256 sidecar. Publication of an archive/sidecar pair uses
+one no-replace directory rename.
+
+The real-package regression builds the actual synthetic 13-file package and
+constructs two independent archive outputs from that same package. The archive
+and sidecar pairs must be byte-identical. `manifest.json` deliberately records
+the actual validation environment, including Python and Java runtime identity,
+so a complete package—and therefore its archive digest and potentially its
+padded archive size—may differ across validated environments. No
+cross-environment whole-archive digest or byte-size lock is claimed. The
+sidecar is 140 bytes under the governed filename grammar. Archive validation is
+read-only and preserves the package, archive, and sidecar bytes and mtimes.
+
+Isolated release rehearsal, approval of an actual release context and release
+notes, and publication remain future formal-release work.
 
 Focused validation:
 
@@ -299,6 +332,7 @@ make check-sosa-next-consumer-stack
 make check-sosa-2023-publication-rendering
 make check-sosa-2023-release-manifest
 make check-sosa-2023-package
+make check-sosa-2023-release-archive
 ```
 
 For the development and formal-rendering contract, see

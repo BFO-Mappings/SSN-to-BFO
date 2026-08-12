@@ -295,10 +295,10 @@ materialize the approved roles:
 - the catalog consumer-stack tests;
 - development and governance documentation.
 
-The SOSA-2023 release manifest and deterministic package engine are now
-implemented separately from this maintained-development surface. Deterministic
-archive authority, isolated release rehearsal, and actual publication remain
-deferred.
+The SOSA-2023 release manifest, deterministic package engine, and separate
+deterministic archive authority are now implemented independently from this
+maintained-development surface. Isolated release rehearsal and actual
+publication remain deferred.
 
 ## Acceptance gates
 
@@ -375,18 +375,30 @@ imports `http://www.w3.org/ns/sosa/sampling/`.
 package-engineering fixture, not a release announcement or publication
 decision.
 
+The deterministic archive authority now binds the 13-file package to a
+canonical 16-member raw POSIX USTAR stream. Its external asset filename includes
+the full immutable source-version identity, while the internal archive root uses
+`SOSA-2023-<release-id>/` so all governed member names fit the canonical
+100-byte raw-USTAR name field. The synthetic real-package contract requires
+two independent archives of the same complete package bytes to be identical
+and uses a canonical 140-byte sidecar.
+
+The package manifest records the actual validation environment, including
+Python and Java runtime identity. Whole-package bytes and therefore the
+whole-archive digest and potentially padded archive size are not fixed across
+different validated environments.
+
 Remaining formal-release integration work is:
 
-- implement the separate package's deterministic archive authority;
 - add isolated release rehearsal and archive equivalence checks;
 - approve actual release notes and an actual release context;
 - perform the final release rehearsal before publication and persistent-IRI
   deployment.
 
 No formal SOSA-2023 package or archive is committed to the repository, and no
-tag, GitHub release, or persistent-IRI deployment is created by this package
-construction milestone. Focused tests create only temporary synthetic package
-outputs.
+tag, GitHub release, or persistent-IRI deployment is created by this archive
+authority milestone. Focused tests create only temporary synthetic package,
+archive, and sidecar outputs.
 
 ## Non-goals
 
