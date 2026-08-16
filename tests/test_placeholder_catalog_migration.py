@@ -89,11 +89,11 @@ NEGATIVE_GUARD_PATHS = frozenset(
 
 SOSA_NEXT_ARTIFACT_HASHES = {
     "releases/sosa-next/sosa-integrated.ttl":
-        "7ce45659e4d84ac089ae90c3279fa46d169d763ec487c34cb3c533eb0e6c197c",
+        "fec0e53270b4b527798db6ff078371c1050eb8afb441440db09fbc17cf840520",
     "releases/sosa-next/sosa-bfo-mapping.ttl":
-        "67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2",
+        "e28dcdc2a261793b091f5c8d2e92b04a5e7c819659840e5c9ed622c444b22ad3",
     "releases/sosa-next/sosa-cco-extension.ttl":
-        "e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69",
+        "c61b07fae4aee044d7e627e7eaee94abca6503f0da96e8fe8bd8820c8e31d09a",
     "src/sosa-next/sosa-mappings-edit.ttl":
         "805b990d778bbd83abfcb3d63a696e8a14d894adc479ec4bc4382d8d89e366e4",
 }
@@ -160,7 +160,7 @@ SOSA_NEXT_CATALOG_MAPPINGS = (
     (
         "https://www.commoncoreontologies.org/"
         "CommonCoreOntologiesMerged",
-        "../../imports/cco.ttl",
+        "imports/cco.ttl",
     ),
     (
         "http://www.sks.ai/SSN2BFO/development/"

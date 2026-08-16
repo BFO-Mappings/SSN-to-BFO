@@ -49,13 +49,11 @@ EXPECTED_DATATYPE_TERMS = {
 EXPECTED_CLASS_DEFERRALS = {
     "sosa:ActuatableProperty",
     "sosa:ActuatingProcedure",
-    "sosa:Asset",
     "sosa:Observation",
     "sosa:ObservableProperty",
     "sosa:ObservingProcedure",
     "sosa:Result",
     "sosa:SamplingProcedure",
-    "sosa:Sensor",
     "sosa:SpatialSample",
 }
 
@@ -72,6 +70,7 @@ EXPECTED_OBJECT_PROPERTY_DEFERRALS = {
     "sosa:hasSystemCapability",
     "sosa:observedProperty",
     "sosa:observes",
+    "sosa:hosts",
 }
 
 
@@ -148,8 +147,8 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertEqual(summary["governed_row_count"], 119)
                 self.assertEqual(summary["unique_row_id_count"], 119)
-                self.assertEqual(summary["active_mapping_count"], 45)
-                self.assertEqual(summary["deferred_mapping_count"], 26)
+                self.assertEqual(summary["active_mapping_count"], 46)
+                self.assertEqual(summary["deferred_mapping_count"], 25)
                 self.assertEqual(
                     summary["explicitly_unmapped_row_count"],
                     48,
@@ -157,11 +156,11 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertEqual(summary["malformed_row_count"], 0)
                 self.assertEqual(
                     summary["canonical_authoritative_axiom_count"],
-                    45,
+                    46,
                 )
                 self.assertEqual(
                     summary["active_ontology_triple_count"],
-                    279,
+                    274,
                 )
 
                 reasoning = summary["reasoning"]
@@ -170,7 +169,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertTrue(reasoning["reasoned_output_exists"])
                 self.assertEqual(
                     reasoning["reasoned_output_triples"],
-                    1746,
+                    1749,
                 )
                 self.assertEqual(
                     reasoning["unsatisfiable_classes"],
@@ -182,7 +181,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["deferred_mappings"]
                 }
-                self.assertEqual(len(deferred), 26)
+                self.assertEqual(len(deferred), 25)
                 self.assertEqual(
                     len(deferred),
                     len(summary["deferred_mappings"]),
@@ -231,17 +230,6 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                         | EXPECTED_OBJECT_PROPERTY_DEFERRALS
                         | EXPECTED_DATATYPE_TERMS
                     ),
-                )
-
-                sensor = deferred["sosa:Sensor"]
-                self.assertEqual(sensor["subject_kind"], "class")
-                self.assertIn(
-                    "next CCO release",
-                    sensor["reasoning"],
-                )
-                self.assertIn(
-                    "forthcoming SOSA 2023 Edition",
-                    sensor["reasoning"],
                 )
 
                 for subject in EXPECTED_DATATYPE_TERMS:

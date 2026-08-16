@@ -31,7 +31,7 @@
       uri="imports/sosa-source-declaration-overlay.ttl"/>
     <uri
       name="https://www.commoncoreontologies.org/CommonCoreOntologiesMerged"
-      uri="../../imports/cco.ttl"/>
+      uri="imports/cco.ttl"/>
   </group>
   <group id="sosa-next-development-products" prefer="public">
     <uri

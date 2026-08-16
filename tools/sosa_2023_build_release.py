@@ -563,13 +563,13 @@ def render_formal_products(
         for triple in logical_graphs[key]:
             modular_union.add(triple)
 
-    if len(modular_union) != 273:
+    if len(modular_union) != 268:
         raise ReleasePackageError(
             (
                 package_issue(
                     "FORMAL_LOGICAL_UNION",
                     "products",
-                    "expected 273 triples, "
+                    "expected 268 triples, "
                     f"got {len(modular_union)}",
                 ),
             )

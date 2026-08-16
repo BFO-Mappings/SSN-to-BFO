@@ -71,17 +71,17 @@ Development ontology IRI:
 
 Contract:
 
-- directly contains all 45 active canonical authoritative mapping axioms;
-- contains 273 logical triples and 286 total triples;
+- directly contains all 46 active canonical authoritative mapping axioms;
+- contains 268 logical triples and 281 total triples;
 - imports exactly the governed SOSA root, SOSA Systems, SOSA Sampling,
-  source-declaration overlay, and merged CCO/BFO dependency IRIs;
+  source-declaration overlay, and merged CCO/BFO dependency IRIs, with the target resolved from `src/sosa-next/imports/cco.ttl`;
 - provides the distinct complete consumer entry point for the track;
 - contains exactly one `owl:Ontology` declaration;
 - contains no `owl:versionIRI` in the maintained development artifact.
 
 Required SHA-256:
 
-`7ce45659e4d84ac089ae90c3279fa46d169d763ec487c34cb3c533eb0e6c197c`
+`fec0e53270b4b527798db6ff078371c1050eb8afb441440db09fbc17cf840520`
 
 ### BFO Mapping
 
@@ -97,7 +97,7 @@ Contract:
 
 - directly contains the 21 BFO-bearing authoritative axioms that contain no
   CCO term;
-- contains 157 logical triples and 165 total triples;
+- contains 151 logical triples and 159 total triples;
 - imports no project or external ontology;
 - does not transform, weaken, or strengthen a governed authoritative axiom;
 - contains exactly one `owl:Ontology` declaration;
@@ -105,7 +105,7 @@ Contract:
 
 Required SHA-256:
 
-`67bb58ea543e654ace41c0d1a393b2a3f92426c693f5100f0aa3ba35f3b005d2`
+`e28dcdc2a261793b091f5c8d2e92b04a5e7c819659840e5c9ed622c444b22ad3`
 
 ### CCO Extension
 
@@ -119,8 +119,8 @@ Development ontology IRI:
 
 Contract:
 
-- directly contains the 24 CCO-bearing and mixed BFO/CCO authoritative axioms;
-- contains 116 logical triples and 125 total triples;
+- directly contains the 25 CCO-bearing and mixed BFO/CCO authoritative axioms;
+- contains 117 logical triples and 126 total triples;
 - imports only the SOSA-next BFO Mapping;
 - does not transform, weaken, or strengthen a governed authoritative axiom;
 - contains exactly one `owl:Ontology` declaration;
@@ -128,7 +128,7 @@ Contract:
 
 Required SHA-256:
 
-`e65e96f15a55e19fc43be8dbda6e56351ef40bbd6e0fa9368a240e83c5d6bb69`
+`c61b07fae4aee044d7e627e7eaee94abca6503f0da96e8fe8bd8820c8e31d09a`
 
 ## Implemented development import graph
 
@@ -154,23 +154,23 @@ The catalog resolves all three maintained products, the editor shell, the
 governed pinned SOSA source modules and declaration overlay, and the merged
 CCO/BFO dependency.
 
-The editor-plus-Integrated project closure contains exactly 290 distinct
+The editor-plus-Integrated project closure contains exactly 285 distinct
 triples.
 
 ## Axiom accounting
 
-The Integrated product directly contains all 45 active authoritative axioms.
+The Integrated product directly contains all 46 active authoritative axioms.
 
 The modular partition is pairwise disjoint:
 
 1. 21 BFO-bearing axioms without CCO terms -> BFO Mapping;
-2. 24 CCO-bearing or mixed BFO/CCO axioms -> CCO Extension.
+2. 25 CCO-bearing or mixed BFO/CCO axioms -> CCO Extension.
 
 There are currently zero target-neutral authoritative axioms, so Alignment Core
 has no direct logical content and is not materialized.
 
-The BFO Mapping plus CCO Extension logical union contains 273 triples and is
-isomorphic to the Integrated Mapping's 273 logical triples.
+The BFO Mapping plus CCO Extension logical union contains 268 triples and is
+isomorphic to the Integrated Mapping's 268 logical triples.
 
 A row's product classification is derived from its canonical authoritative
 axiom rather than lexical matching against workbook cell text.
@@ -204,8 +204,8 @@ target inventory:
 
 Alignment Core and BFO Projection remain governed omitted roles.
 
-Formal package publication remains a later phase, but formal publication
-metadata and pure ontology rendering are now implemented. Formal stable
+Actual formal publication remains a later phase, while formal publication
+metadata, pure ontology rendering, manifest/schema, deterministic package/archive construction, and rehearsal are now implemented. Formal stable
 ontology IRIs and version-IRI suffixes use the approved immutable source-version
 identity and contain no `sosa-next` development alias.
 
@@ -256,11 +256,11 @@ Mapping version IRI.
 Under the synthetic `2099-01-02` release context, the exact formal hashes are:
 
 - Integrated:
-  `81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae`;
+  `e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19`;
 - BFO Mapping:
-  `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c`;
+  `c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96`;
 - CCO Extension:
-  `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b`.
+  `49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35`.
 
 ## Validation closures
 
@@ -270,11 +270,11 @@ not serialized into maintained products.
 Required reasoning profiles are:
 
 - Integrated plus the governed pinned SOSA and merged CCO/BFO dependencies:
-  15,127 closure triples;
+  15,231 closure triples;
 - BFO Mapping plus the governed pinned SOSA and merged CCO/BFO dependencies:
-  15,011 closure triples;
+  15,114 closure triples;
 - CCO Extension plus BFO Mapping and the governed pinned SOSA and merged
-  CCO/BFO dependencies: 15,135 closure triples.
+  CCO/BFO dependencies: 15,239 closure triples.
 
 Each profile must complete successfully with return code 0, produce reasoned
 output, and contain zero named unsatisfiable classes.
@@ -308,21 +308,21 @@ can be atomically published.
 The maintained product-role implementation must satisfy all of the following:
 
 1. the governed workbook remains 119 rows with 119 unique RowIDs;
-2. all 45 active mappings produce 45 canonical authoritative axioms;
-3. all 26 deferred rows produce no direct axiom;
+2. all 46 active mappings produce 46 canonical authoritative axioms;
+3. all 25 deferred rows produce no direct axiom;
 4. all 48 explicitly unmapped rows produce no direct axiom;
-5. Integrated directly contains all 45 authoritative axioms;
+5. Integrated directly contains all 46 authoritative axioms;
 6. BFO Mapping directly contains exactly 21 BFO-bearing axioms;
-7. CCO Extension directly contains exactly 24 CCO-bearing or mixed axioms;
-8. the BFO+CCO modular logical union contains 273 triples and is isomorphic
-   to Integrated's 273 logical triples;
+7. CCO Extension directly contains exactly 25 CCO-bearing or mixed axioms;
+8. the BFO+CCO modular logical union contains 268 triples and is isomorphic
+   to Integrated's 268 logical triples;
 9. two independent builds produce byte-identical maintained products;
 10. the exact product hashes and triple counts are asserted by focused tests;
-11. the three reasoning closures are exactly 15,127, 15,011, and 15,135
+11. the three reasoning closures are exactly 15,231, 15,114, and 15,239
     triples and have zero named unsatisfiable classes;
 12. `releases/sosa-next/sosa-alignment-core.ttl` is absent;
 13. the editor imports Integrated and its local project closure contains
-    exactly 290 distinct triples;
+    exactly 285 distinct triples;
 14. the BFO Mapping has no import and the CCO Extension imports only BFO
     Mapping;
 15. the approved source-version authority validates and all pinned SOSA source
@@ -358,7 +358,7 @@ The schema-v1 manifest contract governs the exact three-product inventory,
 immutable formal identities and package paths, formal import graph,
 source/development evidence, validation environment, 31 governed inputs, four
 external dependency records, an 11-member included-file evidence inventory,
-and product-specific HermiT closure counts of 15,130 / 15,014 / 15,141.
+and product-specific HermiT closure counts of 15,234 / 15,117 / 15,245.
 
 The package runtime, builder, and checker are themselves governed as
 byte-affecting non-packaged manifest inputs. They remain separate from the
