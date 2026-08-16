@@ -698,7 +698,7 @@
                   "maxItems": 4
                 },
                 "byte_size": {
-                  "const": 40785
+                  "const": 39991
                 },
                 "ontology_declaration_count": {
                   "const": 1
@@ -713,16 +713,16 @@
                   "const": 3
                 },
                 "logical_triple_count": {
-                  "const": 273
+                  "const": 268
                 },
                 "total_triple_count": {
-                  "const": 288
+                  "const": 283
                 },
                 "direct_governed_axiom_count": {
-                  "const": 45
+                  "const": 46
                 },
                 "governed_closure_axiom_count": {
-                  "const": 45
+                  "const": 46
                 },
                 "reasoning_mode": {
                   "const": "independent"
@@ -752,7 +752,7 @@
                   "maxItems": 0
                 },
                 "byte_size": {
-                  "const": 24238
+                  "const": 23335
                 },
                 "ontology_declaration_count": {
                   "const": 1
@@ -767,10 +767,10 @@
                   "const": 3
                 },
                 "logical_triple_count": {
-                  "const": 157
+                  "const": 151
                 },
                 "total_triple_count": {
-                  "const": 168
+                  "const": 162
                 },
                 "direct_governed_axiom_count": {
                   "const": 21
@@ -806,7 +806,7 @@
                   "maxItems": 1
                 },
                 "byte_size": {
-                  "const": 18092
+                  "const": 18201
                 },
                 "ontology_declaration_count": {
                   "const": 1
@@ -821,16 +821,16 @@
                   "const": 3
                 },
                 "logical_triple_count": {
-                  "const": 116
+                  "const": 117
                 },
                 "total_triple_count": {
-                  "const": 128
+                  "const": 129
                 },
                 "direct_governed_axiom_count": {
-                  "const": 24
+                  "const": 25
                 },
                 "governed_closure_axiom_count": {
-                  "const": 45
+                  "const": 46
                 },
                 "reasoning_mode": {
                   "const": "independent"
@@ -930,7 +930,7 @@
                   "const": "formal external merged CCO/BFO target ontology dependency"
                 },
                 "path": {
-                  "const": "imports/cco.ttl"
+                  "const": "src/sosa-next/imports/cco.ttl"
                 },
                 "ontology_iri": {
                   "const": "https://www.commoncoreontologies.org/CommonCoreOntologiesMerged"
@@ -1466,7 +1466,7 @@
                       "const": "PASS"
                     },
                     "fixed_closure_triple_count": {
-                      "const": 15130
+                      "const": 15234
                     },
                     "return_code": {
                       "const": 0
@@ -1498,7 +1498,7 @@
                       "const": "PASS"
                     },
                     "fixed_closure_triple_count": {
-                      "const": 15014
+                      "const": 15117
                     },
                     "return_code": {
                       "const": 0
@@ -1530,7 +1530,7 @@
                       "const": "PASS"
                     },
                     "fixed_closure_triple_count": {
-                      "const": 15141
+                      "const": 15245
                     },
                     "return_code": {
                       "const": 0

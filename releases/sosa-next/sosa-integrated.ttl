@@ -188,6 +188,8 @@ _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target owl:s
 
 <http://www.w3.org/ns/sosa/usedProcedure> rdfs:subPropertyOf <https://www.commoncoreontologies.org/ont00001920> .
 
+<http://www.w3.org/ns/sosa/Asset> rdfs:subClassOf <http://purl.obolibrary.org/obo/BFO_0000002> .
+
 <http://www.w3.org/ns/sosa/ActuationCollection> rdfs:subClassOf _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target rdf:type owl:Class .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target owl:intersectionOf _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_list_0 .
@@ -204,14 +206,6 @@ _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_0 rdf:rest _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_1 .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_1 rdf:first <http://www.w3.org/ns/sosa/ActuationCollection> .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_1 rdf:rest rdf:nil .
-
-<http://www.w3.org/ns/sosa/hosts> owl:propertyChainAxiom _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 rdf:first <http://purl.obolibrary.org/obo/BFO_0000196> .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 rdf:rest _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 rdf:first <http://purl.obolibrary.org/obo/BFO_0000054> .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 rdf:rest _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_2 .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_2 rdf:first <http://purl.obolibrary.org/obo/BFO_0000057> .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_2 rdf:rest rdf:nil .
 
 <http://www.w3.org/ns/sosa/hasDeployment> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
 
@@ -287,6 +281,8 @@ _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child
 _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child_1_filler_child_1 rdf:type owl:Restriction .
 _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child_1_filler_child_1 owl:onProperty <https://www.commoncoreontologies.org/ont00001920> .
 _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child_1_filler_child_1 owl:someValuesFrom <http://www.w3.org/ns/sosa/SamplingProcedure> .
+
+<http://www.w3.org/ns/sosa/Sensor> owl:equivalentClass <https://www.commoncoreontologies.org/ont00000569> .
 
 <http://www.w3.org/ns/sosa/phenomenonOccurred> rdfs:domain <http://purl.obolibrary.org/obo/BFO_0000008> .
 

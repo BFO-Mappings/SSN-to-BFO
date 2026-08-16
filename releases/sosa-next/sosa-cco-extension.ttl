@@ -127,6 +127,8 @@ _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child
 _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child_1_filler_child_1 owl:onProperty <https://www.commoncoreontologies.org/ont00001920> .
 _:ac7f57d0d5c1f10df00cca64a425c3b947e4808a5f0f7af9e98c4df964572472d_target_child_1_filler_child_1 owl:someValuesFrom <http://www.w3.org/ns/sosa/SamplingProcedure> .
 
+<http://www.w3.org/ns/sosa/Sensor> owl:equivalentClass <https://www.commoncoreontologies.org/ont00000569> .
+
 <http://www.w3.org/ns/sosa/Procedure> rdfs:subClassOf <https://www.commoncoreontologies.org/ont00000965> .
 
 <http://www.w3.org/ns/sosa/Sampling> owl:equivalentClass _:ae69a0d20905384f1a3b3e5f9df6b82987f1a1da4e90db05becbc99d980b39168_target .

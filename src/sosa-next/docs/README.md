@@ -29,9 +29,9 @@ CCO Extension
 
 The BFO Mapping imports no project or external ontology.
 
-The Integrated Mapping directly asserts all 45 governed mapping axioms and
+The Integrated Mapping directly asserts all 46 governed mapping axioms and
 imports the governed SOSA root, SOSA Systems, SOSA Sampling,
-source-declaration overlay, and merged CCO/BFO dependency. It is the distinct
+source-declaration overlay, and track-specific merged CCO/BFO dependency at `src/sosa-next/imports/cco.ttl`. It is the distinct
 complete consumer entry point required by the product-role policy.
 
 Alignment Core remains a governed role but is not materialized because no
@@ -65,7 +65,7 @@ The editor imports only the Integrated Mapping.
 
 The catalog independently resolves Integrated, BFO Mapping, CCO Extension, the
 pinned SOSA source files, the governed source-declaration overlay, and the
-merged CCO/BFO dependency.
+track-specific merged CCO/BFO dependency at `src/sosa-next/imports/cco.ttl`.
 
 ## Validation
 
@@ -86,11 +86,11 @@ edition version IRI, and the overlay's binding to the approved upstream commit.
 
 The product checker enforces:
 
-- 119 governed rows and 45 canonical authoritative axioms;
+- 119 governed rows and 46 canonical authoritative axioms;
 - exact deterministic bytes for Integrated, BFO Mapping, and CCO Extension;
-- 273 logical triples in Integrated;
-- an isomorphic 273-triple BFO+CCO modular union;
-- exact reasoning closures of 15,127, 15,011, and 15,135 triples;
+- 268 logical triples in Integrated;
+- an isomorphic 268-triple BFO+CCO modular union;
+- exact reasoning closures of 15,231, 15,114, and 15,239 triples;
 - zero named unsatisfiable classes;
 - absence of the retired Alignment Core artifact;
 - preservation of current SSN/SOSA and pinned SOSA source bytes.
@@ -100,7 +100,7 @@ The consumer-stack checker enforces:
 - 14 unique local catalog mappings;
 - parseable catalog targets;
 - `editor -> Integrated` as the complete project closure;
-- exactly 290 distinct triples in that editor project stack;
+- exactly 285 distinct triples in that editor project stack;
 - exact Integrated external imports;
 - import-free BFO Mapping;
 - `CCO Extension -> BFO Mapping`;

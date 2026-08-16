@@ -116,6 +116,8 @@ _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target rdf:t
 _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000196> .
 _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000034> .
 
+<http://www.w3.org/ns/sosa/Asset> rdfs:subClassOf <http://purl.obolibrary.org/obo/BFO_0000002> .
+
 <http://www.w3.org/ns/sosa/ActuationCollection> rdfs:subClassOf _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target rdf:type owl:Class .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target owl:intersectionOf _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_list_0 .
@@ -132,14 +134,6 @@ _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_0 rdf:rest _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_1 .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_1 rdf:first <http://www.w3.org/ns/sosa/ActuationCollection> .
 _:a8d3b9477ac72bdba0b1edfb8c24e1ac31475c1635853738e2a9ab2aed89dff55_target_child_1_filler_list_1 rdf:rest rdf:nil .
-
-<http://www.w3.org/ns/sosa/hosts> owl:propertyChainAxiom _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 rdf:first <http://purl.obolibrary.org/obo/BFO_0000196> .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_0 rdf:rest _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 rdf:first <http://purl.obolibrary.org/obo/BFO_0000054> .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_1 rdf:rest _:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_2 .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_2 rdf:first <http://purl.obolibrary.org/obo/BFO_0000057> .
-_:a90d2b3a965084a150dcd254003bbdd2e5d706d8dd1b7a941c44e44ee2ea1737e_chain_list_2 rdf:rest rdf:nil .
 
 <http://www.w3.org/ns/sosa/hasDeployment> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
 

@@ -22,6 +22,31 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = REPO_ROOT / "mappings/SOSA-next-to-BFO-COMS.xlsx"
 CATALOG = REPO_ROOT / "src/sosa-next/catalog-v001.xml"
 
+TARGET_CCO = REPO_ROOT / "src/sosa-next/imports/cco.ttl"
+TARGET_CCO_SHA256 = (
+    "0daf917353420073ddd9bbd581c7fb84"
+    "effdc050b934a7a4678cd34dda708f26"
+)
+TARGET_CCO_ONTOLOGY_IRI = (
+    "https://www.commoncoreontologies.org/"
+    "CommonCoreOntologiesMerged"
+)
+TARGET_CCO_VERSION_IRI = (
+    "https://www.commoncoreontologies.org/"
+    "2026-04-04/CommonCoreOntologiesMerged"
+)
+TARGET_CCO_UPSTREAM_REPOSITORY = (
+    "https://github.com/CommonCoreOntology/"
+    "CommonCoreOntologies"
+)
+TARGET_CCO_UPSTREAM_COMMIT = (
+    "010c99847a856e2fb70eb1b1b1287d19556c9290"
+)
+TARGET_CCO_UPSTREAM_PATH = (
+    "src/cco-iris/CommonCoreOntologiesMerged.ttl"
+)
+
+
 SOURCE_VERSION_AUTHORITY = (
     source_version.load_source_version_authority()
 )
@@ -75,6 +100,71 @@ def validate_source_pins() -> dict[str, str]:
         REPO_ROOT,
     )
 
+
+def validate_target_cco_pin() -> str:
+    """Validate the SOSA-2023-specific merged CCO/BFO target dependency."""
+
+    if not TARGET_CCO.is_file():
+        raise RuntimeError(
+            f"Required SOSA-2023 CCO target is missing: {TARGET_CCO}"
+        )
+
+    digest = source_version.sha256_file(TARGET_CCO)
+
+    if digest != TARGET_CCO_SHA256:
+        raise RuntimeError(
+            "SOSA-2023 CCO target SHA-256 mismatch: "
+            f"expected {TARGET_CCO_SHA256}; found {digest}"
+        )
+
+    graph = Graph().parse(
+        TARGET_CCO,
+        format="turtle",
+    )
+
+    ontology = URIRef(
+        TARGET_CCO_ONTOLOGY_IRI
+    )
+
+    if (
+        ontology,
+        RDF.type,
+        OWL.Ontology,
+    ) not in graph:
+        raise RuntimeError(
+            "SOSA-2023 CCO target lacks the expected ontology declaration."
+        )
+
+    version_iri = URIRef(
+        TARGET_CCO_VERSION_IRI
+    )
+
+    if (
+        ontology,
+        OWL.versionIRI,
+        version_iri,
+    ) not in graph:
+        raise RuntimeError(
+            "SOSA-2023 CCO target lacks the expected version IRI."
+        )
+
+    sensor = URIRef(
+        "https://www.commoncoreontologies.org/ont00000569"
+    )
+
+    if not any(
+        graph.objects(
+            sensor,
+            OWL.equivalentClass,
+        )
+    ):
+        raise RuntimeError(
+            "Selected CCO target does not contain the expected "
+            "cco:Sensor equivalence axiom."
+        )
+
+    return digest
+
 def resolve_robot(robot_path: str | None) -> str:
     """Resolve an explicit ROBOT path or use the governed installer."""
 
@@ -96,8 +186,8 @@ def configure_coms_resolver(merged_source: Path) -> None:
     """Point the shared COMS parser at the pinned forthcoming SOSA source."""
 
     coms.PREFIX_FILES = {
-        "bfo": Path("imports/cco.ttl"),
-        "cco": Path("imports/cco.ttl"),
+        "bfo": Path("src/sosa-next/imports/cco.ttl"),
+        "cco": Path("src/sosa-next/imports/cco.ttl"),
         "sampling": merged_source,
         "sosa": merged_source,
     }
@@ -305,6 +395,7 @@ def run_check(
     summary_path = output_dir / "summary.json"
 
     source_hashes = validate_source_pins()
+    target_cco_sha256 = validate_target_cco_pin()
     source_authority_sha256 = source_version.sha256_file(
         SOURCE_VERSION_CONFIG
     )
@@ -466,6 +557,13 @@ def run_check(
         ),
         "source_files": [str(path) for path in SOURCE_FILES],
         "source_sha256": source_hashes,
+        "target_cco_path": str(TARGET_CCO.relative_to(REPO_ROOT)),
+        "target_cco_sha256": target_cco_sha256,
+        "target_cco_ontology_iri": TARGET_CCO_ONTOLOGY_IRI,
+        "target_cco_version_iri": TARGET_CCO_VERSION_IRI,
+        "target_cco_upstream_repository": TARGET_CCO_UPSTREAM_REPOSITORY,
+        "target_cco_upstream_commit": TARGET_CCO_UPSTREAM_COMMIT,
+        "target_cco_upstream_path": TARGET_CCO_UPSTREAM_PATH,
         "source_triple_count": len(source_graph),
         "governed_row_count": len(rows),
         "unique_row_id_count": workbook_stats.unique_row_id_count,

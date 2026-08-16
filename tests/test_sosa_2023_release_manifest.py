@@ -22,11 +22,11 @@ SYNTHETIC_COMMIT = "0123456789abcdef0123456789abcdef01234567"
 
 FORMAL_HASHES = {
     "integrated":
-        "81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae",
+        "e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19",
     "strict_bfo_mapping":
-        "c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c",
+        "c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96",
     "cco_extension":
-        "bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b",
+        "49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35",
 }
 
 CURRENT_AUTHORITY_HASHES = {
@@ -222,9 +222,9 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
         self.assertEqual(
             manifest.FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS,
             (
-                ("integrated", 15130),
-                ("strict_bfo_mapping", 15014),
-                ("cco_extension", 15141),
+                ("integrated", 15234),
+                ("strict_bfo_mapping", 15117),
+                ("cco_extension", 15245),
             ),
         )
         self.assertEqual(
@@ -722,21 +722,21 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
             (
                 (
                     "integrated",
-                    15130,
+                    15234,
                     0,
                     True,
                     0,
                 ),
                 (
                     "strict_bfo_mapping",
-                    15014,
+                    15117,
                     0,
                     True,
                     0,
                 ),
                 (
                     "cco_extension",
-                    15141,
+                    15245,
                     0,
                     True,
                     0,

@@ -77,7 +77,7 @@ imports only Integrated.
 Catalog resolution keeps all of those imports local during development and
 testing. The BFO and CCO modular products remain independently resolvable.
 
-`imports/cco.ttl` remains the governed flattened merged CCO/BFO dependency. It
+`src/sosa-next/imports/cco.ttl` is the governed flattened merged CCO/BFO dependency for the SOSA-2023/SOSA-next track. Root `imports/cco.ttl` remains the separate current SSN/SOSA-track dependency and is unchanged. It
 is not a mapping authority or a manually maintained mapping product.
 
 The XML catalog inside a formal current-track release package is a different
@@ -117,27 +117,27 @@ content or a distinct consumer function.
 boundary and its materialized target: Integrated, BFO Mapping, and CCO
 Extension. Alignment Core and BFO Projection remain governed omitted roles.
 
-`make check-sosa-next` validates the 119 governed workbook rows, 45 active
-mappings, 26 deferred mappings, 48 explicitly unmapped rows, canonical
+`make check-sosa-next` validates the 119 governed workbook rows, 46 active
+mappings, 25 deferred mappings, 48 explicitly unmapped rows, canonical
 identity, and a clean HermiT result for the integrated active mapping.
 
 `make check-sosa-next-products` independently rebuilds Integrated, BFO Mapping,
 and CCO Extension; requires byte-identical candidate builds; validates exact
-hashes and triple counts; verifies that the 273-triple BFO+CCO modular logical
-union is isomorphic to the 273-logical-triple Integrated Mapping; checks
+hashes and triple counts; verifies that the 268-triple BFO+CCO modular logical
+union is isomorphic to the 268-logical-triple Integrated Mapping; checks
 transactional rollback; requires the retired Alignment Core artifact to remain
 absent; and requires zero named unsatisfiable classes in all three reasoning
 profiles.
 
 The fixed development reasoning closures contain:
 
-- 15,127 triples for Integrated;
-- 15,011 triples for BFO Mapping;
-- 15,135 triples for CCO Extension.
+- 15,231 triples for Integrated;
+- 15,114 triples for BFO Mapping;
+- 15,239 triples for CCO Extension.
 
 `make check-sosa-next-consumer-stack` resolves every development catalog target
 locally, parses all dependency and project entries, verifies the exact
-Integrated and modular import boundaries, loads the 290-triple editor project
+Integrated and modular import boundaries, loads the 285-triple editor project
 closure, and confirms that BFO Mapping and CCO Extension remain independently
 resolvable.
 
@@ -148,12 +148,12 @@ IRIs, exact formal import boundaries, preservation of the development logical
 graphs, byte-identical independent renders, and the locked synthetic formal
 byte contract:
 
-- Integrated: 273 logical triples, 288 total triples,
-  SHA-256 `81694ddfc0a7587c2d83517f0fc69449a25dc31ae68571b0a63f48aa5ca10aae`;
-- Strict BFO Mapping: 157 logical triples, 168 total triples,
-  SHA-256 `c88cb347742a15fc003cafe2e167f7f784cc4a70653720c11f1e6247e6a3096c`;
-- CCO Extension: 116 logical triples, 128 total triples,
-  SHA-256 `bc356b515e29a21d74865101661fe1d81f2da33f86b31bf4c497109e8f9b202b`.
+- Integrated: 268 logical triples, 283 total triples,
+  SHA-256 `e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19`;
+- Strict BFO Mapping: 151 logical triples, 162 total triples,
+  SHA-256 `c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96`;
+- CCO Extension: 117 logical triples, 129 total triples,
+  SHA-256 `49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35`.
 
 The formal Integrated product imports the official SOSA root, Systems, and
 Sampling IRIs plus merged CCO/BFO. The local source-declaration overlay remains
@@ -165,7 +165,7 @@ formal BFO Mapping version IRI.
 schema-v1 manifest authority. The canonical evidence model records 31 governed
 inputs, including the package runtime, builder, and checker as byte-affecting
 non-packaged inputs; four formal external dependencies; the exact three-product
-formal inventory; fixed HermiT closure counts of 15,130 / 15,014 / 15,141; and
+formal inventory; fixed HermiT closure counts of 15,234 / 15,117 / 15,245; and
 an 11-member included-file evidence inventory.
 
 The Sampling dependency evidence records the ontology identity actually
