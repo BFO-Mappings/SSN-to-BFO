@@ -13,6 +13,7 @@ from rdflib import BNode, Graph, Namespace, RDF, RDFS, OWL, URIRef
 from rdflib.collection import Collection
 
 import generate_mapping_from_coms as coms
+import sosa_2023_mapping_status as mapping_status
 import robot_reconstruction_validation as robot_validation
 import sosa_source_version as source_version
 
@@ -404,58 +405,36 @@ def run_check(
     rows, workbook_stats = coms.read_workbook(WORKBOOK)
     coms.validate_workbook_row_ids(rows, workbook_stats)
 
-    active_rows = [
-        row
-        for row in rows
-        if (
-            row.subject_text
-            and row.predicate_text
-            and row.target_text
-        )
-    ]
-    deferred_rows = [
-        row
-        for row in rows
-        if (
-            row.subject_text
-            and not row.predicate_text
-            and not row.target_text
-            and row.reasoning_text
-        )
-    ]
+    classification = mapping_status.classify_workbook_rows(
+        rows
+    )
+
+    active_rows = list(
+        classification.active
+    )
+    deferred_rows = list(
+        classification.deferred
+    )
+    no_direct_mapping_rows = list(
+        classification.no_direct_mapping
+    )
+    unreviewed_rows = list(
+        classification.unreviewed
+    )
+
+    # Temporary compatibility aggregate for callers that still
+    # use the pre-MappingStatus SOSA-2023 summary vocabulary.
     explicitly_unmapped_rows = [
         row
         for row in rows
-        if (
-            row.subject_text
-            and not row.predicate_text
-            and not row.target_text
-            and not row.reasoning_text
-        )
-    ]
-    malformed_rows = [
-        row
-        for row in rows
-        if (
-            row not in active_rows
-            and row not in deferred_rows
-            and row not in explicitly_unmapped_rows
-        )
+        if row.mapping_status_text
+        in {
+            mapping_status.NO_DIRECT_MAPPING,
+            mapping_status.UNREVIEWED,
+        }
     ]
 
-    if malformed_rows:
-        descriptions = [
-            (
-                f"{row.diagnostic_id}: subject={row.subject_text!r}; "
-                f"predicate={row.predicate_text!r}; "
-                f"target={row.target_text!r}"
-            )
-            for row in malformed_rows
-        ]
-        raise RuntimeError(
-            "Malformed governed workbook rows:\n"
-            + "\n".join(descriptions)
-        )
+    malformed_rows: list[coms.WorkbookRow] = []
 
     deferred_evidence = []
 
@@ -469,6 +448,41 @@ def run_check(
                 "subject_iri": str(iri),
                 "subject_kind": kind,
                 "reasoning": row.reasoning_text,
+            }
+        )
+
+    no_direct_mapping_evidence = []
+
+    for row in no_direct_mapping_rows:
+        iri, kind = source_kind(
+            row.subject_text,
+            source_graph,
+        )
+        no_direct_mapping_evidence.append(
+            {
+                "location": str(row.location),
+                "row_id": row.stable_row_id,
+                "subject": row.subject_text,
+                "subject_iri": str(iri),
+                "subject_kind": kind,
+                "reasoning": row.reasoning_text,
+            }
+        )
+
+    unreviewed_evidence = []
+
+    for row in unreviewed_rows:
+        iri, kind = source_kind(
+            row.subject_text,
+            source_graph,
+        )
+        unreviewed_evidence.append(
+            {
+                "location": str(row.location),
+                "row_id": row.stable_row_id,
+                "subject": row.subject_text,
+                "subject_iri": str(iri),
+                "subject_kind": kind,
             }
         )
 
@@ -569,6 +583,10 @@ def run_check(
         "unique_row_id_count": workbook_stats.unique_row_id_count,
         "active_mapping_count": len(active_rows),
         "deferred_mapping_count": len(deferred_rows),
+        "no_direct_mapping_row_count": len(
+            no_direct_mapping_rows
+        ),
+        "unreviewed_row_count": len(unreviewed_rows),
         "explicitly_unmapped_row_count": len(
             explicitly_unmapped_rows
         ),
@@ -578,6 +596,8 @@ def run_check(
         ),
         "active_ontology_triple_count": len(active_graph),
         "deferred_mappings": deferred_evidence,
+        "no_direct_mapping_rows": no_direct_mapping_evidence,
+        "unreviewed_rows": unreviewed_evidence,
         "explicitly_unmapped_rows": explicitly_unmapped_evidence,
         "reasoning": reasoning,
         "passed": passed,
@@ -619,6 +639,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Unique RowIDs: {summary['unique_row_id_count']}")
     print(f"Active mappings: {summary['active_mapping_count']}")
     print(f"Deferred mappings: {summary['deferred_mapping_count']}")
+    print(
+        "No-direct-mapping decisions: "
+        f"{summary['no_direct_mapping_row_count']}"
+    )
+    print(
+        "Unreviewed rows: "
+        f"{summary['unreviewed_row_count']}"
+    )
     print(
         "Explicitly unmapped rows: "
         f"{summary['explicitly_unmapped_row_count']}"

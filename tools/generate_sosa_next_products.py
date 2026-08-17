@@ -18,6 +18,7 @@ from rdflib.compare import isomorphic
 from rdflib.namespace import OWL, RDF
 
 import check_sosa_next_mapping as mapping_checker
+import sosa_2023_mapping_status as mapping_status
 import generate_mapping_from_coms as coms
 import modular_products
 import publication_metadata
@@ -295,6 +296,11 @@ EXPECTED_WORKBOOK_COUNTS = {
     "canonical_authoritative_axiom_count": 46,
 }
 
+EXPECTED_MAPPING_STATUS_COUNTS = {
+    "no_direct_mapping_row_count": 0,
+    "unreviewed_row_count": 48,
+}
+
 EXPECTED_CATEGORY_COUNTS = {
     "bfo_bearing": 21,
     "cco_bearing": 24,
@@ -393,65 +399,29 @@ def classify_workbook_rows(
     list[coms.WorkbookRow],
     list[coms.WorkbookRow],
 ]:
-    active = [
-        row
-        for row in rows
-        if (
-            row.subject_text
-            and row.predicate_text
-            and row.target_text
-        )
-    ]
+    """Legacy three-bucket compatibility view over MappingStatus."""
 
-    deferred = [
-        row
-        for row in rows
-        if (
-            row.subject_text
-            and not row.predicate_text
-            and not row.target_text
-            and row.reasoning_text
+    classification = (
+        mapping_status.classify_workbook_rows(
+            rows
         )
-    ]
+    )
 
     explicitly_unmapped = [
         row
         for row in rows
-        if (
-            row.subject_text
-            and not row.predicate_text
-            and not row.target_text
-            and not row.reasoning_text
-        )
+        if row.mapping_status_text
+        in {
+            mapping_status.NO_DIRECT_MAPPING,
+            mapping_status.UNREVIEWED,
+        }
     ]
 
-    malformed = [
-        row
-        for row in rows
-        if (
-            row not in active
-            and row not in deferred
-            and row not in explicitly_unmapped
-        )
-    ]
-
-    if malformed:
-        rendered = "\n".join(
-            (
-                f"{row.diagnostic_id}: "
-                f"subject={row.subject_text!r}; "
-                f"predicate={row.predicate_text!r}; "
-                f"target={row.target_text!r}"
-            )
-            for row in malformed
-        )
-
-        raise RuntimeError(
-            "Malformed SOSA-next workbook rows:\n"
-            + rendered
-        )
-
-    return active, deferred, explicitly_unmapped
+    return (
+        list(classification.active),
+        list(classification.deferred),
+        explicitly_unmapped,
+    )
 
 
 def process_active_rows(
@@ -485,9 +455,34 @@ def process_active_rows(
         workbook_stats,
     )
 
-    active, deferred, explicitly_unmapped = (
-        classify_workbook_rows(rows)
+    classification = (
+        mapping_status.classify_workbook_rows(
+            rows
+        )
     )
+
+    active = list(
+        classification.active
+    )
+    deferred = list(
+        classification.deferred
+    )
+    no_direct_mapping = list(
+        classification.no_direct_mapping
+    )
+    unreviewed = list(
+        classification.unreviewed
+    )
+
+    explicitly_unmapped = [
+        row
+        for row in rows
+        if row.mapping_status_text
+        in {
+            mapping_status.NO_DIRECT_MAPPING,
+            mapping_status.UNREVIEWED,
+        }
+    ]
 
     counts = {
         "governed_row_count": len(rows),
@@ -496,6 +491,10 @@ def process_active_rows(
         ),
         "active_mapping_count": len(active),
         "deferred_mapping_count": len(deferred),
+        "no_direct_mapping_row_count": len(
+            no_direct_mapping
+        ),
+        "unreviewed_row_count": len(unreviewed),
         "explicitly_unmapped_row_count": len(
             explicitly_unmapped
         ),
@@ -507,6 +506,17 @@ def process_active_rows(
         if key == "canonical_authoritative_axiom_count":
             continue
 
+        actual = counts[key]
+
+        if actual != expected:
+            raise RuntimeError(
+                f"{key}: expected {expected}; "
+                f"found {actual}"
+            )
+
+    for key, expected in (
+        EXPECTED_MAPPING_STATUS_COUNTS.items()
+    ):
         actual = counts[key]
 
         if actual != expected:
@@ -1795,7 +1805,15 @@ def print_summary(summary: Mapping[str, Any]) -> None:
         f"{summary['deferred_mapping_count']}"
     )
     print(
-        "Explicitly unmapped rows: "
+        "No-direct-mapping decisions: "
+        f"{summary['no_direct_mapping_row_count']}"
+    )
+    print(
+        "Unreviewed rows: "
+        f"{summary['unreviewed_row_count']}"
+    )
+    print(
+        "Legacy explicitly unmapped aggregate: "
         f"{summary['explicitly_unmapped_row_count']}"
     )
     print(
