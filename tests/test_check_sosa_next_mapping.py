@@ -59,7 +59,9 @@ EXPECTED_CLASS_NO_DIRECT_MAPPING = {
     "sosa:SpatialSample",
 }
 
-EXPECTED_OBJECT_PROPERTY_DEFERRALS = {
+EXPECTED_OBJECT_PROPERTY_DEFERRALS: set[str] = set()
+
+EXPECTED_OBJECT_PROPERTY_NO_DIRECT_MAPPING = {
     "sosa:actsOn",
     "sosa:actsOnProperty",
     "sosa:featureHasUltimateSample",
@@ -70,9 +72,9 @@ EXPECTED_OBJECT_PROPERTY_DEFERRALS = {
     "sosa:hasOriginalSample",
     "sosa:hasOutput",
     "sosa:hasSystemCapability",
+    "sosa:hosts",
     "sosa:observedProperty",
     "sosa:observes",
-    "sosa:hosts",
 }
 
 
@@ -150,10 +152,10 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertEqual(summary["governed_row_count"], 119)
                 self.assertEqual(summary["unique_row_id_count"], 119)
                 self.assertEqual(summary["active_mapping_count"], 46)
-                self.assertEqual(summary["deferred_mapping_count"], 17)
+                self.assertEqual(summary["deferred_mapping_count"], 4)
                 self.assertEqual(
                     summary["explicitly_unmapped_row_count"],
-                    56,
+                    69,
                 )
                 self.assertEqual(summary["malformed_row_count"], 0)
                 self.assertEqual(
@@ -183,7 +185,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["deferred_mappings"]
                 }
-                self.assertEqual(len(deferred), 17)
+                self.assertEqual(len(deferred), 4)
                 self.assertEqual(
                     len(deferred),
                     len(summary["deferred_mappings"]),
@@ -246,11 +248,14 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 }
                 self.assertEqual(
                     set(no_direct_mapping),
-                    EXPECTED_CLASS_NO_DIRECT_MAPPING,
+                    (
+                        EXPECTED_CLASS_NO_DIRECT_MAPPING
+                        | EXPECTED_OBJECT_PROPERTY_NO_DIRECT_MAPPING
+                    ),
                 )
                 self.assertEqual(
                     summary["no_direct_mapping_row_count"],
-                    8,
+                    21,
                 )
                 self.assertEqual(
                     summary["unreviewed_row_count"],
@@ -261,7 +266,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["explicitly_unmapped_rows"]
                 }
-                self.assertEqual(len(explicitly_unmapped), 56)
+                self.assertEqual(len(explicitly_unmapped), 69)
                 self.assertEqual(
                     len(explicitly_unmapped),
                     len(summary["explicitly_unmapped_rows"]),

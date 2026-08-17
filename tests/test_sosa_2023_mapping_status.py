@@ -181,8 +181,8 @@ class CurrentWorkbookTests(unittest.TestCase):
             ),
             (
                 46,
-                17,
-                8,
+                4,
+                21,
                 48,
             ),
         )
