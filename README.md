@@ -55,7 +55,7 @@ SOSA-next CCO Extension
 ```
 
 The BFO Mapping imports no project ontology. The Integrated Mapping is a
-separate complete consumer entry point: it directly asserts all 46 governed
+separate complete consumer entry point: it directly asserts all 55 governed
 mapping axioms and imports the governed SOSA root, SOSA Systems, SOSA Sampling,
 source-declaration overlay, and the track-specific merged CCO/BFO dependency at `src/sosa-next/imports/cco.ttl`. Root `imports/cco.ttl` remains the separate current-track dependency.
 

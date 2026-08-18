@@ -22,9 +22,9 @@ PRODUCT_ORDER = (
     "cco_extension",
 )
 FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS = (
-    ("integrated", 15234),
-    ("strict_bfo_mapping", 15117),
-    ("cco_extension", 15245),
+    ("integrated", 15243),
+    ("strict_bfo_mapping", 15120),
+    ("cco_extension", 15254),
 )
 if tuple(key for key, _ in FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS) != PRODUCT_ORDER:
     raise RuntimeError("formal fixed-closure counts and product order differ")
@@ -847,39 +847,39 @@ FORMAL_INTEGRATED_EXTERNAL_IMPORTS = (
 
 PRODUCT_STATIC_EVIDENCE = {
     "integrated": {
-        "byte_size": 39991,
+        "byte_size": 41010,
         "ontology_declaration_count": 1,
         "import_count": 4,
         "static_metadata_count": 7,
         "formal_metadata_count": 3,
-        "logical_triple_count": 268,
-        "total_triple_count": 283,
-        "direct_governed_axiom_count": 46,
-        "governed_closure_axiom_count": 46,
+        "logical_triple_count": 277,
+        "total_triple_count": 292,
+        "direct_governed_axiom_count": 55,
+        "governed_closure_axiom_count": 55,
         "reasoning_mode": "independent",
     },
     "strict_bfo_mapping": {
-        "byte_size": 23335,
+        "byte_size": 23664,
         "ontology_declaration_count": 1,
         "import_count": 0,
         "static_metadata_count": 7,
         "formal_metadata_count": 3,
-        "logical_triple_count": 151,
-        "total_triple_count": 162,
-        "direct_governed_axiom_count": 21,
-        "governed_closure_axiom_count": 21,
+        "logical_triple_count": 154,
+        "total_triple_count": 165,
+        "direct_governed_axiom_count": 24,
+        "governed_closure_axiom_count": 24,
         "reasoning_mode": "independent",
     },
     "cco_extension": {
-        "byte_size": 18201,
+        "byte_size": 18891,
         "ontology_declaration_count": 1,
         "import_count": 1,
         "static_metadata_count": 7,
         "formal_metadata_count": 3,
-        "logical_triple_count": 117,
-        "total_triple_count": 129,
-        "direct_governed_axiom_count": 25,
-        "governed_closure_axiom_count": 46,
+        "logical_triple_count": 123,
+        "total_triple_count": 135,
+        "direct_governed_axiom_count": 31,
+        "governed_closure_axiom_count": 55,
         "reasoning_mode": "independent",
     },
 }

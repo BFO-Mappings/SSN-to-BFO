@@ -85,9 +85,9 @@ EXPECTED_IMPORTS = {
 }
 
 EXPECTED_TRIPLE_COUNTS = {
-    INTEGRATED: 281,
-    BFO_MAPPING: 159,
-    CCO_EXTENSION: 126,
+    INTEGRATED: 290,
+    BFO_MAPPING: 162,
+    CCO_EXTENSION: 132,
     EDITOR: 4,
 }
 
@@ -303,7 +303,7 @@ class SosaNextConsumerStackTests(unittest.TestCase):
             for triple in graphs[ontology_iri]:
                 combined.add(triple)
 
-        self.assertEqual(len(combined), 285)
+        self.assertEqual(len(combined), 294)
 
     def test_external_dependencies_remain_separate_inputs(
         self,

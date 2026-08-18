@@ -180,10 +180,10 @@ class CurrentWorkbookTests(unittest.TestCase):
                 len(result.unreviewed),
             ),
             (
-                46,
+                55,
                 4,
                 21,
-                48,
+                39,
             ),
         )
 

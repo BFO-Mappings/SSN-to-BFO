@@ -102,7 +102,7 @@ class SosaNextProductTests(unittest.TestCase):
             )
             self.assertEqual(
                 summary["active_mapping_count"],
-                46,
+                55,
             )
             self.assertEqual(
                 summary["deferred_mapping_count"],
@@ -112,19 +112,19 @@ class SosaNextProductTests(unittest.TestCase):
                 summary[
                     "explicitly_unmapped_row_count"
                 ],
-                69,
+                60,
             )
             self.assertEqual(
                 summary[
                     "canonical_authoritative_axiom_count"
                 ],
-                46,
+                55,
             )
             self.assertEqual(
                 summary["category_counts"],
                 {
-                    "bfo_bearing": 21,
-                    "cco_bearing": 24,
+                    "bfo_bearing": 24,
+                    "cco_bearing": 30,
                     "mixed_bfo_cco": 1,
                 },
             )
@@ -132,13 +132,13 @@ class SosaNextProductTests(unittest.TestCase):
                 summary[
                     "combined_logical_triple_count"
                 ],
-                268,
+                277,
             )
             self.assertEqual(
                 summary[
                     "integrated_reference_logical_triple_count"
                 ],
-                268,
+                277,
             )
 
             self.assertEqual(
@@ -152,38 +152,38 @@ class SosaNextProductTests(unittest.TestCase):
 
             expected = {
                 "integrated": {
-                    "axiom_count": 46,
-                    "logical_triple_count": 268,
-                    "total_triple_count": 281,
+                    "axiom_count": 55,
+                    "logical_triple_count": 277,
+                    "total_triple_count": 290,
                     "sha256": (
-                        "fec0e53270b4b527798db6ff078371c1"
-                        "050eb8afb441440db09fbc17cf840520"
+                        "3f502821476478252cdd9feb316b47612"
+                        "daa473e511597970a1351617d5cfc12"
                     ),
                 },
                 "strict_bfo_mapping": {
-                    "axiom_count": 21,
-                    "logical_triple_count": 151,
-                    "total_triple_count": 159,
+                    "axiom_count": 24,
+                    "logical_triple_count": 154,
+                    "total_triple_count": 162,
                     "sha256": (
-                        "e28dcdc2a261793b091f5c8d2e92b04"
-                        "a5e7c819659840e5c9ed622c444b22ad3"
+                        "1ae415bc96940e4007d064102f556aa5"
+                        "44593616a0eff984534406028b846efb"
                     ),
                 },
                 "cco_extension": {
-                    "axiom_count": 25,
-                    "logical_triple_count": 117,
-                    "total_triple_count": 126,
+                    "axiom_count": 31,
+                    "logical_triple_count": 123,
+                    "total_triple_count": 132,
                     "sha256": (
-                        "c61b07fae4aee044d7e627e7eaee94a"
-                        "bca6503f0da96e8fe8bd8820c8e31d09a"
+                        "53a7cc6c0f664e51bf9f7ac28e3d067f"
+                        "c4fdcc750e22a34fe5c12c766e51dc19"
                     ),
                 },
             }
 
             expected_closures = {
-                "integrated": 15231,
-                "strict_bfo_mapping": 15114,
-                "cco_extension": 15239,
+                "integrated": 15240,
+                "strict_bfo_mapping": 15117,
+                "cco_extension": 15248,
             }
 
             for product_key, values in (

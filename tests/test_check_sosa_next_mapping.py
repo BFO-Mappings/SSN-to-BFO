@@ -151,20 +151,20 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertEqual(summary["governed_row_count"], 119)
                 self.assertEqual(summary["unique_row_id_count"], 119)
-                self.assertEqual(summary["active_mapping_count"], 46)
+                self.assertEqual(summary["active_mapping_count"], 55)
                 self.assertEqual(summary["deferred_mapping_count"], 4)
                 self.assertEqual(
                     summary["explicitly_unmapped_row_count"],
-                    69,
+                    60,
                 )
                 self.assertEqual(summary["malformed_row_count"], 0)
                 self.assertEqual(
                     summary["canonical_authoritative_axiom_count"],
-                    46,
+                    55,
                 )
                 self.assertEqual(
                     summary["active_ontology_triple_count"],
-                    274,
+                    283,
                 )
 
                 reasoning = summary["reasoning"]
@@ -173,7 +173,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertTrue(reasoning["reasoned_output_exists"])
                 self.assertEqual(
                     reasoning["reasoned_output_triples"],
-                    1749,
+                    1758,
                 )
                 self.assertEqual(
                     reasoning["unsatisfiable_classes"],
@@ -259,14 +259,14 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     summary["unreviewed_row_count"],
-                    48,
+                    39,
                 )
 
                 explicitly_unmapped = {
                     item["subject"]: item
                     for item in summary["explicitly_unmapped_rows"]
                 }
-                self.assertEqual(len(explicitly_unmapped), 69)
+                self.assertEqual(len(explicitly_unmapped), 60)
                 self.assertEqual(
                     len(explicitly_unmapped),
                     len(summary["explicitly_unmapped_rows"]),

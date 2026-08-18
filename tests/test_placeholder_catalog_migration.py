@@ -89,11 +89,11 @@ NEGATIVE_GUARD_PATHS = frozenset(
 
 SOSA_NEXT_ARTIFACT_HASHES = {
     "releases/sosa-next/sosa-integrated.ttl":
-        "fec0e53270b4b527798db6ff078371c1050eb8afb441440db09fbc17cf840520",
+        "3f502821476478252cdd9feb316b47612daa473e511597970a1351617d5cfc12",
     "releases/sosa-next/sosa-bfo-mapping.ttl":
-        "e28dcdc2a261793b091f5c8d2e92b04a5e7c819659840e5c9ed622c444b22ad3",
+        "1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb",
     "releases/sosa-next/sosa-cco-extension.ttl":
-        "c61b07fae4aee044d7e627e7eaee94abca6503f0da96e8fe8bd8820c8e31d09a",
+        "53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19",
     "src/sosa-next/sosa-mappings-edit.ttl":
         "805b990d778bbd83abfcb3d63a696e8a14d894adc479ec4bc4382d8d89e366e4",
 }

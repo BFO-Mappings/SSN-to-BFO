@@ -178,14 +178,14 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
                 "mixed_bfo_cco",
             }
         ),
-        "axiom_count": 46,
-        "logical_triple_count": 268,
-        "total_triple_count": 281,
+        "axiom_count": 55,
+        "logical_triple_count": 277,
+        "total_triple_count": 290,
         "body_sha256": (
-            '2900811a1ca635bd46307a133a0c726c8b369d8f9f5a8960bdb19bd0324fcf49'
+            '61738c961589fb553c551a33e7bee2050a1b5485389dcb9136aa6e17dab6fb13'
         ),
         "sha256": (
-            'fec0e53270b4b527798db6ff078371c1050eb8afb441440db09fbc17cf840520'
+            '3f502821476478252cdd9feb316b47612daa473e511597970a1351617d5cfc12'
         ),
     },
     "strict_bfo_mapping": {
@@ -218,14 +218,14 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
             ("ssn-system", "http://www.w3.org/ns/ssn/systems/"),
         ),
         "categories": frozenset({"bfo_bearing"}),
-        "axiom_count": 21,
-        "logical_triple_count": 151,
-        "total_triple_count": 159,
+        "axiom_count": 24,
+        "logical_triple_count": 154,
+        "total_triple_count": 162,
         "body_sha256": (
-            'd1f5f862b0ac3150f3ebcf7f3e0a21d32f51e8e341c8ce51a95b100c1dece0c0'
+            '5d229ec03094212fdfb3078e1dd993f1b8a63d688c669aa7fd2c732ead295954'
         ),
         "sha256": (
-            'e28dcdc2a261793b091f5c8d2e92b04a5e7c819659840e5c9ed622c444b22ad3'
+            '1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb'
         ),
     },
     "cco_extension": {
@@ -269,14 +269,14 @@ PRODUCT_SPECS: dict[str, dict[str, Any]] = {
                 "mixed_bfo_cco",
             }
         ),
-        "axiom_count": 25,
-        "logical_triple_count": 117,
-        "total_triple_count": 126,
+        "axiom_count": 31,
+        "logical_triple_count": 123,
+        "total_triple_count": 132,
         "body_sha256": (
-            '2263a94e360e90f469814cc04b84948a9b87177e1bd33738d648e26514c93086'
+            '600677e891b41c17557c457c2c582826a3cb2287d3ff6d4c35d8d4d734eec758'
         ),
         "sha256": (
-            'c61b07fae4aee044d7e627e7eaee94abca6503f0da96e8fe8bd8820c8e31d09a'
+            '53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19'
         ),
     },
 }
@@ -290,20 +290,20 @@ CATEGORY_TO_PRODUCT = {
 EXPECTED_WORKBOOK_COUNTS = {
     "governed_row_count": 119,
     "unique_row_id_count": 119,
-    "active_mapping_count": 46,
+    "active_mapping_count": 55,
     "deferred_mapping_count": 4,
-    "explicitly_unmapped_row_count": 69,
-    "canonical_authoritative_axiom_count": 46,
+    "explicitly_unmapped_row_count": 60,
+    "canonical_authoritative_axiom_count": 55,
 }
 
 EXPECTED_MAPPING_STATUS_COUNTS = {
     "no_direct_mapping_row_count": 21,
-    "unreviewed_row_count": 48,
+    "unreviewed_row_count": 39,
 }
 
 EXPECTED_CATEGORY_COUNTS = {
-    "bfo_bearing": 21,
-    "cco_bearing": 24,
+    "bfo_bearing": 24,
+    "cco_bearing": 30,
     "mixed_bfo_cco": 1,
 }
 
@@ -564,9 +564,9 @@ def process_active_rows(
             "SOURCE_IMPORTS was not restored."
         )
 
-    if len(processed) != 46:
+    if len(processed) != 55:
         raise RuntimeError(
-            f"Expected 46 processed mappings; "
+            f"Expected 55 processed mappings; "
             f"found {len(processed)}"
         )
 
@@ -677,10 +677,10 @@ def build_product_records(
             f"Actual:   {actual_categories}"
         )
 
-    if len(row_ids) != 46 or len(axiom_ids) != 46:
+    if len(row_ids) != 55 or len(axiom_ids) != 55:
         raise RuntimeError(
-            "Expected 46 unique active RowIDs and "
-            "46 unique authoritative axiom IDs."
+            "Expected 55 unique active RowIDs and "
+            "55 unique authoritative axiom IDs."
         )
 
     return records, actual_categories
@@ -1186,9 +1186,9 @@ def render_formal_product_set(
         for product_key in MODULAR_PRODUCT_ORDER
     )
 
-    if modular_sum != 268 or len(modular_union) != 268:
+    if modular_sum != 277 or len(modular_union) != 277:
         raise RuntimeError(
-            "Expected 268 SOSA-2023 formal modular logical "
+            "Expected 277 SOSA-2023 formal modular logical "
             f"triples; sum={modular_sum}, "
             f"distinct={len(modular_union)}"
         )
@@ -1284,9 +1284,9 @@ def build_candidate(
         for product_key in MODULAR_PRODUCT_ORDER
     )
 
-    if summed != 268 or len(combined) != 268:
+    if summed != 277 or len(combined) != 277:
         raise RuntimeError(
-            "Expected 268 modular logical triples; "
+            "Expected 277 modular logical triples; "
             f"sum={summed}, distinct={len(combined)}"
         )
 
@@ -1306,9 +1306,9 @@ def build_candidate(
         str(mapping_checker.ONTOLOGY_IRI),
     )
 
-    if len(reference_logical) != 268:
+    if len(reference_logical) != 277:
         raise RuntimeError(
-            "Expected 268 integrated logical triples; "
+            "Expected 277 integrated logical triples; "
             f"found {len(reference_logical)}"
         )
 
@@ -1332,7 +1332,7 @@ def build_candidate(
 
     summary = {
         **counts,
-        "canonical_authoritative_axiom_count": 46,
+        "canonical_authoritative_axiom_count": 55,
         "category_counts": categories,
         "combined_logical_triple_count": len(
             combined
