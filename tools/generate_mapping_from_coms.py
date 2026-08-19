@@ -242,6 +242,7 @@ class WorkbookRow:
     target_text: str
     reasoning_text: str
     stable_row_id: str
+    mapping_status_text: str = ""
 
     @property
     def row_id(self) -> str:
@@ -802,6 +803,16 @@ def read_workbook(path: Path) -> tuple[list[WorkbookRow], WorkbookStats]:
                 target_text=normalize_cell(worksheet.cell(row=row_number, column=header_index["coms:Target"]).value),
                 reasoning_text=normalize_cell(worksheet.cell(row=row_number, column=header_index["coms:Reasoning"]).value),
                 stable_row_id=normalize_cell(worksheet.cell(row=row_number, column=header_index[ROW_ID_HEADER]).value),
+                mapping_status_text=(
+                    normalize_cell(
+                        worksheet.cell(
+                            row=row_number,
+                            column=header_index["coms:MappingStatus"],
+                        ).value
+                    )
+                    if "coms:MappingStatus" in header_index
+                    else ""
+                ),
             )
             stats.rows_by_sheet[worksheet.title] += 1
             if (
@@ -809,6 +820,7 @@ def read_workbook(path: Path) -> tuple[list[WorkbookRow], WorkbookStats]:
                 or row.predicate_text
                 or row.target_text
                 or row.reasoning_text
+                or row.mapping_status_text
                 or row.stable_row_id
             ):
                 stats.populated_rows_by_sheet[worksheet.title] += 1

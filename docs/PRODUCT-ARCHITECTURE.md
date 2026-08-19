@@ -154,14 +154,14 @@ three ontology products:
 
 | Product | Path | Direct axioms | Logical triples | Total triples |
 | --- | --- | ---: | ---: | ---: |
-| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 46 | 268 | 281 |
-| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 151 | 159 |
-| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 25 | 117 | 126 |
+| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 55 | 277 | 290 |
+| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 24 | 154 | 162 |
+| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 31 | 123 | 132 |
 
 The maintained SOSA-next track resolves its merged CCO/BFO target through `src/sosa-next/imports/cco.ttl`; root `imports/cco.ttl` remains the separate current SSN/SOSA-track dependency.
 
 The Integrated Mapping is the distinct complete consumer entry point. It
-directly asserts all 46 canonical authoritative axioms and imports exactly the
+directly asserts all 55 canonical authoritative axioms and imports exactly the
 governed SOSA root, SOSA Systems, SOSA Sampling, source-declaration overlay,
 and merged CCO/BFO dependency.
 
@@ -175,8 +175,8 @@ SOSA-next BFO Mapping
 ```
 
 The BFO Mapping imports no ontology. The CCO Extension imports only the BFO
-Mapping. Their logical union contains 268 triples and is isomorphic to the
-Integrated Mapping's 268 logical triples.
+Mapping. Their logical union contains 277 triples and is isomorphic to the
+Integrated Mapping's 277 logical triples.
 
 The editor shell imports only the Integrated Mapping:
 
@@ -187,7 +187,7 @@ SOSA-next editor shell
 SOSA-next Integrated Mapping
 ```
 
-The resulting local editor project closure contains 285 distinct triples.
+The resulting local editor project closure contains 294 distinct triples.
 `src/sosa-next/catalog-v001.xml` contains 14 local mappings covering the
 governed source and target dependencies, all three maintained products, and
 the editor shell. The BFO Mapping and CCO Extension remain independently
@@ -202,9 +202,9 @@ The maintained product hashes are:
 
 | Product | SHA-256 |
 | --- | --- |
-| Integrated | `fec0e53270b4b527798db6ff078371c1050eb8afb441440db09fbc17cf840520` |
-| BFO Mapping | `e28dcdc2a261793b091f5c8d2e92b04a5e7c819659840e5c9ed622c444b22ad3` |
-| CCO Extension | `c61b07fae4aee044d7e627e7eaee94abca6503f0da96e8fe8bd8820c8e31d09a` |
+| Integrated | `3f502821476478252cdd9feb316b47612daa473e511597970a1351617d5cfc12` |
+| BFO Mapping | `1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb` |
+| CCO Extension | `53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19` |
 
 The source-version track remains a separate formal package. Its
 publication-metadata, formal-rendering, release-manifest, deterministic
@@ -218,8 +218,8 @@ current-track schema-v2 authority unchanged rather than generalizing the two
 release tracks back into one inventory.
 
 Its canonical product inventory is exactly Integrated, Strict BFO Mapping, and
-CCO Extension. Formal HermiT closure evidence is fixed at 15,234, 15,117, and
-15,245 triples respectively. The manifest records 31 governed inputs, including
+CCO Extension. Formal HermiT closure evidence is fixed at 15,243, 15,120, and
+15,254 triples respectively. The manifest records 31 governed inputs, including
 the SOSA-2023 package runtime, builder, and checker as byte-affecting
 non-packaged evidence. It also records four external dependency records and an
 11-member included-file evidence inventory.
@@ -262,9 +262,9 @@ locked at:
 
 | Product | Logical triples | Total triples | SHA-256 |
 | --- | ---: | ---: | --- |
-| Integrated | 268 | 283 | `e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19` |
-| BFO Mapping | 151 | 162 | `c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96` |
-| CCO Extension | 117 | 129 | `49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35` |
+| Integrated | 277 | 292 | `539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43` |
+| BFO Mapping | 154 | 165 | `8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125` |
+| CCO Extension | 123 | 135 | `d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d` |
 
 The separate package engine is implemented by
 `tools/sosa_2023_release_runtime.py`, `tools/sosa_2023_build_release.py`, and

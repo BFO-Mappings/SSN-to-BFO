@@ -37,17 +37,17 @@ NOTES_PATH = (
 
 FORMAL_HASHES = {
     "integrated":
-        "e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19",
+        "539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43",
     "strict_bfo_mapping":
-        "c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96",
+        "8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125",
     "cco_extension":
-        "49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35",
+        "d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d",
 }
 
 EXPECTED_CLOSURES = (
-    ("integrated", 15234),
-    ("strict_bfo_mapping", 15117),
-    ("cco_extension", 15245),
+    ("integrated", 15243),
+    ("strict_bfo_mapping", 15120),
+    ("cco_extension", 15254),
 )
 
 PACKAGE_ENGINE_INPUTS = (

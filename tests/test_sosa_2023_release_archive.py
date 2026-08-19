@@ -1006,13 +1006,13 @@ class Sosa2023ArchiveAuthorityContractTests(unittest.TestCase):
             "tools/sosa_2023_release_runtime.py":
                 "c515000306cdf114f648c447305946e7c2a39f33f7c45b5d79d99255a554d939",
             "tools/sosa_2023_build_release.py":
-                "7b4683a65d23abfb20f9f4db4d1cc997dc87fb1cfed909f65fea1e0fe1245e15",
+                "a89d31282293fd76c30faf4aa95bd5b087af2d73176eda40a8fbea42af90d732",
             "tools/sosa_2023_check_release.py":
                 "65a4debcfe73ccd6998310fe0be685fee7ef080d0707fedbe24a0aab814dea1b",
             "tools/sosa_2023_release_manifest.py":
-                "6dca2c14a66170245685c08adb6072d5524c3c978cf3b27e29f37d6163b7dcdc",
+                "ea7ed5342a27bc452c54c3f4fd51b90a2a0ddcdb4dbdf86dc6b42cf97a9f2b1a",
             "config/sosa-2023-release-manifest-schema-v1.json":
-                "806cd7545cd5a4ac09a4d902fc939472b25c1f400340d83bb03e4036ac170ebd",
+                "18a468c199cdda5507380d7f58e50c1b31736510c9c9b04397d038fe7383e6bb",
         }
 
         for relative, digest in expected.items():

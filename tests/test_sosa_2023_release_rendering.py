@@ -32,31 +32,31 @@ SYNTHETIC_CONTEXT = parse_formal_release_context(
 )
 
 EXPECTED_TOTAL_TRIPLES = {
-    "integrated": 283,
-    "strict_bfo_mapping": 162,
-    "cco_extension": 129,
+    "integrated": 292,
+    "strict_bfo_mapping": 165,
+    "cco_extension": 135,
 }
 
 EXPECTED_LOGICAL_TRIPLES = {
-    "integrated": 268,
-    "strict_bfo_mapping": 151,
-    "cco_extension": 117,
+    "integrated": 277,
+    "strict_bfo_mapping": 154,
+    "cco_extension": 123,
 }
 
 
 FORMAL_HASHES = {
     "integrated":
-        "e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19",
+        "539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43",
     "strict_bfo_mapping":
-        "c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96",
+        "8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125",
     "cco_extension":
-        "49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35",
+        "d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d",
 }
 
 FORMAL_BYTE_SIZES = {
-    "integrated": 39991,
-    "strict_bfo_mapping": 23335,
-    "cco_extension": 18201,
+    "integrated": 41010,
+    "strict_bfo_mapping": 23664,
+    "cco_extension": 18891,
 }
 
 
@@ -277,7 +277,7 @@ class Sosa2023ReleaseRenderingTests(unittest.TestCase):
             self.first[
                 "combined_logical_triple_count"
             ],
-            268,
+            277,
         )
         self.assertTrue(
             self.first["logical_union_isomorphic"]
@@ -330,11 +330,11 @@ class Sosa2023ReleaseRenderingTests(unittest.TestCase):
     def test_renderer_does_not_change_maintained_products(self) -> None:
         expected = {
             "integrated":
-                "fec0e53270b4b527798db6ff078371c1050eb8afb441440db09fbc17cf840520",
+                "3f502821476478252cdd9feb316b47612daa473e511597970a1351617d5cfc12",
             "strict_bfo_mapping":
-                "e28dcdc2a261793b091f5c8d2e92b04a5e7c819659840e5c9ed622c444b22ad3",
+                "1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb",
             "cco_extension":
-                "c61b07fae4aee044d7e627e7eaee94abca6503f0da96e8fe8bd8820c8e31d09a",
+                "53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19",
         }
 
         self.assertEqual(

@@ -46,7 +46,9 @@ EXPECTED_DATATYPE_TERMS = {
     "sosa:startTime",
 }
 
-EXPECTED_CLASS_DEFERRALS = {
+EXPECTED_CLASS_DEFERRALS: set[str] = set()
+
+EXPECTED_CLASS_NO_DIRECT_MAPPING = {
     "sosa:ActuatableProperty",
     "sosa:ActuatingProcedure",
     "sosa:Observation",
@@ -57,7 +59,9 @@ EXPECTED_CLASS_DEFERRALS = {
     "sosa:SpatialSample",
 }
 
-EXPECTED_OBJECT_PROPERTY_DEFERRALS = {
+EXPECTED_OBJECT_PROPERTY_DEFERRALS: set[str] = set()
+
+EXPECTED_OBJECT_PROPERTY_NO_DIRECT_MAPPING = {
     "sosa:actsOn",
     "sosa:actsOnProperty",
     "sosa:featureHasUltimateSample",
@@ -68,9 +72,9 @@ EXPECTED_OBJECT_PROPERTY_DEFERRALS = {
     "sosa:hasOriginalSample",
     "sosa:hasOutput",
     "sosa:hasSystemCapability",
+    "sosa:hosts",
     "sosa:observedProperty",
     "sosa:observes",
-    "sosa:hosts",
 }
 
 
@@ -147,20 +151,20 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertEqual(summary["governed_row_count"], 119)
                 self.assertEqual(summary["unique_row_id_count"], 119)
-                self.assertEqual(summary["active_mapping_count"], 46)
-                self.assertEqual(summary["deferred_mapping_count"], 25)
+                self.assertEqual(summary["active_mapping_count"], 55)
+                self.assertEqual(summary["deferred_mapping_count"], 4)
                 self.assertEqual(
                     summary["explicitly_unmapped_row_count"],
-                    48,
+                    60,
                 )
                 self.assertEqual(summary["malformed_row_count"], 0)
                 self.assertEqual(
                     summary["canonical_authoritative_axiom_count"],
-                    46,
+                    55,
                 )
                 self.assertEqual(
                     summary["active_ontology_triple_count"],
-                    274,
+                    283,
                 )
 
                 reasoning = summary["reasoning"]
@@ -169,7 +173,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertTrue(reasoning["reasoned_output_exists"])
                 self.assertEqual(
                     reasoning["reasoned_output_triples"],
-                    1749,
+                    1758,
                 )
                 self.assertEqual(
                     reasoning["unsatisfiable_classes"],
@@ -181,7 +185,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["deferred_mappings"]
                 }
-                self.assertEqual(len(deferred), 25)
+                self.assertEqual(len(deferred), 4)
                 self.assertEqual(
                     len(deferred),
                     len(summary["deferred_mappings"]),
@@ -238,11 +242,31 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                         DATATYPE_DEFERRAL,
                     )
 
+                no_direct_mapping = {
+                    item["subject"]: item
+                    for item in summary["no_direct_mapping_rows"]
+                }
+                self.assertEqual(
+                    set(no_direct_mapping),
+                    (
+                        EXPECTED_CLASS_NO_DIRECT_MAPPING
+                        | EXPECTED_OBJECT_PROPERTY_NO_DIRECT_MAPPING
+                    ),
+                )
+                self.assertEqual(
+                    summary["no_direct_mapping_row_count"],
+                    21,
+                )
+                self.assertEqual(
+                    summary["unreviewed_row_count"],
+                    39,
+                )
+
                 explicitly_unmapped = {
                     item["subject"]: item
                     for item in summary["explicitly_unmapped_rows"]
                 }
-                self.assertEqual(len(explicitly_unmapped), 48)
+                self.assertEqual(len(explicitly_unmapped), 60)
                 self.assertEqual(
                     len(explicitly_unmapped),
                     len(summary["explicitly_unmapped_rows"]),

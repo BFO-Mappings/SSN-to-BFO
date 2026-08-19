@@ -1466,7 +1466,7 @@
                       "const": "PASS"
                     },
                     "fixed_closure_triple_count": {
-                      "const": 15234
+                      "const": 15243
                     },
                     "return_code": {
                       "const": 0
@@ -1498,7 +1498,7 @@
                       "const": "PASS"
                     },
                     "fixed_closure_triple_count": {
-                      "const": 15117
+                      "const": 15120
                     },
                     "return_code": {
                       "const": 0
@@ -1530,7 +1530,7 @@
                       "const": "PASS"
                     },
                     "fixed_closure_triple_count": {
-                      "const": 15245
+                      "const": 15254
                     },
                     "return_code": {
                       "const": 0

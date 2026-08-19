@@ -20,6 +20,10 @@
     rdfs:seeAlso <https://github.com/BFO-Mappings/SSN-to-BFO> ;
     rdfs:comment "Generated from mappings/SOSA-next-to-BFO-COMS.xlsx; do not edit this ontology product directly."@en .
 
+<http://www.w3.org/ns/sosa/isSubSystemOf> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000176> .
+
+<http://www.w3.org/ns/sosa/systemDeployment> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
+
 <http://www.w3.org/ns/sosa/Property> rdfs:subClassOf _:a24e075f0f57d087e2d8fbb37208f2e7af547ad6af94a4e58731203f9a5cffb20_target .
 _:a24e075f0f57d087e2d8fbb37208f2e7af547ad6af94a4e58731203f9a5cffb20_target rdf:type owl:Class .
 _:a24e075f0f57d087e2d8fbb37208f2e7af547ad6af94a4e58731203f9a5cffb20_target owl:unionOf _:a24e075f0f57d087e2d8fbb37208f2e7af547ad6af94a4e58731203f9a5cffb20_target_list_0 .
@@ -115,6 +119,8 @@ _:a760b2581ffe368417430d715726b8b30361d5f527f534249af27d330d2e93b91_target_child
 _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target rdf:type owl:Restriction .
 _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target owl:onProperty <http://purl.obolibrary.org/obo/BFO_0000196> .
 _:a787d8bb073fe33071f408df165d6e8f933d93a29fe980f02385ebe831ee2a66b_target owl:someValuesFrom <http://purl.obolibrary.org/obo/BFO_0000034> .
+
+<http://www.w3.org/ns/sosa/inDeployment> rdfs:subPropertyOf <http://purl.obolibrary.org/obo/BFO_0000056> .
 
 <http://www.w3.org/ns/sosa/Asset> rdfs:subClassOf <http://purl.obolibrary.org/obo/BFO_0000002> .
 

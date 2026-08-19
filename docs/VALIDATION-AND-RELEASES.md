@@ -117,27 +117,28 @@ content or a distinct consumer function.
 boundary and its materialized target: Integrated, BFO Mapping, and CCO
 Extension. Alignment Core and BFO Projection remain governed omitted roles.
 
-`make check-sosa-next` validates the 119 governed workbook rows, 46 active
-mappings, 25 deferred mappings, 48 explicitly unmapped rows, canonical
-identity, and a clean HermiT result for the integrated active mapping.
+`make check-sosa-next` validates the 119 governed workbook rows, 55 active
+mappings, 4 deferred mappings, 21 no-direct-mapping decisions, 39 unreviewed
+rows, the 60-row legacy explicitly-unmapped aggregate, canonical identity, and
+a clean HermiT result for the integrated active mapping.
 
 `make check-sosa-next-products` independently rebuilds Integrated, BFO Mapping,
 and CCO Extension; requires byte-identical candidate builds; validates exact
-hashes and triple counts; verifies that the 268-triple BFO+CCO modular logical
-union is isomorphic to the 268-logical-triple Integrated Mapping; checks
+hashes and triple counts; verifies that the 277-triple BFO+CCO modular logical
+union is isomorphic to the 277-logical-triple Integrated Mapping; checks
 transactional rollback; requires the retired Alignment Core artifact to remain
 absent; and requires zero named unsatisfiable classes in all three reasoning
 profiles.
 
 The fixed development reasoning closures contain:
 
-- 15,231 triples for Integrated;
-- 15,114 triples for BFO Mapping;
-- 15,239 triples for CCO Extension.
+- 15,240 triples for Integrated;
+- 15,117 triples for BFO Mapping;
+- 15,248 triples for CCO Extension.
 
 `make check-sosa-next-consumer-stack` resolves every development catalog target
 locally, parses all dependency and project entries, verifies the exact
-Integrated and modular import boundaries, loads the 285-triple editor project
+Integrated and modular import boundaries, loads the 294-triple editor project
 closure, and confirms that BFO Mapping and CCO Extension remain independently
 resolvable.
 
@@ -148,12 +149,12 @@ IRIs, exact formal import boundaries, preservation of the development logical
 graphs, byte-identical independent renders, and the locked synthetic formal
 byte contract:
 
-- Integrated: 268 logical triples, 283 total triples,
-  SHA-256 `e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19`;
-- Strict BFO Mapping: 151 logical triples, 162 total triples,
-  SHA-256 `c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96`;
-- CCO Extension: 117 logical triples, 129 total triples,
-  SHA-256 `49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35`.
+- Integrated: 277 logical triples, 292 total triples,
+  SHA-256 `539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43`;
+- Strict BFO Mapping: 154 logical triples, 165 total triples,
+  SHA-256 `8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125`;
+- CCO Extension: 123 logical triples, 135 total triples,
+  SHA-256 `d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d`.
 
 The formal Integrated product imports the official SOSA root, Systems, and
 Sampling IRIs plus merged CCO/BFO. The local source-declaration overlay remains
@@ -165,7 +166,7 @@ formal BFO Mapping version IRI.
 schema-v1 manifest authority. The canonical evidence model records 31 governed
 inputs, including the package runtime, builder, and checker as byte-affecting
 non-packaged inputs; four formal external dependencies; the exact three-product
-formal inventory; fixed HermiT closure counts of 15,234 / 15,117 / 15,245; and
+formal inventory; fixed HermiT closure counts of 15,243 / 15,120 / 15,254; and
 an 11-member included-file evidence inventory.
 
 The Sampling dependency evidence records the ontology identity actually

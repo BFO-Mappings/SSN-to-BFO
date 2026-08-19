@@ -20,12 +20,12 @@ The maintained development products are:
 
 | Product | Path | Direct axioms | Logical triples | Total triples |
 | --- | --- | ---: | ---: | ---: |
-| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 46 | 268 | 281 |
-| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 21 | 151 | 159 |
-| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 25 | 117 | 126 |
+| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 55 | 277 | 290 |
+| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 24 | 154 | 162 |
+| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 31 | 123 | 132 |
 
-Integrated directly contains all 46 canonical authoritative axioms. The BFO
-Mapping plus CCO Extension modular union also contains 268 logical triples and
+Integrated directly contains all 55 canonical authoritative axioms. The BFO
+Mapping plus CCO Extension modular union also contains 277 logical triples and
 is isomorphic to Integrated.
 
 The catalog-resolved editor closure is:
@@ -35,7 +35,7 @@ editor
   -> Integrated
 ```
 
-That local project stack contains 285 distinct triples.
+That local project stack contains 294 distinct triples.
 
 Integrated imports the governed SOSA root, SOSA Systems, SOSA Sampling,
 source-declaration overlay, and the track-specific merged CCO/BFO dependency at `src/sosa-next/imports/cco.ttl`. The BFO Mapping has
@@ -157,9 +157,9 @@ The fixed synthetic `2099-01-02` byte contract is:
 
 | Product | Logical triples | Total triples | SHA-256 |
 | --- | ---: | ---: | --- |
-| Integrated | 268 | 283 | `e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19` |
-| BFO Mapping | 151 | 162 | `c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96` |
-| CCO Extension | 117 | 129 | `49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35` |
+| Integrated | 277 | 292 | `539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43` |
+| BFO Mapping | 154 | 165 | `8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125` |
+| CCO Extension | 123 | 135 | `d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d` |
 
 These rendered products are now consumed by the separate SOSA-2023 manifest, package, archive, and rehearsal machinery; actual publication remains deferred.
 
@@ -182,7 +182,7 @@ The current-track formal-release authority remains manifest schema version 2 and
 Implemented manifest evidence now fixes:
 
 - product order: Integrated, Strict BFO Mapping, CCO Extension;
-- formal fixed-closure HermiT counts: 15,234 / 15,117 / 15,245;
+- formal fixed-closure HermiT counts: 15,243 / 15,120 / 15,254;
 - 31 governed input-evidence records, including the package runtime, builder,
   and checker as byte-affecting non-packaged inputs;
 - four external formal dependency records, with merged CCO/BFO evidenced from `src/sosa-next/imports/cco.ttl`;

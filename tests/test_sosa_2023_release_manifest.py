@@ -222,9 +222,9 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
         self.assertEqual(
             manifest.FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS,
             (
-                ("integrated", 15234),
-                ("strict_bfo_mapping", 15117),
-                ("cco_extension", 15245),
+                ("integrated", 15243),
+                ("strict_bfo_mapping", 15120),
+                ("cco_extension", 15254),
             ),
         )
         self.assertEqual(
@@ -722,21 +722,21 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
             (
                 (
                     "integrated",
-                    15234,
+                    15243,
                     0,
                     True,
                     0,
                 ),
                 (
                     "strict_bfo_mapping",
-                    15117,
+                    15120,
                     0,
                     True,
                     0,
                 ),
                 (
                     "cco_extension",
-                    15245,
+                    15254,
                     0,
                     True,
                     0,
