@@ -37,22 +37,28 @@ their generated replacements pass the maintained-product gates.
 
 ## Governed baseline
 
-The initial product implementation must preserve this exact workbook
-classification:
+The maintained product implementation must preserve this exact current
+workbook classification:
 
 | Measure | Required value |
 |---|---:|
 | Governed rows | 119 |
 | Unique RowIDs | 119 |
-| Active mappings | 45 |
-| Deferred mappings | 26 |
-| Explicitly unmapped rows | 48 |
+| Active mappings | 55 |
+| Deferred mappings | 4 |
+| No-direct-mapping decisions | 60 |
+| Unreviewed rows | 0 |
+| Legacy explicitly-unmapped aggregate | 60 |
 | Malformed rows | 0 |
-| Canonical authoritative axioms | 45 |
+| Canonical authoritative axioms | 55 |
 | Named unsatisfiable classes | 0 |
 
-Deferred and explicitly unmapped rows are governed evidence but contribute no
-direct ontology axiom.
+The four deferred rows are the datatype-property cases intentionally held
+pending repository-wide COMS support for datatype-property source terms.
+No-direct-mapping rows are final reviewed decisions and contribute no direct
+ontology axiom. The legacy explicitly-unmapped aggregate is retained only as a
+compatibility summary and is now extensionally identical to the
+no-direct-mapping set because no governed row remains unreviewed.
 
 ## Maintained development products
 
@@ -310,9 +316,9 @@ The maintained product-role implementation must satisfy all of the following:
 
 1. the governed workbook remains 119 rows with 119 unique RowIDs;
 2. all 55 active mappings produce 55 canonical authoritative axioms;
-3. all 4 deferred rows produce no direct axiom;
-4. all 21 no-direct-mapping decisions and all 39 unreviewed rows produce no
-   direct axiom;
+3. all 4 deferred datatype-property rows produce no direct axiom;
+4. all 60 no-direct-mapping decisions produce no direct axiom and zero
+   governed rows remain unreviewed;
 5. Integrated directly contains all 55 authoritative axioms;
 6. BFO Mapping directly contains exactly 24 BFO-bearing axioms;
 7. CCO Extension directly contains exactly 31 CCO-bearing or mixed axioms;

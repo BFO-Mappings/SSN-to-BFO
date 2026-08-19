@@ -51,30 +51,69 @@ EXPECTED_CLASS_DEFERRALS: set[str] = set()
 EXPECTED_CLASS_NO_DIRECT_MAPPING = {
     "sosa:ActuatableProperty",
     "sosa:ActuatingProcedure",
+    "sosa:NormalOperatingConditions",
     "sosa:Observation",
     "sosa:ObservableProperty",
     "sosa:ObservingProcedure",
+    "sosa:OperatingConditions",
     "sosa:Result",
     "sosa:SamplingProcedure",
     "sosa:SpatialSample",
+    "sosa:SuboptimalOperatingConditions",
+    "sosa:SurvivableConditions",
 }
 
 EXPECTED_OBJECT_PROPERTY_DEFERRALS: set[str] = set()
 
 EXPECTED_OBJECT_PROPERTY_NO_DIRECT_MAPPING = {
+    "sampling:hasSampleRelationship",
+    "sampling:natureOfRelationship",
+    "sampling:relatedSample",
     "sosa:actsOn",
     "sosa:actsOnProperty",
     "sosa:featureHasUltimateSample",
     "sosa:forProperty",
+    "sosa:hasFeatureOfInterest",
     "sosa:hasInput",
     "sosa:hasInputValue",
+    "sosa:hasMember",
     "sosa:hasOperatingConditions",
     "sosa:hasOriginalSample",
     "sosa:hasOutput",
+    "sosa:hasProcedure",
+    "sosa:hasProperty",
+    "sosa:hasProxy",
+    "sosa:hasSample",
     "sosa:hasSystemCapability",
+    "sosa:hasUltimateFeatureOfInterest",
+    "sosa:hasValidityContext",
     "sosa:hosts",
+    "sosa:inputFor",
+    "sosa:inputValueForExecution",
+    "sosa:isActedOnBy",
+    "sosa:isFeatureOfInterestOf",
+    "sosa:isHostedBy",
+    "sosa:isMemberOf",
+    "sosa:isObservedBy",
+    "sosa:isOriginalSampleOf",
+    "sosa:isProcedureFor",
+    "sosa:isPropertyOf",
+    "sosa:isProxyFor",
+    "sosa:isResultOfMadeBySampler",
+    "sosa:isResultOfUsedProcedure",
+    "sosa:isSampleOf",
+    "sosa:isSampleOfUltimateFOI",
+    "sosa:isUltimateFeatureOfInterestOf",
+    "sosa:madeSamplingHasResult",
+    "sosa:observationRelatedTo",
     "sosa:observedProperty",
     "sosa:observes",
+    "sosa:outputFor",
+    "sosa:propertyFor",
+    "sosa:relatedObservation",
+    "sosa:usedForExecutionHasResult",
+    "sosa:wasActedOnBy",
+    "sosa:wasObservedBy",
 }
 
 
@@ -255,11 +294,15 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     summary["no_direct_mapping_row_count"],
-                    21,
+                    60,
                 )
                 self.assertEqual(
                     summary["unreviewed_row_count"],
-                    39,
+                    0,
+                )
+                self.assertEqual(
+                    summary["unreviewed_rows"],
+                    [],
                 )
 
                 explicitly_unmapped = {

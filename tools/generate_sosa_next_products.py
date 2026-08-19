@@ -297,8 +297,8 @@ EXPECTED_WORKBOOK_COUNTS = {
 }
 
 EXPECTED_MAPPING_STATUS_COUNTS = {
-    "no_direct_mapping_row_count": 21,
-    "unreviewed_row_count": 39,
+    "no_direct_mapping_row_count": 60,
+    "unreviewed_row_count": 0,
 }
 
 EXPECTED_CATEGORY_COUNTS = {
