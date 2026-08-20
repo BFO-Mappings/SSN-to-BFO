@@ -106,13 +106,13 @@ class SosaNextProductTests(unittest.TestCase):
             )
             self.assertEqual(
                 summary["deferred_mapping_count"],
-                4,
+                0,
             )
             self.assertEqual(
                 summary[
                     "explicitly_unmapped_row_count"
                 ],
-                60,
+                64,
             )
             self.assertEqual(
                 summary[

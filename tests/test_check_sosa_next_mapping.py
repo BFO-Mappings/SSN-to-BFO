@@ -32,14 +32,7 @@ CURRENT_PRODUCTS = (
     / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 )
 
-DATATYPE_DEFERRAL = (
-    "Datatype-property mapping deferred pending repository-wide COMS "
-    "support for datatype-property source terms. This capability must be "
-    "implemented consistently for both the current SOSA mapping and the "
-    "forthcoming SOSA mapping."
-)
-
-EXPECTED_DATATYPE_TERMS = {
+EXPECTED_DATATYPE_NO_DIRECT_MAPPING = {
     "sosa:endTime",
     "sosa:hasSimpleResult",
     "sosa:resultTime",
@@ -191,10 +184,10 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 self.assertEqual(summary["governed_row_count"], 119)
                 self.assertEqual(summary["unique_row_id_count"], 119)
                 self.assertEqual(summary["active_mapping_count"], 55)
-                self.assertEqual(summary["deferred_mapping_count"], 4)
+                self.assertEqual(summary["deferred_mapping_count"], 0)
                 self.assertEqual(
                     summary["explicitly_unmapped_row_count"],
-                    60,
+                    64,
                 )
                 self.assertEqual(summary["malformed_row_count"], 0)
                 self.assertEqual(
@@ -224,7 +217,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["deferred_mappings"]
                 }
-                self.assertEqual(len(deferred), 4)
+                self.assertEqual(len(deferred), 0)
                 self.assertEqual(
                     len(deferred),
                     len(summary["deferred_mappings"]),
@@ -263,7 +256,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                 }
                 self.assertEqual(
                     datatype_terms,
-                    EXPECTED_DATATYPE_TERMS,
+                    set(),
                 )
 
                 self.assertEqual(
@@ -271,15 +264,8 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     (
                         EXPECTED_CLASS_DEFERRALS
                         | EXPECTED_OBJECT_PROPERTY_DEFERRALS
-                        | EXPECTED_DATATYPE_TERMS
                     ),
                 )
-
-                for subject in EXPECTED_DATATYPE_TERMS:
-                    self.assertEqual(
-                        deferred[subject]["reasoning"],
-                        DATATYPE_DEFERRAL,
-                    )
 
                 no_direct_mapping = {
                     item["subject"]: item
@@ -290,11 +276,22 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     (
                         EXPECTED_CLASS_NO_DIRECT_MAPPING
                         | EXPECTED_OBJECT_PROPERTY_NO_DIRECT_MAPPING
+                        | EXPECTED_DATATYPE_NO_DIRECT_MAPPING
                     ),
+                )
+
+                datatype_no_direct_mapping = {
+                    subject
+                    for subject, item in no_direct_mapping.items()
+                    if item["subject_kind"] == "datatype_property"
+                }
+                self.assertEqual(
+                    datatype_no_direct_mapping,
+                    EXPECTED_DATATYPE_NO_DIRECT_MAPPING,
                 )
                 self.assertEqual(
                     summary["no_direct_mapping_row_count"],
-                    60,
+                    64,
                 )
                 self.assertEqual(
                     summary["unreviewed_row_count"],
@@ -309,7 +306,7 @@ class CheckSosaNextMappingTests(unittest.TestCase):
                     item["subject"]: item
                     for item in summary["explicitly_unmapped_rows"]
                 }
-                self.assertEqual(len(explicitly_unmapped), 60)
+                self.assertEqual(len(explicitly_unmapped), 64)
                 self.assertEqual(
                     len(explicitly_unmapped),
                     len(summary["explicitly_unmapped_rows"]),
