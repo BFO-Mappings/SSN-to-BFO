@@ -291,13 +291,13 @@ EXPECTED_WORKBOOK_COUNTS = {
     "governed_row_count": 119,
     "unique_row_id_count": 119,
     "active_mapping_count": 55,
-    "deferred_mapping_count": 4,
-    "explicitly_unmapped_row_count": 60,
+    "deferred_mapping_count": 0,
+    "explicitly_unmapped_row_count": 64,
     "canonical_authoritative_axiom_count": 55,
 }
 
 EXPECTED_MAPPING_STATUS_COUNTS = {
-    "no_direct_mapping_row_count": 60,
+    "no_direct_mapping_row_count": 64,
     "unreviewed_row_count": 0,
 }
 

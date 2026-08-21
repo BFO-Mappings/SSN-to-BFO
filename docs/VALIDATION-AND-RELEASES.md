@@ -118,10 +118,11 @@ boundary and its materialized target: Integrated, BFO Mapping, and CCO
 Extension. Alignment Core and BFO Projection remain governed omitted roles.
 
 `make check-sosa-next` validates the 119 governed workbook rows, 55 active
-mappings, 4 deferred datatype-property mappings, 60 no-direct-mapping
-decisions, zero unreviewed rows, the 60-row legacy explicitly-unmapped
-aggregate, canonical identity, and a clean HermiT result for the integrated
-active mapping.
+mappings, zero deferred mappings, 64 no-direct-mapping decisions, zero
+unreviewed rows, the 64-row legacy explicitly-unmapped aggregate, canonical
+identity, and a clean HermiT result for the integrated active mapping. The four
+SOSA datatype-property rows have been substantively reviewed and are final
+no-direct-mapping decisions rather than infrastructure deferrals.
 
 `make check-sosa-next-products` independently rebuilds Integrated, BFO Mapping,
 and CCO Extension; requires byte-identical candidate builds; validates exact

@@ -45,20 +45,24 @@ workbook classification:
 | Governed rows | 119 |
 | Unique RowIDs | 119 |
 | Active mappings | 55 |
-| Deferred mappings | 4 |
-| No-direct-mapping decisions | 60 |
+| Deferred mappings | 0 |
+| No-direct-mapping decisions | 64 |
 | Unreviewed rows | 0 |
-| Legacy explicitly-unmapped aggregate | 60 |
+| Legacy explicitly-unmapped aggregate | 64 |
 | Malformed rows | 0 |
 | Canonical authoritative axioms | 55 |
 | Named unsatisfiable classes | 0 |
 
-The four deferred rows are the datatype-property cases intentionally held
-pending repository-wide COMS support for datatype-property source terms.
+No governed mapping remains deferred or unreviewed. The four SOSA
+datatype-property rows were reviewed against the pinned target vocabulary and
+finalized as no-direct-mapping decisions: the temporal properties permit a
+broader temporal literal value space than the available datatype-specific CCO
+properties, while `sosa:hasSimpleResult` permits literals without one fixed
+datatype and has no reviewed generic CCO literal-value counterpart.
 No-direct-mapping rows are final reviewed decisions and contribute no direct
 ontology axiom. The legacy explicitly-unmapped aggregate is retained only as a
-compatibility summary and is now extensionally identical to the
-no-direct-mapping set because no governed row remains unreviewed.
+compatibility summary and is extensionally identical to the no-direct-mapping
+set.
 
 ## Maintained development products
 
@@ -316,8 +320,8 @@ The maintained product-role implementation must satisfy all of the following:
 
 1. the governed workbook remains 119 rows with 119 unique RowIDs;
 2. all 55 active mappings produce 55 canonical authoritative axioms;
-3. all 4 deferred datatype-property rows produce no direct axiom;
-4. all 60 no-direct-mapping decisions produce no direct axiom and zero
+3. zero governed mappings remain deferred;
+4. all 64 no-direct-mapping decisions produce no direct axiom and zero
    governed rows remain unreviewed;
 5. Integrated directly contains all 55 authoritative axioms;
 6. BFO Mapping directly contains exactly 24 BFO-bearing axioms;
@@ -415,7 +419,7 @@ external destination after the isolated proof succeeds.
 
 This contract does not:
 
-- resolve any deferred mapping;
+- introduce datatype-property mapping infrastructure without an approved semantic mapping use case;
 - activate datatype-property mappings;
 - alter the pinned SOSA-next source ontologies;
 - modify current-SOSA mappings or products;

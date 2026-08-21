@@ -214,7 +214,7 @@ def source_kind(
     lexical: str,
     source_graph: Graph,
 ) -> tuple[URIRef, str]:
-    """Resolve a SOSA source CURIE, including deferred datatype properties."""
+    """Resolve a governed SOSA source CURIE, including datatype properties."""
 
     if ":" not in lexical:
         raise RuntimeError(f"Source term is not a CURIE: {lexical!r}")
