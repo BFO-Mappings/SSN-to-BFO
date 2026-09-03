@@ -1688,6 +1688,12 @@ def _run_hermit_closure(
     profile: HermitRunProfile,
     *,
     validate_profile: bool = True,
+    required_source_declarations: tuple[
+        tuple[URIRef, URIRef, URIRef], ...
+    ] = SAMPLE_PROPERTY_SOURCE_DECLARATIONS,
+    additional_profile_declarations: tuple[
+        tuple[URIRef, URIRef, URIRef], ...
+    ] = (),
 ) -> HermitResult:
     """Evaluate one exact closure with OWL 2 DL profile and HermiT gates."""
 
@@ -1714,9 +1720,13 @@ def _run_hermit_closure(
     declarations_retained: bool | None = None
 
     if validate_profile:
+        # Track-specific source-declaration invariants are configurable.
+        # The default preserves the established current SSN/SOSA gates.
+        # A track with no additional declaration invariant may pass () while
+        # retaining the same OWL 2 DL profile validation and HermiT gates.
         declarations_retained = all(
             triple in closure
-            for triple in SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+            for triple in required_source_declarations
         )
 
         profile_graph = Graph()
@@ -1726,7 +1736,16 @@ def _run_hermit_closure(
         for triple in closure:
             profile_graph.add(triple)
 
-        for triple in DL_PROFILE_DECLARATION_COMPLETION:
+        # DL profile validation may require declarations for metadata
+        # vocabulary that is intentionally external to the source ontology.
+        # The established completion set remains universal; callers may
+        # supply additional track-specific declaration-only completions.
+        profile_declarations = (
+            *DL_PROFILE_DECLARATION_COMPLETION,
+            *additional_profile_declarations,
+        )
+
+        for triple in profile_declarations:
             if triple not in profile_graph:
                 profile_graph.add(triple)
                 profile_completion_count += 1
