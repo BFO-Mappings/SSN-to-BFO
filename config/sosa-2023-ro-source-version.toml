@@ -1,0 +1,18 @@
+schema_version = 1
+
+[source]
+status = "approved"
+track = "sosa-2023"
+dependency = "relations-ontology"
+release_tag = "v2025-12-17"
+upstream_repository = "https://github.com/oborel/obo-relations"
+upstream_commit = "13620e1d75465c6504c755d2fdfa706922e9b7e7"
+upstream_commit_date = "2026-01-26T16:59:53-06:00"
+local_path = "src/sosa-next/imports/ro-full.owl"
+sha256 = "debfb46f91fa1ed8e1af02cf087ece8d02983c37789bfd027b47c2e8c8a5f179"
+ontology_iri = "http://purl.obolibrary.org/obo/ro/ro-full.owl"
+version_iri = "http://purl.obolibrary.org/obo/ro/releases/2025-12-17/ro-full.owl"
+triple_count = 11640
+import_count = 0
+imports = [
+]
