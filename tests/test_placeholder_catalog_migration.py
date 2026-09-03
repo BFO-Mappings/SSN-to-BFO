@@ -94,14 +94,17 @@ SOSA_NEXT_ARTIFACT_HASHES = {
         "1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb",
     "releases/sosa-next/sosa-cco-extension.ttl":
         "53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19",
+    "releases/sosa-next/sosa-ro-mapping.ttl":
+        "1747563c4bba01a0c6b34bd61660a1f0c9026c266cc147991e74bc1d314ac388",
     "src/sosa-next/sosa-mappings-edit.ttl":
-        "805b990d778bbd83abfcb3d63a696e8a14d894adc479ec4bc4382d8d89e366e4",
+        "4999c2e73ef3b4959f4d0c3b4d0a133a1293dcc5920363ae9c34c7182d2dde76",
 }
 
 SOSA_NEXT_RELEASE_FILES = (
     "../../releases/sosa-next/sosa-integrated.ttl",
     "../../releases/sosa-next/sosa-bfo-mapping.ttl",
     "../../releases/sosa-next/sosa-cco-extension.ttl",
+    "../../releases/sosa-next/sosa-ro-mapping.ttl",
 )
 DEPENDENCY_HASHES = {
     "imports/cco.ttl": "3ad8f098ecb3d7ca27464a1edf2795b90c69573843447d51f090e6f1b30694f4",
@@ -163,6 +166,16 @@ SOSA_NEXT_CATALOG_MAPPINGS = (
         "imports/cco.ttl",
     ),
     (
+        "http://purl.obolibrary.org/obo/"
+        "ro/ro-full.owl",
+        "imports/ro-full.owl",
+    ),
+    (
+        "http://purl.obolibrary.org/obo/"
+        "ro/releases/2025-12-17/ro-full.owl",
+        "imports/ro-full.owl",
+    ),
+    (
         "http://www.sks.ai/SSN2BFO/development/"
         "sosa-next/integrated",
         "../../releases/sosa-next/sosa-integrated.ttl",
@@ -176,6 +189,11 @@ SOSA_NEXT_CATALOG_MAPPINGS = (
         "http://www.sks.ai/SSN2BFO/development/"
         "sosa-next/cco-extension",
         "../../releases/sosa-next/sosa-cco-extension.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/ro-mapping",
+        "../../releases/sosa-next/sosa-ro-mapping.ttl",
     ),
     (
         "http://www.sks.ai/SSN2BFO/development/"

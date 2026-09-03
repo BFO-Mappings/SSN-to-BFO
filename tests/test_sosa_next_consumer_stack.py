@@ -29,6 +29,18 @@ CCO_EXTENSION = (
     "http://www.sks.ai/SSN2BFO/"
     "development/sosa-next/cco-extension"
 )
+RO_MAPPING = (
+    "http://www.sks.ai/SSN2BFO/"
+    "development/sosa-next/ro-mapping"
+)
+RO_ONTOLOGY = (
+    "http://purl.obolibrary.org/obo/"
+    "ro/ro-full.owl"
+)
+RO_VERSION = (
+    "http://purl.obolibrary.org/obo/"
+    "ro/releases/2025-12-17/ro-full.owl"
+)
 EDITOR = (
     "http://www.sks.ai/SSN2BFO/"
     "development/sosa-next/edit"
@@ -38,6 +50,7 @@ PROJECT_IRIS = (
     INTEGRATED,
     BFO_MAPPING,
     CCO_EXTENSION,
+    RO_MAPPING,
     EDITOR,
 )
 
@@ -53,6 +66,10 @@ EXPECTED_PROJECT_PATHS = {
     CCO_EXTENSION: (
         REPO_ROOT
         / "releases/sosa-next/sosa-cco-extension.ttl"
+    ),
+    RO_MAPPING: (
+        REPO_ROOT
+        / "releases/sosa-next/sosa-ro-mapping.ttl"
     ),
     EDITOR: (
         REPO_ROOT
@@ -81,19 +98,28 @@ EXPECTED_IMPORTS = {
     INTEGRATED: EXPECTED_INTEGRATED_IMPORTS,
     BFO_MAPPING: frozenset(),
     CCO_EXTENSION: frozenset({BFO_MAPPING}),
-    EDITOR: frozenset({INTEGRATED}),
+    RO_MAPPING: frozenset(),
+    EDITOR: frozenset(
+        {
+            INTEGRATED,
+            RO_MAPPING,
+            RO_VERSION,
+        }
+    ),
 }
 
 EXPECTED_TRIPLE_COUNTS = {
     INTEGRATED: 290,
     BFO_MAPPING: 162,
     CCO_EXTENSION: 132,
-    EDITOR: 4,
+    RO_MAPPING: 18,
+    EDITOR: 6,
 }
 
 EXPECTED_EDITOR_CLOSURE = (
     EDITOR,
     INTEGRATED,
+    RO_MAPPING,
 )
 
 EXPECTED_DEPENDENCY_IRIS = frozenset(
@@ -115,6 +141,8 @@ EXPECTED_DEPENDENCY_IRIS = frozenset(
             "https://www.commoncoreontologies.org/"
             "CommonCoreOntologiesMerged"
         ),
+        RO_ONTOLOGY,
+        RO_VERSION,
     }
 )
 
@@ -165,8 +193,8 @@ class SosaNextConsumerStackTests(unittest.TestCase):
     ) -> None:
         entries, catalog = load_catalog()
 
-        self.assertEqual(len(entries), 14)
-        self.assertEqual(len(catalog), 14)
+        self.assertEqual(len(entries), 17)
+        self.assertEqual(len(catalog), 17)
 
         for public_iri, target in catalog.items():
             with self.subTest(public_iri=public_iri):
@@ -181,8 +209,7 @@ class SosaNextConsumerStackTests(unittest.TestCase):
 
                 graph = Graph()
                 graph.parse(
-                    target,
-                    format="turtle",
+                    target
                 )
 
                 self.assertGreater(
@@ -303,7 +330,7 @@ class SosaNextConsumerStackTests(unittest.TestCase):
             for triple in graphs[ontology_iri]:
                 combined.add(triple)
 
-        self.assertEqual(len(combined), 294)
+        self.assertEqual(len(combined), 314)
 
     def test_external_dependencies_remain_separate_inputs(
         self,
@@ -341,6 +368,7 @@ class SosaNextConsumerStackTests(unittest.TestCase):
             for ontology_iri in (
                 BFO_MAPPING,
                 CCO_EXTENSION,
+                RO_MAPPING,
             )
             for imported in graphs[
                 ontology_iri

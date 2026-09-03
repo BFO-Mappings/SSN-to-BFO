@@ -4,7 +4,9 @@
 
 <http://www.sks.ai/SSN2BFO/development/sosa-next/edit>
   a             owl:Ontology ;
-  rdfs:label    "Editor's file for forthcoming SOSA-only to BFO/CCO mappings"@en ;
-  rdfs:comment  "Development editor shell; governed maintained mapping axioms are generated from mappings/SOSA-next-to-BFO-COMS.xlsx."@en ;
+  rdfs:label    "Editor's file for forthcoming SOSA-only BFO/CCO/RO mappings"@en ;
+  rdfs:comment  "Development editor shell; governed maintained mapping axioms are generated from mappings/SOSA-next-to-BFO-COMS.xlsx and mappings/SOSA-next-to-RO-COMS.xlsx."@en ;
   owl:imports   <http://www.sks.ai/SSN2BFO/development/sosa-next/integrated> ;
+  owl:imports   <http://www.sks.ai/SSN2BFO/development/sosa-next/ro-mapping> ;
+  owl:imports   <http://purl.obolibrary.org/obo/ro/releases/2025-12-17/ro-full.owl> ;
 .

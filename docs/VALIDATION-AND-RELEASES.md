@@ -54,7 +54,7 @@ catalog. It explicitly loads pinned local dependencies under `imports/` and
 resolves maintained current-track project imports through governed local paths.
 
 The SOSA-next development track has a separate governed catalog at
-`src/sosa-next/catalog-v001.xml`. It resolves 14 local targets:
+`src/sosa-next/catalog-v001.xml`. It resolves 17 local targets:
 
 - eight byte-pinned upstream SOSA files;
 - one governed local source-declaration overlay;

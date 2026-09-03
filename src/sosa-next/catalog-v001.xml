@@ -32,6 +32,12 @@
     <uri
       name="https://www.commoncoreontologies.org/CommonCoreOntologiesMerged"
       uri="imports/cco.ttl"/>
+    <uri
+      name="http://purl.obolibrary.org/obo/ro/ro-full.owl"
+      uri="imports/ro-full.owl"/>
+    <uri
+      name="http://purl.obolibrary.org/obo/ro/releases/2025-12-17/ro-full.owl"
+      uri="imports/ro-full.owl"/>
   </group>
   <group id="sosa-next-development-products" prefer="public">
     <uri
@@ -43,6 +49,9 @@
     <uri
       name="http://www.sks.ai/SSN2BFO/development/sosa-next/cco-extension"
       uri="../../releases/sosa-next/sosa-cco-extension.ttl"/>
+    <uri
+      name="http://www.sks.ai/SSN2BFO/development/sosa-next/ro-mapping"
+      uri="../../releases/sosa-next/sosa-ro-mapping.ttl"/>
   </group>
   <group id="sosa-next-editor" prefer="public">
     <uri

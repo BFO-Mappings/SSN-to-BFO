@@ -188,7 +188,7 @@ SOSA-next Integrated Mapping
 ```
 
 The resulting local editor project closure contains 294 distinct triples.
-`src/sosa-next/catalog-v001.xml` contains 14 local mappings covering the
+`src/sosa-next/catalog-v001.xml` contains 17 local mappings covering the
 governed source and target dependencies, all three maintained products, and
 the editor shell. The BFO Mapping and CCO Extension remain independently
 catalog-resolvable modular products.
