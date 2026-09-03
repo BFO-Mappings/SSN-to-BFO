@@ -14,6 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import check_sosa_next_products as checker  # noqa: E402
+import check_sosa_2023_ro_mapping as ro_checker  # noqa: E402
 import generate_mapping_from_coms as coms  # noqa: E402
 import generate_sosa_next_products as products  # noqa: E402
 
@@ -150,6 +151,51 @@ class SosaNextProductTests(unittest.TestCase):
                 ),
             )
 
+            self.assertEqual(
+                tuple(
+                    products
+                    .DEVELOPMENT_PRODUCT_ORDER
+                ),
+                (
+                    "integrated",
+                    "strict_bfo_mapping",
+                    "cco_extension",
+                    "ro_mapping",
+                ),
+            )
+
+            self.assertEqual(
+                tuple(
+                    products
+                    .MAINTAINED_PRODUCTS
+                ),
+                products
+                .DEVELOPMENT_PRODUCT_ORDER,
+            )
+
+            self.assertEqual(
+                set(
+                    summary[
+                        "products"
+                    ]
+                ),
+                set(
+                    products
+                    .DEVELOPMENT_PRODUCT_ORDER
+                ),
+            )
+
+            self.assertEqual(
+                set(
+                    summary[
+                        "reasoning"
+                    ]
+                ),
+                set(
+                    products.PRODUCT_ORDER
+                ),
+            )
+
             expected = {
                 "integrated": {
                     "axiom_count": 55,
@@ -179,6 +225,65 @@ class SosaNextProductTests(unittest.TestCase):
                     ),
                 },
             }
+
+            ro_observed = summary[
+                "products"
+            ][
+                "ro_mapping"
+            ]
+
+            expected_ro = {
+                "axiom_count": 16,
+                "governed_row_count": 82,
+                "no_direct_mapping_count": 66,
+                "skos_mapping_count": 0,
+                "logical_triple_count": 16,
+                "total_triple_count": 18,
+                "sha256": (
+                    "1747563c4bba01a0c6b34bd61660a1f0"
+                    "c9026c266cc147991e74bc1d314ac388"
+                ),
+            }
+
+            for key, value in (
+                expected_ro.items()
+            ):
+                self.assertEqual(
+                    ro_observed[key],
+                    value,
+                    (
+                        "ro_mapping",
+                        key,
+                        ro_observed,
+                    ),
+                )
+
+            validated_ro = (
+                ro_checker.validate_product(
+                    products
+                    .MAINTAINED_PRODUCTS[
+                        "ro_mapping"
+                    ]
+                )
+            )
+
+            self.assertEqual(
+                len(
+                    validated_ro[
+                        "axioms"
+                    ]
+                ),
+                16,
+            )
+
+            self.assertEqual(
+                validated_ro[
+                    "product"
+                ][
+                    "governed_property_count"
+                ],
+                82,
+            )
 
             expected_closures = {
                 "integrated": 15240,
@@ -291,7 +396,7 @@ class SosaNextProductTests(unittest.TestCase):
             original_bytes = {}
 
             for index, product_key in enumerate(
-                products.PRODUCT_ORDER,
+                products.DEVELOPMENT_PRODUCT_ORDER,
                 start=1,
             ):
                 candidate = (
@@ -337,7 +442,7 @@ class SosaNextProductTests(unittest.TestCase):
                 )
 
             for product_key in (
-                products.PRODUCT_ORDER
+                products.DEVELOPMENT_PRODUCT_ORDER
             ):
                 self.assertEqual(
                     destinations[

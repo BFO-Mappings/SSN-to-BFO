@@ -20,6 +20,7 @@ from rdflib.namespace import OWL, RDF
 import check_sosa_next_mapping as mapping_checker
 import sosa_2023_mapping_status as mapping_status
 import generate_mapping_from_coms as coms
+import generate_sosa_2023_ro_mapping as ro_generator
 import modular_products
 import publication_metadata
 from release_context import (
@@ -67,6 +68,11 @@ PRODUCT_ORDER = (
     "cco_extension",
 )
 
+DEVELOPMENT_PRODUCT_ORDER = (
+    *PRODUCT_ORDER,
+    "ro_mapping",
+)
+
 MODULAR_PRODUCT_ORDER = (
     "strict_bfo_mapping",
     "cco_extension",
@@ -84,6 +90,10 @@ MAINTAINED_PRODUCTS = {
     "cco_extension": (
         REPO_ROOT
         / "releases/sosa-next/sosa-cco-extension.ttl"
+    ),
+    "ro_mapping": (
+        REPO_ROOT
+        / "releases/sosa-next/sosa-ro-mapping.ttl"
     ),
 }
 
@@ -1214,6 +1224,173 @@ def render_formal_product_set(
     }
 
 
+def build_ro_development_product(
+    output_dir: Path,
+) -> tuple[
+    Path,
+    Graph,
+    dict[str, Any],
+]:
+    """Build the governed RO mapping for development-product checks."""
+
+    product, active, serialized = (
+        ro_generator.build()
+    )
+
+    if product["key"] != "ro_mapping":
+        raise RuntimeError(
+            "RO generator returned unexpected "
+            f"product key: {product['key']!r}"
+        )
+
+    filename = Path(
+        product["output_path"]
+    ).name
+
+    if filename != "sosa-ro-mapping.ttl":
+        raise RuntimeError(
+            "RO product filename differs from "
+            "the governed development path: "
+            f"{filename!r}"
+        )
+
+    candidate_path = (
+        output_dir
+        / filename
+    )
+
+    candidate_path.write_bytes(
+        serialized
+    )
+
+    graph = Graph()
+    graph.parse(
+        data=serialized.decode(
+            "utf-8"
+        ),
+        format="turtle",
+    )
+
+    subproperty = URIRef(
+        "http://www.w3.org/"
+        "2000/01/rdf-schema#"
+        "subPropertyOf"
+    )
+
+    logical = Graph()
+
+    for triple in graph.triples(
+        (
+            None,
+            subproperty,
+            None,
+        )
+    ):
+        logical.add(triple)
+
+    if (
+        len(active)
+        != product[
+            "logical_triple_count"
+        ]
+    ):
+        raise RuntimeError(
+            "RO governed active-row count "
+            "differs from its logical contract"
+        )
+
+    if (
+        len(logical)
+        != product[
+            "logical_triple_count"
+        ]
+    ):
+        raise RuntimeError(
+            "RO candidate logical triple "
+            "count differs from governed "
+            "product contract"
+        )
+
+    if (
+        len(graph)
+        != product[
+            "total_triple_count"
+        ]
+    ):
+        raise RuntimeError(
+            "RO candidate total triple "
+            "count differs from governed "
+            "product contract"
+        )
+
+    if any(
+        True
+        for _ in graph.triples(
+            (
+                None,
+                OWL.imports,
+                None,
+            )
+        )
+    ):
+        raise RuntimeError(
+            "RO development mapping "
+            "must remain import-free"
+        )
+
+    return (
+        candidate_path,
+        logical,
+        {
+            "maintained_path":
+                product[
+                    "output_path"
+                ],
+            "ontology_iri":
+                product[
+                    "stable_ontology_iri"
+                ],
+            "imports": [],
+            "axiom_count":
+                len(active),
+            "row_count":
+                len(active),
+            "governed_row_count":
+                product[
+                    "governed_property_count"
+                ],
+            "no_direct_mapping_count":
+                product[
+                    "no_direct_mapping_count"
+                ],
+            "skos_mapping_count": 0,
+            "logical_triple_count":
+                len(logical),
+            "total_triple_count":
+                len(graph),
+            "sha256":
+                sha256_bytes(
+                    serialized
+                ),
+            "byte_size":
+                len(serialized),
+            "subjects":
+                sorted(
+                    {
+                        str(subject)
+                        for (
+                            subject,
+                            _predicate,
+                            _target,
+                        ) in logical
+                    }
+                ),
+            "candidate_path":
+                str(candidate_path),
+        },
+    )
+
+
 def build_candidate(
     output_dir: Path,
     *,
@@ -1272,6 +1449,26 @@ def build_candidate(
             **result,
             "candidate_path": str(path),
         }
+
+    (
+        ro_path,
+        ro_logical,
+        ro_result,
+    ) = build_ro_development_product(
+        output_dir
+    )
+
+    product_paths[
+        "ro_mapping"
+    ] = ro_path
+
+    logical_graphs[
+        "ro_mapping"
+    ] = ro_logical
+
+    products[
+        "ro_mapping"
+    ] = ro_result
 
     combined = Graph()
 
@@ -1367,7 +1564,7 @@ def compare_candidate_builds(
     first: Mapping[str, Any],
     second: Mapping[str, Any],
 ) -> None:
-    for product_key in PRODUCT_ORDER:
+    for product_key in DEVELOPMENT_PRODUCT_ORDER:
         first_path = Path(
             first["product_paths"][product_key]
         )
@@ -1578,7 +1775,7 @@ def run_transaction(
 def maintained_products_are_fresh(
     candidate: Mapping[str, Any],
 ) -> bool:
-    for product_key in PRODUCT_ORDER:
+    for product_key in DEVELOPMENT_PRODUCT_ORDER:
         destination = MAINTAINED_PRODUCTS[
             product_key
         ]
@@ -1614,6 +1811,19 @@ def replace_outputs_atomically(
     transaction_dir: Path,
     post_replace: Callable[[], None] | None = None,
 ) -> None:
+    product_order = tuple(
+        candidate_paths
+    )
+
+    if (
+        set(product_order)
+        != set(destinations)
+    ):
+        raise RuntimeError(
+            "candidate and destination "
+            "product keys differ"
+        )
+
     backup_dir = transaction_dir / "backups"
     staging_dir = transaction_dir / "staging"
 
@@ -1630,7 +1840,7 @@ def replace_outputs_atomically(
     originally_missing: set[str] = set()
     staged: dict[str, Path] = {}
 
-    for product_key in PRODUCT_ORDER:
+    for product_key in product_order:
         destination = destinations[product_key]
 
         if destination.exists():
@@ -1648,7 +1858,7 @@ def replace_outputs_atomically(
         staged[product_key] = stage
 
     try:
-        for product_key in PRODUCT_ORDER:
+        for product_key in product_order:
             destination = destinations[product_key]
             destination.parent.mkdir(
                 parents=True,
@@ -1663,7 +1873,7 @@ def replace_outputs_atomically(
         if post_replace is not None:
             post_replace()
     except Exception:
-        for product_key in PRODUCT_ORDER:
+        for product_key in product_order:
             destination = destinations[product_key]
 
             if product_key in backups:
@@ -1708,7 +1918,7 @@ def write_maintained_products(
             key: Path(
                 summary["product_paths"][key]
             )
-            for key in PRODUCT_ORDER
+            for key in DEVELOPMENT_PRODUCT_ORDER
         }
 
         retired_bytes = {
@@ -1863,6 +2073,48 @@ def print_summary(summary: Mapping[str, Any]) -> None:
             f"{len(reasoning['unsatisfiable_classes'])}"
         )
 
+    ro_product = summary[
+        "products"
+    ].get(
+        "ro_mapping"
+    )
+
+    if ro_product is not None:
+        print("ro_mapping:")
+        print(
+            "  axioms: "
+            f"{ro_product['axiom_count']}"
+        )
+        print(
+            "  governed properties: "
+            f"{ro_product['governed_row_count']}"
+        )
+        print(
+            "  no direct mapping: "
+            f"{ro_product['no_direct_mapping_count']}"
+        )
+        print(
+            "  logical triples: "
+            f"{ro_product['logical_triple_count']}"
+        )
+        print(
+            "  total triples: "
+            f"{ro_product['total_triple_count']}"
+        )
+        print(
+            "  SHA-256: "
+            f"{ro_product['sha256']}"
+        )
+        print(
+            "  SKOS mappings: "
+            f"{ro_product['skos_mapping_count']}"
+        )
+        print(
+            "  reasoning: dedicated "
+            "SOSA-2023 RO semantic regression"
+        )
+
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
@@ -1889,7 +2141,7 @@ def main(argv: list[str] | None = None) -> int:
         "--write-maintained",
         action="store_true",
         help=(
-            "Atomically replace the three maintained "
+            "Atomically replace all maintained "
             "SOSA-next products after all gates pass."
         ),
     )
