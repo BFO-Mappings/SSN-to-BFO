@@ -20,7 +20,7 @@ The formal package catalog records only the governed package-relative product gr
 
 # BFO projection notice
 
-The package preserves the governed import-only BFO projection policy.
+BFO Projection is omitted because no weakened BFO consequence is currently approved.
 
 # Validation summary
 

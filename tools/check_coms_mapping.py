@@ -30,6 +30,7 @@ _IMPORT_DONT_WRITE_BYTECODE = sys.dont_write_bytecode
 sys.dont_write_bytecode = True
 try:
     from product_dispositions import (
+        PRODUCT_ROLE_ORDER,
         ProductDispositionError,
         load_disposition_document,
         serialize_disposition_document,
@@ -42,7 +43,6 @@ try:
     )
     from modular_products import (
         ALIGNMENT_CORE_IMPORT_IRI,
-        BFO_PROJECTION_PREFIXES,
         CCO_EXTENSION_PREFIXES,
         GENERATED_NOTICE as MODULAR_GENERATED_NOTICE,
         PREFIXES as ALIGNMENT_CORE_PREFIXES,
@@ -90,7 +90,6 @@ MAINTAINED_OUTPUTS = {
     "disposition_report": REPO_ROOT / "reports/coms-product-dispositions.json",
     "alignment_core": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "strict_bfo_mapping": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "bfo_projection": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "cco_extension": REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 }
 
@@ -120,14 +119,6 @@ SERIALIZED_HEADER_PRODUCTS = (
         None,
     ),
     (
-        "bfo_projection",
-        "bfo_projection",
-        (STRICT_BFO_IMPORT_IRI,),
-        MODULAR_GENERATED_NOTICE,
-        BFO_PROJECTION_PREFIXES,
-        None,
-    ),
-    (
         "cco_extension",
         "cco_extension",
         (STRICT_BFO_IMPORT_IRI,),
@@ -152,8 +143,6 @@ METADATA_LABELS = {
     "alignment-core Turtle SHA-256": "alignment_core_sha256",
     "maintained strict-BFO path": "strict_bfo_mapping_path",
     "strict-BFO Turtle SHA-256": "strict_bfo_mapping_sha256",
-    "maintained BFO-projection path": "bfo_projection_path",
-    "BFO-projection Turtle SHA-256": "bfo_projection_sha256",
     "maintained CCO-extension path": "cco_extension_path",
     "CCO-extension Turtle SHA-256": "cco_extension_sha256",
 }
@@ -608,7 +597,6 @@ def transaction_paths(transaction_dir: Path) -> dict[str, Path]:
         "disposition_report": transaction_dir / "reports/coms-product-dispositions.json",
         "alignment_core": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         "strict_bfo_mapping": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-        "bfo_projection": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
         "cco_extension": transaction_dir / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         "summary": transaction_dir / "summary.json",
         "hermit": transaction_dir / "hermit",
@@ -632,8 +620,6 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         str(paths["alignment_core"]),
         "--strict-bfo-output",
         str(paths["strict_bfo_mapping"]),
-        "--bfo-projection-output",
-        str(paths["bfo_projection"]),
         "--cco-extension-output",
         str(paths["cco_extension"]),
         "--coverage-report",
@@ -652,8 +638,6 @@ def run_generator(paths: dict[str, Path], log: list[str]) -> None:
         relative(MAINTAINED_OUTPUTS["alignment_core"]),
         "--report-strict-bfo-path",
         relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
-        "--report-bfo-projection-path",
-        relative(MAINTAINED_OUTPUTS["bfo_projection"]),
         "--report-cco-extension-path",
         relative(MAINTAINED_OUTPUTS["cco_extension"]),
         "--summary-json",
@@ -715,8 +699,11 @@ def validate_temporary_outputs(
         if getattr(disposition.input_hashes, field) != expected:
             raise CheckFailure(f"temporary product-disposition {field} mismatch")
     expected_products = tuple(product.key for product in publication_metadata.products)
-    if disposition.product_order != expected_products:
-        raise CheckFailure("temporary product-disposition product order mismatch")
+    if disposition.product_order != PRODUCT_ROLE_ORDER:
+        raise CheckFailure(
+            "temporary product-disposition product order differs "
+            "from product-role policy"
+        )
     disposition_hash = sha256_file(paths["disposition_report"])
     if summary.get("product_disposition_report_sha256") != disposition_hash:
         raise CheckFailure("product-disposition hash does not match generator summary")
@@ -826,7 +813,7 @@ def validate_temporary_outputs(
         "local_project_graph_triple_count": 194,
         "hermit_return_code": 0,
         "hermit_result": "PASS",
-        "closure_triple_count": 14986,
+        "closure_triple_count": 14988,
         "named_unsat_count": 0,
     }
     for field, expected in expected_strict.items():
@@ -870,80 +857,6 @@ def validate_temporary_outputs(
         log,
     )
 
-    projection_path = paths["bfo_projection"]
-    projection_hash = sha256_file(projection_path)
-    projection_summary = summary.get("bfo_projection")
-    if not isinstance(projection_summary, dict):
-        raise CheckFailure("generator summary is missing BFO-projection results")
-    projection_metadata = next(
-        product
-        for product in publication_metadata.products
-        if product.key == "bfo_projection"
-    )
-    expected_projection = {
-        "product_key": "bfo_projection",
-        "stable_ontology_iri": projection_metadata.stable_ontology_iri,
-        "governed_axiom_count": 0,
-        "logical_triple_count": 0,
-        "ontology_declaration_triple_count": 1,
-        "import_triple_count": 1,
-        "metadata_annotation_count": 7,
-        "total_triple_count": 9,
-        "provided_transitively_count": 29,
-        "provided_through_import_count": 19,
-        "deferred_no_transformation_rule_count": 57,
-        "project_closure_governed_axiom_count": 48,
-        "project_graph_triple_count": 204,
-        "local_project_graph_triple_count": 202,
-        "reasoning_reused_from": "strict_bfo_mapping",
-        "reasoning_source_sha256": strict_hash,
-        "reasoning_closure_triple_count": 14986,
-        "reasoning_return_code": 0,
-        "reasoned_output_produced": True,
-        "named_unsat_count": 0,
-        "projection_specific_hermit_invoked": False,
-    }
-    for field, expected in expected_projection.items():
-        if projection_summary.get(field) != expected:
-            raise CheckFailure(
-                f"BFO-projection summary mismatch for {field}: "
-                f"expected {expected!r}, got {projection_summary.get(field)!r}"
-            )
-    if summary.get("bfo_projection_sha256") != projection_hash:
-        raise CheckFailure("BFO-projection hash does not match generator summary")
-    projection_graph = Graph()
-    try:
-        projection_graph.parse(projection_path, format="turtle")
-    except Exception as exc:
-        raise CheckFailure(
-            f"BFO-projection parse failed: {type(exc).__name__}: {exc}"
-        ) from exc
-    projection_ontology_iri = URIRef(projection_metadata.stable_ontology_iri)
-    validate_product_metadata(
-        projection_graph,
-        publication_metadata,
-        "bfo_projection",
-        (str(strict_ontology_iri),),
-    )
-    projection_logical = strip_emitted_ontology_header(
-        projection_graph,
-        publication_metadata,
-        "bfo_projection",
-        (str(strict_ontology_iri),),
-    )
-    if len(projection_logical) != 0 or len(projection_graph) != 9:
-        raise CheckFailure(
-            "BFO-projection triple partition mismatch: expected 1 declaration, "
-            f"1 import, 7 metadata, 0 logical, 9 total; got {len(projection_graph)} total"
-        )
-    emit(
-        "BFO projection: PASS "
-        "(1 declaration; 1 import; 7 metadata; 0 direct governed axioms; "
-        "0 logical triples; 9 total triples; "
-        "strict reasoning reused)",
-        log,
-    )
-
     cco_path = paths["cco_extension"]
     cco_hash = sha256_file(cco_path)
     cco_summary = summary.get("cco_extension")
@@ -957,28 +870,28 @@ def validate_temporary_outputs(
     expected_cco = {
         "product_key": "cco_extension",
         "stable_ontology_iri": cco_metadata.stable_ontology_iri,
-        "governed_axiom_count": 57,
+        "governed_axiom_count": 55,
         "cco_bearing_axiom_count": 25,
-        "mixed_bfo_cco_axiom_count": 32,
-        "logical_triple_count": 934,
+        "mixed_bfo_cco_axiom_count": 30,
+        "logical_triple_count": 924,
         "ontology_declaration_triple_count": 1,
         "import_triple_count": 1,
         "metadata_annotation_count": 7,
-        "total_triple_count": 943,
+        "total_triple_count": 933,
         "subclass_axiom_count": 31,
         "equivalent_class_axiom_count": 7,
         "direct_subproperty_axiom_count": 16,
-        "property_chain_axiom_count": 3,
+        "property_chain_axiom_count": 1,
         "union_expression_count": 7,
         "intersection_expression_count": 86,
         "existential_restriction_count": 95,
-        "rdf_list_count": 96,
-        "project_closure_governed_axiom_count": 105,
-        "project_graph_triple_count": 1138,
-        "local_project_graph_triple_count": 1136,
+        "rdf_list_count": 94,
+        "project_closure_governed_axiom_count": 103,
+        "project_graph_triple_count": 1128,
+        "local_project_graph_triple_count": 1126,
         "hermit_return_code": 0,
         "hermit_result": "PASS",
-        "closure_triple_count": 15928,
+        "closure_triple_count": 15920,
         "named_unsat_count": 0,
     }
     for field, expected in expected_cco.items():
@@ -1010,15 +923,15 @@ def validate_temporary_outputs(
         "cco_extension",
         (str(expected_cco_import),),
     )
-    if len(cco_logical) != 934 or len(cco_graph) != 943:
+    if len(cco_logical) != 924 or len(cco_graph) != 933:
         raise CheckFailure(
             "CCO-extension triple partition mismatch: expected 1 declaration, "
-            f"1 import, 7 metadata, 934 logical, 943 total; got {len(cco_graph)} total"
+            f"1 import, 7 metadata, 924 logical, 933 total; got {len(cco_graph)} total"
         )
     emit(
         "CCO extension: PASS "
-        "(1 declaration; 1 import; 7 metadata; 57 direct governed axioms; "
-        "934 logical triples; 943 total triples)",
+        "(1 declaration; 1 import; 7 metadata; 55 direct governed axioms; "
+        "924 logical triples; 933 total triples)",
         log,
     )
 
@@ -1053,7 +966,7 @@ def validate_temporary_outputs(
         "generated_candidate_ontology_declaration_triple_count": 1,
         "generated_candidate_import_triple_count": 4,
         "generated_candidate_metadata_annotation_count": 7,
-        "generated_candidate_logical_triple_count": 1112,
+        "generated_candidate_logical_triple_count": 1102,
     }
     for field, expected in root_partition.items():
         if summary.get(field) != expected:
@@ -1073,21 +986,21 @@ def validate_temporary_outputs(
         "integrated",
         ROOT_ORDERED_IMPORTS,
     )
-    if len(root_logical) != 1112 or len(graph) != 1124:
+    if len(root_logical) != 1102 or len(graph) != 1114:
         raise CheckFailure(
             "integrated-root triple partition mismatch: expected 1 declaration, "
-            f"4 imports, 7 metadata, 1112 logical, 1124 total; got {len(graph)} total"
+            f"4 imports, 7 metadata, 1102 logical, 1114 total; got {len(graph)} total"
         )
     candidate_hash = sha256_file(paths["candidate"])
     if summary.get("generated_candidate_sha256") != candidate_hash:
         raise CheckFailure("generated candidate hash does not match generator summary")
     emit(
         "Generated candidate parse: PASS "
-        f"(1 declaration; 4 imports; 7 metadata; 1112 logical; {len(graph)} total)",
+        f"(1 declaration; 4 imports; 7 metadata; 1102 logical; {len(graph)} total)",
         log,
     )
 
-    emit("[7-9/11] Confirming candidate closure cleanup and HermiT result", log)
+    emit("[7-9/11] Confirming exact candidate closure profile and HermiT result", log)
     if summary.get("hermit_return_code") != 0 or summary.get("hermit_result") != "PASS":
         raise CheckFailure(
             f"candidate HermiT failed: return={summary.get('hermit_return_code')}, "
@@ -1097,9 +1010,9 @@ def validate_temporary_outputs(
         raise CheckFailure(f"candidate closure has owl:Nothing count {summary.get('owl_nothing_count')}")
     if summary.get("named_unsat_count") != 0 or summary.get("named_unsat_set"):
         raise CheckFailure(f"candidate closure has named unsatisfiable classes: {summary.get('named_unsat_set')}")
-    if summary.get("candidate_closure_triple_count") != 15912:
+    if summary.get("candidate_closure_triple_count") != 15904:
         raise CheckFailure(
-            "candidate closure triple-count mismatch: expected 15912, got "
+            "candidate closure triple-count mismatch: expected 15904, got "
             f"{summary.get('candidate_closure_triple_count')!r}"
         )
     emit(
@@ -1124,8 +1037,6 @@ def validate_temporary_outputs(
         "alignment_core_sha256": alignment_hash,
         "strict_bfo_mapping_path": relative(MAINTAINED_OUTPUTS["strict_bfo_mapping"]),
         "strict_bfo_mapping_sha256": strict_hash,
-        "bfo_projection_path": relative(MAINTAINED_OUTPUTS["bfo_projection"]),
-        "bfo_projection_sha256": projection_hash,
         "cco_extension_path": relative(MAINTAINED_OUTPUTS["cco_extension"]),
         "cco_extension_sha256": cco_hash,
     }
@@ -1140,7 +1051,6 @@ def validate_temporary_outputs(
         paths["diff_report"],
         paths["alignment_core"],
         paths["strict_bfo_mapping"],
-        paths["bfo_projection"],
         paths["cco_extension"],
     ):
         assert_no_trailing_whitespace(path)
@@ -1217,12 +1127,6 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         errors.append("strict-BFO path differs from the generated report")
     if metadata.get("strict_bfo_mapping_sha256") != strict_hash:
         errors.append("strict-BFO hash differs from the generated report")
-    projection_path = MAINTAINED_OUTPUTS["bfo_projection"]
-    projection_hash = sha256_file(projection_path)
-    if metadata.get("bfo_projection_path") != relative(projection_path):
-        errors.append("BFO-projection path differs from the generated report")
-    if metadata.get("bfo_projection_sha256") != projection_hash:
-        errors.append("BFO-projection hash differs from the generated report")
     cco_path = MAINTAINED_OUTPUTS["cco_extension"]
     cco_hash = sha256_file(cco_path)
     if metadata.get("cco_extension_path") != relative(cco_path):
@@ -1247,8 +1151,10 @@ def freshness_errors(workbook_hash: str, generator_hash: str) -> list[str]:
         for field, expected in expected_hashes.items():
             if getattr(disposition.input_hashes, field) != expected:
                 errors.append(f"product-disposition {field} is stale")
-        if disposition.product_order != tuple(product.key for product in publication_metadata.products):
-            errors.append("product-disposition product order differs from publication metadata")
+        if disposition.product_order != PRODUCT_ROLE_ORDER:
+            errors.append(
+                "product-disposition product order differs from product-role policy"
+            )
     return errors
 
 
@@ -1271,7 +1177,6 @@ def output_differences(paths: dict[str, Path]) -> list[str]:
         "disposition_report",
         "alignment_core",
         "strict_bfo_mapping",
-        "bfo_projection",
         "cco_extension",
     ):
         current = MAINTAINED_OUTPUTS[name]
@@ -1354,9 +1259,6 @@ def record_success(summary: dict[str, object], workbook_hash: str, generator_has
         "strict_bfo_mapping_path": summary.get("strict_bfo_mapping_path"),
         "strict_bfo_mapping_sha256": summary.get("strict_bfo_mapping_sha256"),
         "strict_bfo_mapping": summary.get("strict_bfo_mapping"),
-        "bfo_projection_path": summary.get("bfo_projection_path"),
-        "bfo_projection_sha256": summary.get("bfo_projection_sha256"),
-        "bfo_projection": summary.get("bfo_projection"),
         "cco_extension_path": summary.get("cco_extension_path"),
         "cco_extension_sha256": summary.get("cco_extension_sha256"),
         "cco_extension": summary.get("cco_extension"),

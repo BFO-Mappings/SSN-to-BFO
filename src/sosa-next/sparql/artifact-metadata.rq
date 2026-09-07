@@ -3,11 +3,11 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?ontology ?violation WHERE {
   VALUES ?ontology {
-    <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo>
-    <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco>
-    <https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit>
+    <http://www.sks.ai/SSN2BFO/development/sosa-next/integrated>
+    <http://www.sks.ai/SSN2BFO/development/sosa-next/bfo-mapping>
+    <http://www.sks.ai/SSN2BFO/development/sosa-next/cco-extension>
+    <http://www.sks.ai/SSN2BFO/development/sosa-next/edit>
   }
-
   {
     FILTER NOT EXISTS { ?ontology a owl:Ontology . }
     BIND("Missing owl:Ontology declaration." AS ?violation)
@@ -19,8 +19,16 @@ SELECT ?ontology ?violation WHERE {
   }
   UNION
   {
-    FILTER(!STRSTARTS(STR(?ontology), "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/"))
-    BIND("Ontology IRI is outside the expected forthcoming SOSA-only base." AS ?violation)
+    FILTER(
+      !STRSTARTS(
+        STR(?ontology),
+        "http://www.sks.ai/SSN2BFO/development/sosa-next/"
+      )
+    )
+    BIND(
+      "Ontology IRI is outside the expected forthcoming SOSA-only base."
+      AS ?violation
+    )
   }
   UNION
   {

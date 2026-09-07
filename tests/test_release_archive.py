@@ -36,7 +36,6 @@ EXPECTED_MEMBERS = (
     "SSN2BFO-2099-01-02/current-ssn-sosa/",
     "SSN2BFO-2099-01-02/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "SSN2BFO-2099-01-02/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "SSN2BFO-2099-01-02/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "SSN2BFO-2099-01-02/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     "SSN2BFO-2099-01-02/evidence/",
     "SSN2BFO-2099-01-02/evidence/coms-product-dispositions.json",
@@ -165,14 +164,14 @@ class ReleaseArchiveTests(unittest.TestCase):
     def test_member_authority_is_verbatim_and_independent_of_package_sorting(self) -> None:
         self.assertEqual(archive.ARCHIVE_MEMBER_TEMPLATES, tuple(name.replace(RELEASE_ID, "{release_id}") for name in EXPECTED_MEMBERS))
         self.assertEqual(archive.canonical_member_names(RELEASE_ID), EXPECTED_MEMBERS)
-        self.assertEqual(len(EXPECTED_MEMBERS), 17)
-        self.assertTrue(all(name.endswith("/") for name in (EXPECTED_MEMBERS[0], EXPECTED_MEMBERS[7], EXPECTED_MEMBERS[12], EXPECTED_MEMBERS[14])))
+        self.assertEqual(len(EXPECTED_MEMBERS), 16)
+        self.assertTrue(all(name.endswith("/") for name in (EXPECTED_MEMBERS[0], EXPECTED_MEMBERS[7], EXPECTED_MEMBERS[11], EXPECTED_MEMBERS[13])))
         self.assertEqual(archive.canonical_member_names(RELEASE_ID)[6], f"SSN2BFO-{RELEASE_ID}/manifest.json")
 
     def test_raw_ustar_stream_has_exact_headers_metadata_and_two_record_eof(self) -> None:
         members = raw_members(self.value)
         self.assertEqual(tuple(member.name for member in members), EXPECTED_MEMBERS)
-        self.assertEqual(len(members), 17)
+        self.assertEqual(len(members), 16)
         self.assertEqual(len(self.value) % RECORD, 0)
         self.assertEqual(self.value[-2 * RECORD :], b"\0" * (2 * RECORD))
         self.assertNotEqual(self.value[-3 * RECORD : -2 * RECORD], b"\0" * RECORD)

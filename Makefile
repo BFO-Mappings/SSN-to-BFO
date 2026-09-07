@@ -1,4 +1,4 @@
-.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-bfo-projection check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat
+.PHONY: validate validate-write audit-write legacy-audit-write compile check check-coms check-sosa-next check-coms-row-identities check-coms-product-dispositions check-alignment-core check-strict-bfo-mapping check-cco-extension check-publication-metadata check-release-rendering check-release-package check-release-archive check-release-rehearsal check-placeholder-catalog-migration watch-coms coms-status post-merge-check status diffstat generate-sosa-next-products check-sosa-next-products check-sosa-next-consumer-stack check-sosa-2023-publication-rendering check-sosa-2023-release-manifest check-sosa-2023-package check-sosa-2023-release-archive check-sosa-2023-release-rehearsal check-sosa-source-version check-product-role-policy check-sosa-release-scope
 
 validate:
 	PYTHONDONTWRITEBYTECODE=1 python tools/run_validation_suite.py
@@ -28,17 +28,55 @@ compile:
 		tools/product_dispositions.py \
 		tools/modular_products.py \
 		tools/generate_mapping_from_coms.py \
+		tools/robot_diff_pilot.py \
+		tools/robot_extract_pilot.py \
+		tools/robot_query_equivalence_pilot.py \
+		tools/robot_retained_example_validation_pilot.py \
+		tools/robot_verify_pilot.py \
 		tools/check_coms_mapping.py \
+		tools/sosa_source_version.py \
+		tools/check_sosa_source_version.py \
+		tools/product_role_policy.py \
+		tools/check_product_role_policy.py \
+		tools/sosa_release_scope.py \
+		tools/check_sosa_release_scope.py \
+		tools/check_sosa_next_mapping.py \
+		tools/generate_sosa_next_products.py \
+		tools/check_sosa_next_products.py \
 		tools/watch_coms_mapping.py \
 		tools/publication_metadata.py \
 		tools/check_publication_metadata.py \
 		tools/release_context.py \
 		tools/release_manifest.py \
+		tools/sosa_2023_release_manifest.py \
+		tools/sosa_2023_release_runtime.py \
+		tools/sosa_2023_build_release.py \
+		tools/sosa_2023_check_release.py \
+		tools/sosa_2023_release_archive.py \
+		tools/sosa_2023_rehearse_release.py \
 		tools/build_release.py \
 		tools/check_release.py \
 		tools/release_archive.py \
 		tools/rehearse_release.py \
 		tests/test_generate_mapping_from_coms.py \
+		tests/test_sosa_source_version.py \
+		tests/test_product_role_policy.py \
+		tests/test_sosa_release_scope.py \
+		tests/test_check_sosa_next_mapping.py \
+		tests/test_sosa_next_products.py \
+		tests/test_sosa_next_consumer_stack.py \
+		tests/test_sosa_2023_publication_metadata.py \
+		tests/test_sosa_2023_release_rendering.py \
+		tests/test_sosa_2023_release_manifest.py \
+		tests/test_sosa_2023_release_runtime.py \
+		tests/test_sosa_2023_build_release.py \
+		tests/test_sosa_2023_release_archive.py \
+		tests/test_sosa_2023_release_rehearsal.py \
+		tests/test_robot_diff_pilot.py \
+		tests/test_robot_extract_pilot.py \
+		tests/test_robot_query_equivalence_pilot.py \
+		tests/test_robot_retained_example_validation_pilot.py \
+		tests/test_robot_verify_pilot.py \
 		tests/test_coms_row_identity.py \
 		tests/test_product_dispositions.py \
 		tests/test_modular_products.py \
@@ -81,6 +119,48 @@ check-release-rehearsal:
 check-placeholder-catalog-migration:
 	PYTHONDONTWRITEBYTECODE=1 python -B -m unittest discover -s tests -p 'test_placeholder_catalog_migration.py'
 
+check-sosa-source-version:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_source_version.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_source_version.py
+
+check-product-role-policy: check-sosa-source-version
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_product_role_policy.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_product_role_policy.py
+
+check-sosa-release-scope: check-product-role-policy
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_release_scope.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_release_scope.py
+
+check-sosa-next: check-sosa-source-version
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_check_sosa_next_mapping.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_next_mapping.py
+
+generate-sosa-next-products:
+	PYTHONDONTWRITEBYTECODE=1 python tools/generate_sosa_next_products.py --write-maintained
+
+check-sosa-next-products:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_next_products.py'
+	PYTHONDONTWRITEBYTECODE=1 python tools/check_sosa_next_products.py
+
+check-sosa-next-consumer-stack:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_next_consumer_stack.py'
+
+check-sosa-2023-publication-rendering:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_2023_publication_metadata.py'
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_2023_release_rendering.py'
+
+check-sosa-2023-release-manifest:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_sosa_2023_release_manifest.py'
+
+check-sosa-2023-package:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest tests.test_sosa_2023_release_runtime tests.test_sosa_2023_build_release
+
+check-sosa-2023-release-archive:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest tests.test_sosa_2023_release_archive
+
+
+check-sosa-2023-release-rehearsal:
+	PYTHONDONTWRITEBYTECODE=1 python -m unittest tests.test_sosa_2023_release_rehearsal
 check-coms:
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py
 
@@ -103,10 +183,6 @@ check-strict-bfo-mapping:
 
 check-cco-extension:
 	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_cco_extension.py'
-	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
-
-check-bfo-projection:
-	PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_bfo_projection.py'
 	PYTHONDONTWRITEBYTECODE=1 python tools/check_coms_mapping.py --check-only
 
 watch-coms:

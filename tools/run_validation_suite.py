@@ -396,17 +396,62 @@ def compile_check() -> StepResult:
             "tools/product_dispositions.py",
             "tools/modular_products.py",
             "tools/generate_mapping_from_coms.py",
+            "tools/robot_template_generation_pilot.py",
+            "tools/robot_property_chain_generation_pilot.py",
+            "tools/robot_diff_pilot.py",
+            "tools/robot_extract_pilot.py",
+            "tools/robot_query_equivalence_pilot.py",
+            "tools/robot_retained_example_validation_pilot.py",
+            "tools/robot_verify_pilot.py",
+            "tools/robot_reconstruction_validation.py",
+            "tools/validate_robot_reconstruction.py",
             "tools/check_coms_mapping.py",
+            "tools/sosa_source_version.py",
+            "tools/check_sosa_source_version.py",
+            "tools/product_role_policy.py",
+            "tools/check_product_role_policy.py",
+            "tools/sosa_release_scope.py",
+            "tools/check_sosa_release_scope.py",
+            "tools/check_sosa_next_mapping.py",
+            "tools/generate_sosa_next_products.py",
+            "tools/check_sosa_next_products.py",
             "tools/watch_coms_mapping.py",
             "tools/publication_metadata.py",
             "tools/check_publication_metadata.py",
             "tools/release_context.py",
             "tools/release_manifest.py",
+            "tools/sosa_2023_release_manifest.py",
+            "tools/sosa_2023_release_runtime.py",
+            "tools/sosa_2023_build_release.py",
+            "tools/sosa_2023_check_release.py",
+            "tools/sosa_2023_release_archive.py",
+        "tools/sosa_2023_rehearse_release.py",
             "tools/build_release.py",
             "tools/check_release.py",
             "tools/release_archive.py",
             "tools/rehearse_release.py",
             "tests/test_generate_mapping_from_coms.py",
+            "tests/test_sosa_source_version.py",
+            "tests/test_product_role_policy.py",
+            "tests/test_sosa_release_scope.py",
+            "tests/test_check_sosa_next_mapping.py",
+            "tests/test_sosa_next_products.py",
+            "tests/test_sosa_next_consumer_stack.py",
+            "tests/test_sosa_2023_publication_metadata.py",
+            "tests/test_sosa_2023_release_rendering.py",
+            "tests/test_sosa_2023_release_manifest.py",
+            "tests/test_sosa_2023_release_runtime.py",
+            "tests/test_sosa_2023_build_release.py",
+            "tests/test_sosa_2023_release_archive.py",
+        "tests/test_sosa_2023_release_rehearsal.py",
+            "tests/test_robot_template_generation_pilot.py",
+            "tests/test_robot_property_chain_generation_pilot.py",
+            "tests/test_robot_diff_pilot.py",
+            "tests/test_robot_extract_pilot.py",
+            "tests/test_robot_query_equivalence_pilot.py",
+            "tests/test_robot_retained_example_validation_pilot.py",
+            "tests/test_robot_verify_pilot.py",
+            "tests/test_robot_reconstruction_validation.py",
             "tests/test_coms_row_identity.py",
             "tests/test_product_dispositions.py",
             "tests/test_modular_products.py",
@@ -487,6 +532,187 @@ def run_validation_suite(args: argparse.Namespace) -> int:
     if results[-1].passed:
         results.append(
             run_command(
+                "SOSA source-version authority focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_source_version.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Uniform product-role policy focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_product_role_policy.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA formal package-scope focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_release_scope.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Forthcoming SOSA COMS focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_check_sosa_next_mapping.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-next maintained-product focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_next_products.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-next catalog consumer-stack focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_next_consumer_stack.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 publication-metadata focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_2023_publication_metadata.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 formal-rendering focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_2023_release_rendering.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 release-manifest focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "tests",
+                    "-p",
+                    "test_sosa_2023_release_manifest.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 release-package focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "tests.test_sosa_2023_release_runtime",
+                    "tests.test_sosa_2023_build_release",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 release-archive focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "tests.test_sosa_2023_release_archive",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-2023 release-rehearsal focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "tests.test_sosa_2023_release_rehearsal",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
                 "COMS product-disposition focused tests",
                 [
                     sys.executable,
@@ -551,7 +777,7 @@ def run_validation_suite(args: argparse.Namespace) -> int:
     if results[-1].passed:
         results.append(
             run_command(
-                "BFO-projection modular-product focused tests",
+                "BFO-projection role reconciliation focused tests",
                 [
                     sys.executable,
                     "-m",
@@ -719,8 +945,93 @@ def run_validation_suite(args: argparse.Namespace) -> int:
     if results[-1].passed:
         results.append(
             run_command(
+                "ROBOT focused tests",
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "tests.test_robot_template_generation_pilot",
+                    "tests.test_robot_property_chain_generation_pilot",
+                    "tests.test_robot_diff_pilot",
+                    "tests.test_robot_extract_pilot",
+                    "tests.test_robot_query_equivalence_pilot",
+                    "tests.test_robot_retained_example_validation_pilot",
+                    "tests.test_robot_verify_pilot",
+                    "tests.test_robot_reconstruction_validation",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Complete ROBOT reconstruction check",
+                [
+                    sys.executable,
+                    "tools/validate_robot_reconstruction.py",
+                    "--output-dir",
+                    str(tmp_dir / "robot-reconstruction"),
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
                 "COMS workbook freshness and candidate quality check",
                 [sys.executable, "tools/check_coms_mapping.py", "--check-only"],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA source-version authority check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_source_version.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Uniform product-role policy check",
+                [
+                    sys.executable,
+                    "tools/check_product_role_policy.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA formal package-scope check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_release_scope.py",
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "Forthcoming SOSA COMS mapping check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_next_mapping.py",
+                    "--output-dir",
+                    str(tmp_dir / "sosa-next-mapping-check"),
+                ],
+            )
+        )
+    if results[-1].passed:
+        results.append(
+            run_command(
+                "SOSA-next maintained-product check",
+                [
+                    sys.executable,
+                    "tools/check_sosa_next_products.py",
+                    "--output-dir",
+                    str(tmp_dir / "sosa-next-product-check"),
+                ],
             )
         )
     if results[-1].passed:

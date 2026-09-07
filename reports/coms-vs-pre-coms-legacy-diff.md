@@ -6,9 +6,9 @@ This informational report compares mapping-bearing axioms and, separately, domai
 
 | Item | Count |
 |---|---:|
-| mappings present in both | 57 |
+| mappings present in both | 55 |
 | mappings only in COMS | 17 |
-| mappings only in pre-COMS legacy ontology | 11 |
+| mappings only in pre-COMS legacy ontology | 13 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
@@ -21,7 +21,7 @@ This informational report compares mapping-bearing axioms and, separately, domai
 | range axioms only in pre-COMS legacy ontology | 0 |
 | range target differences | 0 |
 | legacy domain/range axioms absent from COMS | 13 |
-| spreadsheet rows intentionally producing no mapping | 0 |
+| spreadsheet rows intentionally producing no mapping | 2 |
 
 ## Mappings Present In Both
 
@@ -78,10 +78,8 @@ This informational report compares mapping-bearing axioms and, separately, domai
 - `object_property` `ssn:inDeployment` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000056`
 - `object_property` `ssn-system:qualityOfObservation` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001986`
 - `object_property` `ssn:wasOriginatedBy` `rdfs:subPropertyOf` `https://www.commoncoreontologies.org/ont00001962`
-- `property_chain` `sosa:hasSample` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001873 o http://purl.obolibrary.org/obo/BFO_0000084`
 - `property_chain` `sosa:hosts` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000196 o http://purl.obolibrary.org/obo/BFO_0000054 o http://purl.obolibrary.org/obo/BFO_0000057`
 - `property_chain` `sosa:isHostedBy` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000056 o http://purl.obolibrary.org/obo/BFO_0000055 o http://purl.obolibrary.org/obo/BFO_0000197`
-- `property_chain` `sosa:isSampleOf` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000101 o https://www.commoncoreontologies.org/ont00001938`
 
 ## Only In COMS
 
@@ -115,6 +113,8 @@ This informational report compares mapping-bearing axioms and, separately, domai
 - `object_property` `ssn-system:hasOperatingRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
 - `object_property` `ssn-system:hasSurvivalRange` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
 - `object_property` `ssn-system:hasSystemCapability` `rdfs:subPropertyOf` `http://purl.obolibrary.org/obo/BFO_0000196`
+- `property_chain` `sosa:hasSample` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001873 o http://purl.obolibrary.org/obo/BFO_0000084`
+- `property_chain` `sosa:isSampleOf` `owl:propertyChainAxiom` `http://purl.obolibrary.org/obo/BFO_0000101 o https://www.commoncoreontologies.org/ont00001938`
 - `property_chain` `ssn:implementedBy` `owl:propertyChainAxiom` `https://www.commoncoreontologies.org/ont00001942 o https://www.commoncoreontologies.org/ont00001833`
 
 ## Class-Expression Differences
@@ -204,7 +204,8 @@ This informational report compares mapping-bearing axioms and, separately, domai
 
 ## Spreadsheet Rows Intentionally Producing No Mapping
 
-- none
+- `sosa:hasSample` at `Sheet2!16`
+- `sosa:isSampleOf` at `Sheet2!17`
 
 ## Terms Requiring Human Review
 

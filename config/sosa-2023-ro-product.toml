@@ -1,0 +1,19 @@
+schema_version = 1
+
+[product]
+status = "development"
+track = "sosa-2023"
+development_alias = "sosa-next"
+key = "ro_mapping"
+workbook_path = "mappings/SOSA-next-to-RO-COMS.xlsx"
+output_path = "releases/sosa-next/sosa-ro-mapping.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/development/sosa-next/ro-mapping"
+label = "SOSA-2023 Relations Ontology Mapping"
+governed_property_count = 82
+active_axiom_count = 16
+no_direct_mapping_count = 66
+logical_triple_count = 16
+ontology_declaration_count = 1
+metadata_annotation_count = 1
+import_count = 0
+total_triple_count = 18

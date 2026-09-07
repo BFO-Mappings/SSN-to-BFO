@@ -448,9 +448,13 @@ class ModularProductTests(unittest.TestCase):
         )
         closure = modular.build_fixed_source_closure(self.result.serialized_bytes, paths)
         self.assertEqual(list(closure.triples((None, OWL.imports, None))), [])
-        for triple in coms.CLEANUP_TRIPLES:
-            closure.remove(triple)
-        self.assertEqual(len(closure), 1212)
+        self.assertEqual(len(closure), 1214)
+        self.assertTrue(
+            all(
+                triple in closure
+                for triple in coms.SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+            )
+        )
         self.assertEqual(
             modular.validate_alignment_core(
                 self.result.serialized_bytes,

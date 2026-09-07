@@ -1,0 +1,44 @@
+schema_version = 4
+
+[publication]
+project_title = "SSN-to-BFO"
+default_language = "en"
+release_iri_base = "http://www.sks.ai/SSN2BFO/releases"
+license_iri = "https://creativecommons.org/publicdomain/zero/1.0/"
+repository_iri = "https://github.com/BFO-Mappings/SSN-to-BFO"
+generated_warning = "Generated from governed SOSA-2023 COMS and publication metadata; do not edit this ontology directly."
+development_status_property_iri = "http://www.w3.org/ns/adms#status"
+development_status_iri = "http://www.sks.ai/SSN2BFO/authority-status/maintained-authoritative-development"
+formal_release_status_iri = "http://www.sks.ai/SSN2BFO/authority-status/immutable-authoritative-release"
+
+[products.integrated]
+path = "releases/sosa-next/sosa-integrated.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/integrated"
+release_iri_suffix = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/integrated"
+label = "SOSA 2023 Integrated Mapping"
+description = "Directly asserts the complete governed SOSA 2023 mapping to BFO and CCO and serves as the complete consumer entry point."
+product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/integrated"
+
+[products.strict_bfo_mapping]
+path = "releases/sosa-next/sosa-bfo-mapping.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/bfo-mapping"
+release_iri_suffix = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/bfo-mapping"
+label = "SOSA 2023 Strict BFO Mapping"
+description = "Directly asserts the governed BFO-bearing SOSA 2023 mapping axioms without weakening and imports no ontology."
+product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/strict-bfo-mapping"
+
+[products.cco_extension]
+path = "releases/sosa-next/sosa-cco-extension.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/cco-extension"
+release_iri_suffix = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/cco-extension"
+label = "SOSA 2023 CCO Extension"
+description = "Directly asserts the governed CCO-bearing and mixed BFO/CCO SOSA 2023 mapping axioms and imports the strict BFO mapping."
+product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/cco-extension"
+
+[products.ro_mapping]
+path = "releases/sosa-next/sosa-ro-mapping.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/ro-mapping"
+release_iri_suffix = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/ro-mapping"
+label = "SOSA 2023 Relations Ontology Mapping"
+description = "Directly asserts the governed Relations Ontology profile for SOSA 2023 and imports no ontology."
+product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/ro-mapping"

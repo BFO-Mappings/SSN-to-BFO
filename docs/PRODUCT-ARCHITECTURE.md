@@ -2,7 +2,7 @@
 
 ## Maintained current-track products
 
-The current SSN/SOSA track consists of one integrated ontology and four maintained modular products generated from governed COMS.
+The current SSN/SOSA track consists of one integrated ontology and three maintained modular products generated from governed COMS.
 
 ### Integrated mapping
 
@@ -60,25 +60,26 @@ Focused validation:
 make check-strict-bfo-mapping
 ```
 
-### BFO projection
+### BFO Projection role
 
-Path:
+BFO Projection remains one of the five product roles, but it is not currently
+materialized as an ontology product.
 
-```text
-releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl
-```
+The role is reserved for weakened but sound BFO consequences approved through
+governed transformation policy. Its current approved direct-axiom count is
+zero. An import-only ontology does not provide a distinct consumer function,
+because loading the strict BFO mapping already supplies the same project-module
+closure.
 
-The BFO projection imports only the strict BFO mapping. It currently asserts zero direct projection axioms because no governed CCO-to-BFO transformation or weakened-consequence rule has been approved.
+The former import-only BFO Projection ontology has therefore been retired from
+maintained generation, formal rendering, package construction, and release
+validation. Role reconciliation remains governed through
+`reports/coms-product-dispositions.json` and tested by
+`tests/test_bfo_projection.py`.
 
-Its project-module closure is therefore the same 48 governed axioms supplied by the strict BFO mapping and alignment core.
-
-Future projection axioms require governed transformation rules and explicit proof obligations.
-
-Focused validation:
-
-```bash
-make check-bfo-projection
-```
+A future BFO Projection ontology may be materialized only when at least one
+approved weakened consequence is assigned directly to the role and the
+product-role inclusion policy is satisfied.
 
 ### CCO extension
 
@@ -88,12 +89,12 @@ Path:
 releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl
 ```
 
-The CCO extension directly asserts 57 governed axioms:
+The CCO extension directly asserts 55 governed axioms:
 
 - 25 CCO-bearing axioms
-- 32 mixed BFO/CCO axioms
+- 30 mixed BFO/CCO axioms
 
-It imports only the strict BFO mapping, whose alignment-core import completes the 105-axiom project-module closure without duplicating either imported layer.
+It imports only the strict BFO mapping, whose alignment-core import completes the 103-axiom project-module closure without duplicating either imported layer.
 
 The published extension contains no RO terms, transformed mappings, weakened projections, or copied dependency declarations.
 
@@ -110,12 +111,6 @@ alignment core
       ↑
 strict BFO mapping
       ↑
-BFO projection
-
-alignment core
-      ↑
-strict BFO mapping
-      ↑
 CCO extension
 ```
 
@@ -123,7 +118,7 @@ The integrated ontology is a separate complete product rather than the root of t
 
 ## Development metadata
 
-`config/publication-metadata.toml` governs the five product paths, stable ontology IRIs, release suffixes, labels, descriptions, product types, license, repository reference, authority statuses, and generated-file warning.
+`config/publication-metadata.toml` governs the four materialized product paths, stable ontology IRIs, release suffixes, labels, descriptions, product types, license, repository reference, authority statuses, and generated-file warning. The separate product-role policy governs all five product roles, including non-materialized `bfo_projection`.
 
 Development artifacts emit exactly seven governed annotations:
 
@@ -137,10 +132,228 @@ Development artifacts emit exactly seven governed annotations:
 
 Formal release rendering retains the stable ontology IRI, replaces the development authority status with the immutable-release status, and adds the governed formal release identity.
 
-## Inactive source scaffolding
+## Retired current-track scaffolding
 
-The former current-track editor, direct-mapping shells, development catalog, and ungoverned hierarchy-projection analysis have been retired.
+The former current-track editor, direct-mapping shells,
+development catalog, and ungoverned hierarchy-projection analysis have been
+retired.
 
-The separate `sosa-next` scaffold remains intentionally retained but inactive. Its temporary editor source, catalog, release shells, and optional local targets do not participate in current generation, validation, package construction, or publication.
+## SOSA-next maintained development track
 
-The inactive scaffold is not an alias or compatibility layer for the maintained current-track products.
+The separate SOSA-next track is an active maintained development track whose
+sole editable mapping authority is `mappings/SOSA-next-to-BFO-COMS.xlsx`.
+
+Its approved immutable source-version identity is
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`.
+`config/sosa-source-version.toml` is the machine-readable source authority.
+The `sosa-next` component remains only the development alias for current
+development paths and ontology IRIs.
+
+The uniform product-role migration is complete. The track materializes exactly
+three ontology products:
+
+| Product | Path | Direct axioms | Logical triples | Total triples |
+| --- | --- | ---: | ---: | ---: |
+| Integrated | `releases/sosa-next/sosa-integrated.ttl` | 55 | 277 | 290 |
+| BFO Mapping | `releases/sosa-next/sosa-bfo-mapping.ttl` | 24 | 154 | 162 |
+| CCO Extension | `releases/sosa-next/sosa-cco-extension.ttl` | 31 | 123 | 132 |
+
+The maintained SOSA-next track resolves its merged CCO/BFO target through `src/sosa-next/imports/cco.ttl`; root `imports/cco.ttl` remains the separate current SSN/SOSA-track dependency.
+
+The Integrated Mapping is the distinct complete consumer entry point. It
+directly asserts all 55 canonical authoritative axioms and imports exactly the
+governed SOSA root, SOSA Systems, SOSA Sampling, source-declaration overlay,
+and merged CCO/BFO dependency.
+
+The modular project graph is independent of that complete entry point:
+
+```text
+SOSA-next CCO Extension
+          |
+          v
+SOSA-next BFO Mapping
+```
+
+The BFO Mapping imports no ontology. The CCO Extension imports only the BFO
+Mapping. Their logical union contains 277 triples and is isomorphic to the
+Integrated Mapping's 277 logical triples.
+
+The editor shell imports only the Integrated Mapping:
+
+```text
+SOSA-next editor shell
+          |
+          v
+SOSA-next Integrated Mapping
+```
+
+The resulting local editor project closure contains 294 distinct triples.
+`src/sosa-next/catalog-v001.xml` contains 17 local mappings covering the
+governed source and target dependencies, all three maintained products, and
+the editor shell. The BFO Mapping and CCO Extension remain independently
+catalog-resolvable modular products.
+
+Alignment Core remains a governed role but is non-materialized because the
+current SOSA-2023 mapping has zero target-neutral authoritative axioms. BFO
+Projection likewise remains governed but non-materialized because no approved
+weakened-but-sound BFO consequence exists.
+
+The maintained product hashes are:
+
+| Product | SHA-256 |
+| --- | --- |
+| Integrated | `3f502821476478252cdd9feb316b47612daa473e511597970a1351617d5cfc12` |
+| BFO Mapping | `1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb` |
+| CCO Extension | `53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19` |
+
+The source-version track remains a separate formal package. Its
+publication-metadata, formal-rendering, release-manifest, deterministic
+package-construction, canonical package-catalog, checksum, and read-only
+package-validation layers are now implemented.
+
+The separate manifest authority is
+`config/sosa-2023-release-manifest-schema-v1.json`, implemented by
+`tools/sosa_2023_release_manifest.py`. It deliberately leaves the
+current-track schema-v2 authority unchanged rather than generalizing the two
+release tracks back into one inventory.
+
+Its canonical product inventory is exactly Integrated, Strict BFO Mapping, and
+CCO Extension. Formal HermiT closure evidence is fixed at 15,243, 15,120, and
+15,254 triples respectively. The manifest records 31 governed inputs, including
+the SOSA-2023 package runtime, builder, and checker as byte-affecting
+non-packaged evidence. It also records four external dependency records and an
+11-member included-file evidence inventory.
+
+The source-declaration overlay remains governed source/validation evidence; it
+is not a formal ontology import. The pinned Sampling dependency file declares
+`http://www.w3.org/ns/sosa/sam/`; this dependency identity is intentionally
+distinct from the formal Integrated product import
+`http://www.w3.org/ns/sosa/sampling/`.
+
+`config/sosa-2023-publication-metadata.toml` governs the three formal product
+identities. Formal stable ontology IRIs and date-based version-IRI suffixes use
+the immutable source identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`; no formal ontology header,
+formal package path, or package catalog entry retains the `sosa-next`
+development alias.
+
+The pure formal renderer preserves the three development logical graphs and
+uses this formal import graph:
+
+```text
+Formal Integrated
+  -> SOSA
+  -> SOSA Systems
+  -> SOSA Sampling
+  -> merged CCO/BFO
+
+Formal CCO Extension
+  -> same-release Formal BFO Mapping
+
+Formal BFO Mapping
+  -> no ontology import
+```
+
+The development-only source-declaration overlay remains governed source and
+validation evidence but is deliberately not a published formal import.
+
+Under the fixed synthetic `2099-01-02` release context, the formal bytes are
+locked at:
+
+| Product | Logical triples | Total triples | SHA-256 |
+| --- | ---: | ---: | --- |
+| Integrated | 277 | 292 | `539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43` |
+| BFO Mapping | 154 | 165 | `8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125` |
+| CCO Extension | 123 | 135 | `d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d` |
+
+The separate package engine is implemented by
+`tools/sosa_2023_release_runtime.py`, `tools/sosa_2023_build_release.py`, and
+`tools/sosa_2023_check_release.py`. A complete SOSA-2023 package contains 13
+regular files: 11 manifest-evidenced members plus `manifest.json` and
+`SHA256SUMS`. The checksum inventory covers exactly 12 files and excludes only
+`SHA256SUMS` itself.
+
+The canonical package catalog maps exactly the three same-release formal
+version IRIs to their package-relative products. Package construction performs
+two complete independent builds, requires byte identity across all 13 files,
+runs fixed-closure HermiT validation, and publishes the candidate only after a
+read-only package check succeeds. The checker independently reconstructs the
+formal products from the packaged workbook and packaged publication metadata;
+full reconstruction must reproduce all 13 files byte-for-byte without changing
+the retained package.
+
+`release-notes/SOSA-2023-SYNTHETIC-2099-01-02.md` is a deterministic
+package-engineering fixture only. It is not an actual release announcement,
+tag, publication decision, or deployment.
+
+The separate deterministic archive authority is now implemented by
+`tools/sosa_2023_release_archive.py`. It serializes the complete 13-file
+SOSA-2023 package as a canonical 16-member raw POSIX USTAR stream: one archive
+root, the immutable-track product directory, the `sources` directory, and all
+13 regular package files.
+
+Published archive evidence is track-disambiguated. For the fixed synthetic
+release context the archive and sidecar are:
+
+- `SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-2099-01-02.tar`
+- `SSN2BFO-sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda-2099-01-02.tar.sha256`
+
+The internal archive root is `SOSA-2023-2099-01-02/`. The shorter internal
+root keeps every governed raw-USTAR member name within the 100-byte name field,
+while the three formal ontology paths inside the archive continue to carry the
+full immutable source-version identity.
+
+Archive bytes preserve the current release-engine hardening contract: fixed
+member order, canonical raw USTAR headers, fixed modes and zero timestamps,
+zero record padding, exactly two terminal zero-filled 512-byte records, and a
+lowercase external SHA-256 sidecar. Publication of an archive/sidecar pair uses
+one no-replace directory rename.
+
+The real-package regression builds the actual synthetic 13-file package and
+constructs two independent archive outputs from that same package. The archive
+and sidecar pairs must be byte-identical. `manifest.json` deliberately records
+the actual validation environment, including Python and Java runtime identity,
+so a complete package—and therefore its archive digest and potentially its
+padded archive size—may differ across validated environments. No
+cross-environment whole-archive digest or byte-size lock is claimed. The
+sidecar is 140 bytes under the governed filename grammar. Archive validation is
+read-only and preserves the package, archive, and sidecar bytes and mtimes.
+
+The separate isolated release-rehearsal authority is now implemented by
+`tools/sosa_2023_rehearse_release.py`. It requires the requested source commit
+to equal the clean invoking checkout HEAD, constructs two isolated detached
+local clones without hard links, removes their remotes, and gives each
+candidate private HOME, XDG, Python bytecode-cache, and validated toolchain
+surfaces. Python socket access is blocked during candidate package and archive
+phases.
+
+Each candidate independently builds and validates the complete 13-file package,
+then builds and validates its canonical 16-member archive and checksum sidecar.
+Candidate checkout integrity is rechecked after every phase. Rehearsal succeeds
+only when complete package bytes and parsed manifests agree across the two
+candidates and archive and sidecar bytes are identical. Verify mode retains no
+release output. Build mode can retain output only after the isolated proof
+succeeds, through atomic no-replace publication to an explicit absent external
+destination.
+
+Approval of an actual release context and release notes, the final real
+rehearsal, and publication remain future formal-release work.
+
+Focused validation:
+
+```bash
+make check-sosa-source-version
+make check-product-role-policy
+make check-sosa-release-scope
+make check-sosa-next
+make check-sosa-next-products
+make check-sosa-next-consumer-stack
+make check-sosa-2023-publication-rendering
+make check-sosa-2023-release-manifest
+make check-sosa-2023-package
+make check-sosa-2023-release-archive
+make check-sosa-2023-release-rehearsal
+```
+
+For the development and formal-rendering contract, see
+`reports/sosa-next-product-contract.md`.

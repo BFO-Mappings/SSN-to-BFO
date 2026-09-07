@@ -1,5 +1,15 @@
 # SSN-to-BFO Publication Product and Import Policy
 
+> **Current implementation status (2026-08-09):** The product-inventory and
+> BFO-Projection-materialization portions of this report are superseded by
+> `reports/product-role-inclusion-policy.md` and the implemented current-track
+> release architecture. The current SSN/SOSA track materializes four products:
+> Integrated, Alignment Core, BFO Mapping, and CCO Extension. BFO Projection
+> remains a governed fifth product role with zero approved direct axioms and is
+> not currently materialized. Historical baseline evidence below is retained
+> where it documents the state reviewed when this policy was originally
+> adopted.
+
 ## 1. Executive Recommendation
 
 Adopt four generated modular products alongside, not in place of, the independently generated integrated root. `mappings/SSN2BFO-COMS.xlsx` remains the sole editable mapping authority. Product identity, import relationships, mapping strength, release versioning, current-projection retirement, and the inactive `sosa-next` lifecycle are approved by this policy rather than left as implementation choices.
@@ -9,8 +19,8 @@ Adopt four generated modular products alongside, not in place of, the independen
 | Integrated authoritative product | `SSN2BFO.ttl` | `http://www.sks.ai/SSN2BFO/` | **Maintained authoritative development artifact.** It remains the complete standalone integrated publication and must not become an import wrapper. |
 | Alignment core | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core` | **Maintained authoritative development artifact.** It contains the 29 target-neutral governed axioms. |
 | Strict BFO mapping | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping` | **Maintained authoritative development artifact.** It contains the 19 current BFO-bearing axioms unchanged. |
-| BFO projection | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection` | **Maintained authoritative development artifact.** It is the designated product for approved weaker but sound BFO consequences, imports the strict BFO mapping, and currently asserts no direct projection axiom. |
-| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension` | **Maintained authoritative development artifact.** It adds the 25 CCO-bearing and 32 mixed BFO/CCO axioms and imports the strict BFO mapping. |
+| BFO Projection role | No maintained file | None while non-materialized | **Governed non-materialized role.** It remains the designated role for approved weaker but sound BFO consequences, but zero direct projection axioms are currently approved and the former import-only artifact has been retired. |
+| CCO extension | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` | `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension` | **Maintained authoritative development artifact.** It adds the 25 CCO-bearing and 30 mixed BFO/CCO axioms and imports the strict BFO mapping. |
 | RO module | No approved path | None | **Deferred.** It remains outside the approved product set pending a focused applicability review. |
 | `sosa-next` modules | Existing `releases/sosa-next/` placeholders | None approved | **Inactive lifecycle scaffolding.** They remain outside current generation, CI, release, and completeness accounting. |
 | Future SWRL/rule module | No approved path | None | **Deferred.** It requires a separately governed rule-policy decision. |
@@ -22,12 +32,12 @@ alignment core
       ^
       |
 strict BFO mapping
-   ^             ^
-   |             |
-CCO extension  BFO projection
+      ^
+      |
+CCO extension
 ```
 
-The alignment core imports nothing. The strict BFO mapping imports only the alignment core. The CCO extension and BFO projection each import only the strict BFO mapping; they do not import one another.
+The alignment core imports nothing. The strict BFO mapping imports only the alignment core. The CCO extension imports only the strict BFO mapping. BFO Projection is currently non-materialized and therefore contributes no project-module import edge.
 
 `SSN2BFO.ttl` is generated independently from the same COMS authority. It retains every approved COMS mapping/typing axiom in its own graph, retains its approved dependency-bearing source and CCO imports, and imports none of the modular products.
 
@@ -192,28 +202,33 @@ Policy:
 
 The maintained strict-BFO product now occupies its approved production path. The former current-track shell was obsolete scaffolding and has been removed without an alias, redirect, or compatibility wrapper.
 
-### 3.4 BFO projection
+### 3.4 BFO Projection role
 
-**File:** `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl`
-
-**Stable ontology IRI:** `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection`
+**Maintained file:** None while the role has zero approved direct axioms.
 
 Policy:
 
-- Generate it from COMS dispositions plus approved, machine-governed transformation rules.
-- Import only the strict BFO mapping.
-- Treat it as the designated product for approved weaker but sound BFO consequences derived from richer CCO-bearing or mixed mappings.
-- No direct projection axiom is currently approved, so the maintained product is intentionally import-only and policy-complete.
-- Add no transformed or weakened consequence unless a later governed transformation rule and its proof obligations are approved.
-- Prohibit CCO and RO IRIs in its added logical axioms.
-- Trace every added assertion to the stable COMS row identifier and authoritative source expression.
-- Identify each added assertion explicitly as a weakened projection, never as an equivalence-preserving or strict mapping.
-- Record pinned dependency identities, transformation rule, logical justification, and positive/negative regression tests.
-- Assert each projected axiom as an actual OWL/RDF axiom; annotations alone do not create a projection.
+- Retain BFO Projection as the designated governed role for approved weaker but
+  sound BFO consequences derived from richer CCO-bearing or mixed mappings.
+- Do not materialize an ontology merely to reserve an import boundary,
+  namespace, or future slot.
+- Materialize the role only when at least one approved weakened but sound BFO
+  consequence is assigned directly to it and the uniform product-role
+  inclusion rule is satisfied.
+- Add no transformed or weakened consequence unless a governed transformation
+  rule and its proof obligations are approved.
+- Prohibit CCO and RO IRIs in any future projected logical axioms.
+- Trace every future projected assertion to the stable COMS RowID and
+  authoritative source expression.
+- Identify every such assertion explicitly as a weakened projection rather
+  than an equivalence-preserving or strict mapping.
+- Record pinned dependency identities, transformation-rule identity, logical
+  justification, and positive/negative regression tests.
 
-Its current import closure contains the alignment core and every strict BFO mapping. Because no direct projection axiom is approved, it currently adds no weakened BFO consequence; this zero-direct-axiom state is intentional rather than incomplete serialization.
-
-A later release process may materialize this import closure as one standalone consumer file. Such a file is a generated packaging artifact, not a new mapping authority or independently editable product source.
+The current governed reconciliation selects zero direct projection axioms.
+The former import-only ontology duplicated the consumer function already
+provided by the strict BFO mapping and has therefore been retired from
+maintained generation, formal rendering, packages, archives, and releases.
 
 ### 3.5 CCO extension
 
@@ -226,8 +241,8 @@ Policy:
 - Generate it directly from COMS.
 - Import only the strict BFO mapping.
 - Receive the alignment core transitively through the strict BFO mapping rather than importing it directly.
-- Add the 25 CCO-bearing and 32 mixed BFO/CCO axioms unchanged.
-- Do not import the BFO projection, so weakened consequences do not enter the CCO product closure.
+- Add the 25 CCO-bearing and 30 mixed BFO/CCO axioms unchanged.
+- Remain independent of the non-materialized BFO Projection role, so future weakened consequences do not enter the CCO product closure.
 - Permit BFO terms because CCO extends BFO and every mixed axiom necessarily uses both vocabularies.
 - Describe the product as a CCO extension/profile, not a graph containing only CCO IRIs.
 - Assert actual mapping/typing axioms; annotations may supplement but never replace assertions.
@@ -258,11 +273,10 @@ The exact import policy is:
 
 - Alignment core imports nothing.
 - Strict BFO mapping imports only the alignment core.
-- BFO projection imports only the strict BFO mapping.
 - CCO extension imports only the strict BFO mapping.
 - CCO extension does not import the alignment core directly.
-- BFO projection does not import the CCO extension.
-- CCO extension does not import the BFO projection.
+- BFO Projection is currently non-materialized and contributes no import edge.
+- If BFO Projection is materialized later, it may import only the strict BFO mapping and the CCO extension must remain independent of it.
 - Modular products do not import external SSN/SOSA, BFO, CCO, or RO ontologies.
 - Modular products reference those external IRIs without loading mutable remote closures.
 - `SSN2BFO.ttl` imports none of the modular products and retains its approved dependency-bearing source and CCO imports.
@@ -342,9 +356,9 @@ The data model must support at least:
 | 29 target-neutral | Emit unchanged | Provided through imported core | Provided transitively through strict BFO/core | Provided transitively through strict BFO/core | Emit unchanged |
 | 19 BFO-bearing | Not applicable | Emit unchanged | Provided through imported strict BFO mapping | Provided through imported strict BFO mapping | Emit unchanged |
 | 25 CCO-bearing | Not applicable | Emit only an approved lossless BFO transformation; otherwise exclude/defer with reason | Emit an approved weakened BFO consequence, receive any lossless result through strict BFO, or exclude/defer with reason | Emit authoritative axiom unchanged | Emit authoritative axiom unchanged |
-| 32 mixed BFO/CCO | Not applicable | Emit only an approved lossless BFO transformation; otherwise exclude/defer with reason | Emit an approved weakened BFO consequence, receive any lossless result through strict BFO, or exclude/defer with reason | Emit authoritative axiom unchanged | Emit authoritative axiom unchanged |
+| 30 mixed BFO/CCO | Not applicable | Emit only an approved lossless BFO transformation; otherwise exclude/defer with reason | Emit an approved weakened BFO consequence, receive any lossless result through strict BFO, or exclude/defer with reason | Emit authoritative axiom unchanged | Emit authoritative axiom unchanged |
 
-This table is the approved default, not approval of a transformation for any row. The 105 authoritative axioms remain accounted as 29 + 19 + 25 + 32. Lossless BFO transformations and weakened BFO projections are additional derived dispositions tied to the originating row; they do not replace the unchanged CCO/mixed axiom in the CCO extension or integrated root.
+This table is the approved default, not approval of a transformation for any row. The 103 authoritative axioms remain accounted as 29 + 19 + 25 + 30. Lossless BFO transformations and weakened BFO projections are additional derived dispositions tied to the originating row; they do not replace the unchanged CCO/mixed axiom in the CCO extension or integrated root.
 
 No omission may be inferred from absence, and no generator may silently drop an expression it cannot serialize. A row without an approved transformation must be explicitly excluded or deferred for the strict BFO mapping and BFO projection.
 
@@ -672,7 +686,7 @@ Implementation must still specify:
 5. Persistent deployment and stable-IRI catalog migration beyond the package-local version-IRI catalog.
 6. Module-specific fixed HermiT closures and example suites.
 7. Canonical integrated-versus-modular semantic reconciliation.
-8. Whether an optional materialized standalone BFO-projection closure is needed as a packaging artifact.
+8. Whether future approved weakened consequences create enough direct product-specific content to justify materializing BFO Projection.
 
 These choices may refine implementation mechanics but may not alter approved product identity, import direction, mapping strength, transformation classification, version policy, or lifecycle boundaries.
 
@@ -686,8 +700,8 @@ Use narrow branches/PRs in this order:
 4. **Add governed transformation rules and reports:** represent proof obligations, pinned dependencies, classifications, and tests.
 5. **Generate alignment core:** emit and validate the 29 target-neutral axioms under the approved identity and import-free policy.
 6. **Generate strict BFO mapping:** emit the 19 unchanged BFO-bearing axioms plus only approved lossless transformations; import the alignment core.
-7. **Generate BFO projection:** import the strict BFO mapping and add only approved weaker consequences.
-8. **Generate CCO extension:** import the strict BFO mapping and emit the 25 CCO-bearing plus 32 mixed axioms unchanged.
+7. **Reconcile BFO Projection role:** require governed disposition accounting and do not materialize the role while zero weakened consequences are approved.
+8. **Generate CCO extension:** import the strict BFO mapping and emit the 25 CCO-bearing plus 30 mixed axioms unchanged.
 9. **Add modular and reconciliation gates:** test imports, vocabularies, accounting, HermiT, transformations, freshness, rollback, metadata, and integrated-versus-modular semantics.
 10. **Retire obsolete current scaffolding:** remove the former editor, release shells, empty development catalogs, projection analysis, and active references after every maintained product passes. **Complete.**
 11. **Add consumer documentation and examples:** explain integrated, strict BFO, projected BFO, and CCO loading.
@@ -702,18 +716,18 @@ No implementation step may change the COMS workbook merely to simplify product g
 - [ ] `SSN2BFO.ttl` asserts every approved COMS mapping/typing axiom and imports no modular product.
 - [ ] The alignment core is generated at `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` with stable IRI `http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core`.
 - [ ] The strict BFO mapping is generated at `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` with stable IRI `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`.
-- [ ] The BFO projection is generated at `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` with stable IRI `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection`.
+- [x] BFO Projection remains a governed role but is not materialized while zero weakened consequences are approved.
 - [ ] The CCO extension is generated at `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` with stable IRI `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension`.
-- [ ] The import graph is alignment core <- strict BFO mapping <- {CCO extension, BFO projection}, with no cycles or extra module edges.
+- [x] The materialized import graph is alignment core <- strict BFO mapping <- CCO extension, with no BFO-Projection import edge while that role is non-materialized.
 - [ ] Modular products import no external SSN/SOSA, BFO, CCO, or RO ontology.
 - [ ] The alignment core contains the 29 governed target-neutral axioms and no BFO/CCO/RO logical terms.
 - [ ] The strict BFO mapping contains the 19 unchanged BFO-bearing axioms and only approved lossless transformations.
 - [ ] Strict BFO logical axioms contain no CCO or RO terms.
 - [ ] Merely weaker consequences are absent from the strict BFO mapping.
-- [ ] BFO projection added logical axioms contain no CCO or RO terms.
-- [ ] BFO projection metadata and dispositions identify every added axiom as weakened.
-- [ ] BFO projection closure contains the alignment core, strict BFO mappings, and approved weakened consequences.
-- [ ] CCO extension contains the 25 CCO-bearing and 32 mixed axioms unchanged.
+- [ ] If BFO Projection is materialized in the future, its added logical axioms contain no CCO or RO terms.
+- [x] Current BFO-Projection dispositions reconcile all governed rows and select zero direct projection axioms.
+- [x] No separate BFO-Projection closure is published while the role has zero approved direct axioms.
+- [ ] CCO extension contains the 25 CCO-bearing and 30 mixed axioms unchanged.
 - [ ] CCO extension imports strict BFO mapping rather than BFO projection and therefore excludes the weakened projection closure.
 - [ ] Every COMS row has a stable identifier, authoritative expression, and deterministic disposition for every product.
 - [ ] Every transformation records pinned dependencies, rule identity, justification, receiving product, and positive/negative tests.
@@ -740,7 +754,7 @@ Final policy conclusions:
 3. The 19 BFO-bearing axioms are the initial unweakened strict BFO mapping content.
 4. Approved lossless transformations may enter the strict BFO mapping; weaker but sound consequences belong only in the BFO projection.
 5. The BFO projection imports the strict BFO mapping and supplies the complete projected BFO consumer closure without entering the CCO extension closure.
-6. The 25 CCO-bearing plus 32 mixed axioms belong unchanged in the CCO extension unless COMS itself changes.
+6. The 25 CCO-bearing plus 30 mixed axioms belong unchanged in the CCO extension unless COMS itself changes.
 7. The former simple projection analysis and its publication workflow are retired; the governed strict-BFO mapping and BFO projection replace that role.
 8. No COMS row may be silently omitted from any product accounting.
 9. PROV's modular idea is useful, but its current release serialization and annotation mechanics are not templates to copy.

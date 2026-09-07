@@ -1,0 +1,25 @@
+@prefix obo: <http://purl.obolibrary.org/obo/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+
+<http://www.sks.ai/SSN2BFO/development/sosa-next/ro-mapping>
+    a owl:Ontology ;
+    rdfs:label "SOSA-2023 Relations Ontology Mapping"@en .
+
+sosa:deployedAsset rdfs:subPropertyOf obo:RO_0000057 .
+sosa:deployedOnPlatform rdfs:subPropertyOf obo:RO_0000057 .
+sosa:deployedSystem rdfs:subPropertyOf obo:RO_0000057 .
+sosa:hasDeployment rdfs:subPropertyOf obo:RO_0000056 .
+sosa:hasSubSystem rdfs:subPropertyOf obo:BFO_0000051 .
+sosa:inDeployment rdfs:subPropertyOf obo:RO_0000056 .
+sosa:isSubSystemOf rdfs:subPropertyOf obo:BFO_0000050 .
+sosa:madeActuation rdfs:subPropertyOf obo:RO_0002500 .
+sosa:madeByActuator rdfs:subPropertyOf obo:RO_0002608 .
+sosa:madeBySampler rdfs:subPropertyOf obo:RO_0002608 .
+sosa:madeBySensor rdfs:subPropertyOf obo:RO_0002608 .
+sosa:madeBySystem rdfs:subPropertyOf obo:RO_0002608 .
+sosa:madeExecution rdfs:subPropertyOf obo:RO_0002500 .
+sosa:madeObservation rdfs:subPropertyOf obo:RO_0002500 .
+sosa:madeSampling rdfs:subPropertyOf obo:RO_0002500 .
+sosa:systemDeployment rdfs:subPropertyOf obo:RO_0000056 .

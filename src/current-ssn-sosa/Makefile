@@ -1,37 +1,37 @@
 #### Parse validation for retained current SSN/SOSA examples
 
 config.TEMP_DIR      := build/artifacts
-config.LIBRARY_DIR   := ../../build/lib
 config.EXAMPLES_DIR  := examples
 
+REPOSITORY_ROOT := $(abspath ../..)
+ROBOT_INSTALLER := $(REPOSITORY_ROOT)/tools/install_validation_robot.sh
 EXAMPLE_VALIDATION_DIR := $(config.TEMP_DIR)/example-validation
-ROBOT_FILE := $(config.LIBRARY_DIR)/robot.jar
-ROBOT := java -jar $(ROBOT_FILE)
 
 .PHONY: all validate-examples clean
 all: validate-examples
 
-validate-examples: | $(EXAMPLE_VALIDATION_DIR) $(ROBOT_FILE)
-	@files="$$(find $(config.EXAMPLES_DIR) -type f -name '*.ttl' | sort)"; \
+validate-examples: | $(EXAMPLE_VALIDATION_DIR)
+	@robot_bin="$$( "$(ROBOT_INSTALLER)" )"; \
+	robot="$$robot_bin/robot"; \
+	files="$$(find $(config.EXAMPLES_DIR) -type f -name '*.ttl' | sort)"; \
 	if [ -z "$$files" ]; then \
 		echo "No Turtle example files found under $(config.EXAMPLES_DIR)."; \
 	else \
 		for file in $$files; do \
 			out="$(EXAMPLE_VALIDATION_DIR)/$$(printf '%s' "$$file" | sed 's#[/.]#_#g').ttl"; \
 			echo "Parse-checking $$file"; \
-			$(ROBOT) convert --input "$$file" --format ttl --output "$$out"; \
+			"$$robot" convert --input "$$file" --format ttl --output "$$out"; \
 		done; \
 	fi
 
-$(EXAMPLE_VALIDATION_DIR) $(config.LIBRARY_DIR):
+$(EXAMPLE_VALIDATION_DIR):
 	mkdir -p $@
-
-$(ROBOT_FILE): | $(config.LIBRARY_DIR)
-	curl -L -o $@ https://github.com/ontodev/robot/releases/download/v1.9.5/robot.jar
 
 clean:
 	@[ "$(config.TEMP_DIR)" ] || ( echo ">> config.TEMP_DIR is not set"; exit 1 )
 	rm -rf $(config.TEMP_DIR)
+	mkdir -p $(config.TEMP_DIR)
+	touch $(config.TEMP_DIR)/.gitkeep
 
 MAKEFLAGS += --warn-undefined-variables
 SHELL := bash

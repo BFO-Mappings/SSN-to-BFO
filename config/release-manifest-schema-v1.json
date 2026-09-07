@@ -286,11 +286,11 @@
           "minItems": 5,
           "maxItems": 5,
           "prefixItems": [
-            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "integrated" }, "fixed_closure_triple_count": { "const": 15915 } } }] },
-            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "alignment_core" }, "fixed_closure_triple_count": { "const": 1215 } } }] },
-            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "strict_bfo_mapping" }, "fixed_closure_triple_count": { "const": 14992 } } }] },
-            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "bfo_projection" }, "fixed_closure_triple_count": { "const": 15003 } } }] },
-            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "cco_extension" }, "fixed_closure_triple_count": { "const": 15937 } } }] }
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "integrated" }, "fixed_closure_triple_count": { "const": 15907 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "alignment_core" }, "fixed_closure_triple_count": { "const": 1217 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "strict_bfo_mapping" }, "fixed_closure_triple_count": { "const": 14994 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "bfo_projection" }, "fixed_closure_triple_count": { "const": 15005 } } }] },
+            { "allOf": [{ "$ref": "#/$defs/hermitResult" }, { "properties": { "product_key": { "const": "cco_extension" }, "fixed_closure_triple_count": { "const": 15929 } } }] }
           ],
           "items": false
         }

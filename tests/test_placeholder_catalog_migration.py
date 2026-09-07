@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression gates for retired current placeholders and development catalogs."""
+"""Regression gates for retired placeholders and development catalogs."""
 
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ REMOVED_PATHS = (
     "imports/catalog-v001.xml",
     "releases/current-ssn-sosa/ssn-sosa-bfo-directmappings.ttl",
     "releases/current-ssn-sosa/ssn-sosa-cco-directmappings.ttl",
+    "releases/sosa-next/sosa-bfo-directmappings.ttl",
+    "releases/sosa-next/sosa-cco-directmappings.ttl",
     "src/current-ssn-sosa/catalog-v001.xml",
     "src/current-ssn-sosa/ssn-sosa-mappings-edit.ttl",
     "src/current-ssn-sosa/sparql/artifact-metadata.rq",
@@ -45,12 +47,16 @@ RETIRED_PLACEHOLDER_HASHES = frozenset(
     {
         "397fc7a1566afddc271fee066dc55311f9b61c4be887212be84d6ae9462df3e8",
         "33e616a74bd959fec6128779dddee7fb52e2faca8f5669d9ff5faab079a408f1",
+        "0e814b9e9bdb03cca73bb15e307b2d0ca13424f0c19775aa0feaf440c2879a18",
+        "1bf9de31bf344c9b90c673cf3bab05467a7bb1026f8cb36d27e25cb9fabcfd2b",
     }
 )
 RETIRED_REFERENCE_TERMS = (
     *REMOVED_PATHS,
     "ssn-sosa-bfo-directmappings.ttl",
     "ssn-sosa-cco-directmappings.ttl",
+    "sosa-bfo-directmappings.ttl",
+    "sosa-cco-directmappings.ttl",
     "ssn-sosa-mappings-edit.ttl",
     "artifact-metadata.rq",
     "derive-bfo-from-cco",
@@ -61,12 +67,17 @@ RETIRED_REFERENCE_TERMS = (
     "https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/bfo",
     "https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/cco",
     "https://w3id.org/ssn-sosa-bfo-cco-mapping/current-ssn-sosa/edit",
+    "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo",
+    "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco",
+    "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit",
 )
 HISTORICAL_REFERENCE_ALLOWLIST = frozenset(
     {
         "reports/current-ssn-sosa-release-readiness-audit.md",
         "reports/prov-functional-parity-audit.md",
+        "reports/publication-product-and-import-policy.md",
         "reports/sosa-import-closure-fidelity-audit.md",
+        "reports/sosa-next-product-contract.md",
     }
 )
 NEGATIVE_GUARD_PATHS = frozenset(
@@ -76,16 +87,25 @@ NEGATIVE_GUARD_PATHS = frozenset(
     }
 )
 
-SOSA_NEXT_HASHES = {
-    "releases/sosa-next/sosa-bfo-directmappings.ttl":
-        "0e814b9e9bdb03cca73bb15e307b2d0ca13424f0c19775aa0feaf440c2879a18",
-    "releases/sosa-next/sosa-cco-directmappings.ttl":
-        "1bf9de31bf344c9b90c673cf3bab05467a7bb1026f8cb36d27e25cb9fabcfd2b",
+SOSA_NEXT_ARTIFACT_HASHES = {
+    "releases/sosa-next/sosa-integrated.ttl":
+        "3f502821476478252cdd9feb316b47612daa473e511597970a1351617d5cfc12",
+    "releases/sosa-next/sosa-bfo-mapping.ttl":
+        "1ae415bc96940e4007d064102f556aa544593616a0eff984534406028b846efb",
+    "releases/sosa-next/sosa-cco-extension.ttl":
+        "53a7cc6c0f664e51bf9f7ac28e3d067fc4fdcc750e22a34fe5c12c766e51dc19",
+    "releases/sosa-next/sosa-ro-mapping.ttl":
+        "1747563c4bba01a0c6b34bd61660a1f0c9026c266cc147991e74bc1d314ac388",
     "src/sosa-next/sosa-mappings-edit.ttl":
-        "7a27a32b8e76af2d57bf8ded5fe8b7e61ad67792c36ba3e3917d1279f8cd63d3",
-    "src/sosa-next/catalog-v001.xml":
-        "e0d766d9efa26ccf9ad2cf4b8f5a9dd37a47c1dbaf57836570c3ef2d38124a2d",
+        "4999c2e73ef3b4959f4d0c3b4d0a133a1293dcc5920363ae9c34c7182d2dde76",
 }
+
+SOSA_NEXT_RELEASE_FILES = (
+    "../../releases/sosa-next/sosa-integrated.ttl",
+    "../../releases/sosa-next/sosa-bfo-mapping.ttl",
+    "../../releases/sosa-next/sosa-cco-extension.ttl",
+    "../../releases/sosa-next/sosa-ro-mapping.ttl",
+)
 DEPENDENCY_HASHES = {
     "imports/cco.ttl": "3ad8f098ecb3d7ca27464a1edf2795b90c69573843447d51f090e6f1b30694f4",
     "imports/sosa.ttl": "0dad03b30c7fdd085e2629dfc0ebd10bb1dacbda73b2c375fb295ab6861ffb33",
@@ -94,27 +114,90 @@ DEPENDENCY_HASHES = {
     "imports/ssn-systems.ttl": "156870689643840c861aaead206458bcdfc9cded5f7107598dbf87e015861105",
 }
 MAINTAINED_PRODUCT_HASHES = {
-    "SSN2BFO.ttl": "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+    "SSN2BFO.ttl": "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
     "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl":
         "17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770",
     "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl":
         "676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af",
-    "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl":
-        "b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0",
     "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl":
-        "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
+        "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5",
 }
 SOSA_NEXT_CATALOG_MAPPINGS = (
     (
-        "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/bfo",
-        "../../releases/sosa-next/sosa-bfo-directmappings.ttl",
+        "http://www.w3.org/ns/sosa/",
+        "imports/sosa.ttl",
     ),
     (
-        "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/cco",
-        "../../releases/sosa-next/sosa-cco-directmappings.ttl",
+        "http://www.w3.org/ns/sosa/common/",
+        "imports/sosa-common.ttl",
     ),
     (
-        "https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next/edit",
+        "http://www.w3.org/ns/sosa/act/",
+        "imports/sosa-actuation.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/dep/",
+        "imports/sosa-deprecated.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/obs/",
+        "imports/sosa-observation.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/sam/",
+        "imports/sosa-sampling.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/systems/",
+        "imports/sosa-system.ttl",
+    ),
+    (
+        "http://www.w3.org/ns/sosa/sampling/",
+        "imports/sample-relations.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/source-declaration-overlay",
+        "imports/sosa-source-declaration-overlay.ttl",
+    ),
+    (
+        "https://www.commoncoreontologies.org/"
+        "CommonCoreOntologiesMerged",
+        "imports/cco.ttl",
+    ),
+    (
+        "http://purl.obolibrary.org/obo/"
+        "ro/ro-full.owl",
+        "imports/ro-full.owl",
+    ),
+    (
+        "http://purl.obolibrary.org/obo/"
+        "ro/releases/2025-12-17/ro-full.owl",
+        "imports/ro-full.owl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/integrated",
+        "../../releases/sosa-next/sosa-integrated.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/bfo-mapping",
+        "../../releases/sosa-next/sosa-bfo-mapping.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/cco-extension",
+        "../../releases/sosa-next/sosa-cco-extension.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/ro-mapping",
+        "../../releases/sosa-next/sosa-ro-mapping.ttl",
+    ),
+    (
+        "http://www.sks.ai/SSN2BFO/development/"
+        "sosa-next/edit",
         "sosa-mappings-edit.ttl",
     ),
 )
@@ -169,16 +252,43 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
                 occurrences[relative] = matched
         self.assertEqual(set(occurrences), set(HISTORICAL_REFERENCE_ALLOWLIST), occurrences)
 
-    def test_sosa_next_scaffold_is_byte_preserved_and_strictly_parseable(self) -> None:
-        for relative, expected_hash in SOSA_NEXT_HASHES.items():
+    def test_sosa_next_products_and_editor_are_byte_preserved_and_parseable(self) -> None:
+        for relative, expected_hash in SOSA_NEXT_ARTIFACT_HASHES.items():
             with self.subTest(path=relative):
                 path = REPO_ROOT / relative
-                self.assertTrue(stat.S_ISREG(path.lstat().st_mode))
-                self.assertEqual(sha256(path), expected_hash)
-                if path.suffix == ".ttl":
-                    self.assertGreater(len(Graph().parse(path, format="turtle")), 0)
-                else:
-                    ElementTree.parse(path)
+                self.assertTrue(
+                    stat.S_ISREG(
+                        path.lstat().st_mode
+                    )
+                )
+                self.assertEqual(
+                    sha256(path),
+                    expected_hash,
+                )
+                self.assertGreater(
+                    len(
+                        Graph().parse(
+                            path,
+                            format="turtle",
+                        )
+                    ),
+                    0,
+                )
+
+    def test_sosa_next_makefile_exposes_exact_maintained_products(self) -> None:
+        output = subprocess.check_output(
+            [
+                "make",
+                "-s",
+                "output-release-filepaths",
+            ],
+            cwd=REPO_ROOT / "src/sosa-next",
+            text=True,
+        )
+        self.assertEqual(
+            tuple(output.splitlines()),
+            SOSA_NEXT_RELEASE_FILES,
+        )
 
     def test_pinned_dependencies_are_preserved_parseable_and_logically_nonempty(self) -> None:
         parsed: dict[str, Graph] = {}
@@ -206,15 +316,36 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
         self.assertEqual(root.tag, f"{{{CATALOG_NAMESPACE}}}catalog")
         entries = tuple(
             (child.attrib["name"], child.attrib["uri"])
-            for child in root.findall(f"{{{CATALOG_NAMESPACE}}}uri")
+            for child in root.findall(
+                f".//{{{CATALOG_NAMESPACE}}}uri"
+            )
         )
-        self.assertEqual(entries, SOSA_NEXT_CATALOG_MAPPINGS)
-        for _, target in entries:
-            with self.subTest(target=target):
+
+        self.assertEqual(
+            len(entries),
+            len(SOSA_NEXT_CATALOG_MAPPINGS),
+        )
+        self.assertEqual(
+            len({name for name, _ in entries}),
+            len(entries),
+        )
+        self.assertEqual(
+            dict(entries),
+            dict(SOSA_NEXT_CATALOG_MAPPINGS),
+        )
+
+        for name, target in entries:
+            with self.subTest(name=name, target=target):
+                self.assertTrue(name)
                 self.assertFalse(PurePosixPath(target).is_absolute())
                 self.assertNotIn("\\", target)
                 self.assertNotIn("/Users/", target)
-                self.assertTrue((catalog_path.parent / target).resolve().is_file())
+
+                resolved = (catalog_path.parent / target).resolve()
+                self.assertTrue(resolved.is_file())
+                self.assertTrue(
+                    resolved.is_relative_to(REPO_ROOT.resolve())
+                )
 
     def test_formal_package_catalog_uses_production_generator_and_governed_order(self) -> None:
         metadata = publication_metadata.load_metadata(REPO_ROOT / "config/publication-metadata.toml")
@@ -239,7 +370,7 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
             for key in publication_metadata.PRODUCT_ORDER
         )
         self.assertEqual(entries, expected)
-        self.assertEqual(len(entries), 5)
+        self.assertEqual(len(entries), 4)
         for _, target in entries:
             self.assertFalse(PurePosixPath(target).is_absolute())
             self.assertNotIn("\\", target)
@@ -249,9 +380,9 @@ class PlaceholderCatalogMigrationTests(unittest.TestCase):
             with self.subTest(path=relative):
                 self.assertEqual(sha256(REPO_ROOT / relative), expected_hash)
 
-    def test_package_and_archive_layout_authorities_remain_13_and_17_members(self) -> None:
-        self.assertEqual(len(build_release.PACKAGE_FILE_PATHS), 13)
-        self.assertEqual(len(release_archive.ARCHIVE_MEMBER_TEMPLATES), 17)
+    def test_package_and_archive_layout_authorities_remain_12_and_16_members(self) -> None:
+        self.assertEqual(len(build_release.PACKAGE_FILE_PATHS), 12)
+        self.assertEqual(len(release_archive.ARCHIVE_MEMBER_TEMPLATES), 16)
         self.assertEqual(
             release_archive.canonical_member_names("2099-01-02"),
             tuple(

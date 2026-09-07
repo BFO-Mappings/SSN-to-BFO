@@ -358,7 +358,6 @@ def mapping_change_scope(state: WorkflowState) -> None:
         "reports/coms-product-dispositions.json",
         "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
         "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-        "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
         "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     }
     unexpected = [
