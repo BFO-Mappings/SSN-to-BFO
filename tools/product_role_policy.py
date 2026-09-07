@@ -19,6 +19,7 @@ ROLE_ORDER = (
     "strict_bfo_mapping",
     "bfo_projection",
     "cco_extension",
+    "ro_mapping",
 )
 
 MATERIALIZE_STATUSES = frozenset(
@@ -38,6 +39,7 @@ ROLE_INCLUSION_BASES = {
     "strict_bfo_mapping": "direct_product_specific_logical_content",
     "bfo_projection": "direct_product_specific_logical_content",
     "cco_extension": "direct_product_specific_logical_content",
+    "ro_mapping": "direct_product_specific_logical_content",
 }
 
 
@@ -176,7 +178,7 @@ def load_product_role_policy(
 
     if set(raw_roles) != set(ROLE_ORDER):
         raise RuntimeError(
-            "roles: expected exactly the canonical five product roles"
+            "roles: expected exactly the canonical product roles"
         )
 
     roles: list[ProductRole] = []
@@ -268,7 +270,7 @@ def load_product_role_policy(
 
         if set(raw_status) != set(ROLE_ORDER):
             raise RuntimeError(
-                f"{label}.role_status: expected all five roles"
+                f"{label}.role_status: expected all canonical roles"
             )
 
         status_map: dict[str, str] = {}

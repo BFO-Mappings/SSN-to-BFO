@@ -57,10 +57,16 @@ ARCHIVE_MEMBER_TEMPLATES = (
     "SOSA-2023-{release_id}/"
     + TRACK_ID
     + "/sosa-integrated.ttl",
+    "SOSA-2023-{release_id}/"
+    + TRACK_ID
+    + "/sosa-ro-mapping.ttl",
     "SOSA-2023-{release_id}/sources/",
     "SOSA-2023-{release_id}/sources/SOSA-2023-to-BFO-COMS.xlsx",
+    "SOSA-2023-{release_id}/sources/SOSA-2023-to-RO-COMS.xlsx",
     "SOSA-2023-{release_id}/sources/product-role-policy.toml",
     "SOSA-2023-{release_id}/sources/sosa-2023-publication-metadata.toml",
+    "SOSA-2023-{release_id}/sources/sosa-2023-ro-product.toml",
+    "SOSA-2023-{release_id}/sources/sosa-2023-ro-source-version.toml",
     "SOSA-2023-{release_id}/sources/sosa-release-scope.toml",
     "SOSA-2023-{release_id}/sources/sosa-source-version.toml",
 )

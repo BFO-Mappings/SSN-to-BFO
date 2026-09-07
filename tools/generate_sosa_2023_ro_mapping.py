@@ -43,8 +43,16 @@ def sha256_bytes(
     ).hexdigest()
 
 
-def load_product_config() -> dict:
-    with CONFIG_PATH.open(
+def load_product_config(
+    config_path: Path | None = None,
+) -> dict:
+    resolved_config = (
+        CONFIG_PATH
+        if config_path is None
+        else Path(config_path)
+    )
+
+    with resolved_config.open(
         "rb"
     ) as handle:
         raw = tomllib.load(
@@ -75,6 +83,7 @@ def load_product_config() -> dict:
 
 def load_governed_rows(
     product: dict,
+    workbook_path: Path | None = None,
 ):
     sys.path.insert(
         0,
@@ -84,10 +93,14 @@ def load_governed_rows(
     import generate_mapping_from_coms as coms
 
     workbook = (
-        REPO_ROOT
-        / product[
-            "workbook_path"
-        ]
+        (
+            REPO_ROOT
+            / product[
+                "workbook_path"
+            ]
+        )
+        if workbook_path is None
+        else Path(workbook_path)
     )
 
     rows, stats = (
@@ -312,15 +325,22 @@ def render_product(
     )
 
 
-def build() -> tuple[
+def build(
+    *,
+    config_path: Path | None = None,
+    workbook_path: Path | None = None,
+) -> tuple[
     dict,
     tuple,
     bytes,
 ]:
-    product = load_product_config()
+    product = load_product_config(
+        config_path
+    )
 
     rows = load_governed_rows(
-        product
+        product,
+        workbook_path,
     )
 
     active = validate_governance(

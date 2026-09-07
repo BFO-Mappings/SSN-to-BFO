@@ -46,10 +46,16 @@ EXPECTED_MEMBERS = (
     "SOSA-2023-2099-01-02/"
     + TRACK_ID
     + "/sosa-integrated.ttl",
+    "SOSA-2023-2099-01-02/"
+    + TRACK_ID
+    + "/sosa-ro-mapping.ttl",
     "SOSA-2023-2099-01-02/sources/",
     "SOSA-2023-2099-01-02/sources/SOSA-2023-to-BFO-COMS.xlsx",
+    "SOSA-2023-2099-01-02/sources/SOSA-2023-to-RO-COMS.xlsx",
     "SOSA-2023-2099-01-02/sources/product-role-policy.toml",
     "SOSA-2023-2099-01-02/sources/sosa-2023-publication-metadata.toml",
+    "SOSA-2023-2099-01-02/sources/sosa-2023-ro-product.toml",
+    "SOSA-2023-2099-01-02/sources/sosa-2023-ro-source-version.toml",
     "SOSA-2023-2099-01-02/sources/sosa-release-scope.toml",
     "SOSA-2023-2099-01-02/sources/sosa-source-version.toml",
 )
@@ -174,14 +180,14 @@ class ReleaseArchiveTests(unittest.TestCase):
     def test_member_authority_is_verbatim_and_independent_of_package_sorting(self) -> None:
         self.assertEqual(archive.ARCHIVE_MEMBER_TEMPLATES, tuple(name.replace(RELEASE_ID, "{release_id}") for name in EXPECTED_MEMBERS))
         self.assertEqual(archive.canonical_member_names(RELEASE_ID), EXPECTED_MEMBERS)
-        self.assertEqual(len(EXPECTED_MEMBERS), 16)
-        self.assertTrue(all(name.endswith("/") for name in (EXPECTED_MEMBERS[0], EXPECTED_MEMBERS[6], EXPECTED_MEMBERS[10])))
+        self.assertEqual(len(EXPECTED_MEMBERS), 20)
+        self.assertTrue(all(name.endswith("/") for name in (EXPECTED_MEMBERS[0], EXPECTED_MEMBERS[6], EXPECTED_MEMBERS[11])))
         self.assertEqual(archive.canonical_member_names(RELEASE_ID)[5], f"SOSA-2023-{RELEASE_ID}/manifest.json")
 
     def test_raw_ustar_stream_has_exact_headers_metadata_and_two_record_eof(self) -> None:
         members = raw_members(self.value)
         self.assertEqual(tuple(member.name for member in members), EXPECTED_MEMBERS)
-        self.assertEqual(len(members), 16)
+        self.assertEqual(len(members), 20)
         self.assertEqual(len(self.value) % RECORD, 0)
         self.assertEqual(self.value[-2 * RECORD :], b"\0" * (2 * RECORD))
         self.assertNotEqual(self.value[-3 * RECORD : -2 * RECORD], b"\0" * RECORD)
@@ -743,7 +749,7 @@ class Sosa2023RealPackageArchiveIntegrationTests(unittest.TestCase):
 
         self.assertEqual(
             len(first.member_names),
-            16,
+            20,
         )
 
         self.assertFalse(
@@ -817,7 +823,7 @@ class Sosa2023RealPackageArchiveIntegrationTests(unittest.TestCase):
 
         self.assertEqual(
             len(members),
-            16,
+            20,
         )
 
         self.assertEqual(
@@ -885,7 +891,7 @@ class Sosa2023ArchiveAuthorityContractTests(unittest.TestCase):
 
         self.assertEqual(
             len(members),
-            16,
+            20,
         )
 
         top = archive.archive_top_level(
@@ -1006,13 +1012,13 @@ class Sosa2023ArchiveAuthorityContractTests(unittest.TestCase):
             "tools/sosa_2023_release_runtime.py":
                 "c515000306cdf114f648c447305946e7c2a39f33f7c45b5d79d99255a554d939",
             "tools/sosa_2023_build_release.py":
-                "a89d31282293fd76c30faf4aa95bd5b087af2d73176eda40a8fbea42af90d732",
+                "0479c0ad94e5f059728a294c83a2901cec2eafddad42d6bde4a8e06f5a78e9b3",
             "tools/sosa_2023_check_release.py":
-                "65a4debcfe73ccd6998310fe0be685fee7ef080d0707fedbe24a0aab814dea1b",
+                "a41cf98cdf13dc0029f710cd1c857c03a6f5b58abd5b10e2d5dbcedcb00010e9",
             "tools/sosa_2023_release_manifest.py":
-                "ea7ed5342a27bc452c54c3f4fd51b90a2a0ddcdb4dbdf86dc6b42cf97a9f2b1a",
+                "a3d1f1a12f88455913dd1553fff6b5cd70a189de8cec3399644c08d8646b0303",
             "config/sosa-2023-release-manifest-schema-v1.json":
-                "18a468c199cdda5507380d7f58e50c1b31736510c9c9b04397d038fe7383e6bb",
+                "5b75bfbd2a074b65a611f7ffcad15d5834df04319de8dca016b326fc14402482",
         }
 
         for relative, digest in expected.items():

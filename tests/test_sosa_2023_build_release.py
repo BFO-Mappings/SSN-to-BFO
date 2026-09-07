@@ -42,12 +42,15 @@ FORMAL_HASHES = {
         "8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125",
     "cco_extension":
         "d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d",
+    "ro_mapping":
+        "faba756dc6480c2088cc6ad3e514524736130f90365f1ab7e40c3d909877ca69",
 }
 
 EXPECTED_CLOSURES = (
     ("integrated", 15243),
     ("strict_bfo_mapping", 15120),
     ("cco_extension", 15254),
+    ("ro_mapping", 12864),
 )
 
 PACKAGE_ENGINE_INPUTS = (
@@ -256,27 +259,27 @@ class Sosa2023ReleasePackageTests(unittest.TestCase):
 
         self.assertEqual(
             len(observed),
-            13,
+            17,
         )
 
         self.assertEqual(
             len(build.CHECKSUM_PATHS),
-            12,
+            16,
         )
 
         self.assertEqual(
             len(self.manifest.inputs),
-            31,
+            37,
         )
 
         self.assertEqual(
             len(self.manifest.dependencies),
-            4,
+            5,
         )
 
         self.assertEqual(
             len(self.manifest.included_files),
-            11,
+            15,
         )
 
         self.assertEqual(
@@ -456,7 +459,7 @@ class Sosa2023ReleasePackageTests(unittest.TestCase):
 
         self.assertEqual(
             value.count(b"<uri "),
-            3,
+            4,
         )
 
         self.assertNotIn(
@@ -491,7 +494,7 @@ class Sosa2023ReleasePackageTests(unittest.TestCase):
 
         self.assertEqual(
             len(paths),
-            12,
+            16,
         )
 
         self.assertIn(

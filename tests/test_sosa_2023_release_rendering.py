@@ -35,12 +35,14 @@ EXPECTED_TOTAL_TRIPLES = {
     "integrated": 292,
     "strict_bfo_mapping": 165,
     "cco_extension": 135,
+    "ro_mapping": 27,
 }
 
 EXPECTED_LOGICAL_TRIPLES = {
     "integrated": 277,
     "strict_bfo_mapping": 154,
     "cco_extension": 123,
+    "ro_mapping": 16,
 }
 
 
@@ -51,12 +53,15 @@ FORMAL_HASHES = {
         "8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125",
     "cco_extension":
         "d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d",
+    "ro_mapping":
+        "faba756dc6480c2088cc6ad3e514524736130f90365f1ab7e40c3d909877ca69",
 }
 
 FORMAL_BYTE_SIZES = {
     "integrated": 41010,
     "strict_bfo_mapping": 23664,
     "cco_extension": 18891,
+    "ro_mapping": 2342,
 }
 
 
@@ -100,18 +105,18 @@ class Sosa2023ReleaseRenderingTests(unittest.TestCase):
     def test_exact_formal_product_inventory(self) -> None:
         self.assertEqual(
             tuple(self.first["products"]),
-            products.PRODUCT_ORDER,
+            products.FORMAL_PRODUCT_ORDER,
         )
 
     def test_synthetic_formal_bytes_are_locked(self) -> None:
         observed_hashes = {
             key: self.first["products"][key]["sha256"]
-            for key in products.PRODUCT_ORDER
+            for key in products.FORMAL_PRODUCT_ORDER
         }
 
         observed_sizes = {
             key: self.first["products"][key]["byte_size"]
-            for key in products.PRODUCT_ORDER
+            for key in products.FORMAL_PRODUCT_ORDER
         }
 
         self.assertEqual(

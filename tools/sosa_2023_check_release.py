@@ -341,21 +341,7 @@ def _formal_product_issues(
             prefix="sosa-2023-package-render-check-"
         ) as directory:
             metadata, rendered = (
-                build.render_formal_products(
-                    context,
-                    package_dir
-                    / (
-                        "sources/"
-                        "SOSA-2023-to-BFO-COMS.xlsx"
-                    ),
-                    package_dir
-                    / (
-                        "sources/"
-                        "sosa-2023-publication-"
-                        "metadata.toml"
-                    ),
-                    Path(directory),
-                )
+                build.render_formal_products(context, package_dir / 'sources/SOSA-2023-to-BFO-COMS.xlsx', package_dir / 'sources/sosa-2023-publication-metadata.toml', Path(directory), ro_product_config_path=package_dir / 'sources/sosa-2023-ro-product.toml', ro_workbook_path=package_dir / 'sources/SOSA-2023-to-RO-COMS.xlsx')
             )
 
             expected_bytes = (

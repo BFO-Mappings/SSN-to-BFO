@@ -21,6 +21,7 @@ PRODUCT_ORDER = (
     "integrated",
     "strict_bfo_mapping",
     "cco_extension",
+    "ro_mapping",
 )
 
 CONFIG = (
@@ -74,6 +75,8 @@ class Sosa2023PublicationMetadataTests(unittest.TestCase):
                     "releases/sosa-next/sosa-bfo-mapping.ttl",
                 "cco_extension":
                     "releases/sosa-next/sosa-cco-extension.ttl",
+                "ro_mapping":
+                    "releases/sosa-next/sosa-ro-mapping.ttl",
             },
         )
 
@@ -85,6 +88,8 @@ class Sosa2023PublicationMetadataTests(unittest.TestCase):
                 f"http://www.sks.ai/SSN2BFO/{TRACK_ID}/bfo-mapping",
             "cco_extension":
                 f"http://www.sks.ai/SSN2BFO/{TRACK_ID}/cco-extension",
+            "ro_mapping":
+                f"http://www.sks.ai/SSN2BFO/{TRACK_ID}/ro-mapping",
         }
 
         observed = {
@@ -106,6 +111,8 @@ class Sosa2023PublicationMetadataTests(unittest.TestCase):
                 f"{TRACK_ID}/bfo-mapping",
             "cco_extension":
                 f"{TRACK_ID}/cco-extension",
+            "ro_mapping":
+                f"{TRACK_ID}/ro-mapping",
         }
 
         self.assertEqual(
@@ -127,6 +134,9 @@ class Sosa2023PublicationMetadataTests(unittest.TestCase):
             "cco_extension":
                 "http://www.sks.ai/SSN2BFO/releases/"
                 f"2099-01-02/{TRACK_ID}/cco-extension",
+            "ro_mapping":
+                "http://www.sks.ai/SSN2BFO/releases/"
+                f"2099-01-02/{TRACK_ID}/ro-mapping",
         }
 
         self.assertEqual(
@@ -154,6 +164,8 @@ class Sosa2023PublicationMetadataTests(unittest.TestCase):
                     "http://www.sks.ai/SSN2BFO/product-type/strict-bfo-mapping",
                 "cco_extension":
                     "http://www.sks.ai/SSN2BFO/product-type/cco-extension",
+                "ro_mapping":
+                    "http://www.sks.ai/SSN2BFO/product-type/ro-mapping",
             },
         )
 

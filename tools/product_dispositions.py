@@ -98,18 +98,43 @@ SUPPORTED_POLICY_PRODUCTS = frozenset(
     }
 )
 
-PRODUCT_ROLE_ORDER = tuple(
-    product_role_policy.load_product_role_policy().role_order
+REPOSITORY_PRODUCT_ROLE_ORDER = tuple(
+    product_role_policy
+    .load_product_role_policy()
+    .role_order
 )
-POLICY_PRODUCTS = frozenset(PRODUCT_ROLE_ORDER)
+DISPOSITION_PRODUCT_ROLE_ORDER = (
+    "integrated",
+    "alignment_core",
+    "strict_bfo_mapping",
+    "bfo_projection",
+    "cco_extension",
+)
+
+POLICY_PRODUCTS = frozenset(
+    DISPOSITION_PRODUCT_ROLE_ORDER
+)
+
+# The repository-wide taxonomy also contains independently governed
+# product roles. This module governs only the BFO/CCO COMS disposition
+# matrix, so project the supported disposition roles out of the global
+# order while preserving their canonical relative order.
+PRODUCT_ROLE_ORDER = tuple(
+    role_key
+    for role_key
+    in REPOSITORY_PRODUCT_ROLE_ORDER
+    if role_key in POLICY_PRODUCTS
+)
 
 if (
-    len(PRODUCT_ROLE_ORDER) != len(POLICY_PRODUCTS)
-    or POLICY_PRODUCTS != SUPPORTED_POLICY_PRODUCTS
+    PRODUCT_ROLE_ORDER
+    != DISPOSITION_PRODUCT_ROLE_ORDER
 ):
     raise RuntimeError(
-        "product-role policy role_order must contain each supported "
-        "disposition role exactly once"
+        "product-role policy role_order "
+        "must contain each supported "
+        "BFO/CCO disposition role exactly "
+        "once in canonical relative order"
     )
 
 

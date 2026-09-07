@@ -20,11 +20,13 @@ PRODUCT_ORDER = (
     "integrated",
     "strict_bfo_mapping",
     "cco_extension",
+    "ro_mapping",
 )
 FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS = (
     ("integrated", 15243),
     ("strict_bfo_mapping", 15120),
     ("cco_extension", 15254),
+    ("ro_mapping", 12864),
 )
 if tuple(key for key, _ in FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS) != PRODUCT_ORDER:
     raise RuntimeError("formal fixed-closure counts and product order differ")
@@ -32,16 +34,21 @@ PRODUCT_IMPORT_COUNTS = {
     "integrated": 4,
     "strict_bfo_mapping": 0,
     "cco_extension": 1,
+    "ro_mapping": 0,
 }
 INPUT_KEY_ORDER = (
     "coms_workbook",
+    "ro_coms_workbook",
     "publication_metadata",
     "source_version",
+    "ro_source_version",
+    "ro_product_config",
     "release_scope",
     "product_role_policy",
     "development_integrated",
     "development_strict_bfo_mapping",
     "development_cco_extension",
+    "development_ro_mapping",
     "pinned_sosa",
     "pinned_sosa_common",
     "pinned_sosa_observation",
@@ -50,6 +57,7 @@ INPUT_KEY_ORDER = (
     "pinned_sosa_deprecated",
     "pinned_sosa_system",
     "pinned_sample_relations",
+    "pinned_ro",
     "source_declaration_overlay",
     "release_notes",
     "license",
@@ -60,6 +68,7 @@ INPUT_KEY_ORDER = (
     "module_release_context",
     "module_check_sosa_next_mapping",
     "module_generate_sosa_next_products",
+    "module_generate_sosa_2023_ro_mapping",
     "manifest_schema",
     "module_sosa_2023_release_manifest",
     "module_sosa_2023_release_runtime",
@@ -71,6 +80,7 @@ DEPENDENCY_KEY_ORDER = (
     "sosa_systems",
     "sosa_sampling",
     "merged_cco_bfo",
+    "relations_ontology",
 )
 INCLUDED_FILE_PATH_ORDER = (
     "LICENSE",
@@ -79,9 +89,13 @@ INCLUDED_FILE_PATH_ORDER = (
     "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/sosa-bfo-mapping.ttl",
     "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/sosa-cco-extension.ttl",
     "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/sosa-integrated.ttl",
+    "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/sosa-ro-mapping.ttl",
     "sources/SOSA-2023-to-BFO-COMS.xlsx",
+    "sources/SOSA-2023-to-RO-COMS.xlsx",
     "sources/product-role-policy.toml",
     "sources/sosa-2023-publication-metadata.toml",
+    "sources/sosa-2023-ro-product.toml",
+    "sources/sosa-2023-ro-source-version.toml",
     "sources/sosa-release-scope.toml",
     "sources/sosa-source-version.toml",
 )
@@ -818,6 +832,8 @@ PRODUCT_PACKAGE_PATHS = {
         TRACK_ID + "/sosa-bfo-mapping.ttl",
     "cco_extension":
         TRACK_ID + "/sosa-cco-extension.ttl",
+    "ro_mapping":
+        TRACK_ID + "/sosa-ro-mapping.ttl",
 }
 
 PRODUCT_STABLE_ONTOLOGY_IRIS = {
@@ -827,6 +843,8 @@ PRODUCT_STABLE_ONTOLOGY_IRIS = {
         "http://www.sks.ai/SSN2BFO/" + TRACK_ID + "/bfo-mapping",
     "cco_extension":
         "http://www.sks.ai/SSN2BFO/" + TRACK_ID + "/cco-extension",
+    "ro_mapping":
+        "http://www.sks.ai/SSN2BFO/" + TRACK_ID + "/ro-mapping",
 }
 
 PRODUCT_RELEASE_IRI_SUFFIXES = {
@@ -836,6 +854,8 @@ PRODUCT_RELEASE_IRI_SUFFIXES = {
         TRACK_ID + "/bfo-mapping",
     "cco_extension":
         TRACK_ID + "/cco-extension",
+    "ro_mapping":
+        TRACK_ID + "/ro-mapping",
 }
 
 FORMAL_INTEGRATED_EXTERNAL_IMPORTS = (
@@ -882,6 +902,18 @@ PRODUCT_STATIC_EVIDENCE = {
         "governed_closure_axiom_count": 55,
         "reasoning_mode": "independent",
     },
+    "ro_mapping": {
+        "byte_size": 2342,
+        "ontology_declaration_count": 1,
+        "import_count": 0,
+        "static_metadata_count": 7,
+        "formal_metadata_count": 3,
+        "logical_triple_count": 16,
+        "total_triple_count": 27,
+        "direct_governed_axiom_count": 16,
+        "governed_closure_axiom_count": 16,
+        "reasoning_mode": "independent",
+    },
 }
 
 INPUT_POLICIES = (
@@ -889,6 +921,11 @@ INPUT_POLICIES = (
         "coms_workbook",
         "mappings/SOSA-next-to-BFO-COMS.xlsx",
         "sources/SOSA-2023-to-BFO-COMS.xlsx",
+    ),
+    (
+        "ro_coms_workbook",
+        "mappings/SOSA-next-to-RO-COMS.xlsx",
+        "sources/SOSA-2023-to-RO-COMS.xlsx",
     ),
     (
         "publication_metadata",
@@ -899,6 +936,16 @@ INPUT_POLICIES = (
         "source_version",
         "config/sosa-source-version.toml",
         "sources/sosa-source-version.toml",
+    ),
+    (
+        "ro_source_version",
+        "config/sosa-2023-ro-source-version.toml",
+        "sources/sosa-2023-ro-source-version.toml",
+    ),
+    (
+        "ro_product_config",
+        "config/sosa-2023-ro-product.toml",
+        "sources/sosa-2023-ro-product.toml",
     ),
     (
         "release_scope",
@@ -923,6 +970,11 @@ INPUT_POLICIES = (
     (
         "development_cco_extension",
         "releases/sosa-next/sosa-cco-extension.ttl",
+        None,
+    ),
+    (
+        "development_ro_mapping",
+        "releases/sosa-next/sosa-ro-mapping.ttl",
         None,
     ),
     (
@@ -963,6 +1015,11 @@ INPUT_POLICIES = (
     (
         "pinned_sample_relations",
         "src/sosa-next/imports/sample-relations.ttl",
+        None,
+    ),
+    (
+        "pinned_ro",
+        "src/sosa-next/imports/ro-full.owl",
         None,
     ),
     (
@@ -1013,6 +1070,11 @@ INPUT_POLICIES = (
     (
         "module_generate_sosa_next_products",
         "tools/generate_sosa_next_products.py",
+        None,
+    ),
+    (
+        "module_generate_sosa_2023_ro_mapping",
+        "tools/generate_sosa_2023_ro_mapping.py",
         None,
     ),
     (
@@ -1067,6 +1129,12 @@ DEPENDENCY_POLICIES = (
         "src/sosa-next/imports/cco.ttl",
         "https://www.commoncoreontologies.org/CommonCoreOntologiesMerged",
     ),
+    (
+        "relations_ontology",
+        "formal external Relations Ontology target ontology dependency",
+        "src/sosa-next/imports/ro-full.owl",
+        "http://purl.obolibrary.org/obo/ro/ro-full.owl",
+    ),
 )
 
 
@@ -1107,6 +1175,9 @@ def expected_product_imports(
                 release_date,
             ),
         )
+
+    if product_key == "ro_mapping":
+        return ()
 
     raise KeyError(product_key)
 

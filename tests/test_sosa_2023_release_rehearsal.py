@@ -383,7 +383,7 @@ class Sosa2023ReleaseRehearsalTests(unittest.TestCase):
 
         self.assertEqual(
             len(rehearsal.PACKAGE_FILE_PATHS),
-            13,
+            17,
         )
 
         self.assertEqual(
@@ -392,7 +392,7 @@ class Sosa2023ReleaseRehearsalTests(unittest.TestCase):
                     RELEASE_ID
                 )
             ),
-            16,
+            20,
         )
 
         self.assertIs(
@@ -485,11 +485,11 @@ class Sosa2023ReleaseRehearsalTests(unittest.TestCase):
         )
         self.assertEqual(
             result.package_file_count,
-            13,
+            17,
         )
         self.assertEqual(
             result.archive_member_count,
-            16,
+            20,
         )
         self.assertIsNone(
             result.output_dir

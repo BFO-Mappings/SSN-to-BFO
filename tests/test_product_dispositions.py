@@ -295,6 +295,58 @@ class ProductDispositionTests(unittest.TestCase):
                 "cco_extension",
             ),
         )
+        self.assertEqual(
+            dispositions
+            .DISPOSITION_PRODUCT_ROLE_ORDER,
+            (
+                "integrated",
+                "alignment_core",
+                "strict_bfo_mapping",
+                "bfo_projection",
+                "cco_extension",
+            ),
+        )
+
+        self.assertEqual(
+            dispositions.PRODUCT_ROLE_ORDER,
+            dispositions
+            .DISPOSITION_PRODUCT_ROLE_ORDER,
+        )
+
+        self.assertEqual(
+            dispositions
+            .REPOSITORY_PRODUCT_ROLE_ORDER,
+            (
+                "integrated",
+                "alignment_core",
+                "strict_bfo_mapping",
+                "bfo_projection",
+                "cco_extension",
+                "ro_mapping",
+            ),
+        )
+
+        self.assertNotIn(
+            "ro_mapping",
+            dispositions.PRODUCT_ROLE_ORDER,
+        )
+
+        self.assertNotIn(
+            "ro_mapping",
+            document.product_order,
+        )
+
+        self.assertEqual(
+            dispositions.PRODUCT_ROLE_ORDER,
+            tuple(
+                role_key
+                for role_key
+                in dispositions
+                .REPOSITORY_PRODUCT_ROLE_ORDER
+                if role_key
+                in dispositions.POLICY_PRODUCTS
+            ),
+        )
         self.assertIn(
             "bfo_projection",
             document.product_order,

@@ -52,12 +52,12 @@ CHECKSUM_PATHS = tuple(
     if value != "SHA256SUMS"
 )
 
-if len(PACKAGE_FILE_PATHS) != 13:
+if len(PACKAGE_FILE_PATHS) != 17:
     raise RuntimeError(
         "SOSA-2023 complete package must contain 13 files"
     )
 
-if len(CHECKSUM_PATHS) != 12:
+if len(CHECKSUM_PATHS) != 16:
     raise RuntimeError(
         "SOSA-2023 checksum inventory must contain 12 files"
     )
@@ -75,6 +75,7 @@ DEVELOPMENT_OUTPUT_PATHS = (
     "releases/sosa-next/sosa-integrated.ttl",
     "releases/sosa-next/sosa-bfo-mapping.ttl",
     "releases/sosa-next/sosa-cco-extension.ttl",
+    "releases/sosa-next/sosa-ro-mapping.ttl",
 )
 
 CATALOG_NAMESPACE = (
@@ -239,7 +240,11 @@ def collect_dependencies(
 
         graph = Graph().parse(
             path,
-            format="turtle",
+            format=(
+                "xml"
+                if key == "relations_ontology"
+                else "turtle"
+            ),
         )
 
         ontology_iris = sorted(
@@ -478,6 +483,8 @@ def render_formal_products(
     metadata_path: Path,
     temporary_root: Path,
     *,
+    ro_product_config_path: Path | None = None,
+    ro_workbook_path: Path | None = None,
     reverse_input: bool = False,
 ) -> tuple[
     publication.PublicationMetadata,
@@ -488,6 +495,86 @@ def render_formal_products(
             context
         )
     )
+
+    workbook_path = Path(
+        workbook_path
+    )
+
+    metadata_path = Path(
+        metadata_path
+    )
+
+    if ro_product_config_path is None:
+        ro_product_config_path = (
+            metadata_path.with_name(
+                "sosa-2023-ro-product.toml"
+            )
+        )
+
+    if ro_workbook_path is None:
+        if workbook_path.name == (
+            "SOSA-2023-to-BFO-COMS.xlsx"
+        ):
+            ro_name = (
+                "SOSA-2023-to-RO-COMS.xlsx"
+            )
+        elif workbook_path.name == (
+            "SOSA-next-to-BFO-COMS.xlsx"
+        ):
+            ro_name = (
+                "SOSA-next-to-RO-COMS.xlsx"
+            )
+        else:
+            raise ReleasePackageError(
+                (
+                    package_issue(
+                        "FORMAL_RO_INPUT",
+                        str(workbook_path),
+                        "cannot derive RO workbook "
+                        "from BFO/CCO workbook name",
+                    ),
+                )
+            )
+
+        ro_workbook_path = (
+            workbook_path.with_name(
+                ro_name
+            )
+        )
+
+    ro_product_config_path = Path(
+        ro_product_config_path
+    )
+
+    ro_workbook_path = Path(
+        ro_workbook_path
+    )
+
+    if not ro_product_config_path.is_file():
+        raise ReleasePackageError(
+            (
+                package_issue(
+                    "FORMAL_RO_INPUT",
+                    str(
+                        ro_product_config_path
+                    ),
+                    "RO product authority is absent",
+                ),
+            )
+        )
+
+    if not ro_workbook_path.is_file():
+        raise ReleasePackageError(
+            (
+                package_issue(
+                    "FORMAL_RO_INPUT",
+                    str(
+                        ro_workbook_path
+                    ),
+                    "RO COMS workbook is absent",
+                ),
+            )
+        )
 
     metadata = publication.load_metadata(
         metadata_path,
@@ -516,43 +603,74 @@ def render_formal_products(
     ] = {}
 
     for key in PRODUCT_ORDER:
-        if key == "integrated":
-            supplied = [
-                *records[
-                    "strict_bfo_mapping"
-                ],
-                *records[
-                    "cco_extension"
-                ],
-            ]
+        if key == "ro_mapping":
+            (
+                serialized,
+                logical,
+                result,
+            ) = (
+                products
+                .serialize_formal_ro_product(
+                    metadata,
+                    validated_context,
+                    ro_product_config_path=(
+                        ro_product_config_path
+                    ),
+                    ro_workbook_path=(
+                        ro_workbook_path
+                    ),
+                    reverse_input=(
+                        reverse_input
+                    ),
+                )
+            )
         else:
-            supplied = list(
-                records[key]
-            )
+            if key == "integrated":
+                supplied = [
+                    *records[
+                        "strict_bfo_mapping"
+                    ],
+                    *records[
+                        "cco_extension"
+                    ],
+                ]
+            else:
+                supplied = list(
+                    records[key]
+                )
 
-        if reverse_input:
-            supplied = list(
-                reversed(supplied)
-            )
+            if reverse_input:
+                supplied = list(
+                    reversed(
+                        supplied
+                    )
+                )
 
-        (
-            serialized,
-            logical,
-            result,
-        ) = products.serialize_formal_product(
-            metadata,
-            validated_context,
-            key,
-            supplied,
-        )
+            (
+                serialized,
+                logical,
+                result,
+            ) = (
+                products
+                .serialize_formal_product(
+                    metadata,
+                    validated_context,
+                    key,
+                    supplied,
+                )
+            )
 
         rendered[key] = {
             **result,
-            "serialized_bytes": serialized,
-            "logical_graph": logical,
+            "serialized_bytes":
+                serialized,
+            "logical_graph":
+                logical,
         }
 
-        logical_graphs[key] = logical
+        logical_graphs[key] = (
+            logical
+        )
 
     modular_union = Graph()
 
@@ -560,24 +678,33 @@ def render_formal_products(
         "strict_bfo_mapping",
         "cco_extension",
     ):
-        for triple in logical_graphs[key]:
-            modular_union.add(triple)
+        for triple in (
+            logical_graphs[key]
+        ):
+            modular_union.add(
+                triple
+            )
 
-    if len(modular_union) != 277:
+    if len(
+        modular_union
+    ) != 277:
         raise ReleasePackageError(
             (
                 package_issue(
                     "FORMAL_LOGICAL_UNION",
                     "products",
                     "expected 277 triples, "
-                    f"got {len(modular_union)}",
+                    f"got "
+                    f"{len(modular_union)}",
                 ),
             )
         )
 
     if not isomorphic(
         modular_union,
-        logical_graphs["integrated"],
+        logical_graphs[
+            "integrated"
+        ],
     ):
         raise ReleasePackageError(
             (
@@ -590,7 +717,50 @@ def render_formal_products(
             )
         )
 
-    return metadata, rendered
+    if len(
+        logical_graphs[
+            "ro_mapping"
+        ]
+    ) != 16:
+        raise ReleasePackageError(
+            (
+                package_issue(
+                    "FORMAL_RO_LOGICAL_COUNT",
+                    "ro_mapping",
+                    "expected 16 logical "
+                    "triples",
+                ),
+            )
+        )
+
+    if (
+        set(
+            logical_graphs[
+                "ro_mapping"
+            ]
+        )
+        &
+        set(
+            logical_graphs[
+                "integrated"
+            ]
+        )
+    ):
+        raise ReleasePackageError(
+            (
+                package_issue(
+                    "FORMAL_RO_INTEGRATED_LEAK",
+                    "products",
+                    "RO logical axioms appear "
+                    "in Integrated",
+                ),
+            )
+        )
+
+    return (
+        metadata,
+        rendered,
+    )
 
 
 def formal_product_bytes(
@@ -853,50 +1023,44 @@ def collect_included_files(
     ...
 ]:
     roles = {
-        "LICENSE": "project license",
-        "RELEASE-NOTES.md": (
-            "release notes"
-        ),
-        "catalog-v001.xml": (
-            "formal version-IRI catalog"
-        ),
+        "LICENSE":
+            "project license",
+        "RELEASE-NOTES.md":
+            "release notes",
+        "catalog-v001.xml":
+            "formal version-IRI catalog",
         PRODUCT_PACKAGE_PATHS[
             "integrated"
-        ]: (
-            "formal Integrated ontology "
-            "product"
-        ),
+        ]:
+            "formal Integrated ontology product",
         PRODUCT_PACKAGE_PATHS[
             "strict_bfo_mapping"
-        ]: (
-            "formal Strict BFO Mapping "
-            "ontology product"
-        ),
+        ]:
+            "formal Strict BFO Mapping ontology product",
         PRODUCT_PACKAGE_PATHS[
             "cco_extension"
-        ]: (
-            "formal CCO Extension "
-            "ontology product"
-        ),
-        "sources/SOSA-2023-to-BFO-COMS.xlsx": (
-            "governed SOSA-2023 COMS "
-            "workbook"
-        ),
-        "sources/product-role-policy.toml": (
-            "governed product-role policy"
-        ),
-        "sources/sosa-2023-publication-metadata.toml": (
-            "governed SOSA-2023 "
-            "publication metadata"
-        ),
-        "sources/sosa-release-scope.toml": (
-            "governed SOSA release-scope "
-            "policy"
-        ),
-        "sources/sosa-source-version.toml": (
-            "governed immutable SOSA "
-            "source-version evidence"
-        ),
+        ]:
+            "formal CCO Extension ontology product",
+        PRODUCT_PACKAGE_PATHS[
+            "ro_mapping"
+        ]:
+            "formal Relations Ontology Mapping product",
+        "sources/SOSA-2023-to-BFO-COMS.xlsx":
+            "governed SOSA-2023 BFO/CCO COMS workbook",
+        "sources/SOSA-2023-to-RO-COMS.xlsx":
+            "governed SOSA-2023 RO COMS workbook",
+        "sources/product-role-policy.toml":
+            "governed product-role policy",
+        "sources/sosa-2023-publication-metadata.toml":
+            "governed SOSA-2023 publication metadata",
+        "sources/sosa-2023-ro-product.toml":
+            "governed SOSA-2023 RO product authority",
+        "sources/sosa-2023-ro-source-version.toml":
+            "governed immutable RO source-version evidence",
+        "sources/sosa-release-scope.toml":
+            "governed SOSA release-scope policy",
+        "sources/sosa-source-version.toml":
+            "governed immutable SOSA source-version evidence",
     }
 
     if set(roles) != set(
@@ -912,14 +1076,16 @@ def collect_included_files(
             path=relative,
             role=roles[relative],
             sha256=_sha256(
-                package_dir / relative
+                package_dir
+                / relative
             ),
             byte_size=(
                 package_dir
                 / relative
             ).stat().st_size,
         )
-        for relative in INCLUDED_FILE_PATHS
+        for relative
+        in INCLUDED_FILE_PATHS
     )
 
 
@@ -1151,14 +1317,139 @@ def validate_sha256sums_bytes(
     )
 
 
+RO_REASONING_SOURCE_PATHS = (
+    "src/sosa-next/imports/sosa.ttl",
+    "src/sosa-next/imports/sosa-common.ttl",
+    "src/sosa-next/imports/sosa-observation.ttl",
+    "src/sosa-next/imports/sosa-actuation.ttl",
+    "src/sosa-next/imports/sosa-sampling.ttl",
+    "src/sosa-next/imports/sosa-deprecated.ttl",
+    "src/sosa-next/imports/sosa-system.ttl",
+    "src/sosa-next/imports/sample-relations.ttl",
+    "src/sosa-next/imports/sosa-source-declaration-overlay.ttl",
+)
+
+RO_PROFILE_ANNOTATION_PROPERTIES = (
+    "http://schema.org/domainIncludes",
+    "http://schema.org/rangeIncludes",
+    "http://www.w3.org/2004/02/skos/core#altLabel",
+    "http://www.w3.org/2004/02/skos/core#definition",
+    "http://www.w3.org/2004/02/skos/core#example",
+    "http://www.w3.org/2004/02/skos/core#note",
+    "http://www.w3.org/2004/02/skos/core#scopeNote",
+    "http://www.w3.org/2004/02/skos/core#editorialNote",
+    "http://www.w3.org/2004/02/skos/core#prefLabel",
+    "http://xmlns.com/foaf/0.1/name",
+    "http://purl.org/dc/terms/modified",
+    "http://purl.org/dc/terms/rights",
+    "http://purl.org/vocab/vann/preferredNamespacePrefix",
+    "http://purl.org/vocab/vann/preferredNamespaceUri",
+    "http://purl.org/dc/terms/type",
+    "http://purl.org/dc/terms/issued",
+    "http://www.w3.org/ns/adms#status",
+)
+
+RO_PROFILE_CLASSES = (
+    "http://purl.org/vocommons/voaf#Vocabulary",
+    "http://xmlns.com/foaf/0.1/Agent",
+    "http://www.w3.org/2004/02/skos/core#Concept",
+)
+
+
+def build_formal_ro_reasoning_closure(
+    serialized_ro: bytes,
+    repository_root: Path,
+) -> Graph:
+    closure = Graph()
+
+    closure.parse(
+        data=serialized_ro.decode(
+            "utf-8"
+        ),
+        format="turtle",
+    )
+
+    closure.parse(
+        repository_root
+        / "src/sosa-next/imports/ro-full.owl",
+        format="xml",
+    )
+
+    for relative in (
+        RO_REASONING_SOURCE_PATHS
+    ):
+        closure.parse(
+            repository_root
+            / relative,
+            format="turtle",
+        )
+
+    for triple in list(
+        closure.triples(
+            (
+                None,
+                OWL.imports,
+                None,
+            )
+        )
+    ):
+        closure.remove(
+            triple
+        )
+
+    return closure
+
+
+def formal_ro_profile_graph(
+    closure: Graph,
+) -> Graph:
+    profile = Graph()
+
+    for triple in closure:
+        profile.add(
+            triple
+        )
+
+    for iri in (
+        RO_PROFILE_ANNOTATION_PROPERTIES
+    ):
+        profile.add(
+            (
+                URIRef(iri),
+                RDF.type,
+                OWL.AnnotationProperty,
+            )
+        )
+
+    for iri in (
+        RO_PROFILE_CLASSES
+    ):
+        profile.add(
+            (
+                URIRef(iri),
+                RDF.type,
+                OWL.Class,
+            )
+        )
+
+    return profile
+
+
 def run_independent_reasoning(
     package_dir: Path,
     temporary_root: Path,
     toolchain: ResolvedValidationToolchain,
+    *,
+    repository_root: Path = REPO_ROOT,
 ) -> tuple[
     manifest.ReleaseManifestHermitResult,
     ...
 ]:
+    repository_root = (
+        Path(repository_root)
+        .resolve()
+    )
+
     serialized = {
         key: (
             package_dir
@@ -1168,7 +1459,7 @@ def run_independent_reasoning(
     }
 
     profiles = {
-        "integrated": (
+        "integrated":
             products.build_reasoning_closure(
                 (
                     serialized[
@@ -1176,9 +1467,8 @@ def run_independent_reasoning(
                     ],
                 ),
                 include_target_dependency=True,
-            )
-        ),
-        "strict_bfo_mapping": (
+            ),
+        "strict_bfo_mapping":
             products.build_reasoning_closure(
                 (
                     serialized[
@@ -1186,9 +1476,8 @@ def run_independent_reasoning(
                     ],
                 ),
                 include_target_dependency=True,
-            )
-        ),
-        "cco_extension": (
+            ),
+        "cco_extension":
             products.build_reasoning_closure(
                 (
                     serialized[
@@ -1199,8 +1488,14 @@ def run_independent_reasoning(
                     ],
                 ),
                 include_target_dependency=True,
-            )
-        ),
+            ),
+        "ro_mapping":
+            build_formal_ro_reasoning_closure(
+                serialized[
+                    "ro_mapping"
+                ],
+                repository_root,
+            ),
     }
 
     expected_closures = dict(
@@ -1270,11 +1565,13 @@ def run_independent_reasoning(
             )
 
             closure_path = (
-                root / "closure.ttl"
+                root
+                / "closure.ttl"
             )
 
             reasoned_path = (
-                root / "reasoned.ttl"
+                root
+                / "reasoned.ttl"
             )
 
             unsat_path = (
@@ -1282,7 +1579,31 @@ def run_independent_reasoning(
                 / "unsatisfiable.ttl"
             )
 
-            closure.serialize(
+            reasoning_graph = (
+                formal_ro_profile_graph(
+                    closure
+                )
+                if key == "ro_mapping"
+                else closure
+            )
+
+            if key == "ro_mapping":
+                if (
+                    len(reasoning_graph)
+                    - len(closure)
+                    != 20
+                ):
+                    issues.append(
+                        package_issue(
+                            "HERMIT_PROFILE_DECLARATIONS",
+                            key,
+                            "expected exactly 20 "
+                            "profile declaration "
+                            "completions",
+                        )
+                    )
+
+            reasoning_graph.serialize(
                 closure_path,
                 format="turtle",
             )
@@ -1396,7 +1717,9 @@ def run_independent_reasoning(
             issues
         )
 
-    return tuple(evidence)
+    return tuple(
+        evidence
+    )
 
 
 def _validate_paths(
@@ -1668,11 +1991,7 @@ def assemble_release_package(
         )
 
         hermit = (
-            run_independent_reasoning(
-                package_dir,
-                work_root / "reasoning",
-                toolchain,
-            )
+            run_independent_reasoning(package_dir, work_root / 'reasoning', toolchain, repository_root=repository_root)
         )
 
         snapshot_issues = (

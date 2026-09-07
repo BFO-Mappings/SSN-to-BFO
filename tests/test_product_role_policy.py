@@ -17,7 +17,7 @@ import sosa_source_version as source_version  # noqa: E402
 
 
 class ProductRolePolicyTests(unittest.TestCase):
-    def test_uniform_five_role_taxonomy(self) -> None:
+    def test_uniform_six_role_taxonomy(self) -> None:
         value = policy.load_product_role_policy()
 
         self.assertEqual(
@@ -28,6 +28,7 @@ class ProductRolePolicyTests(unittest.TestCase):
                 "strict_bfo_mapping",
                 "bfo_projection",
                 "cco_extension",
+                "ro_mapping",
             ),
         )
         self.assertFalse(value.empty_role_boundary_is_sufficient)
@@ -47,7 +48,10 @@ class ProductRolePolicyTests(unittest.TestCase):
         )
         self.assertEqual(
             track.omitted_product_roles,
-            ("bfo_projection",),
+            (
+                "bfo_projection",
+                "ro_mapping",
+            ),
         )
 
     def test_sosa_source_version_target_inventory(self) -> None:
@@ -61,6 +65,7 @@ class ProductRolePolicyTests(unittest.TestCase):
                 "integrated",
                 "strict_bfo_mapping",
                 "cco_extension",
+                "ro_mapping",
             ),
         )
         self.assertEqual(
@@ -95,8 +100,8 @@ class ProductRolePolicyTests(unittest.TestCase):
     def test_materialized_order_must_follow_role_status(self) -> None:
         original = policy.CONFIG_PATH.read_text(encoding="utf-8")
         altered = original.replace(
-            'formal_product_order = ["integrated", "strict_bfo_mapping", "cco_extension"]',
-            'formal_product_order = ["integrated", "alignment_core", "strict_bfo_mapping", "cco_extension"]',
+            'formal_product_order = ["integrated", "strict_bfo_mapping", "cco_extension", "ro_mapping"]',
+            'formal_product_order = ["integrated", "alignment_core", "strict_bfo_mapping", "cco_extension", "ro_mapping"]',
             1,
         )
         self.assertNotEqual(original, altered)

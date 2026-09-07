@@ -73,6 +73,11 @@ DEVELOPMENT_PRODUCT_ORDER = (
     "ro_mapping",
 )
 
+FORMAL_PRODUCT_ORDER = (
+    *PRODUCT_ORDER,
+    "ro_mapping",
+)
+
 MODULAR_PRODUCT_ORDER = (
     "strict_bfo_mapping",
     "cco_extension",
@@ -924,7 +929,7 @@ def load_sosa_2023_publication_metadata() -> Any:
 
     return publication_metadata.load_metadata(
         SOSA_2023_PUBLICATION_METADATA_PATH,
-        product_order=PRODUCT_ORDER,
+        product_order=FORMAL_PRODUCT_ORDER,
     )
 
 
@@ -956,6 +961,350 @@ def formal_product_imports(
 
     raise RuntimeError(
         f"Unsupported SOSA-2023 formal product: {product_key}"
+    )
+
+
+FORMAL_RO_PRODUCT_SPEC = {
+    "axiom_count": 16,
+    "logical_triple_count": 16,
+    "body_sha256": (
+        "7417542b96057163bf16b050295d6094"
+        "47eeaf05aa86979d7b0a9fecf9cfc2d8"
+    ),
+    "prefixes": (
+        (
+            "obo",
+            "http://purl.obolibrary.org/obo/",
+        ),
+        (
+            "adms",
+            "http://www.w3.org/ns/adms#",
+        ),
+        (
+            "dcterms",
+            "http://purl.org/dc/terms/",
+        ),
+        (
+            "owl",
+            "http://www.w3.org/2002/07/owl#",
+        ),
+        (
+            "rdf",
+            (
+                "http://www.w3.org/1999/02/"
+                "22-rdf-syntax-ns#"
+            ),
+        ),
+        (
+            "rdfs",
+            (
+                "http://www.w3.org/2000/01/"
+                "rdf-schema#"
+            ),
+        ),
+        (
+            "sosa",
+            "http://www.w3.org/ns/sosa/",
+        ),
+    ),
+}
+
+
+def formal_ro_body_bytes(
+    *,
+    ro_product_config_path: Path | None = None,
+    ro_workbook_path: Path | None = None,
+    reverse_input: bool = False,
+) -> bytes:
+    """Return canonical governed RO mapping body bytes."""
+
+    product, active, rendered = (
+        ro_generator.build(
+            config_path=(
+                ro_product_config_path
+            ),
+            workbook_path=(
+                ro_workbook_path
+            ),
+        )
+    )
+
+    if product["key"] != "ro_mapping":
+        raise RuntimeError(
+            "RO generator returned "
+            "unexpected product key"
+        )
+
+    if len(active) != 16:
+        raise RuntimeError(
+            f"expected 16 governed RO axioms; "
+            f"found {len(active)}"
+        )
+
+    lines = [
+        line
+        for line in (
+            rendered.decode(
+                "utf-8"
+            ).splitlines()
+        )
+        if (
+            " rdfs:subPropertyOf "
+            in line
+        )
+    ]
+
+    if len(lines) != 16:
+        raise RuntimeError(
+            f"expected 16 canonical RO "
+            f"mapping lines; found {len(lines)}"
+        )
+
+    if reverse_input:
+        lines = list(
+            reversed(lines)
+        )
+
+    # Formal serialization is independent
+    # of supplied input ordering.
+    lines = sorted(lines)
+
+    body = (
+        "\n".join(lines).rstrip()
+        + "\n"
+    ).encode(
+        "utf-8"
+    )
+
+    observed = sha256_bytes(
+        body
+    )
+
+    expected = (
+        FORMAL_RO_PRODUCT_SPEC[
+            "body_sha256"
+        ]
+    )
+
+    if observed != expected:
+        raise RuntimeError(
+            "formal RO axiom-body "
+            "hash mismatch\n"
+            f"Expected: {expected}\n"
+            f"Actual:   {observed}"
+        )
+
+    return body
+
+
+def serialize_formal_ro_product(
+    metadata: Any,
+    context: FormalReleaseContext,
+    *,
+    ro_product_config_path: Path | None = None,
+    ro_workbook_path: Path | None = None,
+    reverse_input: bool = False,
+) -> tuple[
+    bytes,
+    Graph,
+    dict[str, Any],
+]:
+    """Render the independent immutable SOSA-2023 RO product."""
+
+    validated_context = (
+        validate_formal_release_context(
+            context
+        )
+    )
+
+    spec = FORMAL_RO_PRODUCT_SPEC
+
+    body = formal_ro_body_bytes(
+        ro_product_config_path=(
+            ro_product_config_path
+        ),
+        ro_workbook_path=(
+            ro_workbook_path
+        ),
+        reverse_input=reverse_input,
+    )
+
+    imports: tuple[str, ...] = ()
+
+    header = (
+        publication_metadata
+        .render_ontology_header_bytes(
+            metadata,
+            "ro_mapping",
+            imports,
+            generated_notice=FORMAL_GENERATED_NOTICE,
+            prefixes=spec["prefixes"],
+            context=validated_context,
+        )
+    )
+
+    serialized = (
+        header
+        + b"\n"
+        + body
+    )
+
+    issues = (
+        publication_metadata
+        .validate_serialized_ontology_header(
+            serialized,
+            metadata,
+            "ro_mapping",
+            imports,
+            generated_notice=FORMAL_GENERATED_NOTICE,
+            prefixes=spec["prefixes"],
+            mode="release",
+            context=validated_context,
+        )
+    )
+
+    if issues:
+        rendered = "\n".join(
+            (
+                f"{issue.code}: "
+                f"{issue.field}: "
+                f"{issue.message}"
+            )
+            for issue in issues
+        )
+
+        raise RuntimeError(
+            "ro_mapping: formal metadata "
+            "validation failed:\n"
+            + rendered
+        )
+
+    graph = Graph()
+
+    graph.parse(
+        data=serialized.decode(
+            "utf-8"
+        ),
+        format="turtle",
+    )
+
+    logical = (
+        publication_metadata
+        .strip_emitted_ontology_header(
+            graph,
+            metadata,
+            "ro_mapping",
+            imports,
+            validated_context,
+        )
+    )
+
+    if (
+        len(logical)
+        != spec[
+            "logical_triple_count"
+        ]
+    ):
+        raise RuntimeError(
+            "ro_mapping: expected "
+            f"{spec['logical_triple_count']} "
+            "formal logical triples; "
+            f"found {len(logical)}"
+        )
+
+    formal_metadata_count = len(
+        publication_metadata
+        .ontology_metadata_triples(
+            metadata,
+            "ro_mapping",
+            validated_context,
+        )
+    )
+
+    if formal_metadata_count != 10:
+        raise RuntimeError(
+            "ro_mapping: expected 10 "
+            "formal ontology metadata "
+            f"annotations; found "
+            f"{formal_metadata_count}"
+        )
+
+    expected_total = (
+        spec["logical_triple_count"]
+        + 1
+        + len(imports)
+        + formal_metadata_count
+    )
+
+    if len(graph) != expected_total:
+        raise RuntimeError(
+            "ro_mapping: expected "
+            f"{expected_total} formal "
+            f"triples; found {len(graph)}"
+        )
+
+    if (
+        b"sosa-next"
+        in serialized
+        or
+        b"/development/"
+        in serialized
+    ):
+        raise RuntimeError(
+            "ro_mapping: formal "
+            "serialization retains "
+            "development identity"
+        )
+
+    product_hash = sha256_bytes(
+        serialized
+    )
+
+    metadata_product = next(
+        product
+        for product
+        in metadata.products
+        if product.key
+        == "ro_mapping"
+    )
+
+    result = {
+        "product_key":
+            "ro_mapping",
+        "stable_ontology_iri":
+            metadata_product
+            .stable_ontology_iri,
+        "version_iri":
+            publication_metadata
+            .release_version_iri(
+                metadata,
+                "ro_mapping",
+                validated_context,
+            ),
+        "imports":
+            imports,
+        "axiom_count":
+            spec["axiom_count"],
+        "logical_triple_count":
+            len(logical),
+        "total_triple_count":
+            len(graph),
+        "body_sha256":
+            spec["body_sha256"],
+        "sha256":
+            product_hash,
+        "byte_size":
+            len(serialized),
+        "serialized_bytes":
+            serialized,
+        "logical_graph":
+            logical,
+    }
+
+    return (
+        serialized,
+        logical,
+        result,
     )
 
 
@@ -1146,9 +1495,11 @@ def render_formal_product_set(
     processed: list[coms.ProcessedRow],
     context: FormalReleaseContext,
     *,
+    ro_product_config_path: Path | None = None,
+    ro_workbook_path: Path | None = None,
     reverse_input: bool = False,
 ) -> dict[str, Any]:
-    """Render all three SOSA-2023 formal products without writing them."""
+    """Render the four SOSA-2023 formal products; Integrated remains BFO/CCO-only."""
 
     validated_context = validate_formal_release_context(
         context
@@ -1163,24 +1514,57 @@ def render_formal_product_set(
     products: dict[str, dict[str, Any]] = {}
     logical_graphs: dict[str, Graph] = {}
 
-    for product_key in PRODUCT_ORDER:
-        if product_key == "integrated":
-            supplied = [
-                *records["strict_bfo_mapping"],
-                *records["cco_extension"],
-            ]
+    for product_key in FORMAL_PRODUCT_ORDER:
+        if product_key == "ro_mapping":
+            (
+                _,
+                logical,
+                result,
+            ) = serialize_formal_ro_product(
+                metadata,
+                validated_context,
+                ro_product_config_path=(
+                    ro_product_config_path
+                ),
+                ro_workbook_path=(
+                    ro_workbook_path
+                ),
+                reverse_input=reverse_input,
+            )
         else:
-            supplied = list(records[product_key])
+            if product_key == "integrated":
+                supplied = [
+                    *records[
+                        "strict_bfo_mapping"
+                    ],
+                    *records[
+                        "cco_extension"
+                    ],
+                ]
+            else:
+                supplied = list(
+                    records[
+                        product_key
+                    ]
+                )
 
-        if reverse_input:
-            supplied = list(reversed(supplied))
+            if reverse_input:
+                supplied = list(
+                    reversed(
+                        supplied
+                    )
+                )
 
-        _, logical, result = serialize_formal_product(
-            metadata,
-            validated_context,
-            product_key,
-            supplied,
-        )
+            (
+                _,
+                logical,
+                result,
+            ) = serialize_formal_product(
+                metadata,
+                validated_context,
+                product_key,
+                supplied,
+            )
 
         products[product_key] = result
         logical_graphs[product_key] = logical

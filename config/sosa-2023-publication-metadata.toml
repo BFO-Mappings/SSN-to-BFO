@@ -34,3 +34,11 @@ release_iri_suffix = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/cco-ext
 label = "SOSA 2023 CCO Extension"
 description = "Directly asserts the governed CCO-bearing and mixed BFO/CCO SOSA 2023 mapping axioms and imports the strict BFO mapping."
 product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/cco-extension"
+
+[products.ro_mapping]
+path = "releases/sosa-next/sosa-ro-mapping.ttl"
+stable_ontology_iri = "http://www.sks.ai/SSN2BFO/sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/ro-mapping"
+release_iri_suffix = "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/ro-mapping"
+label = "SOSA 2023 Relations Ontology Mapping"
+description = "Directly asserts the governed Relations Ontology profile for SOSA 2023 and imports no ontology."
+product_type_iri = "http://www.sks.ai/SSN2BFO/product-type/ro-mapping"

@@ -22,11 +22,13 @@ SYNTHETIC_COMMIT = "0123456789abcdef0123456789abcdef01234567"
 
 FORMAL_HASHES = {
     "integrated":
-        "e2345d7e50ac871a535bd0f1e7e2c612181729b83d8d8bd7d5cb6d3976299a19",
+        "539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43",
     "strict_bfo_mapping":
-        "c4417989963590517a5636bf1d57ddc966199ab8273fee814b3d27fb159c0c96",
+        "8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125",
     "cco_extension":
-        "49dec6023bfdebac6c78c4f2b6b291ab74766c1816d146598f797dfb9295bc35",
+        "d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d",
+    "ro_mapping":
+        "faba756dc6480c2088cc6ad3e514524736130f90365f1ab7e40c3d909877ca69",
 }
 
 CURRENT_AUTHORITY_HASHES = {
@@ -217,6 +219,7 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
                 "integrated",
                 "strict_bfo_mapping",
                 "cco_extension",
+                "ro_mapping",
             ),
         )
         self.assertEqual(
@@ -225,6 +228,7 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
                 ("integrated", 15243),
                 ("strict_bfo_mapping", 15120),
                 ("cco_extension", 15254),
+                ("ro_mapping", 12864),
             ),
         )
         self.assertEqual(
@@ -233,6 +237,7 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
                 "integrated": 4,
                 "strict_bfo_mapping": 0,
                 "cco_extension": 1,
+                "ro_mapping": 0,
             },
         )
 
@@ -324,7 +329,7 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
                 hermit["minItems"],
                 hermit["maxItems"],
             ),
-            (3, 3),
+            (4, 4),
         )
 
         self.assertEqual(
@@ -515,7 +520,11 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
             with self.subTest(dependency=key):
                 graph = Graph().parse(
                     REPO_ROOT / source_path,
-                    format="turtle",
+                    format=(
+                        "xml"
+                        if key == "relations_ontology"
+                        else "turtle"
+                    ),
                 )
 
                 observed = tuple(
@@ -558,7 +567,7 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
 
         self.assertEqual(
             len(self.value.inputs),
-            31,
+            37,
         )
 
         for key, source_path in expected:
@@ -737,6 +746,13 @@ class Sosa2023ReleaseManifestTests(unittest.TestCase):
                 (
                     "cco_extension",
                     15254,
+                    0,
+                    True,
+                    0,
+                ),
+                (
+                    "ro_mapping",
+                    12864,
                     0,
                     True,
                     0,

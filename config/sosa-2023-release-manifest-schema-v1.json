@@ -42,8 +42,8 @@
     },
     "inputs": {
       "type": "array",
-      "minItems": 31,
-      "maxItems": 31,
+      "minItems": 37,
+      "maxItems": 37,
       "prefixItems": [
         {
           "allOf": [
@@ -60,6 +60,26 @@
                 },
                 "source_path": {
                   "const": "mappings/SOSA-next-to-BFO-COMS.xlsx"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "ro_coms_workbook"
+                },
+                "package_path": {
+                  "const": "sources/SOSA-2023-to-RO-COMS.xlsx"
+                },
+                "source_path": {
+                  "const": "mappings/SOSA-next-to-RO-COMS.xlsx"
                 }
               }
             }
@@ -100,6 +120,46 @@
                 },
                 "source_path": {
                   "const": "config/sosa-source-version.toml"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "ro_source_version"
+                },
+                "package_path": {
+                  "const": "sources/sosa-2023-ro-source-version.toml"
+                },
+                "source_path": {
+                  "const": "config/sosa-2023-ro-source-version.toml"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "ro_product_config"
+                },
+                "package_path": {
+                  "const": "sources/sosa-2023-ro-product.toml"
+                },
+                "source_path": {
+                  "const": "config/sosa-2023-ro-product.toml"
                 }
               }
             }
@@ -200,6 +260,26 @@
                 },
                 "source_path": {
                   "const": "releases/sosa-next/sosa-cco-extension.ttl"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "development_ro_mapping"
+                },
+                "package_path": {
+                  "const": null
+                },
+                "source_path": {
+                  "const": "releases/sosa-next/sosa-ro-mapping.ttl"
                 }
               }
             }
@@ -360,6 +440,26 @@
                 },
                 "source_path": {
                   "const": "src/sosa-next/imports/sample-relations.ttl"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "pinned_ro"
+                },
+                "package_path": {
+                  "const": null
+                },
+                "source_path": {
+                  "const": "src/sosa-next/imports/ro-full.owl"
                 }
               }
             }
@@ -570,6 +670,26 @@
             {
               "properties": {
                 "key": {
+                  "const": "module_generate_sosa_2023_ro_mapping"
+                },
+                "package_path": {
+                  "const": null
+                },
+                "source_path": {
+                  "const": "tools/generate_sosa_2023_ro_mapping.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/input"
+            },
+            {
+              "properties": {
+                "key": {
                   "const": "manifest_schema"
                 },
                 "package_path": {
@@ -669,13 +789,14 @@
       "const": [
         "integrated",
         "strict_bfo_mapping",
-        "cco_extension"
+        "cco_extension",
+        "ro_mapping"
       ]
     },
     "products": {
       "type": "array",
-      "minItems": 3,
-      "maxItems": 3,
+      "minItems": 4,
+      "maxItems": 4,
       "prefixItems": [
         {
           "allOf": [
@@ -698,7 +819,7 @@
                   "maxItems": 4
                 },
                 "byte_size": {
-                  "const": 39991
+                  "const": 41010
                 },
                 "ontology_declaration_count": {
                   "const": 1
@@ -713,16 +834,16 @@
                   "const": 3
                 },
                 "logical_triple_count": {
-                  "const": 268
+                  "const": 277
                 },
                 "total_triple_count": {
-                  "const": 283
+                  "const": 292
                 },
                 "direct_governed_axiom_count": {
-                  "const": 46
+                  "const": 55
                 },
                 "governed_closure_axiom_count": {
-                  "const": 46
+                  "const": 55
                 },
                 "reasoning_mode": {
                   "const": "independent"
@@ -752,7 +873,7 @@
                   "maxItems": 0
                 },
                 "byte_size": {
-                  "const": 23335
+                  "const": 23664
                 },
                 "ontology_declaration_count": {
                   "const": 1
@@ -767,16 +888,16 @@
                   "const": 3
                 },
                 "logical_triple_count": {
-                  "const": 151
+                  "const": 154
                 },
                 "total_triple_count": {
-                  "const": 162
+                  "const": 165
                 },
                 "direct_governed_axiom_count": {
-                  "const": 21
+                  "const": 24
                 },
                 "governed_closure_axiom_count": {
-                  "const": 21
+                  "const": 24
                 },
                 "reasoning_mode": {
                   "const": "independent"
@@ -806,7 +927,7 @@
                   "maxItems": 1
                 },
                 "byte_size": {
-                  "const": 18201
+                  "const": 18891
                 },
                 "ontology_declaration_count": {
                   "const": 1
@@ -821,16 +942,70 @@
                   "const": 3
                 },
                 "logical_triple_count": {
-                  "const": 117
+                  "const": 123
                 },
                 "total_triple_count": {
-                  "const": 129
+                  "const": 135
                 },
                 "direct_governed_axiom_count": {
-                  "const": 25
+                  "const": 31
                 },
                 "governed_closure_axiom_count": {
-                  "const": 46
+                  "const": 55
+                },
+                "reasoning_mode": {
+                  "const": "independent"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/product"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "ro_mapping"
+                },
+                "path": {
+                  "const": "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/sosa-ro-mapping.ttl"
+                },
+                "stable_ontology_iri": {
+                  "const": "http://www.sks.ai/SSN2BFO/sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/ro-mapping"
+                },
+                "imports": {
+                  "minItems": 0,
+                  "maxItems": 0
+                },
+                "byte_size": {
+                  "const": 2342
+                },
+                "ontology_declaration_count": {
+                  "const": 1
+                },
+                "import_count": {
+                  "const": 0
+                },
+                "static_metadata_count": {
+                  "const": 7
+                },
+                "formal_metadata_count": {
+                  "const": 3
+                },
+                "logical_triple_count": {
+                  "const": 16
+                },
+                "total_triple_count": {
+                  "const": 27
+                },
+                "direct_governed_axiom_count": {
+                  "const": 16
+                },
+                "governed_closure_axiom_count": {
+                  "const": 16
                 },
                 "reasoning_mode": {
                   "const": "independent"
@@ -844,8 +1019,8 @@
     },
     "dependencies": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 5,
+      "maxItems": 5,
       "prefixItems": [
         {
           "allOf": [
@@ -938,6 +1113,29 @@
               }
             }
           ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dependency"
+            },
+            {
+              "properties": {
+                "key": {
+                  "const": "relations_ontology"
+                },
+                "role": {
+                  "const": "formal external Relations Ontology target ontology dependency"
+                },
+                "path": {
+                  "const": "src/sosa-next/imports/ro-full.owl"
+                },
+                "ontology_iri": {
+                  "const": "http://purl.obolibrary.org/obo/ro/ro-full.owl"
+                }
+              }
+            }
+          ]
         }
       ],
       "items": false
@@ -950,8 +1148,8 @@
     },
     "included_files": {
       "type": "array",
-      "minItems": 11,
-      "maxItems": 11,
+      "minItems": 15,
+      "maxItems": 15,
       "prefixItems": [
         {
           "allOf": [
@@ -1045,7 +1243,35 @@
             {
               "properties": {
                 "path": {
+                  "const": "sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/sosa-ro-mapping.ttl"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/includedFile"
+            },
+            {
+              "properties": {
+                "path": {
                   "const": "sources/SOSA-2023-to-BFO-COMS.xlsx"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/includedFile"
+            },
+            {
+              "properties": {
+                "path": {
+                  "const": "sources/SOSA-2023-to-RO-COMS.xlsx"
                 }
               }
             }
@@ -1074,6 +1300,34 @@
               "properties": {
                 "path": {
                   "const": "sources/sosa-2023-publication-metadata.toml"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/includedFile"
+            },
+            {
+              "properties": {
+                "path": {
+                  "const": "sources/sosa-2023-ro-product.toml"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/includedFile"
+            },
+            {
+              "properties": {
+                "path": {
+                  "const": "sources/sosa-2023-ro-source-version.toml"
                 }
               }
             }
@@ -1192,7 +1446,8 @@
           "enum": [
             "integrated",
             "strict_bfo_mapping",
-            "cco_extension"
+            "cco_extension",
+            "ro_mapping"
           ]
         },
         "path": {
@@ -1380,7 +1635,8 @@
           "enum": [
             "integrated",
             "strict_bfo_mapping",
-            "cco_extension"
+            "cco_extension",
+            "ro_mapping"
           ]
         },
         "status": {
@@ -1449,8 +1705,8 @@
         },
         "hermit_results": {
           "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
+          "minItems": 4,
+          "maxItems": 4,
           "prefixItems": [
             {
               "allOf": [
@@ -1531,6 +1787,38 @@
                     },
                     "fixed_closure_triple_count": {
                       "const": 15254
+                    },
+                    "return_code": {
+                      "const": 0
+                    },
+                    "reasoned_output_produced": {
+                      "const": true
+                    },
+                    "named_unsatisfiable_class_count": {
+                      "const": 0
+                    },
+                    "owl_nothing_equivalent_named_class_count": {
+                      "const": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/hermitResult"
+                },
+                {
+                  "properties": {
+                    "product_key": {
+                      "const": "ro_mapping"
+                    },
+                    "status": {
+                      "const": "PASS"
+                    },
+                    "fixed_closure_triple_count": {
+                      "const": 12864
                     },
                     "return_code": {
                       "const": 0

@@ -35,6 +35,7 @@ class SosaReleaseScopeTests(unittest.TestCase):
                 "integrated",
                 "strict_bfo_mapping",
                 "cco_extension",
+                "ro_mapping",
             ),
         )
         self.assertEqual(
@@ -52,8 +53,8 @@ class SosaReleaseScopeTests(unittest.TestCase):
     def test_old_three_product_inventory_is_rejected(self) -> None:
         original = scope.CONFIG_PATH.read_text(encoding="utf-8")
         altered = original.replace(
+            'formal_product_order = ["integrated", "strict_bfo_mapping", "cco_extension", "ro_mapping"]',
             'formal_product_order = ["integrated", "strict_bfo_mapping", "cco_extension"]',
-            'formal_product_order = ["alignment_core", "strict_bfo_mapping", "cco_extension"]',
             1,
         )
         self.assertNotEqual(original, altered)
