@@ -2,9 +2,9 @@
   "schema_version": 1,
   "canonicalization_version": "coms-row-expression-v1",
   "workbook_sha256": "e32c6b5691bf4aa00b4ec564731e0364edc2567658bb21c46f83c1e3f0d9a4f6",
-  "generator_sha256": "f0bc84bf45eaa2e22aaeb7e004ebdad7336d077cdad415b6bf737fab1218fedd",
+  "generator_sha256": "047dce7ffc77bbffdd4a5a8e5549b0ed161c5b15f5ffd8ad8a36a59f7b5001c5",
   "row_identity_module_sha256": "9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425",
-  "disposition_module_sha256": "b54b483176520f639c0e79a823a031757190eacedb2a2012932d5cba86d25eaf",
+  "disposition_module_sha256": "6de4f8bb02e979e3559f03503319ec54fae7200b9b271aef66db043918258e1e",
   "publication_metadata_sha256": "bb818ab88d2dbcfd8a11eddcfc846c81609c4e9a9c6819def44f950da423e8f9",
   "product_order": [
     "integrated",
