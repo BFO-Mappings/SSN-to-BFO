@@ -2,8 +2,12 @@
 
 config.ONTOLOGY_FILE      := sosa-mappings-edit.ttl
 config.ONTOLOGY_PREFIX    := sosa-next
-config.ONTOLOGY_IRI       := https://w3id.org/ssn-sosa-bfo-cco-mapping/sosa-next
-config.RELEASE_FILES      := ../../releases/sosa-next/sosa-bfo-directmappings.ttl ../../releases/sosa-next/sosa-cco-directmappings.ttl
+config.ONTOLOGY_IRI       := http://www.sks.ai/SSN2BFO/development/sosa-next
+config.RELEASE_FILES      := \
+	../../releases/sosa-next/sosa-integrated.ttl \
+	../../releases/sosa-next/sosa-bfo-mapping.ttl \
+	../../releases/sosa-next/sosa-cco-extension.ttl \
+	../../releases/sosa-next/sosa-ro-mapping.ttl
 
 config.TEMP_DIR           := build/artifacts
 config.REPORTS_DIR        := $(config.TEMP_DIR)

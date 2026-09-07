@@ -8,25 +8,23 @@ Freshness is determined from content hashes, not file timestamps.
 
 | Item | Value |
 |---|---|
-| workbook SHA-256 | `febb8b58b4a701cead90697412a9721112c4e6dfd3af47d3c3a77c93754690e0` |
-| generator SHA-256 | `a485f76366788b17a80969dca00d4d6802785b3e633edb8bb056c6eda893a8ed` |
+| workbook SHA-256 | `e32c6b5691bf4aa00b4ec564731e0364edc2567658bb21c46f83c1e3f0d9a4f6` |
+| generator SHA-256 | `f0bc84bf45eaa2e22aaeb7e004ebdad7336d077cdad415b6bf737fab1218fedd` |
 | row-identity module SHA-256 | `9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425` |
-| product-disposition module SHA-256 | `987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8` |
-| modular-products module SHA-256 | `8c836758cb3cc4b5f8967c4333aed752857a756599c5e17bedcbd4e7304c66df` |
-| publication metadata SHA-256 | `189e4a6b2dbbb1dcb77a8a9c8984458d4ef74a6838dc72a090f47a1cbe61e645` |
-| generation timestamp (UTC) | `2026-07-16T19:42:50+00:00` |
+| product-disposition module SHA-256 | `b54b483176520f639c0e79a823a031757190eacedb2a2012932d5cba86d25eaf` |
+| modular-products module SHA-256 | `8874e996c243dde4dcedaf3701629048b5430168318f8710e4b537649a9cb0fb` |
+| publication metadata SHA-256 | `bb818ab88d2dbcfd8a11eddcfc846c81609c4e9a9c6819def44f950da423e8f9` |
+| generation timestamp (UTC) | `2026-08-18T15:29:05+00:00` |
 | maintained ontology path | `SSN2BFO.ttl` |
-| generated ontology SHA-256 | `25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0` |
+| generated ontology SHA-256 | `c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11` |
 | maintained product-disposition path | `reports/coms-product-dispositions.json` |
-| product-disposition JSON SHA-256 | `b778760e691209b121f31e1ef98f5d5d9b2b7e6c653be4cddfce7c838fc68a9c` |
+| product-disposition JSON SHA-256 | `1fe528514b459da525ed1050044438f59a598ef91ff94b07b1cbd7149a2baced` |
 | maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |
 | alignment-core Turtle SHA-256 | `17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770` |
 | maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |
 | strict-BFO Turtle SHA-256 | `676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af` |
-| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |
-| BFO-projection Turtle SHA-256 | `b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0` |
 | maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |
-| CCO-extension Turtle SHA-256 | `fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf` |
+| CCO-extension Turtle SHA-256 | `2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5` |
 
 ## Workbook
 
@@ -43,14 +41,14 @@ Freshness is determined from content hashes, not file timestamps.
 
 | Item | Count |
 |---|---:|
-| active axiom row count | 105 |
-| mapped row count | 74 |
-| blank mapping row count | 0 |
+| active axiom row count | 103 |
+| mapped row count | 72 |
+| blank mapping row count | 2 |
 | class mapping count | 44 |
 | object-property mapping count | 25 |
 | domain row count | 16 |
 | range row count | 15 |
-| property-chain count | 5 |
+| property-chain count | 3 |
 | governed RowID count | 105 |
 | unique RowID count | 105 |
 | processed governed row count | 105 |
@@ -82,13 +80,11 @@ Freshness is determined from content hashes, not file timestamps.
 | `bfo:SpecificallyDependentContinuant` | class | label_style_key | specifically dependent continuant | `http://purl.obolibrary.org/obo/BFO_0000020` | `Sheet1!14 [urn:uuid:b15038bf-7e69-4e62-9cdd-50edb029d88b]`, `Sheet1!19 [urn:uuid:afc3498b-5446-4c8b-928f-822a8e148b63]`, `Sheet1!21 [urn:uuid:206e2eaa-765b-491b-ad9c-73f144f048a1]`, `Sheet1!22 [urn:uuid:dbdcee3f-bbdf-4a35-b92e-a14dd26e6239]`, `Sheet1!29 [urn:uuid:c912bc86-4ac6-4200-8606-7fda6005542f]`, `Sheet1!34 [urn:uuid:b1421726-3675-4b2a-9824-150e108157e4]`, `Sheet1!4 [urn:uuid:1b7c27d4-1b0e-461f-8a77-7a81631ab342]`, `Sheet1!41 [urn:uuid:7caa02f4-26a1-4e81-b709-5c2116636f65]`, `Sheet1!45 [urn:uuid:9ea02b02-c86b-4a0b-a56b-47c1dea0bfa4]`, `Sheet1!6 [urn:uuid:06782965-88c5-4345-ab99-ea027513ec86]`, `Sheet1!7 [urn:uuid:99b22791-b2d1-4667-901e-861a44f2b8a2]`, `Sheet2!15 [urn:uuid:02294d3c-f88d-4d3d-921e-8d6c00457476]`, `Sheet2!55 [urn:uuid:43ad1a14-e8a4-48d5-ae2b-3b5a5b28f8d3]` |
 | `bfo:TemporalRegion` | class | label_style_key | temporal region | `http://purl.obolibrary.org/obo/BFO_0000008` | `Sheet1!18 [urn:uuid:1a25c5c5-795c-444c-ba3b-e0578f9e715b]`, `Sheet1!25 [urn:uuid:b891bb2b-0093-49ff-aa86-2a68a732686d]` |
 | `bfo:bearer_of` | object_property | label_style_key | bearer of | `http://purl.obolibrary.org/obo/BFO_0000196` | `Sheet1!37 [urn:uuid:ee7f2f05-bc8e-4477-bb58-0f40e6da81d0]`, `Sheet1!38 [urn:uuid:2902e2b3-44f8-4f81-8ca9-2def4b68befd]`, `Sheet1!40 [urn:uuid:98b1044d-6bfe-41d2-89aa-cdc87e524e4c]`, `Sheet2!18 [urn:uuid:3af8734c-ac86-46b0-8c0c-27a19525bc1e]` |
-| `bfo:generically_depends_on` | object_property | label_style_key | generically depends on | `http://purl.obolibrary.org/obo/BFO_0000084` | `Sheet2!16 [urn:uuid:2ae25d88-9551-45e7-a2b9-7735575e4d8f]` |
 | `bfo:has_continuant_part` | object_property | label_style_key | has continuant part | `http://purl.obolibrary.org/obo/BFO_0000178` | `Sheet2!56 [urn:uuid:158c0cce-2c1d-4baf-90b5-243d7cdce34d]` |
 | `bfo:has_occurrent_part` | object_property | label_style_key | has occurrent part | `http://purl.obolibrary.org/obo/BFO_0000117` | `Sheet1!17 [urn:uuid:124e6b06-906a-47be-a459-92babef3992e]`, `Sheet1!19 [urn:uuid:afc3498b-5446-4c8b-928f-822a8e148b63]`, `Sheet1!20 [urn:uuid:335606ce-18b3-43d9-b13e-7301015c9d26]`, `Sheet1!42 [urn:uuid:d8b4d0f0-d8d4-4f22-ae7c-2bbdebcdd51f]` |
 | `bfo:has_participant` | object_property | label_style_key | has participant | `http://purl.obolibrary.org/obo/BFO_0000057` | `Sheet1!26 [urn:uuid:3ddcc935-040b-450b-8ffa-8b0972e33c3b]`, `Sheet2!18 [urn:uuid:3af8734c-ac86-46b0-8c0c-27a19525bc1e]`, `Sheet2!46 [urn:uuid:af48aae7-263f-436d-a76a-4e7232c609c5]`, `Sheet2!47 [urn:uuid:c0a94c70-33c7-41ac-8906-49ad2efe48b5]` |
 | `bfo:has_realization` | object_property | label_style_key | has realization | `http://purl.obolibrary.org/obo/BFO_0000054` | `Sheet1!13 [urn:uuid:8897fadf-b70f-4d81-a08c-a072f873f82b]`, `Sheet1!15 [urn:uuid:86e97aa4-dc26-4d62-bef6-52cf36869bc8]`, `Sheet1!16 [urn:uuid:823bbbdf-b4f1-4e45-8b0a-5597306e6b69]`, `Sheet1!17 [urn:uuid:124e6b06-906a-47be-a459-92babef3992e]`, `Sheet1!18 [urn:uuid:1a25c5c5-795c-444c-ba3b-e0578f9e715b]`, `Sheet1!19 [urn:uuid:afc3498b-5446-4c8b-928f-822a8e148b63]`, `Sheet1!20 [urn:uuid:335606ce-18b3-43d9-b13e-7301015c9d26]`, `Sheet1!23 [urn:uuid:2befdb79-d016-45f8-8c35-69ee93fa731f]`, `Sheet1!24 [urn:uuid:3ac135c9-bfd7-49cf-9c51-4d6e9ed56d87]`, `Sheet1!25 [urn:uuid:b891bb2b-0093-49ff-aa86-2a68a732686d]`, `Sheet1!26 [urn:uuid:3ddcc935-040b-450b-8ffa-8b0972e33c3b]`, `Sheet1!27 [urn:uuid:624eaef2-892a-4b9d-8ed6-08c79571710f]`, `Sheet1!28 [urn:uuid:304f62a7-9160-4857-9c39-04a7215b1bb0]`, `Sheet1!30 [urn:uuid:ad8cba71-f987-4e6a-b9c0-7660d5cbc8a7]`, `Sheet1!37 [urn:uuid:ee7f2f05-bc8e-4477-bb58-0f40e6da81d0]`, `Sheet1!38 [urn:uuid:2902e2b3-44f8-4f81-8ca9-2def4b68befd]`, `Sheet1!40 [urn:uuid:98b1044d-6bfe-41d2-89aa-cdc87e524e4c]`, `Sheet1!41 [urn:uuid:7caa02f4-26a1-4e81-b709-5c2116636f65]`, `Sheet1!42 [urn:uuid:d8b4d0f0-d8d4-4f22-ae7c-2bbdebcdd51f]`, `Sheet1!43 [urn:uuid:d180e765-d4d1-4578-a33a-6e96308e01db]`, `Sheet1!44 [urn:uuid:c15208c5-847f-4de3-a456-4037142ca542]`, `Sheet2!18 [urn:uuid:3af8734c-ac86-46b0-8c0c-27a19525bc1e]` |
 | `bfo:inheres_in` | object_property | label_style_key | inheres in | `http://purl.obolibrary.org/obo/BFO_0000197` | `Sheet1!4 [urn:uuid:1b7c27d4-1b0e-461f-8a77-7a81631ab342]`, `Sheet1!7 [urn:uuid:99b22791-b2d1-4667-901e-861a44f2b8a2]`, `Sheet2!19 [urn:uuid:e866de80-683d-4138-a713-be9646d37148]` |
-| `bfo:is_carrier_of` | object_property | label_style_key | is carrier of | `http://purl.obolibrary.org/obo/BFO_0000101` | `Sheet2!17 [urn:uuid:637399a9-a264-49f7-bab8-33f2128646ab]` |
 | `bfo:occupies_temporal_region` | object_property | label_style_key | occupies temporal region | `http://purl.obolibrary.org/obo/BFO_0000199` | `Sheet1!18 [urn:uuid:1a25c5c5-795c-444c-ba3b-e0578f9e715b]`, `Sheet1!25 [urn:uuid:b891bb2b-0093-49ff-aa86-2a68a732686d]`, `Sheet2!11 [urn:uuid:2abe4468-736d-4db8-99d7-1670730a6710]` |
 | `bfo:occurrent_part_of` | object_property | label_style_key | occurrent part of | `http://purl.obolibrary.org/obo/BFO_0000132` | `Sheet1!4 [urn:uuid:1b7c27d4-1b0e-461f-8a77-7a81631ab342]`, `Sheet1!7 [urn:uuid:99b22791-b2d1-4667-901e-861a44f2b8a2]` |
 | `bfo:participates_in` | object_property | label_style_key | participates in | `http://purl.obolibrary.org/obo/BFO_0000056` | `Sheet1!19 [urn:uuid:afc3498b-5446-4c8b-928f-822a8e148b63]`, `Sheet2!19 [urn:uuid:e866de80-683d-4138-a713-be9646d37148]`, `Sheet2!50 [urn:uuid:6c58598b-8de6-4559-82fa-53a6efc6a3c4]`, `Sheet2!59 [urn:uuid:17528e16-1f22-4c6e-9e29-e3b3c6699804]` |
@@ -134,8 +130,6 @@ Freshness is determined from content hashes, not file timestamps.
 | `cco:prescribed_by` | object_property | label_style_key | prescribed by | `https://www.commoncoreontologies.org/ont00001920` | `Sheet1!12 [urn:uuid:7b3f908b-b717-4336-9968-8b1083f847d3]`, `Sheet1!13 [urn:uuid:8897fadf-b70f-4d81-a08c-a072f873f82b]`, `Sheet1!15 [urn:uuid:86e97aa4-dc26-4d62-bef6-52cf36869bc8]`, `Sheet1!16 [urn:uuid:823bbbdf-b4f1-4e45-8b0a-5597306e6b69]`, `Sheet1!17 [urn:uuid:124e6b06-906a-47be-a459-92babef3992e]`, `Sheet1!18 [urn:uuid:1a25c5c5-795c-444c-ba3b-e0578f9e715b]`, `Sheet1!19 [urn:uuid:afc3498b-5446-4c8b-928f-822a8e148b63]`, `Sheet1!20 [urn:uuid:335606ce-18b3-43d9-b13e-7301015c9d26]`, `Sheet1!21 [urn:uuid:206e2eaa-765b-491b-ad9c-73f144f048a1]`, `Sheet1!22 [urn:uuid:dbdcee3f-bbdf-4a35-b92e-a14dd26e6239]`, `Sheet1!23 [urn:uuid:2befdb79-d016-45f8-8c35-69ee93fa731f]`, `Sheet1!24 [urn:uuid:3ac135c9-bfd7-49cf-9c51-4d6e9ed56d87]`, `Sheet1!25 [urn:uuid:b891bb2b-0093-49ff-aa86-2a68a732686d]`, `Sheet1!26 [urn:uuid:3ddcc935-040b-450b-8ffa-8b0972e33c3b]`, `Sheet1!27 [urn:uuid:624eaef2-892a-4b9d-8ed6-08c79571710f]`, `Sheet1!28 [urn:uuid:304f62a7-9160-4857-9c39-04a7215b1bb0]`, `Sheet1!30 [urn:uuid:ad8cba71-f987-4e6a-b9c0-7660d5cbc8a7]`, `Sheet1!41 [urn:uuid:7caa02f4-26a1-4e81-b709-5c2116636f65]`, `Sheet1!42 [urn:uuid:d8b4d0f0-d8d4-4f22-ae7c-2bbdebcdd51f]`, `Sheet1!43 [urn:uuid:d180e765-d4d1-4578-a33a-6e96308e01db]`, `Sheet1!44 [urn:uuid:c15208c5-847f-4de3-a456-4037142ca542]`, `Sheet1!45 [urn:uuid:9ea02b02-c86b-4a0b-a56b-47c1dea0bfa4]`, `Sheet2!12 [urn:uuid:377fa547-ff5c-4ffa-af6f-40d291ab2ab9]`, `Sheet2!58 [urn:uuid:6142726b-21b1-4dba-b5ec-a7d6dca4afab]` |
 | `cco:prescribes` | object_property | exact_label | prescribes | `https://www.commoncoreontologies.org/ont00001942` | `Sheet1!39 [urn:uuid:d88535da-ab7c-409c-b928-a9b0760b4607]`, `Sheet2!57 [urn:uuid:4afaf231-5478-4a50-9a12-0cbf59d78d7e]` |
 | `cco:process_started_by` | object_property | label_style_key | process started by | `https://www.commoncoreontologies.org/ont00001962` | `Sheet2!62 [urn:uuid:51c8556f-9b82-4113-a9d7-c733e70cf8cd]` |
-| `cco:represented_by` | object_property | label_style_key | represented by | `https://www.commoncoreontologies.org/ont00001873` | `Sheet2!16 [urn:uuid:2ae25d88-9551-45e7-a2b9-7735575e4d8f]` |
-| `cco:represents` | object_property | exact_label | represents | `https://www.commoncoreontologies.org/ont00001938` | `Sheet2!17 [urn:uuid:637399a9-a264-49f7-bab8-33f2128646ab]` |
 
 ## Malformed Or Unresolved Rows
 
@@ -154,12 +148,12 @@ Freshness is determined from content hashes, not file timestamps.
 - Unique RowID count: 105
 - Processed governed row count: 105
 - Identity-audit row count: 105
-- Canonical authoritative axiom count: 105
-- Unique authoritative axiom count: 105
+- Canonical authoritative axiom count: 103
+- Unique authoritative axiom count: 103
 - Count reconciliation result: PASS
 - RowID-set reconciliation result: PASS
 - Location reconciliation result: PASS
-- Identity-audit completeness result: PASS
+- Identity-audit completeness result: FAIL
 - Duplicate RowID result: PASS
 - Duplicate authoritative-axiom result: PASS
 
@@ -225,8 +219,8 @@ The RowID is persistent identity; the source-expression SHA-256 excludes locatio
 | `urn:uuid:79e12baa-9467-4494-bdf3-b6906f5a81a7` | `Sheet2` | 13 | `domain` | `a9b704a9c29dddd44336baec70b661c6f8c99801c1b767194966c92924195b3c` | `ObjectPropertyDomain(<http://www.w3.org/ns/ssn/systems/inCondition> ObjectUnionOf(<http://www.w3.org/ns/ssn/systems/OperatingRange> <http://www.w3.org/ns/ssn/systems/SurvivalRange> <http://www.w3.org/ns/ssn/systems/SystemCapability>))` | _(blank)_ |
 | `urn:uuid:2018c5db-cb41-4a54-aa97-df5df82f0286` | `Sheet2` | 14 | `object_property_mapping` | `19f9b7df8bb9c81f7b2ec9d2244b3f9864e53c21d1e54ceeb59f8e7d2704f613` | `SubObjectPropertyOf(<http://www.w3.org/ns/ssn/systems/qualityOfObservation> <https://www.commoncoreontologies.org/ont00001986>)` | _(blank)_ |
 | `urn:uuid:02294d3c-f88d-4d3d-921e-8d6c00457476` | `Sheet2` | 15 | `domain` | `2f4f4b8a49cd6309baf0b3b420cca9f68d899f4d6847a47f1045f97fd4eb90ec` | `ObjectPropertyDomain(<http://www.w3.org/ns/ssn/isPropertyOf> ObjectUnionOf(<http://purl.obolibrary.org/obo/BFO_0000020> <http://purl.obolibrary.org/obo/BFO_0000144>))` | _(blank)_ |
-| `urn:uuid:2ae25d88-9551-45e7-a2b9-7735575e4d8f` | `Sheet2` | 16 | `property_chain` | `bfd39659b1869355d5164e90202c5d221a3d6363266d39483da4b91b727a63eb` | `SubObjectPropertyOf(ObjectPropertyChain(<https://www.commoncoreontologies.org/ont00001873> <http://purl.obolibrary.org/obo/BFO_0000084>) <http://www.w3.org/ns/sosa/hasSample>)` | _(blank)_ |
-| `urn:uuid:637399a9-a264-49f7-bab8-33f2128646ab` | `Sheet2` | 17 | `property_chain` | `b1a2c6cce4e6700710ae9ca757188aa405e374fd6751a4cfc8793c257116fb7e` | `SubObjectPropertyOf(ObjectPropertyChain(<http://purl.obolibrary.org/obo/BFO_0000101> <https://www.commoncoreontologies.org/ont00001938>) <http://www.w3.org/ns/sosa/isSampleOf>)` | _(blank)_ |
+| `urn:uuid:2ae25d88-9551-45e7-a2b9-7735575e4d8f` | `Sheet2` | 16 | `explicit_blank` | `78883d8f62ff3dc679b238f1a17e47db6cc0b481a2859aa729723dea670aadb6` | _(none)_ | Property-chain mapping deferred because an owl:propertyChainAxiom makes sosa:hasSample non-simple, which conflicts with the pinned SOSA/SSN inverse-functional declaration. The source ontology remains unchanged; the representation intent belongs in a rule, SHACL, or annotation layer rather than the OWL 2 DL mapping product. |
+| `urn:uuid:637399a9-a264-49f7-bab8-33f2128646ab` | `Sheet2` | 17 | `explicit_blank` | `46baaa1e5b7a959dbb7cc484f1c977f95487847d7ea493abe60fd55d4df42876` | _(none)_ | Property-chain mapping deferred because an owl:propertyChainAxiom makes sosa:isSampleOf non-simple, which conflicts with the pinned SOSA/SSN functional declaration and the minimum-cardinality restriction on sosa:Sample. The source ontology remains unchanged; the representation intent belongs in a rule, SHACL, or annotation layer rather than the OWL 2 DL mapping product. |
 | `urn:uuid:3af8734c-ac86-46b0-8c0c-27a19525bc1e` | `Sheet2` | 18 | `property_chain` | `9486b4a342f938c087be79e441c7f8767e177df1020995c8ce0c49c1e2fde60e` | `SubObjectPropertyOf(ObjectPropertyChain(<http://purl.obolibrary.org/obo/BFO_0000196> <http://purl.obolibrary.org/obo/BFO_0000054> <http://purl.obolibrary.org/obo/BFO_0000057>) <http://www.w3.org/ns/sosa/hosts>)` | _(blank)_ |
 | `urn:uuid:e866de80-683d-4138-a713-be9646d37148` | `Sheet2` | 19 | `property_chain` | `5029139adaefa0e642d4a632424227c407448858c17b4c5f82acd80e9a7469dc` | `SubObjectPropertyOf(ObjectPropertyChain(<http://purl.obolibrary.org/obo/BFO_0000056> <http://purl.obolibrary.org/obo/BFO_0000055> <http://purl.obolibrary.org/obo/BFO_0000197>) <http://www.w3.org/ns/sosa/isHostedBy>)` | _(blank)_ |
 | `urn:uuid:8c9662e8-a69c-4ce1-9d17-381ec3cdc162` | `Sheet2` | 20 | `object_property_mapping` | `d409b9408fd1ef69731e7ee34fc04e7f296348e55bddb62b6d6c0941aa660061` | `SubObjectPropertyOf(<http://www.w3.org/ns/sosa/isActedOnBy> <https://www.commoncoreontologies.org/ont00001886>)` | _(blank)_ |
@@ -279,12 +273,12 @@ The RowID is persistent identity; the source-expression SHA-256 excludes locatio
 - Schema version: `1`
 - Product order: `integrated`, `alignment_core`, `strict_bfo_mapping`, `bfo_projection`, `cco_extension`
 - Governed rows: 105
-- Canonical authoritative axioms: 105
-- Zero-axiom rows: 0
+- Canonical authoritative axioms: 103
+- Zero-axiom rows: 2
 - Target-neutral axioms: 29
 - BFO-bearing axioms: 19
 - CCO-bearing axioms: 25
-- Mixed BFO/CCO axioms: 32
+- Mixed BFO/CCO axioms: 30
 - Disposition reconciliation and canonical serialization: PASS
 - No lossless transformation or weakened projection is approved by this artifact.
 
@@ -308,7 +302,7 @@ This is the maintained authoritative development artifact at the approved produc
 - Integrated-root canonical-axiom reconciliation: PASS
 - Deterministic serialization: PASS
 - Fixed local source closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`
-- Source-closure triple count: 1212
+- Source-closure triple count: 1214
 - Source-closure HermiT return code: 0
 - Source-closure reasoned output produced: yes
 - Source-closure named unsatisfiable classes: 0
@@ -341,51 +335,15 @@ This is the maintained authoritative development artifact at the approved produc
 - Integrated-root and project-module canonical-axiom reconciliation: PASS
 - Deterministic serialization: PASS
 - Pinned merged CCO/BFO validation closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`, `imports/cco.ttl`
-- Pinned closure triple count: 14986
+- Pinned closure triple count: 14988
 - HermiT return code: 0
 - Reasoned output produced: yes
 - Named unsatisfiable classes: 0
 - HermiT result: PASS
 - The validation dependency `imports/cco.ttl` is not imported by the published strict graph and does not authorize CCO mappings or transformations.
-- The 57 CCO-bearing or mixed mappings remain deferred; no transformation or projection is implemented.
+- The 55 CCO-bearing or mixed axioms remain deferred; no transformation or projection is implemented.
 - Formal-release metadata and identity remain deferred.
 
-## BFO Projection
-
-This is the maintained authoritative development artifact at the approved production path; it is not a frozen formal release.
-
-- Path: `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl`
-- Stable ontology IRI: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection`
-- Direct governed projection axioms: 0
-- Direct logical mapping triples: 0
-- Ontology declaration triples: 1
-- Import triples: 1
-- Descriptive metadata annotations: 7
-- Total RDF triples: 9
-- Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`
-- Target-neutral provided transitively: 29
-- BFO-bearing provided through import: 19
-- CCO-bearing deferred without transformation rule: 25
-- Mixed BFO/CCO deferred without transformation rule: 32
-- Imported strict-BFO governed axioms: 19
-- Transitively imported alignment-core governed axioms: 29
-- Project-module closure governed axioms: 48
-- Project graph triples retaining imports: 204
-- Import-stripped local project graph triples: 202
-- Strict/alignment-core governed overlap: 0
-- CCO-extension governed axioms in projection closure: 0
-- Direct graph and integrated-root/project-module reconciliation: PASS
-- Deterministic serialization: PASS
-- Reused strict-BFO closure triple count: 14986
-- Reused strict-BFO HermiT return code: 0
-- Reused strict-BFO reasoned output produced: yes
-- Reused strict-BFO named unsatisfiable classes: 0
-- Reasoning result: PASS (reused from the same-transaction strict-BFO pinned merged CCO/BFO validation closure after exact project-closure equivalence validation)
-- Projection-specific HermiT invocation: none
-- Zero direct projection axioms is intentional and complete for the current governed policy.
-- No transformation rule, weakened consequence, or projected axiom is approved.
-- Future direct projected axioms require governed transformation rules and proof obligations.
-- Formal-release metadata and identity remain deferred.
 
 ## CCO Extension
 
@@ -393,28 +351,28 @@ This is the maintained authoritative development artifact at the approved produc
 
 - Path: `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl`
 - Stable ontology IRI: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension`
-- Direct governed authoritative axioms: 57
+- Direct governed authoritative axioms: 55
 - CCO-bearing axioms: 25
-- Mixed BFO/CCO axioms: 32
+- Mixed BFO/CCO axioms: 30
 - Subclass axioms: 31
 - Equivalent-class axioms: 7
 - Direct subproperty axioms: 16
-- Property-chain axioms: 3
-- Logical RDF triples: 934
+- Property-chain axioms: 1
+- Logical RDF triples: 924
 - Ontology declaration triples: 1
 - Import triples: 1
 - Descriptive metadata annotations: 7
-- Total RDF triples: 943
+- Total RDF triples: 933
 - Import: `http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping`
 - Imported strict-BFO governed axioms: 19
 - Transitively imported alignment-core governed axioms: 29
-- Project-module closure governed axioms: 105
+- Project-module closure governed axioms: 103
 - Pairwise governed overlap: 0
 - RO and unexpected logical-vocabulary audit: PASS
 - Integrated-root and project-module canonical-axiom reconciliation: PASS
 - Deterministic serialization: PASS
 - Pinned merged CCO/BFO validation closure: `imports/sosa.ttl`, `imports/sosa-sampling.ttl`, `imports/ssn.ttl`, `imports/ssn-systems.ttl`, `imports/cco.ttl`
-- Pinned closure triple count: 15928
+- Pinned closure triple count: 15920
 - HermiT return code: 0
 - Reasoned output produced: yes
 - Named unsatisfiable classes: 0
@@ -429,8 +387,8 @@ This is the maintained authoritative development artifact at the approved produc
 - Ontology declaration triples: 1
 - Import triples: 4
 - Descriptive metadata annotations: 7
-- Governed/structural logical triples: 1112
-- Generated ontology triple count: 1124
+- Governed/structural logical triples: 1102
+- Generated ontology triple count: 1114
 - `SSN2BFO.ttl` is generated from `mappings/SSN2BFO-COMS.xlsx` and must not be edited directly.
 - `coms:Reasoning` remained spreadsheet-only and was not emitted into the ontology.
 
@@ -441,13 +399,19 @@ This is the maintained authoritative development artifact at the approved produc
 | ROBOT command | `robot` (resolved from `PATH`) |
 | candidate closure graph path | temporary validation artifact (`coms-candidate-full-closure.ttl`) |
 | reasoned output path | temporary validation artifact (`coms-candidate-full-closure-reasoned.ttl`) |
-| full candidate closure triple count | 15912 |
+| full candidate closure triple count | 15904 |
 | HermiT return code | 0 |
 | reasoned output produced | yes |
 | `owl:Nothing` count | 0 |
 | named unsat count | 0 |
 | named unsat set | clean |
 | overall status | PASS |
+
+### ROBOT Output
+
+```text
+OWL 2 DL Profile Report: [Ontology and imports closure in profile]
+```
 
 ## Parsed/Normalized Axiom Expressions
 
@@ -513,8 +477,6 @@ This section records mapping and domain/range property-typing rows after parsing
 | `Sheet2!13` | `ssn-system:inCondition` | `rdfs:domain` | yes | (ssn-system:SystemCapability or ssn-system:OperatingRange or ssn-system:SurvivalRange) | ObjectUnionOf(http://www.w3.org/ns/ssn/systems/OperatingRange http://www.w3.org/ns/ssn/systems/SurvivalRange http://www.w3.org/ns/ssn/systems/SystemCapability) | `ssn-system:inCondition rdfs:domain ObjectUnionOf(http://www.w3.org/ns/ssn/systems/OperatingRange http://www.w3.org/ns/ssn/systems/SurvivalRange http://www.w3.org/ns/ssn/systems/SystemCapability) .` |
 | `Sheet2!14` | `ssn-system:qualityOfObservation` | `rdfs:subPropertyOf` | yes | cco:has_output | cco:ont00001986 | `ssn-system:qualityOfObservation rdfs:subPropertyOf cco:ont00001986 .` |
 | `Sheet2!15` | `ssn:isPropertyOf` | `rdfs:domain` | yes | (bfo:SpecificallyDependentContinuant or bfo:ProcessProfile) | ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144) | `ssn:isPropertyOf rdfs:domain ObjectUnionOf(http://purl.obolibrary.org/obo/BFO_0000020 http://purl.obolibrary.org/obo/BFO_0000144) .` |
-| `Sheet2!16` | `sosa:hasSample` | `owl:propertyChainAxiom` | yes | cco:represented_by o bfo:generically_depends_on | cco:ont00001873 o bfo:BFO_0000084 | `sosa:hasSample owl:propertyChainAxiom cco:ont00001873 o bfo:BFO_0000084 .` |
-| `Sheet2!17` | `sosa:isSampleOf` | `owl:propertyChainAxiom` | yes | bfo:is_carrier_of o cco:represents | bfo:BFO_0000101 o cco:ont00001938 | `sosa:isSampleOf owl:propertyChainAxiom bfo:BFO_0000101 o cco:ont00001938 .` |
 | `Sheet2!18` | `sosa:hosts` | `owl:propertyChainAxiom` | yes | bfo:bearer_of o bfo:has_realization o bfo:has_participant | bfo:BFO_0000196 o bfo:BFO_0000054 o bfo:BFO_0000057 | `sosa:hosts owl:propertyChainAxiom bfo:BFO_0000196 o bfo:BFO_0000054 o bfo:BFO_0000057 .` |
 | `Sheet2!19` | `sosa:isHostedBy` | `owl:propertyChainAxiom` | yes | bfo:participates_in o bfo:realizes o bfo:inheres_in | bfo:BFO_0000056 o bfo:BFO_0000055 o bfo:BFO_0000197 | `sosa:isHostedBy owl:propertyChainAxiom bfo:BFO_0000056 o bfo:BFO_0000055 o bfo:BFO_0000197 .` |
 | `Sheet2!20` | `sosa:isActedOnBy` | `rdfs:subPropertyOf` | yes | cco:is_affected_by | cco:ont00001886 | `sosa:isActedOnBy rdfs:subPropertyOf cco:ont00001886 .` |
@@ -567,9 +529,9 @@ This section records mapping and domain/range property-typing rows after parsing
 |---|---:|
 | mapped classes | 44 |
 | unmapped classes | 0 |
-| mapped object properties | 30 |
-| unmapped object properties | 0 |
-| explicitly listed blank mappings | 0 |
+| mapped object properties | 28 |
+| unmapped object properties | 2 |
+| explicitly listed blank mappings | 2 |
 | listed only in domain/range property-typing rows | 17 |
 | source terms absent from spreadsheet | 0 |
 | spreadsheet subjects not found in source ontologies | 0 |
@@ -578,9 +540,9 @@ This section records mapping and domain/range property-typing rows after parsing
 
 | Item | Count |
 |---|---:|
-| mappings present in both | 57 |
+| mappings present in both | 55 |
 | mappings only in COMS | 17 |
-| mappings only in pre-COMS legacy ontology | 11 |
+| mappings only in pre-COMS legacy ontology | 13 |
 | class-expression differences | 2 |
 | object-property mapping differences | 0 |
 | property-chain differences | 0 |
@@ -596,4 +558,4 @@ This section records mapping and domain/range property-typing rows after parsing
 
 ## Runtime
 
-- Runtime seconds: 11.34
+- Runtime seconds: 14.13

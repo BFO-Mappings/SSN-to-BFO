@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical schema-1 release-manifest models and validation."""
+"""Canonical schema-2 release-manifest models and validation."""
 
 from __future__ import annotations
 
@@ -15,20 +15,18 @@ from urllib.parse import urlsplit
 from release_context import FormalReleaseContextError, parse_formal_release_context
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 PRODUCT_ORDER = (
     "integrated",
     "alignment_core",
     "strict_bfo_mapping",
-    "bfo_projection",
     "cco_extension",
 )
 FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS = (
-    ("integrated", 15915),
-    ("alignment_core", 1215),
-    ("strict_bfo_mapping", 14992),
-    ("bfo_projection", 15003),
-    ("cco_extension", 15937),
+    ("integrated", 15907),
+    ("alignment_core", 1217),
+    ("strict_bfo_mapping", 14994),
+    ("cco_extension", 15929),
 )
 if tuple(key for key, _ in FORMAL_FIXED_CLOSURE_TRIPLE_COUNTS) != PRODUCT_ORDER:
     raise RuntimeError("formal fixed-closure counts and product order differ")
@@ -36,7 +34,6 @@ PRODUCT_IMPORT_COUNTS = {
     "integrated": 4,
     "alignment_core": 0,
     "strict_bfo_mapping": 1,
-    "bfo_projection": 1,
     "cco_extension": 1,
 }
 INPUT_KEY_ORDER = (
@@ -68,7 +65,6 @@ INCLUDED_FILE_PATH_ORDER = (
     "catalog-v001.xml",
     "current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     "evidence/coms-product-dispositions.json",
     "sources/SSN2BFO-COMS.xlsx",
@@ -530,7 +526,7 @@ def validate_release_manifest_document(document: object) -> tuple[ReleaseManifes
     if top is None:
         return tuple(sorted(set(issues), key=lambda value: value.sort_key))
     if top.get("schema_version") != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected 1"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", f"expected {SCHEMA_VERSION}"))
     try:
         parse_formal_release_context(
             top.get("release_identifier"),

@@ -712,6 +712,14 @@ raise SystemExit(7)
         (repository / "config").mkdir()
         for source in (REPO_ROOT / "tools").glob("*.py"):
             shutil.copy2(source, repository / "tools" / source.name)
+        shutil.copy2(
+            REPO_ROOT / "config/product-role-policy.toml",
+            repository / "config/product-role-policy.toml",
+        )
+        shutil.copy2(
+            REPO_ROOT / "config/sosa-source-version.toml",
+            repository / "config/sosa-source-version.toml",
+        )
         java_bin = self.root / "production-host/bin"
         host_home = self.root / "production-host/home"
         robot_bin = host_home / "bin"
@@ -1354,7 +1362,7 @@ print(json.dumps({
         with mock.patch.object(rehearsal, "_build_candidate", side_effect=record_candidate):
             result = self.rehearse()
         self.assertEqual(result.source_commit, self.commit)
-        self.assertEqual((result.package_file_count, result.archive_member_count), (13, 17))
+        self.assertEqual((result.package_file_count, result.archive_member_count), (12, 16))
         self.assertIsNone(result.output_dir)
         self.assertEqual(rehearsal.snapshot_repository(self.repository, environment), before)
         self.assertEqual(len(candidate_roots), 2)

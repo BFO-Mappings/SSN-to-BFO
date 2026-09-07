@@ -10,6 +10,9 @@ It includes:
 - COMS row-identity validation
 - product-disposition validation
 - modular-product tests
+- SOSA-next maintained-product tests
+- SOSA-next catalog consumer-stack tests
+- SOSA-2023 publication-metadata, formal-rendering, manifest, package, and archive tests
 - publication-metadata validation
 - formal release-context and rendering tests
 - release-package, archive, and rehearsal tests
@@ -46,50 +49,275 @@ make check
 
 ## Dependency and catalog policy
 
-No development XML catalog is required.
+The current SSN/SOSA COMS transaction does not require a development XML
+catalog. It explicitly loads pinned local dependencies under `imports/` and
+resolves maintained current-track project imports through governed local paths.
 
-Validation explicitly loads the pinned local Turtle dependencies under `imports/` and resolves project-module imports through governed local paths.
+The SOSA-next development track has a separate governed catalog at
+`src/sosa-next/catalog-v001.xml`. It resolves 17 local targets:
 
-`imports/cco.ttl` is a flattened merged CCO/BFO validation dependency. It is not a placeholder, mapping authority, or imported component of every published product.
+- eight byte-pinned upstream SOSA files;
+- one governed local source-declaration overlay;
+- the governed merged CCO/BFO dependency;
+- Integrated, BFO Mapping, and CCO Extension;
+- the SOSA-next editor shell.
 
-The XML catalog inside a formal release package is different from a development catalog. It maps exactly the five immutable same-release version IRIs to package-relative products.
+`config/sosa-source-version.toml` is the machine-readable authority for the
+approved source identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`, the full upstream W3C
+commit, the eight upstream source-file hashes, and the separately governed
+overlay.
+
+The Integrated Mapping imports the five governed dependency IRIs required for
+its complete-consumer function: SOSA root, SOSA Systems, SOSA Sampling, the
+source-declaration overlay, and merged CCO/BFO. The modular BFO Mapping is
+import-free, while the CCO Extension imports only the BFO Mapping. The editor
+imports only Integrated.
+
+Catalog resolution keeps all of those imports local during development and
+testing. The BFO and CCO modular products remain independently resolvable.
+
+`src/sosa-next/imports/cco.ttl` is the governed flattened merged CCO/BFO dependency for the SOSA-2023/SOSA-next track. Root `imports/cco.ttl` remains the separate current SSN/SOSA-track dependency and is unchanged. It
+is not a mapping authority or a manually maintained mapping product.
+
+The XML catalog inside a formal current-track release package is a different
+artifact. It maps exactly the four immutable current-track same-release version
+IRIs to package-relative products. The SOSA-next development catalog is not
+copied into that package.
+
+## SOSA-2023 validation
+
+The SOSA-2023 workbook, maintained development products, formal rendering,
+manifest authority, and deterministic package engine have separate focused
+gates:
+
+```bash
+make check-sosa-source-version
+make check-product-role-policy
+make check-sosa-release-scope
+make check-sosa-next
+make check-sosa-next-products
+make check-sosa-next-consumer-stack
+make check-sosa-2023-publication-rendering
+make check-sosa-2023-release-manifest
+make check-sosa-2023-package
+make check-sosa-2023-release-archive
+```
+
+`make check-sosa-source-version` validates the approved immutable source
+identity, exact source and overlay hashes, root SOSA edition version IRI, and
+overlay binding to the approved full upstream commit. It performs no network
+resolution.
+
+`make check-product-role-policy` validates the uniform five-role product
+taxonomy and the rule that a role is materialized only for direct logical
+content or a distinct consumer function.
+
+`make check-sosa-release-scope` validates the separate source-version package
+boundary and its materialized target: Integrated, BFO Mapping, and CCO
+Extension. Alignment Core and BFO Projection remain governed omitted roles.
+
+`make check-sosa-next` validates the 119 governed workbook rows, 55 active
+mappings, zero deferred mappings, 64 no-direct-mapping decisions, zero
+unreviewed rows, the 64-row legacy explicitly-unmapped aggregate, canonical
+identity, and a clean HermiT result for the integrated active mapping. The four
+SOSA datatype-property rows have been substantively reviewed and are final
+no-direct-mapping decisions rather than infrastructure deferrals.
+
+`make check-sosa-next-products` independently rebuilds Integrated, BFO Mapping,
+and CCO Extension; requires byte-identical candidate builds; validates exact
+hashes and triple counts; verifies that the 277-triple BFO+CCO modular logical
+union is isomorphic to the 277-logical-triple Integrated Mapping; checks
+transactional rollback; requires the retired Alignment Core artifact to remain
+absent; and requires zero named unsatisfiable classes in all three reasoning
+profiles.
+
+The fixed development reasoning closures contain:
+
+- 15,240 triples for Integrated;
+- 15,117 triples for BFO Mapping;
+- 15,248 triples for CCO Extension.
+
+`make check-sosa-next-consumer-stack` resolves every development catalog target
+locally, parses all dependency and project entries, verifies the exact
+Integrated and modular import boundaries, loads the 294-triple editor project
+closure, and confirms that BFO Mapping and CCO Extension remain independently
+resolvable.
+
+`make check-sosa-2023-publication-rendering` validates the separate SOSA-2023
+publication-metadata authority and renders all three formal products twice
+under a fixed synthetic release context. It requires exact stable and version
+IRIs, exact formal import boundaries, preservation of the development logical
+graphs, byte-identical independent renders, and the locked synthetic formal
+byte contract:
+
+- Integrated: 277 logical triples, 292 total triples,
+  SHA-256 `539c07541bf20e5305fa675fa34b54899fe2bd3be31cc33c865d367b3e7dbe43`;
+- Strict BFO Mapping: 154 logical triples, 165 total triples,
+  SHA-256 `8eadb56c78b215fb7b623dede6071b6b412e2ed7eb2a85e694a372310a700125`;
+- CCO Extension: 123 logical triples, 135 total triples,
+  SHA-256 `d3b6f3324fa2b8931760c1d743e37984d1198a124abc7c7bdcf2195370428f3d`.
+
+The formal Integrated product imports the official SOSA root, Systems, and
+Sampling IRIs plus merged CCO/BFO. The local source-declaration overlay remains
+governed source/validation evidence but is not a published ontology import.
+Formal BFO Mapping is import-free. Formal CCO Extension imports the same-release
+formal BFO Mapping version IRI.
+
+`make check-sosa-2023-release-manifest` validates the separate SOSA-2023
+schema-v1 manifest authority. The canonical evidence model records 31 governed
+inputs, including the package runtime, builder, and checker as byte-affecting
+non-packaged inputs; four formal external dependencies; the exact three-product
+formal inventory; fixed HermiT closure counts of 15,243 / 15,120 / 15,254; and
+an 11-member included-file evidence inventory.
+
+The Sampling dependency evidence records the ontology identity actually
+declared by the pinned file, `http://www.w3.org/ns/sosa/sam/`. This is
+deliberately distinct from the formal Integrated import
+`http://www.w3.org/ns/sosa/sampling/`.
+
+`make check-sosa-2023-package` runs the package-runtime and package-construction
+regressions. The production surfaces are
+`tools/sosa_2023_release_runtime.py`, `tools/sosa_2023_build_release.py`, and
+`tools/sosa_2023_check_release.py`; they remain separate from the current-track
+release engine.
+
+A complete synthetic SOSA-2023 package contains exactly 13 regular files:
+
+```text
+<release-id>/
+  LICENSE
+  RELEASE-NOTES.md
+  SHA256SUMS
+  catalog-v001.xml
+  manifest.json
+  sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda/
+    sosa-bfo-mapping.ttl
+    sosa-cco-extension.ttl
+    sosa-integrated.ttl
+  sources/
+    SOSA-2023-to-BFO-COMS.xlsx
+    product-role-policy.toml
+    sosa-2023-publication-metadata.toml
+    sosa-release-scope.toml
+    sosa-source-version.toml
+```
+
+The manifest evidences 11 package members. `manifest.json` and `SHA256SUMS`
+are excluded from the manifest's included-file records to avoid circularity.
+`SHA256SUMS` covers the other 12 files and excludes itself.
+
+Package construction renders from the copied package inputs, generates the
+canonical three-entry same-release catalog, performs fixed-closure HermiT
+validation, constructs two independent complete packages, and requires all 13
+files to be byte-identical before retaining a candidate. The read-only checker
+recomputes product, input, dependency, catalog, checksum, validation-environment,
+and included-file evidence and can independently reconstruct a complete package.
+The full reconstruction regression requires 13/13 byte identity while preserving
+the original package bytes and mtimes.
+
+`release-notes/SOSA-2023-SYNTHETIC-2099-01-02.md` is a deterministic test
+fixture only. Package and archive tests create only temporary synthetic
+artifacts; they do not create a tag, GitHub release, persistent-IRI deployment,
+or actual publication.
+
+`make check-sosa-2023-release-archive` validates the separate deterministic
+SOSA-2023 archive authority in `tools/sosa_2023_release_archive.py`. It retains
+the raw-POSIX-USTAR hardening of the current-track archive engine while binding
+it to the separate 13-file SOSA-2023 package and its exact two-directory
+internal structure.
+
+The canonical archive contains 16 members and uses the internal top level
+`SOSA-2023-<release-id>/`. The external archive filename includes the full
+immutable source-version identity so that a SOSA-2023 archive cannot collide
+with a current-track archive for the same release date. The lowercase SHA-256
+sidecar remains outside the archive.
+
+For the synthetic `2099-01-02` contract, the permanent regression builds the
+real 13-file package, constructs the archive twice from those same package
+bytes, and requires byte-identical archive and sidecar outputs. It validates
+the raw USTAR framing and member authority and requires archive validation to
+leave the package, archive, and sidecar unchanged.
+
+The package manifest deliberately records the actual validation environment,
+including Python and Java runtime identity. Consequently, complete package
+bytes—and therefore the whole-archive SHA-256 and potentially its padded byte
+size—may differ across validated environments. The archive contract does not
+claim a cross-environment whole-archive hash or size. The sidecar remains
+exactly 140 bytes under the governed filename and checksum grammar.
+
+`make check-sosa-2023-release-rehearsal` validates the separate SOSA-2023
+clean-source rehearsal authority in `tools/sosa_2023_rehearse_release.py`.
+The rehearsal requires the requested source commit to equal the clean invoking
+HEAD and builds two isolated detached local clones with Python socket access
+blocked. Each candidate independently builds and validates the complete package
+and its archive and sidecar, with checkout integrity checked after every phase.
+Complete package bytes and parsed manifests must agree across candidates, and
+archive and sidecar bytes must be identical. Verify mode retains no output;
+build mode can publish only after the isolated proof succeeds, to an explicit
+absent external destination through atomic no-replace publication.
+
+These SOSA-2023 gates, including the separate release-rehearsal focused gate,
+are included in `make check` and hosted CI. Approval of a real release context
+and release notes, the final real rehearsal, and actual publication remain
+later milestones.
 
 ## Publication metadata
 
-`config/publication-metadata.toml` is the sole editable publication-metadata source.
+Publication metadata is track-specific.
 
-Development-mode validation:
+`config/publication-metadata.toml` remains the sole editable metadata authority
+for the current four-product formal-release track.
+
+`config/sosa-2023-publication-metadata.toml` is the separate metadata authority
+for the three-product SOSA-2023 formal target. Its canonical product order is
+Integrated, Strict BFO Mapping, and CCO Extension. Its stable ontology IRIs and
+release-IRI suffixes use the approved immutable source-version identity
+`sosa-2023-af425a0454ec00512a5ebfa2873fe35a077f5fda`; formal ontology headers
+contain no `sosa-next` or `/development/` identity.
+
+The common metadata loader defaults to the current-track product order for
+backward compatibility and accepts an explicit canonical product order for a
+separate governed track. Existing current-track metadata bytes and formal
+rendering remain unchanged.
+
+Current-track development-mode validation remains:
 
 ```bash
 make check-publication-metadata
 python tools/check_publication_metadata.py
 ```
 
-Formal rendering requires:
+SOSA-2023 publication metadata and rendering are validated together by:
 
-- a real `YYYY-MM-DD` release identifier
-- the matching release date
-- a `vYYYY-MM-DD` Git tag
-- a full lowercase 40-hex source commit
+```bash
+make check-sosa-2023-publication-rendering
+```
 
-Formal renderers:
+Formal rendering requires a complete release context:
 
-- preserve stable ontology IRIs
-- use immutable-release authority status
-- add `owl:versionIRI`
-- add plain `owl:versionInfo`
-- add `dcterms:issued` as `xsd:date`
-- rewrite modular imports to same-release version IRIs
+- a real `YYYY-MM-DD` release identifier;
+- the matching release date;
+- a `vYYYY-MM-DD` Git tag;
+- a full lowercase 40-hex source commit.
 
-`make check-release-rendering` validates deterministic bytes, logical-graph preservation, closure counts, and independent HermiT consistency.
+Both formal rendering systems preserve stable ontology IRIs, use the
+immutable-release authority status, add `owl:versionIRI`, plain
+`owl:versionInfo`, and `dcterms:issued` as `xsd:date`, and preserve the
+development logical graph.
 
-## Release package
+The SOSA-2023 renderer remains a pure in-memory rendering capability. The
+separate SOSA-2023 package engine invokes that renderer from copied package
+inputs and is validated independently by `make check-sosa-2023-package`. The
+current-track release machinery remains separate and unchanged.
 
-`tools/build_release.py` builds a deterministic candidate package only at an explicit absent output directory.
+## Current-track release package
+
+`tools/build_release.py` builds a deterministic current-track candidate package only at an explicit absent output directory.
 
 `tools/check_release.py validate --package-dir PATH` validates an existing package read-only.
 
-A formal package contains exactly 13 regular files:
+A formal package contains exactly 12 regular files:
 
 ```text
 <release-id>/
@@ -100,7 +328,6 @@ A formal package contains exactly 13 regular files:
   catalog-v001.xml
   current-ssn-sosa/ssn-sosa-alignment-core.ttl
   current-ssn-sosa/ssn-sosa-bfo-mapping.ttl
-  current-ssn-sosa/ssn-sosa-bfo-projection.ttl
   current-ssn-sosa/ssn-sosa-cco-extension.ttl
   evidence/coms-product-dispositions.json
   manifest.json

@@ -24,12 +24,11 @@ from release_context import (
 )
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 PRODUCT_ORDER = (
     "integrated",
     "alignment_core",
     "strict_bfo_mapping",
-    "bfo_projection",
     "cco_extension",
 )
 TOP_LEVEL_FIELDS = ("schema_version", "publication", "products")
@@ -230,7 +229,7 @@ def release_project_imports(
         return ()
     if product_key == "strict_bfo_mapping":
         return (release_version_iri(metadata, "alignment_core", context),)
-    if product_key in {"bfo_projection", "cco_extension"}:
+    if product_key == "cco_extension":
         return (release_version_iri(metadata, "strict_bfo_mapping", context),)
     raise PublicationMetadataError(
         [_issue("UNKNOWN_PRODUCT", f"products.{product_key}", "product is not governed")]
@@ -848,14 +847,18 @@ def _iri_validation(
         issues.append(_issue(code, field, problem))
 
 
-def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, ...]:
+def validate_metadata(
+    metadata: PublicationMetadata,
+    *,
+    product_order: tuple[str, ...] = PRODUCT_ORDER,
+) -> tuple[ValidationIssue, ...]:
     """Return semantic issues in deterministic policy order."""
 
     issues: list[ValidationIssue] = []
     if type(metadata.schema_version) is not int:
-        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 3"))
+        issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 4"))
     elif metadata.schema_version != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 3"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 4"))
 
     publication = metadata.publication
     for attribute in PUBLICATION_FIELDS:
@@ -871,7 +874,7 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
             _issue(
                 "UNSUPPORTED_LANGUAGE",
                 "publication.default_language",
-                "schema version 3 requires the exact language code 'en'",
+                "schema version 4 requires the exact language code 'en'",
             )
         )
     if (
@@ -951,11 +954,11 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
         )
 
     keys = tuple(product.key for product in metadata.products)
-    if set(keys) != set(PRODUCT_ORDER) or len(keys) != len(PRODUCT_ORDER):
+    if set(keys) != set(product_order) or len(keys) != len(product_order):
         issues.append(
-            _issue("PRODUCT_SET", "products", "expected exactly: " + ", ".join(PRODUCT_ORDER))
+            _issue("PRODUCT_SET", "products", "expected exactly: " + ", ".join(product_order))
         )
-    elif keys != PRODUCT_ORDER:
+    elif keys != product_order:
         issues.append(_issue("PRODUCT_ORDER", "products", "products are not in canonical order"))
 
     for product in metadata.products:
@@ -1031,8 +1034,12 @@ def validate_metadata(metadata: PublicationMetadata) -> tuple[ValidationIssue, .
     return tuple(issues)
 
 
-def load_metadata(path: str | Path) -> PublicationMetadata:
-    """Load UTF-8 TOML and return validated schema-3 metadata."""
+def load_metadata(
+    path: str | Path,
+    *,
+    product_order: tuple[str, ...] = PRODUCT_ORDER,
+) -> PublicationMetadata:
+    """Load UTF-8 TOML and return validated schema-4 metadata."""
 
     source = Path(path)
     try:
@@ -1052,9 +1059,9 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
     schema_version = top.get("schema_version")
     if type(schema_version) is not int:
         if "schema_version" in top:
-            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 3"))
+            issues.append(_issue("WRONG_TYPE", "schema_version", "expected integer 4"))
     elif schema_version != SCHEMA_VERSION:
-        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 3"))
+        issues.append(_issue("SCHEMA_VERSION", "schema_version", "expected schema version 4"))
 
     publication_table = (
         _table(top["publication"], "publication", PUBLICATION_FIELDS, issues)
@@ -1068,16 +1075,16 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
     }
 
     products_table = (
-        _table(top["products"], "products", PRODUCT_ORDER, issues)
+        _table(top["products"], "products", product_order, issues)
         if "products" in top
         else {}
     )
-    if set(products_table) == set(PRODUCT_ORDER) and tuple(products_table) != PRODUCT_ORDER:
+    if set(products_table) == set(product_order) and tuple(products_table) != product_order:
         issues.append(_issue("PRODUCT_ORDER", "products", "products are not in canonical order"))
 
     release_base = publication_values.get("release_iri_base")
     products: list[ProductPublicationMetadata] = []
-    for key in PRODUCT_ORDER:
+    for key in product_order:
         if key not in products_table:
             continue
         product_table = _table(
@@ -1116,14 +1123,17 @@ def load_metadata(path: str | Path) -> PublicationMetadata:
         publication=publication,
         products=tuple(products),
     )
-    semantic_issues = validate_metadata(metadata)
+    semantic_issues = validate_metadata(
+        metadata,
+        product_order=product_order,
+    )
     if semantic_issues:
         raise PublicationMetadataError(semantic_issues)
     return metadata
 
 
 def validate_release_identifier(value: str) -> str:
-    """Compatibility wrapper for the schema-3 date-only release grammar."""
+    """Compatibility wrapper for the schema-4 date-only release grammar."""
 
     try:
         return validate_context_release_identifier(value)

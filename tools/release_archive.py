@@ -48,7 +48,6 @@ ARCHIVE_MEMBER_TEMPLATES = (
     "SSN2BFO-{release_id}/current-ssn-sosa/",
     "SSN2BFO-{release_id}/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "SSN2BFO-{release_id}/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "SSN2BFO-{release_id}/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "SSN2BFO-{release_id}/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
     "SSN2BFO-{release_id}/evidence/",
     "SSN2BFO-{release_id}/evidence/coms-product-dispositions.json",
@@ -173,8 +172,22 @@ def _archive_layout_authority_issues(release_identifier: str) -> tuple[ReleaseAr
         issues.append(archive_issue("ARCHIVE_LAYOUT_AUTHORITY", "archive", "file authority differs from package authority"))
     if directories != EXPECTED_DIRECTORIES:
         issues.append(archive_issue("ARCHIVE_LAYOUT_AUTHORITY", "archive", "directory authority differs from package authority"))
-    if len(members) != 17 or len(set(members)) != 17:
-        issues.append(archive_issue("ARCHIVE_LAYOUT_AUTHORITY", "archive", "expected exactly 17 unique members"))
+    expected_member_count = (
+        1
+        + len(EXPECTED_DIRECTORIES)
+        + len(PACKAGE_FILE_PATHS)
+    )
+    if (
+        len(members) != expected_member_count
+        or len(set(members)) != expected_member_count
+    ):
+        issues.append(
+            archive_issue(
+                "ARCHIVE_LAYOUT_AUTHORITY",
+                "archive",
+                f"expected exactly {expected_member_count} unique members",
+            )
+        )
     return tuple(sorted(set(issues), key=lambda value: value.sort_key))
 
 

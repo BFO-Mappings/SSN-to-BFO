@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+import product_role_policy
 from coms_row_identity import (
     CANONICALIZATION_VERSION,
     AuthoritativeAxiomIdentity,
@@ -87,7 +88,7 @@ SUPPORTED_PREDICATE_IRIS = frozenset(
         "http://www.w3.org/2000/01/rdf-schema#range",
     }
 )
-POLICY_PRODUCTS = frozenset(
+SUPPORTED_POLICY_PRODUCTS = frozenset(
     {
         "integrated",
         "alignment_core",
@@ -96,6 +97,45 @@ POLICY_PRODUCTS = frozenset(
         "cco_extension",
     }
 )
+
+REPOSITORY_PRODUCT_ROLE_ORDER = tuple(
+    product_role_policy
+    .load_product_role_policy()
+    .role_order
+)
+DISPOSITION_PRODUCT_ROLE_ORDER = (
+    "integrated",
+    "alignment_core",
+    "strict_bfo_mapping",
+    "bfo_projection",
+    "cco_extension",
+)
+
+POLICY_PRODUCTS = frozenset(
+    DISPOSITION_PRODUCT_ROLE_ORDER
+)
+
+# The repository-wide taxonomy also contains independently governed
+# product roles. This module governs only the BFO/CCO COMS disposition
+# matrix, so project the supported disposition roles out of the global
+# order while preserving their canonical relative order.
+PRODUCT_ROLE_ORDER = tuple(
+    role_key
+    for role_key
+    in REPOSITORY_PRODUCT_ROLE_ORDER
+    if role_key in POLICY_PRODUCTS
+)
+
+if (
+    PRODUCT_ROLE_ORDER
+    != DISPOSITION_PRODUCT_ROLE_ORDER
+):
+    raise RuntimeError(
+        "product-role policy role_order "
+        "must contain each supported "
+        "BFO/CCO disposition role exactly "
+        "once in canonical relative order"
+    )
 
 
 @dataclass(frozen=True)
@@ -530,7 +570,9 @@ def build_disposition_document(
     """Build canonical disposition evidence from resolved COMS row inputs."""
 
     _validate_hashes(input_hashes)
-    product_keys = tuple(product.key for product in publication_metadata.products)
+    # Publication metadata remains provenance input, but materialized
+    # ontology products do not define the disposition-role taxonomy.
+    product_keys = PRODUCT_ROLE_ORDER
     rows: list[DispositionRowRecord] = []
     issues: list[ValidationIssue] = []
     seen_rows: set[str] = set()

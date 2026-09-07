@@ -36,18 +36,16 @@ SYNTHETIC_CONTEXT = parse_formal_release_context(
     "0123456789abcdef0123456789abcdef01234567",
 )
 FORMAL_HASHES = {
-    "integrated": "fa076bfd3b4b279b14e66e52642d419bafce0c861aa51854f1dba18f39a163a4",
+    "integrated": "1e933f8bcf80a3479dc5eba88ccc0f3dfefd3b83c248ddfffd8222d2b5a57954",
     "alignment_core": "c40ec6372eeb43d37fb7fc4775535574ac4a4ee1e218fbe6e840e35b0ba20716",
     "strict_bfo_mapping": "68a91fc766a7ce8ace367d63d70b22f30adfdbb88a41cf9a622d2db956a69be9",
-    "bfo_projection": "9c995fa0b6d8e3acfabbd495515fe36ffec58c4f353249ee9f3ee195c74b9673",
-    "cco_extension": "960160a4d422a8391c29a2e4ff6c211e6047cdb9fa11cebdbf1497d14e3311f2",
+    "cco_extension": "b8645db9d6c8cf49f8b223ce0bd37c65bffed9aac8bf6d41f53d37b51a38d300",
 }
 DEVELOPMENT_HASHES = {
-    "integrated": "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+    "integrated": "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
     "alignment_core": "17695ef17379924449153b2c92ffaed6b57d497a1b2d1e854f584614cebec770",
     "strict_bfo_mapping": "676b31620df10db5c26c46bcc44b2dfd5939d606b16e0fa8a910926e8497c3af",
-    "bfo_projection": "b5c1163eb6ab24c2e111e9e76c7b97acb20d897c9d1abc3daa555628206da5b0",
-    "cco_extension": "fc98e6fafa1a3a5c8612fd9b8e4e571e9a382faa3f9ca9801e64533b91f00aaf",
+    "cco_extension": "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5",
 }
 PRODUCT_PATHS = {
     "integrated": REPO_ROOT / "SSN2BFO.ttl",
@@ -55,8 +53,6 @@ PRODUCT_PATHS = {
     / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
     "strict_bfo_mapping": REPO_ROOT
     / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-    "bfo_projection": REPO_ROOT
-    / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
     "cco_extension": REPO_ROOT
     / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
 }
@@ -87,7 +83,6 @@ def artifact_bytes(product_set) -> dict[str, bytes]:
         "integrated": product_set.integrated.serialized_bytes,
         "alignment_core": product_set.alignment_core.serialized_bytes,
         "strict_bfo_mapping": product_set.strict_bfo_mapping.serialized_bytes,
-        "bfo_projection": product_set.bfo_projection.serialized_bytes,
         "cco_extension": product_set.cco_extension.serialized_bytes,
     }
 
@@ -131,7 +126,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
         prefixes = {
             "alignment_core": modular.PREFIXES,
             "strict_bfo_mapping": modular.STRICT_BFO_PREFIXES,
-            "bfo_projection": modular.BFO_PROJECTION_PREFIXES,
             "cco_extension": modular.CCO_EXTENSION_PREFIXES,
         }[product_key]
         return imports, modular.GENERATED_NOTICE, prefixes, None
@@ -162,17 +156,15 @@ class FormalReleaseRenderingTests(unittest.TestCase):
 
     def test_exact_direct_graph_partitions(self) -> None:
         expected = {
-            "integrated": (1, 4, 7, 3, 1112, 1127, 105),
+            "integrated": (1, 4, 7, 3, 1102, 1117, 103),
             "alignment_core": (1, 0, 7, 3, 53, 64, 29),
             "strict_bfo_mapping": (1, 1, 7, 3, 125, 137, 19),
-            "bfo_projection": (1, 1, 7, 3, 0, 12, 0),
-            "cco_extension": (1, 1, 7, 3, 934, 946, 57),
+            "cco_extension": (1, 1, 7, 3, 924, 936, 55),
         }
         results = {
             "integrated": self.products.integrated,
             "alignment_core": self.products.alignment_core,
             "strict_bfo_mapping": self.products.strict_bfo_mapping,
-            "bfo_projection": self.products.bfo_projection,
             "cco_extension": self.products.cco_extension,
         }
         for key, result in results.items():
@@ -280,14 +272,12 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             "integrated": "http://www.sks.ai/SSN2BFO/releases/2099-01-02/integrated",
             "alignment_core": "http://www.sks.ai/SSN2BFO/releases/2099-01-02/current-ssn-sosa/alignment-core",
             "strict_bfo_mapping": "http://www.sks.ai/SSN2BFO/releases/2099-01-02/current-ssn-sosa/bfo-mapping",
-            "bfo_projection": "http://www.sks.ai/SSN2BFO/releases/2099-01-02/current-ssn-sosa/bfo-projection",
             "cco_extension": "http://www.sks.ai/SSN2BFO/releases/2099-01-02/current-ssn-sosa/cco-extension",
         }
         expected_imports = {
             "integrated": coms.ROOT_ORDERED_IMPORTS,
             "alignment_core": (),
             "strict_bfo_mapping": (expected_versions["alignment_core"],),
-            "bfo_projection": (expected_versions["strict_bfo_mapping"],),
             "cco_extension": (expected_versions["strict_bfo_mapping"],),
         }
         for key, expected in expected_versions.items():
@@ -316,7 +306,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
         root = Graph().parse(data=self.bytes["integrated"], format="turtle")
         core = self.reconciliations["alignment_core"].selected_axioms
         strict = self.reconciliations["strict_bfo_mapping"].selected_axioms
-        projection = self.reconciliations["bfo_projection"]
         cco = self.reconciliations["cco_extension"].selected_axioms
         root_imports, notice, prefixes, import_terms = self.header_parameters("integrated")
         self.assertEqual(
@@ -356,20 +345,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             (),
         )
         self.assertEqual(
-            modular.validate_bfo_projection(
-                self.bytes["bfo_projection"],
-                projection,
-                self.bytes["strict_bfo_mapping"],
-                strict,
-                self.bytes["alignment_core"],
-                core,
-                self.publication,
-                integrated_graph=root,
-                context=SYNTHETIC_CONTEXT,
-            ),
-            (),
-        )
-        self.assertEqual(
             modular.validate_cco_extension(
                 self.bytes["cco_extension"],
                 cco,
@@ -389,7 +364,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             "integrated": coms.ROOT_ORDERED_IMPORTS,
             "alignment_core": (),
             "strict_bfo_mapping": (modular.ALIGNMENT_CORE_IMPORT_IRI,),
-            "bfo_projection": (modular.STRICT_BFO_IMPORT_IRI,),
             "cco_extension": (modular.STRICT_BFO_IMPORT_IRI,),
         }
         for key in PRODUCT_PATHS:
@@ -420,7 +394,7 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             "alignment_core": 29,
             "strict_bfo_mapping": 19,
             "bfo_projection": 0,
-            "cco_extension": 57,
+            "cco_extension": 55,
         }
         governed_row_ids: set[str] = set()
         governed_axiom_ids: set[str] = set()
@@ -432,10 +406,17 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             self.assertEqual(len({value.axiom_id for value in selected}), count)
             governed_row_ids.update(value.row_id for value in selected)
             governed_axiom_ids.update(value.axiom_id for value in selected)
-        self.assertEqual(len(governed_row_ids), 105)
-        self.assertEqual(len(governed_axiom_ids), 105)
+        zero_axiom_row_ids = {
+            row.row_id
+            for row in self.disposition.rows
+            if not row.authoritative_axioms
+        }
+        self.assertEqual(len(zero_axiom_row_ids), 2)
+        self.assertEqual(len(governed_row_ids), 103)
+        self.assertEqual(len(governed_axiom_ids), 103)
+        self.assertFalse(governed_row_ids & zero_axiom_row_ids)
         self.assertEqual(
-            governed_row_ids,
+            governed_row_ids | zero_axiom_row_ids,
             {row.row_id for row in self.disposition.rows},
         )
         self.assertEqual(
@@ -448,21 +429,13 @@ class FormalReleaseRenderingTests(unittest.TestCase):
         )
 
     def test_formal_project_and_fixed_closure_counts(self) -> None:
-        projection_project = Graph()
-        for key in ("bfo_projection", "strict_bfo_mapping", "alignment_core"):
-            projection_project.parse(data=self.bytes[key], format="turtle")
-        self.assertEqual(len(projection_project), 213)
-        for triple in list(projection_project.triples((None, OWL.imports, None))):
-            projection_project.remove(triple)
-        self.assertEqual(len(projection_project), 211)
-
         cco_project = Graph()
         for key in ("cco_extension", "strict_bfo_mapping", "alignment_core"):
             cco_project.parse(data=self.bytes[key], format="turtle")
-        self.assertEqual(len(cco_project), 1147)
+        self.assertEqual(len(cco_project), 1137)
         for triple in list(cco_project.triples((None, OWL.imports, None))):
             cco_project.remove(triple)
-        self.assertEqual(len(cco_project), 1145)
+        self.assertEqual(len(cco_project), 1135)
 
         dependency_paths = tuple(REPO_ROOT / path for path in coms.SOURCE_IMPORTS)
         merged_dependencies = (REPO_ROOT / coms.BFO_VALIDATION_DEPENDENCY, *dependency_paths)
@@ -470,7 +443,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             "alignment_core": modular.build_fixed_validation_closure(
                 (self.bytes["alignment_core"],),
                 dependency_paths,
-                coms.CLEANUP_TRIPLES,
             ),
             "strict_bfo_mapping": modular.build_fixed_validation_closure(
                 (
@@ -478,16 +450,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                     self.bytes["alignment_core"],
                 ),
                 merged_dependencies,
-                coms.CLEANUP_TRIPLES,
-            ),
-            "bfo_projection": modular.build_fixed_validation_closure(
-                (
-                    self.bytes["bfo_projection"],
-                    self.bytes["strict_bfo_mapping"],
-                    self.bytes["alignment_core"],
-                ),
-                merged_dependencies,
-                coms.CLEANUP_TRIPLES,
             ),
             "cco_extension": modular.build_fixed_validation_closure(
                 (
@@ -496,43 +458,57 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                     self.bytes["alignment_core"],
                 ),
                 merged_dependencies,
-                coms.CLEANUP_TRIPLES,
             ),
             "integrated": modular.build_fixed_validation_closure(
                 (self.bytes["integrated"],),
                 merged_dependencies,
-                coms.CLEANUP_TRIPLES,
             ),
         }
         self.assertEqual(
             {key: len(value) for key, value in closures.items()},
             {
-                "alignment_core": 1215,
-                "strict_bfo_mapping": 14992,
-                "bfo_projection": 15003,
-                "cco_extension": 15937,
-                "integrated": 15915,
+                "alignment_core": 1217,
+                "strict_bfo_mapping": 14994,
+                "cco_extension": 15929,
+                "integrated": 15907,
             },
         )
         for closure in closures.values():
+            self.assertTrue(
+                all(
+                    triple in closure
+                    for triple in coms.SAMPLE_PROPERTY_SOURCE_DECLARATIONS
+                )
+            )
             self.assertFalse(any(closure.triples((None, OWL.imports, None))))
 
-    def test_bfo_projection_remains_import_only(self) -> None:
-        graph = Graph().parse(data=self.bytes["bfo_projection"], format="turtle")
-        logical = metadata.strip_emitted_ontology_header(
-            graph,
-            self.publication,
+    def test_bfo_projection_role_is_reconciled_but_not_rendered(self) -> None:
+        reconciliation = self.reconciliations[
+            "bfo_projection"
+        ]
+
+        self.assertEqual(
+            reconciliation.product_key,
             "bfo_projection",
-            metadata.release_project_imports(
-                self.publication,
-                "bfo_projection",
-                SYNTHETIC_CONTEXT,
-            ),
-            SYNTHETIC_CONTEXT,
         )
-        self.assertEqual(len(logical), 0)
-        self.assertEqual(self.products.bfo_projection.governed_axiom_count, 0)
-        self.assertFalse(any(isinstance(value, BNode) for triple in graph for value in triple))
+        self.assertEqual(
+            reconciliation.governed_axiom_count,
+            103,
+        )
+        self.assertEqual(
+            reconciliation.selected_axioms,
+            (),
+        )
+        self.assertNotIn(
+            "bfo_projection",
+            self.bytes,
+        )
+        self.assertFalse(
+            hasattr(
+                self.products,
+                "bfo_projection",
+            )
+        )
 
     def test_repeated_reordered_and_path_independent_rendering_is_identical(self) -> None:
         repeated = coms.render_formal_product_set(
@@ -607,13 +583,13 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                 self.assertIn(b'dcterms:issued "2099-01-03"^^xsd:date', changed[key])
 
     def test_formal_metadata_semantic_mutations_are_rejected(self) -> None:
-        original = self.bytes["bfo_projection"]
+        original = self.bytes["cco_extension"]
         text = original.decode("utf-8")
         formal_status = self.publication.publication.formal_release_status_iri
         development_status = self.publication.publication.development_status_iri
         version_iri = metadata.release_version_iri(
             self.publication,
-            "bfo_projection",
+            "cco_extension",
             SYNTHETIC_CONTEXT,
         )
         status_line = f"    adms:status <{formal_status}> ;"
@@ -631,7 +607,7 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                 "stable version IRI",
                 text.replace(
                     f"<{version_iri}>",
-                    "<http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection>",
+                    "<http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension>",
                 ),
                 "VERSION_IRI_MISMATCH",
             ),
@@ -660,14 +636,14 @@ class FormalReleaseRenderingTests(unittest.TestCase):
         for label, mutated, expected_code in mutations:
             with self.subTest(case=label):
                 codes = self.serialized_issue_codes(
-                    "bfo_projection",
+                    "cco_extension",
                     mutated.encode("utf-8"),
                 )
                 self.assertIn(expected_code, codes)
                 self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", codes)
 
     def test_unapproved_formal_annotations_are_rejected(self) -> None:
-        original = self.bytes["bfo_projection"].decode("utf-8")
+        original = self.bytes["cco_extension"].decode("utf-8")
         import_line = "    owl:imports "
         annotations = (
             '    dcterms:creator <https://example.org/creator> ;',
@@ -682,7 +658,7 @@ class FormalReleaseRenderingTests(unittest.TestCase):
             with self.subTest(annotation=annotation):
                 mutated = original.replace(import_line, annotation + "\n" + import_line, 1)
                 codes = self.serialized_issue_codes(
-                    "bfo_projection",
+                    "cco_extension",
                     mutated.encode("utf-8"),
                 )
                 self.assertIn("UNAPPROVED_ONTOLOGY_METADATA", codes)
@@ -813,7 +789,7 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                     )
                     self.assertEqual(json.loads(completed.stdout), FORMAL_HASHES)
 
-    def test_all_five_formal_products_pass_independent_hermit(self) -> None:
+    def test_all_four_formal_products_pass_independent_hermit(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-release-hermit-") as directory:
             root = Path(directory)
             paths: dict[str, Path] = {}
@@ -831,12 +807,6 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                     paths["alignment_core"],
                     root / "strict",
                 ),
-                "bfo_projection": coms.run_bfo_projection_hermit(
-                    paths["bfo_projection"],
-                    paths["strict_bfo_mapping"],
-                    paths["alignment_core"],
-                    root / "projection",
-                ),
                 "cco_extension": coms.run_cco_extension_hermit(
                     paths["cco_extension"],
                     paths["strict_bfo_mapping"],
@@ -845,15 +815,29 @@ class FormalReleaseRenderingTests(unittest.TestCase):
                 ),
             }
             expected_closures = {
-                "integrated": 15915,
-                "alignment_core": 1215,
-                "strict_bfo_mapping": 14992,
-                "bfo_projection": 15003,
-                "cco_extension": 15937,
+                "integrated": 15907,
+                "alignment_core": 1217,
+                "strict_bfo_mapping": 14994,
+                "cco_extension": 15929,
             }
             for key, result in results.items():
                 with self.subTest(product=key):
                     self.assertEqual(result.closure_triple_count, expected_closures[key])
+                    self.assertTrue(result.profile_checked)
+                    self.assertEqual(
+                        result.profile_triple_count,
+                        expected_closures[key] + 4,
+                    )
+                    self.assertEqual(
+                        result.profile_declaration_completion_count,
+                        4,
+                    )
+                    self.assertEqual(
+                        result.profile_return_code,
+                        0,
+                        result.profile_output,
+                    )
+                    self.assertTrue(result.source_sample_declarations_retained)
                     self.assertEqual(result.return_code, 0, result.robot_output)
                     self.assertTrue(result.reasoned_output_produced)
                     self.assertEqual(result.owl_nothing_count, 0)

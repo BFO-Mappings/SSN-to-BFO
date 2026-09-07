@@ -71,43 +71,43 @@ STRICT_BFO_RDF_LIST_COUNT = 14
 STRICT_BFO_PROJECT_CLOSURE_AXIOM_COUNT = 48
 STRICT_BFO_PROJECT_GRAPH_TRIPLE_COUNT = 195
 STRICT_BFO_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 194
-STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14986
+STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT = 14988
 STRICT_BFO_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 201
 STRICT_BFO_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 200
-STRICT_BFO_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 14992
+STRICT_BFO_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 14994
 ALIGNMENT_CORE_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core"
 )
 
 CCO_EXTENSION_KEY = "cco_extension"
-CCO_EXTENSION_AXIOM_COUNT = 57
+CCO_EXTENSION_AXIOM_COUNT = 55
 CCO_EXTENSION_CCO_BEARING_COUNT = 25
-CCO_EXTENSION_MIXED_COUNT = 32
+CCO_EXTENSION_MIXED_COUNT = 30
 CCO_EXTENSION_SUBCLASS_COUNT = 31
 CCO_EXTENSION_EQUIVALENT_CLASS_COUNT = 7
 CCO_EXTENSION_DIRECT_SUBPROPERTY_COUNT = 16
-CCO_EXTENSION_PROPERTY_CHAIN_COUNT = 3
+CCO_EXTENSION_PROPERTY_CHAIN_COUNT = 1
 CCO_EXTENSION_DOMAIN_COUNT = 0
 CCO_EXTENSION_RANGE_COUNT = 0
-CCO_EXTENSION_LOGICAL_TRIPLE_COUNT = 934
-CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 943
-CCO_EXTENSION_FORMAL_TOTAL_TRIPLE_COUNT = 946
+CCO_EXTENSION_LOGICAL_TRIPLE_COUNT = 924
+CCO_EXTENSION_TOTAL_TRIPLE_COUNT = 933
+CCO_EXTENSION_FORMAL_TOTAL_TRIPLE_COUNT = 936
 CCO_EXTENSION_NAMED_TARGET_COUNT = 20
-CCO_EXTENSION_COMPLEX_TARGET_COUNT = 37
+CCO_EXTENSION_COMPLEX_TARGET_COUNT = 35
 CCO_EXTENSION_UNION_COUNT = 7
 CCO_EXTENSION_INTERSECTION_COUNT = 86
 CCO_EXTENSION_EXISTENTIAL_COUNT = 95
-CCO_EXTENSION_RDF_LIST_COUNT = 96
-CCO_EXTENSION_SOURCE_TERM_COUNT = 61
-CCO_EXTENSION_CCO_TERM_COUNT = 42
-CCO_EXTENSION_BFO_TERM_COUNT = 18
-CCO_EXTENSION_PROJECT_CLOSURE_AXIOM_COUNT = 105
-CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1138
-CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1136
-CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15928
-CCO_EXTENSION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 1147
-CCO_EXTENSION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1145
-CCO_EXTENSION_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15937
+CCO_EXTENSION_RDF_LIST_COUNT = 94
+CCO_EXTENSION_SOURCE_TERM_COUNT = 59
+CCO_EXTENSION_CCO_TERM_COUNT = 40
+CCO_EXTENSION_BFO_TERM_COUNT = 16
+CCO_EXTENSION_PROJECT_CLOSURE_AXIOM_COUNT = 103
+CCO_EXTENSION_PROJECT_GRAPH_TRIPLE_COUNT = 1128
+CCO_EXTENSION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1126
+CCO_EXTENSION_FIXED_CLOSURE_TRIPLE_COUNT = 15920
+CCO_EXTENSION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 1137
+CCO_EXTENSION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 1135
+CCO_EXTENSION_FORMAL_FIXED_CLOSURE_TRIPLE_COUNT = 15929
 STRICT_BFO_IMPORT_IRI = (
     "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
 )
@@ -150,20 +150,6 @@ CCO_EXTENSION_PREFIXES = (
 
 BFO_PROJECTION_KEY = "bfo_projection"
 BFO_PROJECTION_AXIOM_COUNT = 0
-BFO_PROJECTION_LOGICAL_TRIPLE_COUNT = 0
-BFO_PROJECTION_TOTAL_TRIPLE_COUNT = 9
-BFO_PROJECTION_FORMAL_TOTAL_TRIPLE_COUNT = 12
-BFO_PROJECTION_PROJECT_CLOSURE_AXIOM_COUNT = 48
-BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT = 204
-BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 202
-BFO_PROJECTION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT = 213
-BFO_PROJECTION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT = 211
-BFO_PROJECTION_PREFIXES = (
-    *METADATA_PREFIXES,
-    ("owl", str(OWL)),
-    ("rdf", str(RDF)),
-    ("rdfs", str(RDFS)),
-)
 
 
 @dataclass(frozen=True)
@@ -183,7 +169,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "emitted_unchanged", None, 29),
             ("bfo_bearing", "not_applicable", "TARGET_SPECIFIC", 19),
             ("cco_bearing", "not_applicable", "TARGET_SPECIFIC", 25),
-            ("mixed_bfo_cco", "not_applicable", "TARGET_SPECIFIC", 32),
+            ("mixed_bfo_cco", "not_applicable", "TARGET_SPECIFIC", CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
     STRICT_BFO_MAPPING_KEY: ProductSelectionPolicy(
@@ -194,7 +180,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "provided_through_import", None, 29),
             ("bfo_bearing", "emitted_unchanged", None, 19),
             ("cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25),
-            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32),
+            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
     CCO_EXTENSION_KEY: ProductSelectionPolicy(
@@ -208,7 +194,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "provided_transitively", None, 29),
             ("bfo_bearing", "provided_through_import", None, 19),
             ("cco_bearing", "emitted_unchanged", None, 25),
-            ("mixed_bfo_cco", "emitted_unchanged", None, 32),
+            ("mixed_bfo_cco", "emitted_unchanged", None, CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
     BFO_PROJECTION_KEY: ProductSelectionPolicy(
@@ -219,7 +205,7 @@ PRODUCT_SELECTION = {
             ("target_neutral", "provided_transitively", None, 29),
             ("bfo_bearing", "provided_through_import", None, 19),
             ("cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25),
-            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32),
+            ("mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", CCO_EXTENSION_MIXED_COUNT),
         ),
     ),
 }
@@ -1034,61 +1020,6 @@ def build_strict_bfo_mapping(
     )
 
 
-def build_bfo_projection(
-    selected_axioms: Iterable[SelectedProductAxiom],
-    publication_metadata: PublicationMetadata,
-    context: FormalReleaseContext | None = None,
-) -> ModularProductResult:
-    selected = tuple(sorted(selected_axioms, key=lambda value: value.axiom_id))
-    metadata = _product_metadata(publication_metadata, BFO_PROJECTION_KEY)
-    if selected:
-        raise ModularProductError(
-            [
-                issue(
-                    "UNAPPROVED_PROJECTION_AXIOM",
-                    f"expected zero direct projection axioms, got {len(selected)}",
-                )
-            ]
-        )
-
-    imports = (
-        release_project_imports(publication_metadata, BFO_PROJECTION_KEY, context)
-        if context
-        else (STRICT_BFO_IMPORT_IRI,)
-    )
-    serialized = _turtle_bytes(
-        publication_metadata,
-        metadata,
-        (),
-        imports=imports,
-        prefixes=BFO_PROJECTION_PREFIXES,
-        context=context,
-    )
-    graph = Graph().parse(data=serialized.decode("utf-8"), format="turtle")
-    return ModularProductResult(
-        metadata=metadata,
-        selected_rows=(),
-        serialized_bytes=serialized,
-        governed_axiom_count=0,
-        logical_triple_count=0,
-        ontology_declaration_triple_count=1,
-        metadata_annotation_count=7,
-        formal_metadata_annotation_count=3 if context else 0,
-        total_triple_count=len(graph),
-        domain_axiom_count=0,
-        range_axiom_count=0,
-        named_target_count=0,
-        union_target_count=0,
-        subclass_axiom_count=0,
-        equivalent_class_axiom_count=0,
-        direct_subproperty_axiom_count=0,
-        property_chain_axiom_count=0,
-        intersection_expression_count=0,
-        existential_restriction_count=0,
-        rdf_list_count=0,
-        import_triple_count=1,
-        sha256=hashlib.sha256(serialized).hexdigest(),
-    )
 
 
 def build_cco_extension(
@@ -1833,349 +1764,6 @@ def validate_strict_bfo_mapping(
     return tuple(sorted(set(issues), key=lambda value: value.sort_key))
 
 
-def validate_bfo_projection(
-    serialized_bytes: bytes,
-    disposition_reconciliation: ProductDispositionReconciliation,
-    strict_bfo_bytes: bytes,
-    strict_selected_axioms: Iterable[SelectedProductAxiom],
-    alignment_core_bytes: bytes,
-    alignment_core_selected_axioms: Iterable[SelectedProductAxiom],
-    publication_metadata: PublicationMetadata,
-    integrated_graph: Graph | None = None,
-    strict_reasoning_result: ModularReasoningResult | None = None,
-    context: FormalReleaseContext | None = None,
-) -> tuple[ModularProductValidationIssue, ...]:
-    strict_selected = tuple(
-        sorted(strict_selected_axioms, key=lambda value: value.axiom_id)
-    )
-    core_selected = tuple(
-        sorted(alignment_core_selected_axioms, key=lambda value: value.axiom_id)
-    )
-    metadata = _product_metadata(publication_metadata, BFO_PROJECTION_KEY)
-    issues: list[ModularProductValidationIssue] = []
-    try:
-        graph = Graph().parse(data=serialized_bytes.decode("utf-8"), format="turtle")
-    except Exception as exc:
-        return (issue("TURTLE_PARSE", f"cannot strictly parse UTF-8 Turtle: {exc}"),)
-
-    expected = build_bfo_projection((), publication_metadata, context)
-    if serialized_bytes != expected.serialized_bytes:
-        issues.append(
-            issue(
-                "NONDETERMINISTIC_SERIALIZATION",
-                "bytes differ from canonical BFO-projection serialization",
-            )
-        )
-
-    ontology_iri = URIRef(metadata.stable_ontology_iri)
-    expected_import_values = (
-        release_project_imports(publication_metadata, BFO_PROJECTION_KEY, context)
-        if context
-        else (STRICT_BFO_IMPORT_IRI,)
-    )
-    expected_import = URIRef(expected_import_values[0])
-    issues.extend(
-        _metadata_validation_issues(
-            graph,
-            serialized_bytes,
-            publication_metadata,
-            BFO_PROJECTION_KEY,
-            expected_import_values,
-            BFO_PROJECTION_PREFIXES,
-            context,
-        )
-    )
-    declarations = set(graph.subjects(RDF.type, OWL.Ontology))
-    if declarations != {ontology_iri}:
-        issues.append(
-            issue(
-                "ONTOLOGY_DECLARATION_MISMATCH",
-                f"expected only {ontology_iri}, got {sorted(map(str, declarations))}",
-            )
-        )
-    imports = set(graph.triples((None, OWL.imports, None)))
-    expected_imports = {(ontology_iri, OWL.imports, expected_import)}
-    if imports != expected_imports:
-        issues.append(
-            issue(
-                "IMPORT_POLICY_MISMATCH",
-                f"expected only strict-BFO import, got {sorted(map(str, imports))}",
-            )
-        )
-    expected_total = (
-        BFO_PROJECTION_FORMAL_TOTAL_TRIPLE_COUNT if context else BFO_PROJECTION_TOTAL_TRIPLE_COUNT
-    )
-    if len(graph) != expected_total:
-        issues.append(
-            issue(
-                "TOTAL_TRIPLE_COUNT_MISMATCH",
-                f"expected {expected_total}, got {len(graph)}",
-            )
-        )
-    logical_graph = strip_emitted_ontology_header(
-        graph,
-        publication_metadata,
-        BFO_PROJECTION_KEY,
-        expected_import_values,
-        context,
-    )
-    if len(logical_graph) != BFO_PROJECTION_LOGICAL_TRIPLE_COUNT:
-        issues.append(
-            issue(
-                "LOGICAL_TRIPLE_COUNT_MISMATCH",
-                f"expected zero direct logical triples, got {len(logical_graph)}",
-            )
-        )
-    projection_axioms = _canonical_graph_axioms(graph)
-    if projection_axioms:
-        issues.append(
-            issue(
-                "UNAPPROVED_PROJECTION_AXIOM",
-                "BFO projection contains direct governed or transformed axioms: "
-                + ", ".join(sorted(projection_axioms)),
-            )
-        )
-    if any(isinstance(value, BNode) for value in graph.all_nodes()):
-        issues.append(issue("UNEXPECTED_BLANK_NODE", "BFO projection must not contain blank nodes"))
-    if any(True for _ in graph.triples((None, RDF.first, None))) or any(
-        True for _ in graph.triples((None, RDF.rest, None))
-    ):
-        issues.append(issue("UNEXPECTED_RDF_LIST", "BFO projection must not contain RDF lists"))
-    unexpected_direct_iris = sorted(
-        {
-            str(value)
-            for value in logical_graph.all_nodes()
-            if isinstance(value, URIRef)
-        }
-    )
-    if unexpected_direct_iris:
-        issues.append(
-            issue(
-                "UNEXPECTED_LOGICAL_VOCABULARY",
-                "projection graph contains unapproved IRIs: "
-                + ", ".join(unexpected_direct_iris),
-            )
-        )
-    declaration_triples = set(graph.triples((None, RDF.type, None)))
-    if declaration_triples != {(ontology_iri, RDF.type, OWL.Ontology)}:
-        issues.append(
-            issue(
-                "COPIED_DECLARATION",
-                "projection graph contains a declaration other than its ontology declaration",
-            )
-        )
-    if any(True for _ in graph.triples((None, RDF.type, OWL.Axiom))):
-        issues.append(
-            issue("ANNOTATION_ONLY_PSEUDO_MAPPING", "owl:Axiom records are prohibited")
-        )
-
-    expected_totals = tuple(
-        ProductDispositionTotal(category, status, reason, count)
-        for category, status, reason, count in PRODUCT_SELECTION[
-            BFO_PROJECTION_KEY
-        ].expected_disposition_totals
-    )
-    if disposition_reconciliation.product_key != BFO_PROJECTION_KEY:
-        issues.append(
-            issue(
-                "PRODUCT_RECONCILIATION_MISMATCH",
-                f"expected {BFO_PROJECTION_KEY!r}, got "
-                f"{disposition_reconciliation.product_key!r}",
-            )
-        )
-    if disposition_reconciliation.governed_axiom_count != 105:
-        issues.append(
-            issue(
-                "PRODUCT_RECONCILIATION_MISMATCH",
-                f"expected 105 governed axioms, got "
-                f"{disposition_reconciliation.governed_axiom_count}",
-            )
-        )
-    if disposition_reconciliation.selected_axioms:
-        issues.append(
-            issue(
-                "UNAPPROVED_PROJECTION_AXIOM",
-                f"expected zero selected projection axioms, got "
-                f"{len(disposition_reconciliation.selected_axioms)}",
-            )
-        )
-    if disposition_reconciliation.disposition_totals != expected_totals:
-        issues.append(
-            issue(
-                "PRODUCT_DISPOSITION_COUNT_MISMATCH",
-                f"expected {expected_totals}, got "
-                f"{disposition_reconciliation.disposition_totals}",
-            )
-        )
-
-    try:
-        issues.extend(
-            validate_strict_bfo_mapping(
-                strict_bfo_bytes,
-                strict_selected,
-                alignment_core_bytes,
-                core_selected,
-                publication_metadata,
-                integrated_graph=integrated_graph,
-                context=context,
-            )
-        )
-    except ModularProductError as exc:
-        issues.extend(exc.issues)
-
-    try:
-        strict_graph = Graph().parse(
-            data=strict_bfo_bytes.decode("utf-8"), format="turtle"
-        )
-    except Exception as exc:
-        issues.append(issue("STRICT_BFO_PARSE", f"cannot parse strict BFO mapping: {exc}"))
-        strict_graph = Graph()
-    try:
-        core_graph = Graph().parse(
-            data=alignment_core_bytes.decode("utf-8"), format="turtle"
-        )
-    except Exception as exc:
-        issues.append(issue("ALIGNMENT_CORE_PARSE", f"cannot parse alignment core: {exc}"))
-        core_graph = Graph()
-
-    strict_axioms = _canonical_graph_axioms(strict_graph) if len(strict_graph) else {}
-    core_axioms = _canonical_graph_axioms(core_graph) if len(core_graph) else {}
-    strict_selected_ids = {value.axiom_id for value in strict_selected}
-    core_selected_ids = {value.axiom_id for value in core_selected}
-    overlap = set(strict_axioms) & set(core_axioms)
-    if overlap:
-        issues.append(
-            issue(
-                "DIRECT_CORE_AXIOM_OVERLAP",
-                "strict and alignment-core direct graphs overlap: "
-                + ", ".join(sorted(overlap)),
-            )
-        )
-    expected_closure_ids = strict_selected_ids | core_selected_ids
-    actual_closure_ids = set(strict_axioms) | set(core_axioms)
-    if actual_closure_ids != expected_closure_ids:
-        issues.append(
-            issue(
-                "PROJECT_CLOSURE_AXIOM_MISMATCH",
-                "projection closure does not equal the selected strict/core axiom set",
-            )
-        )
-    if len(actual_closure_ids) != BFO_PROJECTION_PROJECT_CLOSURE_AXIOM_COUNT:
-        issues.append(
-            issue(
-                "PROJECT_CLOSURE_COUNT_MISMATCH",
-                f"expected {BFO_PROJECTION_PROJECT_CLOSURE_AXIOM_COUNT}, "
-                f"got {len(actual_closure_ids)}",
-            )
-        )
-
-    project_graph = Graph()
-    for source_graph in (graph, strict_graph, core_graph):
-        for triple in source_graph:
-            project_graph.add(triple)
-    expected_project_count = (
-        BFO_PROJECTION_FORMAL_PROJECT_GRAPH_TRIPLE_COUNT
-        if context
-        else BFO_PROJECTION_PROJECT_GRAPH_TRIPLE_COUNT
-    )
-    if len(project_graph) != expected_project_count:
-        issues.append(
-            issue(
-                "PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {expected_project_count}, "
-                f"got {len(project_graph)}",
-            )
-        )
-    cco_iris = sorted(
-        {
-            str(value)
-            for value in project_graph.all_nodes()
-            if isinstance(value, URIRef) and str(value).startswith(CCO_NAMESPACE)
-        }
-    )
-    if cco_iris:
-        issues.append(
-            issue(
-                "PROHIBITED_LOGICAL_VOCABULARY",
-                "projection project closure contains CCO IRIs: " + ", ".join(cco_iris),
-            )
-        )
-    for triple in list(project_graph.triples((None, OWL.imports, None))):
-        project_graph.remove(triple)
-    expected_local_count = (
-        BFO_PROJECTION_FORMAL_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
-        if context
-        else BFO_PROJECTION_LOCAL_PROJECT_GRAPH_TRIPLE_COUNT
-    )
-    if len(project_graph) != expected_local_count:
-        issues.append(
-            issue(
-                "LOCAL_PROJECT_GRAPH_TRIPLE_COUNT_MISMATCH",
-                f"expected {expected_local_count}, "
-                f"got {len(project_graph)}",
-            )
-        )
-
-    strict_sha256 = hashlib.sha256(strict_bfo_bytes).hexdigest()
-    if context is not None and strict_reasoning_result is not None:
-        issues.append(
-            issue(
-                "FORMAL_PROJECTION_REASONING_REUSE",
-                "formal projection validation requires an independent projection closure result",
-            )
-        )
-    elif context is None and strict_reasoning_result is None:
-        issues.append(
-            issue(
-                "STRICT_REASONING_RESULT_MISSING",
-                "same-transaction strict-BFO reasoning result is required",
-            )
-        )
-    elif context is None:
-        if strict_reasoning_result.source_product_key != STRICT_BFO_MAPPING_KEY:
-            issues.append(
-                issue(
-                    "STRICT_REASONING_RESULT_MISMATCH",
-                    f"unexpected reasoning source "
-                    f"{strict_reasoning_result.source_product_key!r}",
-                )
-            )
-        if strict_reasoning_result.source_product_sha256 != strict_sha256:
-            issues.append(
-                issue(
-                    "STRICT_REASONING_RESULT_MISMATCH",
-                    "strict reasoning result does not belong to supplied strict bytes",
-                )
-            )
-        if strict_reasoning_result.closure_triple_count != STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT:
-            issues.append(
-                issue(
-                    "STRICT_REASONING_RESULT_MISMATCH",
-                    f"expected strict closure count {STRICT_BFO_FIXED_CLOSURE_TRIPLE_COUNT}, "
-                    f"got {strict_reasoning_result.closure_triple_count}",
-                )
-            )
-        if strict_reasoning_result.return_code != 0:
-            issues.append(issue("STRICT_REASONING_FAILED", "strict HermiT return code is not zero"))
-        if not strict_reasoning_result.reasoned_output_produced:
-            issues.append(issue("STRICT_REASONING_FAILED", "strict reasoned output was not produced"))
-        if strict_reasoning_result.owl_nothing_count != 0:
-            issues.append(
-                issue(
-                    "STRICT_REASONING_FAILED",
-                    f"strict owl:Nothing-derived named-class count is "
-                    f"{strict_reasoning_result.owl_nothing_count}",
-                )
-            )
-        if strict_reasoning_result.named_unsatisfiable_count != 0:
-            issues.append(
-                issue(
-                    "STRICT_REASONING_FAILED",
-                    f"strict named-unsatisfiable count is "
-                    f"{strict_reasoning_result.named_unsatisfiable_count}",
-                )
-            )
-    return tuple(sorted(set(issues), key=lambda value: value.sort_key))
 
 
 def validate_cco_extension(

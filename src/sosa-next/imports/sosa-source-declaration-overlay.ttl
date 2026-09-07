@@ -1,0 +1,13 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+
+<http://www.sks.ai/SSN2BFO/development/sosa-next/source-declaration-overlay>
+    a owl:Ontology ;
+    rdfs:comment
+        "Development-only declaration overlay for terms used by the pinned forthcoming SOSA source but not explicitly typed there. The pinned upstream files remain byte-for-byte unchanged."@en ;
+    owl:versionInfo
+        "Upstream commit af425a0454ec00512a5ebfa2873fe35a077f5fda" ;
+.
+
+sosa:Battery a owl:Class .

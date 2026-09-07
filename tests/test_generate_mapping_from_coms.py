@@ -135,8 +135,6 @@ class ComsDomainRangeTests(unittest.TestCase):
                 str(self.root / "alignment-core.ttl"),
                 "--strict-bfo-output",
                 str(self.root / "strict-bfo.ttl"),
-                "--bfo-projection-output",
-                str(self.root / "bfo-projection.ttl"),
                 "--cco-extension-output",
                 str(self.root / "cco-extension.ttl"),
                 "--coverage-report",
@@ -161,7 +159,6 @@ class ComsDomainRangeTests(unittest.TestCase):
         self.assertFalse(disposition_path.exists())
         self.assertFalse((self.root / "alignment-core.ttl").exists())
         self.assertFalse((self.root / "strict-bfo.ttl").exists())
-        self.assertFalse((self.root / "bfo-projection.ttl").exists())
         self.assertFalse((self.root / "cco-extension.ttl").exists())
         self.assertTrue(report_path.is_file())
         report = report_path.read_text(encoding="utf-8")
@@ -411,6 +408,46 @@ class ComsDomainRangeTests(unittest.TestCase):
         )
         self.assertLess(message.index(self.row_id_for(1)), message.index(self.row_id_for(3)))
         self.assertLess(message.index(self.row_id_for(2)), message.index(self.row_id_for(4)))
+
+    def test_explicit_blank_row_has_complete_zero_axiom_identity_audit(self) -> None:
+        processed, stats = self.process(
+            [
+                (
+                    SUBJECT,
+                    "",
+                    "",
+                    "Mapping deliberately deferred.",
+                )
+            ]
+        )
+
+        self.assertEqual(stats.governed_row_id_count, 1)
+        self.assertEqual(stats.processed_row_count, 1)
+        self.assertEqual(stats.identity_audit_row_count, 1)
+        self.assertEqual(stats.blank_mapping_rows, 1)
+        self.assertTrue(stats.identity_count_reconciliation_passed)
+        self.assertTrue(
+            stats.identity_row_id_set_reconciliation_passed
+        )
+        self.assertTrue(stats.identity_location_reconciliation_passed)
+
+        item = processed[0]
+        self.assertEqual(item.predicate, "")
+        self.assertEqual(item.target, "")
+
+        audit = item.identity_audit
+        self.assertIsNotNone(audit)
+        self.assertEqual(
+            audit.expression.mapping_type,
+            "explicit_blank",
+        )
+        self.assertIsNone(audit.expression.predicate_iri)
+        self.assertIsNone(audit.expression.target)
+        self.assertEqual(audit.authoritative_axioms, ())
+
+        disposition = coms.disposition_input_for_processed_row(item)
+        self.assertEqual(disposition.mapping_type, "explicit_blank")
+        self.assertEqual(disposition.authoritative_axioms, ())
 
     def test_successful_processing_has_complete_identity_counts(self) -> None:
         processed, stats = self.process(
@@ -713,8 +750,8 @@ class ComsGenerationReportTests(unittest.TestCase):
         return coms.HermitResult(
             graph_path=self.root / "closure.ttl",
             reasoned_path=self.root / "reasoned.ttl",
-            generated_triple_count=1124,
-            closure_triple_count=15912,
+            generated_triple_count=1114,
+            closure_triple_count=15904,
             return_code=0 if available else None,
             reasoned_output_produced=available,
             owl_nothing_count=0 if available else None,
@@ -735,9 +772,6 @@ class ComsGenerationReportTests(unittest.TestCase):
         alignment_core_hermit: object | None = None,
         strict_bfo_result: object | None = None,
         strict_bfo_hermit: object | None = None,
-        bfo_projection_result: object | None = None,
-        bfo_projection_reconciliation: object | None = None,
-        bfo_projection_reasoning: object | None = None,
         cco_extension_result: object | None = None,
         cco_extension_hermit: object | None = None,
     ) -> str:
@@ -778,13 +812,6 @@ class ComsGenerationReportTests(unittest.TestCase):
             ),
             strict_bfo_sha256="strict-bfo-hash",
             strict_bfo_hermit=strict_bfo_hermit,
-            bfo_projection_result=bfo_projection_result,
-            bfo_projection_reconciliation=bfo_projection_reconciliation,
-            bfo_projection_path=Path(
-                "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl"
-            ),
-            bfo_projection_sha256="bfo-projection-hash",
-            bfo_projection_reasoning=bfo_projection_reasoning,
             cco_extension_result=cco_extension_result,
             cco_extension_path=Path(
                 "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl"
@@ -902,7 +929,7 @@ class ComsGenerationReportTests(unittest.TestCase):
             total_triple_count=61,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=1212,
+            closure_triple_count=1214,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -929,7 +956,7 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Import triples: 0", report)
         self.assertIn("Descriptive metadata annotations: 7", report)
         self.assertIn("Total RDF triples: 61", report)
-        self.assertIn("Source-closure triple count: 1212", report)
+        self.assertIn("Source-closure triple count: 1214", report)
         self.assertIn("Source-closure HermiT result: PASS", report)
 
     def test_generation_report_includes_strict_bfo_results(self) -> None:
@@ -953,7 +980,7 @@ class ComsGenerationReportTests(unittest.TestCase):
             total_triple_count=134,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=14986,
+            closure_triple_count=14988,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -970,14 +997,14 @@ class ComsGenerationReportTests(unittest.TestCase):
         self.assertIn("Project-module closure governed axioms: 48", report)
         self.assertIn("Descriptive metadata annotations: 7", report)
         self.assertIn("Total RDF triples: 134", report)
-        self.assertIn("Pinned closure triple count: 14986", report)
+        self.assertIn("Pinned closure triple count: 14988", report)
         self.assertIn("HermiT result: PASS", report)
 
     def test_generation_report_includes_cco_extension_results(self) -> None:
         selected = tuple(
             SimpleNamespace(target_category="cco_bearing") for _ in range(25)
         ) + tuple(
-            SimpleNamespace(target_category="mixed_bfo_cco") for _ in range(32)
+            SimpleNamespace(target_category="mixed_bfo_cco") for _ in range(30)
         )
         result = SimpleNamespace(
             metadata=SimpleNamespace(
@@ -986,19 +1013,19 @@ class ComsGenerationReportTests(unittest.TestCase):
                 )
             ),
             selected_rows=(SimpleNamespace(axioms=selected),),
-            governed_axiom_count=57,
+            governed_axiom_count=55,
             subclass_axiom_count=31,
             equivalent_class_axiom_count=7,
             direct_subproperty_axiom_count=16,
-            property_chain_axiom_count=3,
-            logical_triple_count=934,
+            property_chain_axiom_count=1,
+            logical_triple_count=924,
             ontology_declaration_triple_count=1,
             import_triple_count=1,
             metadata_annotation_count=7,
-            total_triple_count=943,
+            total_triple_count=933,
         )
         hermit = SimpleNamespace(
-            closure_triple_count=15928,
+            closure_triple_count=15920,
             return_code=0,
             reasoned_output_produced=True,
             unsat_classes=[],
@@ -1011,76 +1038,14 @@ class ComsGenerationReportTests(unittest.TestCase):
             cco_extension_hermit=hermit,
         )
         self.assertIn("## CCO Extension", report)
-        self.assertIn("Direct governed authoritative axioms: 57", report)
+        self.assertIn("Direct governed authoritative axioms: 55", report)
         self.assertIn("CCO-bearing axioms: 25", report)
-        self.assertIn("Mixed BFO/CCO axioms: 32", report)
-        self.assertIn("Project-module closure governed axioms: 105", report)
+        self.assertIn("Mixed BFO/CCO axioms: 30", report)
+        self.assertIn("Project-module closure governed axioms: 103", report)
         self.assertIn("Descriptive metadata annotations: 7", report)
-        self.assertIn("Total RDF triples: 943", report)
-        self.assertIn("Pinned closure triple count: 15928", report)
+        self.assertIn("Total RDF triples: 933", report)
+        self.assertIn("Pinned closure triple count: 15920", report)
 
-    def test_generation_report_includes_import_only_bfo_projection_results(self) -> None:
-        result = SimpleNamespace(
-            metadata=SimpleNamespace(
-                stable_ontology_iri=(
-                    "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
-                )
-            ),
-            governed_axiom_count=0,
-            logical_triple_count=0,
-            ontology_declaration_triple_count=1,
-            import_triple_count=1,
-            metadata_annotation_count=7,
-            total_triple_count=9,
-        )
-        reconciliation = modular.ProductDispositionReconciliation(
-            product_key="bfo_projection",
-            governed_axiom_count=105,
-            selected_axioms=(),
-            disposition_totals=(
-                modular.ProductDispositionTotal(
-                    "target_neutral", "provided_transitively", None, 29
-                ),
-                modular.ProductDispositionTotal(
-                    "bfo_bearing", "provided_through_import", None, 19
-                ),
-                modular.ProductDispositionTotal(
-                    "cco_bearing", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 25
-                ),
-                modular.ProductDispositionTotal(
-                    "mixed_bfo_cco", "deferred", "NO_APPROVED_TRANSFORMATION_RULE", 32
-                ),
-            ),
-        )
-        reasoning = modular.ModularReasoningResult(
-            source_product_key="strict_bfo_mapping",
-            source_product_sha256="strict-bfo-hash",
-            closure_triple_count=14986,
-            return_code=0,
-            reasoned_output_produced=True,
-            owl_nothing_count=0,
-            named_unsatisfiable_count=0,
-        )
-        report = self.render_report(
-            "bfo-projection",
-            "/opt/robot",
-        )
-        self.assertIn("## BFO Projection", report)
-        report = self.render_report(
-            "bfo-projection-populated",
-            "/opt/robot",
-            bfo_projection_result=result,
-            bfo_projection_reconciliation=reconciliation,
-            bfo_projection_reasoning=reasoning,
-        )
-        self.assertIn("Direct governed projection axioms: 0", report)
-        self.assertIn("Direct logical mapping triples: 0", report)
-        self.assertIn("Descriptive metadata annotations: 7", report)
-        self.assertIn("Total RDF triples: 9", report)
-        self.assertIn("Project-module closure governed axioms: 48", report)
-        self.assertIn("Reused strict-BFO closure triple count: 14986", report)
-        self.assertIn("Projection-specific HermiT invocation: none", report)
-        self.assertIn("Zero direct projection axioms is intentional", report)
 
 
 class ComsCheckerBytecodeIsolationTests(unittest.TestCase):
@@ -1590,7 +1555,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "disposition_report": self.root / "reports/coms-product-dispositions.json",
             "alignment_core": self.root / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl",
             "strict_bfo_mapping": self.root / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
-            "bfo_projection": self.root / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
             "cco_extension": self.root / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         }
 
@@ -1626,9 +1590,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         return cls.generated_product_bytes("cco_extension")
 
     @staticmethod
-    def generated_bfo_projection_bytes() -> bytes:
-        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
-        return modular.build_bfo_projection((), metadata).serialized_bytes
 
     @staticmethod
     def reordered_root_import_bytes(canonical: bytes) -> bytes:
@@ -1663,10 +1624,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl",
         )
         self.assertEqual(
-            checker.MAINTAINED_OUTPUTS["bfo_projection"],
-            REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl",
-        )
-        self.assertEqual(
             checker.MAINTAINED_OUTPUTS["cco_extension"],
             REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl",
         )
@@ -1685,14 +1642,14 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             ),
             (),
         )
-        self.assertEqual(len(maintained_graph), 1124)
+        self.assertEqual(len(maintained_graph), 1114)
         logical_graph = strip_emitted_ontology_header(
             maintained_graph,
             metadata,
             "integrated",
             checker.ROOT_ORDERED_IMPORTS,
         )
-        self.assertEqual(len(logical_graph), 1112)
+        self.assertEqual(len(logical_graph), 1102)
         self.assertNotEqual(
             hashlib.sha256(maintained_path.read_bytes()).hexdigest(),
             "fd6eadf1bcbd4bfc6dc06df58915116d8f909bc8c3238592b1f13509cec47d16",
@@ -1707,11 +1664,11 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             metadata,
             require_current_counts=True,
         )
-        self.assertEqual(len(regenerated_graph), 1124)
+        self.assertEqual(len(regenerated_graph), 1114)
         self.assertEqual(regenerated_path.read_bytes(), maintained_path.read_bytes())
         self.assertEqual(
             hashlib.sha256(maintained_path.read_bytes()).hexdigest(),
-            "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+            "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
         )
         governed_axiom_ids = {
             f"sha256:{axiom.sha256}"
@@ -1719,7 +1676,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             for axiom in item.identity_audit.authoritative_axioms
         }
         self.assertEqual(set(modular._canonical_graph_axioms(regenerated_graph)), governed_axiom_ids)
-        self.assertEqual(len(governed_axiom_ids), 105)
+        self.assertEqual(len(governed_axiom_ids), 103)
 
     def test_integrated_root_bytes_are_explicit_and_repeatable_without_rdflib_serialization(self) -> None:
         rows, stats = coms.read_workbook(REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx")
@@ -1744,7 +1701,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(first.read_bytes(), second.read_bytes())
         self.assertEqual(
             hashlib.sha256(first.read_bytes()).hexdigest(),
-            "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0",
+            "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
         )
         self.assertNotIn(".serialize(", inspect.getsource(coms._root_turtle_bytes))
         self.assertNotIn(".serialize(", inspect.getsource(coms.generate_ontology))
@@ -1760,7 +1717,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "g.generate_ontology(processed,output,load_metadata(Path('config/publication-metadata.toml')),require_current_counts=True); "
             "print(hashlib.sha256(output.read_bytes()).hexdigest())"
         )
-        expected = "25b5828424e48396db546b2c3732befec2defcd3159c2a132a2f73343d1f17e0"
+        expected = "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11"
         observed: dict[str, str] = {}
         for seed in ("0", "1", "42", "random"):
             with tempfile.TemporaryDirectory(prefix=f"root-seed-{seed}-") as directory:
@@ -1818,7 +1775,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
         strict_bfo_hash = checker.sha256_file(outputs["strict_bfo_mapping"])
-        bfo_projection_hash = checker.sha256_file(outputs["bfo_projection"])
         cco_extension_hash = checker.sha256_file(outputs["cco_extension"])
         self.write(
             outputs["generation_report"],
@@ -1838,8 +1794,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{strict_bfo_hash}` |",
-                    "| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |",
-                    f"| BFO-projection Turtle SHA-256 | `{bfo_projection_hash}` |",
                     "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
                     f"| CCO-extension Turtle SHA-256 | `{cco_extension_hash}` |",
                 ]
@@ -1854,9 +1808,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 disposition_module_sha256=disposition_module_hash,
                 publication_metadata_sha256=publication_metadata_hash,
             ),
-            product_order=tuple(
-                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
-            ),
+            product_order=checker.PRODUCT_ROLE_ORDER,
         )
 
         with (
@@ -1887,7 +1839,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
         alignment_core_hash = checker.sha256_file(outputs["alignment_core"])
         strict_bfo_hash = checker.sha256_file(outputs["strict_bfo_mapping"])
-        bfo_projection_hash = checker.sha256_file(outputs["bfo_projection"])
         cco_extension_hash = checker.sha256_file(outputs["cco_extension"])
         self.write(
             outputs["generation_report"],
@@ -1907,8 +1858,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{alignment_core_hash}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{strict_bfo_hash}` |",
-                    "| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |",
-                    f"| BFO-projection Turtle SHA-256 | `{bfo_projection_hash}` |",
                     "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
                     f"| CCO-extension Turtle SHA-256 | `{cco_extension_hash}` |",
                 ]
@@ -1922,9 +1871,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 disposition_module_sha256=disposition_module_hash,
                 publication_metadata_sha256=publication_metadata_hash,
             ),
-            product_order=tuple(
-                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
-            ),
+            product_order=checker.PRODUCT_ROLE_ORDER,
         )
         cache_dir = self.root / ".cache/coms"
         run_generator = mock.Mock()
@@ -1995,8 +1942,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{hashes['alignment_core']}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{hashes['strict_bfo_mapping']}` |",
-                    "| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |",
-                    f"| BFO-projection Turtle SHA-256 | `{hashes['bfo_projection']}` |",
                     "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
                     f"| CCO-extension Turtle SHA-256 | `{hashes['cco_extension']}` |",
                 ]
@@ -2010,9 +1955,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 disposition_module_sha256=disposition_module_hash,
                 publication_metadata_sha256=publication_metadata_hash,
             ),
-            product_order=tuple(
-                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
-            ),
+            product_order=checker.PRODUCT_ROLE_ORDER,
         )
         cache_dir = self.root / ".cache/coms"
         run_generator = mock.Mock()
@@ -2070,8 +2013,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     f"| alignment-core Turtle SHA-256 | `{hashes['alignment_core']}` |",
                     "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
                     f"| strict-BFO Turtle SHA-256 | `{hashes['strict_bfo_mapping']}` |",
-                    "| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |",
-                    f"| BFO-projection Turtle SHA-256 | `{hashes['bfo_projection']}` |",
                     "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
                     f"| CCO-extension Turtle SHA-256 | `{hashes['cco_extension']}` |",
                 ]
@@ -2085,9 +2026,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 disposition_module_sha256=disposition_module_hash,
                 publication_metadata_sha256=publication_metadata_hash,
             ),
-            product_order=tuple(
-                product.key for product in load_metadata(checker.PUBLICATION_METADATA).products
-            ),
+            product_order=checker.PRODUCT_ROLE_ORDER,
         )
         self.write(outputs["cco_extension"], "modified maintained CCO extension\n")
         expected = {path: path.read_bytes() for path in outputs.values()}
@@ -2119,89 +2058,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), content)
         self.assertEqual(list(cache_dir.glob("run-*")), [])
 
-    def test_stale_bfo_projection_hash_fails_check_only_without_rewriting_outputs(self) -> None:
-        outputs = self.maintained_outputs()
-        for name, path in outputs.items():
-            self.write(path, f"maintained-{name}\n")
-        hashes = {name: checker.sha256_file(path) for name, path in outputs.items()}
-        disposition_module_hash = checker.sha256_file(checker.DISPOSITION_MODULE)
-        modular_products_module_hash = checker.sha256_file(checker.MODULAR_PRODUCTS_MODULE)
-        publication_metadata_hash = checker.sha256_file(checker.PUBLICATION_METADATA)
-        self.write(
-            outputs["generation_report"],
-            "\n".join(
-                [
-                    "| workbook SHA-256 | `workbook-hash` |",
-                    "| generator SHA-256 | `generator-hash` |",
-                    f"| product-disposition module SHA-256 | `{disposition_module_hash}` |",
-                    f"| modular-products module SHA-256 | `{modular_products_module_hash}` |",
-                    f"| publication metadata SHA-256 | `{publication_metadata_hash}` |",
-                    "| generation timestamp (UTC) | `2026-01-01T00:00:00+00:00` |",
-                    "| maintained ontology path | `SSN2BFO.ttl` |",
-                    f"| generated ontology SHA-256 | `{hashes['candidate']}` |",
-                    "| maintained product-disposition path | `reports/coms-product-dispositions.json` |",
-                    f"| product-disposition JSON SHA-256 | `{hashes['disposition_report']}` |",
-                    "| maintained alignment-core path | `releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl` |",
-                    f"| alignment-core Turtle SHA-256 | `{hashes['alignment_core']}` |",
-                    "| maintained strict-BFO path | `releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl` |",
-                    f"| strict-BFO Turtle SHA-256 | `{hashes['strict_bfo_mapping']}` |",
-                    "| maintained BFO-projection path | `releases/current-ssn-sosa/ssn-sosa-bfo-projection.ttl` |",
-                    f"| BFO-projection Turtle SHA-256 | `{hashes['bfo_projection']}` |",
-                    "| maintained CCO-extension path | `releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl` |",
-                    f"| CCO-extension Turtle SHA-256 | `{hashes['cco_extension']}` |",
-                ]
-            ),
-        )
-        fake_disposition = SimpleNamespace(
-            input_hashes=SimpleNamespace(
-                workbook_sha256="workbook-hash",
-                generator_sha256="generator-hash",
-                row_identity_module_sha256=checker.sha256_file(
-                    checker.ROW_IDENTITY_MODULE
-                ),
-                disposition_module_sha256=disposition_module_hash,
-                publication_metadata_sha256=publication_metadata_hash,
-            ),
-            product_order=tuple(
-                product.key
-                for product in load_metadata(checker.PUBLICATION_METADATA).products
-            ),
-        )
-        self.write(outputs["bfo_projection"], "modified maintained BFO projection\n")
-        expected = {path: path.read_bytes() for path in outputs.values()}
-        cache_dir = self.root / ".cache/coms"
-        run_generator = mock.Mock()
-        with (
-            mock.patch.object(checker, "REPO_ROOT", self.root),
-            mock.patch.object(checker, "CACHE_DIR", cache_dir),
-            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
-            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
-            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
-            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
-            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
-            mock.patch.object(checker, "run_generator", run_generator),
-            mock.patch.object(
-                checker, "load_disposition_document", return_value=fake_disposition
-            ),
-            mock.patch.object(
-                checker,
-                "serialize_disposition_document",
-                return_value=outputs["disposition_report"].read_bytes(),
-            ),
-            mock.patch.object(checker, "write_failure_log"),
-        ):
-            errors = checker.freshness_errors("workbook-hash", "generator-hash")
-            self.assertEqual(
-                errors, ["BFO-projection hash differs from the generated report"]
-            )
-            self.assertNotIn(
-                "generated candidate hash differs from the generated report", errors
-            )
-            self.assertEqual(checker.main(["--check-only"]), 1)
-        run_generator.assert_not_called()
-        for path, content in expected.items():
-            self.assertEqual(path.read_bytes(), content)
-        self.assertEqual(list(cache_dir.glob("run-*")), [])
 
     def test_publication_metadata_source_hash_participates_in_freshness(self) -> None:
         outputs = self.maintained_outputs()
@@ -2232,7 +2088,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertIn("product-disposition publication_metadata_sha256 is stale", errors)
         self.assertEqual({path: path.read_bytes() for path in outputs.values()}, before)
 
-    def test_first_successful_metadata_migration_replaces_all_five_ttls_together(self) -> None:
+    def test_first_successful_metadata_migration_replaces_all_four_ttls_together(self) -> None:
         outputs = self.maintained_outputs()
         for name, path in outputs.items():
             self.write(path, f"pre-metadata-{name}\n")
@@ -2241,7 +2097,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "candidate": (REPO_ROOT / "SSN2BFO.ttl").read_bytes(),
             "alignment_core": self.generated_product_bytes("alignment_core"),
             "strict_bfo_mapping": self.generated_product_bytes("strict_bfo_mapping"),
-            "bfo_projection": self.generated_bfo_projection_bytes(),
             "cco_extension": self.generated_cco_extension_bytes(),
         }
         metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
@@ -2251,9 +2106,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "strict_bfo_mapping": (
                 "http://www.sks.ai/SSN2BFO/current-ssn-sosa/alignment-core",
             ),
-            "bfo_projection": (
-                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
-            ),
             "cco_extension": (
                 "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
             ),
@@ -2262,7 +2114,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "candidate": "integrated",
             "alignment_core": "alignment_core",
             "strict_bfo_mapping": "strict_bfo_mapping",
-            "bfo_projection": "bfo_projection",
             "cco_extension": "cco_extension",
         }
         cache_dir = self.root / ".cache/coms"
@@ -2323,13 +2174,12 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
 
-    def test_checker_rejects_noncanonical_headers_for_all_five_candidates(self) -> None:
+    def test_checker_rejects_noncanonical_headers_for_all_four_candidates(self) -> None:
         metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
         canonical = {
             "candidate": (REPO_ROOT / "SSN2BFO.ttl").read_bytes(),
             "alignment_core": self.generated_product_bytes("alignment_core"),
             "strict_bfo_mapping": self.generated_product_bytes("strict_bfo_mapping"),
-            "bfo_projection": self.generated_bfo_projection_bytes(),
             "cco_extension": self.generated_cco_extension_bytes(),
         }
         product_keys = {
@@ -2423,7 +2273,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             "candidate": (REPO_ROOT / "SSN2BFO.ttl").read_bytes(),
             "alignment_core": self.generated_product_bytes("alignment_core"),
             "strict_bfo_mapping": self.generated_product_bytes("strict_bfo_mapping"),
-            "bfo_projection": self.generated_bfo_projection_bytes(),
             "cco_extension": self.generated_cco_extension_bytes(),
         }
         paths = {
@@ -2610,106 +2459,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         failure_log = (cache_dir / "last-failure.log").read_text(encoding="utf-8")
         self.assertIn("NONCANONICAL_ONTOLOGY_HEADER", failure_log)
 
-    def test_first_successful_update_creates_initially_absent_bfo_projection(self) -> None:
-        outputs = self.maintained_outputs()
-        existing = {
-            name: path for name, path in outputs.items() if name != "bfo_projection"
-        }
-        for name, path in existing.items():
-            self.write(path, f"old-{name}\n")
-        self.assertFalse(outputs["bfo_projection"].exists())
-        expected_generated = {
-            name: f"new-{name}\n".encode("utf-8") for name in existing
-        }
-        projection_bytes = self.generated_bfo_projection_bytes()
-        cache_dir = self.root / ".cache/coms"
-        transaction_dirs: list[Path] = []
-        events: list[str] = []
-        validated = False
-
-        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
-            self.assertFalse(outputs["bfo_projection"].exists())
-            transaction_dirs.append(paths["candidate"].parents[1])
-            for name, content in expected_generated.items():
-                paths[name].parent.mkdir(parents=True, exist_ok=True)
-                paths[name].write_bytes(content)
-            paths["bfo_projection"].parent.mkdir(parents=True, exist_ok=True)
-            paths["bfo_projection"].write_bytes(projection_bytes)
-            self.write(paths["summary"], "{}\n")
-            events.append("generated")
-
-        def fake_validate(paths: dict[str, Path], *_args, **_kwargs):
-            nonlocal validated
-            self.assertFalse(outputs["bfo_projection"].exists())
-            graph = coms.Graph().parse(paths["bfo_projection"], format="turtle")
-            metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
-            ontology = URIRef(
-                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection"
-            )
-            imported = URIRef(
-                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping"
-            )
-            self.assertEqual(
-                set(graph),
-                {
-                    (ontology, RDF.type, OWL.Ontology),
-                    (ontology, OWL.imports, imported),
-                    *ontology_metadata_rdf_triples(metadata, "bfo_projection"),
-                },
-            )
-            validated = True
-            events.append("validated")
-            return {}
-
-        production_replace = checker.replace_outputs_atomically
-
-        def observe_replace(
-            paths: dict[str, Path], transaction_dir: Path, log: list[str]
-        ) -> None:
-            self.assertTrue(validated)
-            self.assertFalse(outputs["bfo_projection"].exists())
-            events.append("replace-start")
-            production_replace(paths, transaction_dir, log)
-            self.assertTrue(outputs["bfo_projection"].exists())
-            events.append("replace-complete")
-
-        with (
-            mock.patch.object(checker, "REPO_ROOT", self.root),
-            mock.patch.object(checker, "CACHE_DIR", cache_dir),
-            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
-            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
-            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
-            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
-            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
-            mock.patch.object(
-                checker,
-                "freshness_errors",
-                return_value=["missing BFO projection"],
-            ),
-            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
-            mock.patch.object(
-                checker, "validate_temporary_outputs", side_effect=fake_validate
-            ),
-            mock.patch.object(checker, "git_diff_check"),
-            mock.patch.object(
-                checker, "output_differences", return_value=list(outputs)
-            ),
-            mock.patch.object(
-                checker, "replace_outputs_atomically", side_effect=observe_replace
-            ),
-            mock.patch.object(checker, "record_success"),
-            mock.patch.object(checker, "write_failure_log"),
-        ):
-            self.assertEqual(checker.main([]), 0)
-        self.assertEqual(
-            events, ["generated", "validated", "replace-start", "replace-complete"]
-        )
-        self.assertEqual(outputs["bfo_projection"].read_bytes(), projection_bytes)
-        self.assertEqual(len(Graph().parse(outputs["bfo_projection"], format="turtle")), 9)
-        self.assertTrue(all(path.is_file() for path in outputs.values()))
-        self.assertEqual(len(transaction_dirs), 1)
-        self.assertFalse(transaction_dirs[0].exists())
-        self.assertEqual(list(cache_dir.glob("run-*")), [])
 
     def test_first_successful_update_creates_initially_absent_alignment_core(self) -> None:
         outputs = self.maintained_outputs()
@@ -2935,7 +2684,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                 set(graph.triples((None, OWL.imports, None))),
                 {(ontology_iri, OWL.imports, strict_iri)},
             )
-            self.assertEqual(len(graph), 943)
+            self.assertEqual(len(graph), 933)
             validation_complete = True
             return {}
 
@@ -3215,56 +2964,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
 
-    def test_rollback_removes_new_bfo_projection_when_it_was_initially_absent(self) -> None:
-        outputs = self.maintained_outputs()
-        existing = {
-            name: path for name, path in outputs.items() if name != "bfo_projection"
-        }
-        for name, path in existing.items():
-            self.write(path, f"old-{name}\n")
-        before = {path: path.read_bytes() for path in existing.values()}
-        cache_dir = self.root / ".cache/coms"
-        transaction_dirs: list[Path] = []
-
-        def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
-            transaction_dirs.append(paths["candidate"].parents[1])
-            for name in outputs:
-                self.write(paths[name], f"new-{name}\n")
-            self.write(paths["summary"], "{}\n")
-
-        diff_checks = 0
-
-        def fail_post_update(_log: list[str], _label: str) -> None:
-            nonlocal diff_checks
-            diff_checks += 1
-            if diff_checks == 2:
-                raise checker.CheckFailure("post-update failure")
-
-        with (
-            mock.patch.object(checker, "REPO_ROOT", self.root),
-            mock.patch.object(checker, "CACHE_DIR", cache_dir),
-            mock.patch.object(checker, "LAST_SUCCESS", cache_dir / "last-success.json"),
-            mock.patch.object(checker, "LAST_FAILURE", cache_dir / "last-failure.log"),
-            mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
-            mock.patch.object(checker, "verify_workbook", return_value="workbook-hash"),
-            mock.patch.object(checker, "compile_generator", return_value="generator-hash"),
-            mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
-            mock.patch.object(checker, "run_generator", side_effect=fake_run_generator),
-            mock.patch.object(checker, "validate_temporary_outputs", return_value={}),
-            mock.patch.object(checker, "git_diff_check", side_effect=fail_post_update),
-            mock.patch.object(
-                checker, "output_differences", return_value=list(outputs)
-            ),
-            mock.patch.object(checker, "record_success"),
-            mock.patch.object(checker, "write_failure_log"),
-        ):
-            self.assertEqual(checker.main([]), 1)
-        self.assertEqual(diff_checks, 2)
-        for path, expected in before.items():
-            self.assertEqual(path.read_bytes(), expected)
-        self.assertFalse(outputs["bfo_projection"].exists())
-        self.assertEqual(len(transaction_dirs), 1)
-        self.assertFalse(transaction_dirs[0].exists())
 
     def test_rollback_removes_new_cco_extension_when_it_was_initially_absent(self) -> None:
         outputs = self.maintained_outputs()
@@ -3545,7 +3244,7 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                             "local_project_graph_triple_count": 194,
                             "hermit_return_code": 0,
                             "hermit_result": "PASS",
-                            "closure_triple_count": 14986,
+                            "closure_triple_count": 14988,
                             "named_unsat_count": 0,
                         },
                     }
@@ -3579,134 +3278,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         self.assertEqual(len(transaction_dirs), 1)
         self.assertFalse(transaction_dirs[0].exists())
 
-    def test_invalid_bfo_projection_candidates_fail_before_replacement(self) -> None:
-        rows, stats = coms.read_workbook(
-            REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
-        )
-        processed = coms.validate_and_process_rows(rows, coms.Resolver(), stats)
-        canonical_rows = tuple(
-            coms.canonical_input_for_processed_row(row) for row in processed
-        )
-        audits = tuple(row.identity_audit for row in processed)
-        disposition = checker.load_disposition_document(
-            REPO_ROOT / "reports/coms-product-dispositions.json"
-        )
-        metadata = load_metadata(REPO_ROOT / "config/publication-metadata.toml")
-        reconciliation = modular.reconcile_product_axioms(
-            "bfo_projection", canonical_rows, audits, disposition
-        )
-        strict_selected = modular.select_product_axioms(
-            "strict_bfo_mapping", canonical_rows, audits, disposition
-        )
-        core_selected = modular.select_product_axioms(
-            "alignment_core", canonical_rows, audits, disposition
-        )
-        strict_bytes = self.generated_product_bytes("strict_bfo_mapping")
-        core_bytes = self.generated_product_bytes("alignment_core")
-        valid = self.generated_bfo_projection_bytes()
-        valid_text = valid.decode("utf-8")
-        reasoning = modular.ModularReasoningResult(
-            source_product_key="strict_bfo_mapping",
-            source_product_sha256=hashlib.sha256(strict_bytes).hexdigest(),
-            closure_triple_count=14986,
-            return_code=0,
-            reasoned_output_produced=True,
-            owl_nothing_count=0,
-            named_unsatisfiable_count=0,
-        )
-        root_graph = Graph().parse(REPO_ROOT / "SSN2BFO.ttl", format="turtle")
-        cases = {
-            "malformed Turtle": b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n",
-            "wrong import": valid_text.replace(
-                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-mapping",
-                "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension",
-            ).encode("utf-8"),
-            "unexpected direct axiom": (
-                valid_text
-                + "<http://www.w3.org/ns/sosa/Observation> "
-                "<http://www.w3.org/2000/01/rdf-schema#subClassOf> "
-                "<http://purl.obolibrary.org/obo/BFO_0000001> .\n"
-            ).encode("utf-8"),
-            "unexpected CCO axiom": (
-                valid_text
-                + "<http://www.w3.org/ns/sosa/Observation> "
-                "<http://www.w3.org/2000/01/rdf-schema#subClassOf> "
-                "<https://www.commoncoreontologies.org/Artifact> .\n"
-            ).encode("utf-8"),
-        }
-
-        for label, candidate_bytes in cases.items():
-            with self.subTest(label=label):
-                outputs = self.maintained_outputs()
-                for name, path in outputs.items():
-                    self.write(path, f"old-{name}\n")
-                before = {path: path.read_bytes() for path in outputs.values()}
-                cache_dir = self.root / f".cache/coms-{label.replace(' ', '-')}"
-                transaction_dirs: list[Path] = []
-                observed: list[bytes] = []
-
-                def fake_run_generator(paths: dict[str, Path], _log: list[str]) -> None:
-                    transaction_dirs.append(paths["candidate"].parents[1])
-                    for name in outputs:
-                        self.write(paths[name], f"temporary-{name}\n")
-                    paths["bfo_projection"].write_bytes(candidate_bytes)
-                    self.write(paths["summary"], "{}\n")
-
-                def validate_written_candidate(
-                    paths: dict[str, Path], *_args, **_kwargs
-                ):
-                    observed.append(paths["bfo_projection"].read_bytes())
-                    issues = modular.validate_bfo_projection(
-                        observed[-1],
-                        reconciliation,
-                        strict_bytes,
-                        strict_selected,
-                        core_bytes,
-                        core_selected,
-                        metadata,
-                        integrated_graph=root_graph,
-                        strict_reasoning_result=reasoning,
-                    )
-                    self.assertTrue(issues)
-                    raise checker.CheckFailure(
-                        "; ".join(value.code for value in issues)
-                    )
-
-                with (
-                    mock.patch.object(checker, "REPO_ROOT", self.root),
-                    mock.patch.object(checker, "CACHE_DIR", cache_dir),
-                    mock.patch.object(
-                        checker, "LAST_SUCCESS", cache_dir / "last-success.json"
-                    ),
-                    mock.patch.object(
-                        checker, "LAST_FAILURE", cache_dir / "last-failure.log"
-                    ),
-                    mock.patch.object(checker, "MAINTAINED_OUTPUTS", outputs),
-                    mock.patch.object(
-                        checker, "verify_workbook", return_value="workbook-hash"
-                    ),
-                    mock.patch.object(
-                        checker, "compile_generator", return_value="generator-hash"
-                    ),
-                    mock.patch.object(checker, "freshness_errors", return_value=["stale"]),
-                    mock.patch.object(
-                        checker, "run_generator", side_effect=fake_run_generator
-                    ),
-                    mock.patch.object(
-                        checker,
-                        "validate_temporary_outputs",
-                        side_effect=validate_written_candidate,
-                    ),
-                    mock.patch.object(checker, "record_success"),
-                    mock.patch.object(checker, "write_failure_log"),
-                ):
-                    self.assertEqual(checker.main([]), 1)
-                self.assertEqual(observed, [candidate_bytes])
-                for path, expected in before.items():
-                    self.assertEqual(path.read_bytes(), expected)
-                self.assertEqual(len(transaction_dirs), 1)
-                self.assertFalse(transaction_dirs[0].exists())
-                self.assertEqual(list(cache_dir.glob("run-*")), [])
 
     def test_written_malformed_cco_extension_fails_before_replacement(self) -> None:
         outputs = self.maintained_outputs()
@@ -3722,7 +3293,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
         disposition_bytes = disposition_source.read_bytes()
         alignment_bytes = self.generated_product_bytes("alignment_core")
         strict_bytes = self.generated_product_bytes("strict_bfo_mapping")
-        projection_bytes = self.generated_bfo_projection_bytes()
         workbook_hash = disposition.input_hashes.workbook_sha256
         generator_hash = disposition.input_hashes.generator_sha256
 
@@ -3733,7 +3303,6 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
             paths["disposition_report"].write_bytes(disposition_bytes)
             paths["alignment_core"].write_bytes(alignment_bytes)
             paths["strict_bfo_mapping"].write_bytes(strict_bytes)
-            paths["bfo_projection"].write_bytes(projection_bytes)
             malformed_cco = b"@prefix owl: <http://www.w3.org/2002/07/owl#> .\n[\n"
             paths["cco_extension"].write_bytes(malformed_cco)
             observed_candidates.append(paths["cco_extension"].read_bytes())
@@ -3796,63 +3365,35 @@ class ComsAuthorityMigrationTests(unittest.TestCase):
                     "local_project_graph_triple_count": 194,
                     "hermit_return_code": 0,
                     "hermit_result": "PASS",
-                    "closure_triple_count": 14986,
+                    "closure_triple_count": 14988,
                     "named_unsat_count": 0,
-                },
-                "bfo_projection_sha256": checker.sha256_file(
-                    paths["bfo_projection"]
-                ),
-                "bfo_projection": {
-                    "product_key": "bfo_projection",
-                    "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/bfo-projection",
-                    "governed_axiom_count": 0,
-                    "logical_triple_count": 0,
-                    "ontology_declaration_triple_count": 1,
-                    "import_triple_count": 1,
-                    "metadata_annotation_count": 7,
-                    "total_triple_count": 9,
-                    "provided_transitively_count": 29,
-                    "provided_through_import_count": 19,
-                    "deferred_no_transformation_rule_count": 57,
-                    "project_closure_governed_axiom_count": 48,
-                    "project_graph_triple_count": 204,
-                    "local_project_graph_triple_count": 202,
-                    "reasoning_reused_from": "strict_bfo_mapping",
-                    "reasoning_source_sha256": checker.sha256_file(
-                        paths["strict_bfo_mapping"]
-                    ),
-                    "reasoning_closure_triple_count": 14986,
-                    "reasoning_return_code": 0,
-                    "reasoned_output_produced": True,
-                    "named_unsat_count": 0,
-                    "projection_specific_hermit_invoked": False,
                 },
                 "cco_extension_sha256": checker.sha256_file(paths["cco_extension"]),
                 "cco_extension": {
                     "product_key": "cco_extension",
                     "stable_ontology_iri": "http://www.sks.ai/SSN2BFO/current-ssn-sosa/cco-extension",
-                    "governed_axiom_count": 57,
+                    "governed_axiom_count": 55,
                     "cco_bearing_axiom_count": 25,
-                    "mixed_bfo_cco_axiom_count": 32,
-                    "logical_triple_count": 934,
+                    "mixed_bfo_cco_axiom_count": 30,
+                    "logical_triple_count": 924,
                     "ontology_declaration_triple_count": 1,
                     "import_triple_count": 1,
                     "metadata_annotation_count": 7,
-                    "total_triple_count": 943,
+                    "total_triple_count": 933,
                     "subclass_axiom_count": 31,
                     "equivalent_class_axiom_count": 7,
                     "direct_subproperty_axiom_count": 16,
-                    "property_chain_axiom_count": 3,
+                    "property_chain_axiom_count": 1,
                     "union_expression_count": 7,
                     "intersection_expression_count": 86,
                     "existential_restriction_count": 95,
-                    "rdf_list_count": 96,
-                    "project_closure_governed_axiom_count": 105,
-                    "project_graph_triple_count": 1138,
-                    "local_project_graph_triple_count": 1136,
+                    "rdf_list_count": 94,
+                    "project_closure_governed_axiom_count": 103,
+                    "project_graph_triple_count": 1128,
+                    "local_project_graph_triple_count": 1126,
                     "hermit_return_code": 0,
                     "hermit_result": "PASS",
-                    "closure_triple_count": 15928,
+                    "closure_triple_count": 15920,
                     "named_unsat_count": 0,
                 },
             }

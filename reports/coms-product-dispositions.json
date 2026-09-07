@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "canonicalization_version": "coms-row-expression-v1",
-  "workbook_sha256": "febb8b58b4a701cead90697412a9721112c4e6dfd3af47d3c3a77c93754690e0",
-  "generator_sha256": "a485f76366788b17a80969dca00d4d6802785b3e633edb8bb056c6eda893a8ed",
+  "workbook_sha256": "e32c6b5691bf4aa00b4ec564731e0364edc2567658bb21c46f83c1e3f0d9a4f6",
+  "generator_sha256": "f0bc84bf45eaa2e22aaeb7e004ebdad7336d077cdad415b6bf737fab1218fedd",
   "row_identity_module_sha256": "9af9f9ed5b9321040428960e1293cffe27ebb48cc7a68a71f53f84cf18a60425",
-  "disposition_module_sha256": "987fa4809e5780831f9e50e0b5cacc52888284fc7eae82a0928056c45c14a7d8",
-  "publication_metadata_sha256": "189e4a6b2dbbb1dcb77a8a9c8984458d4ef74a6838dc72a090f47a1cbe61e645",
+  "disposition_module_sha256": "b54b483176520f639c0e79a823a031757190eacedb2a2012932d5cba86d25eaf",
+  "publication_metadata_sha256": "bb818ab88d2dbcfd8a11eddcfc846c81609c4e9a9c6819def44f950da423e8f9",
   "product_order": [
     "integrated",
     "alignment_core",
@@ -16,18 +16,18 @@
   "summary": {
     "governed_row_count": 105,
     "unique_row_id_count": 105,
-    "authoritative_axiom_count": 105,
-    "unique_authoritative_axiom_count": 105,
-    "zero_axiom_row_count": 0,
+    "authoritative_axiom_count": 103,
+    "unique_authoritative_axiom_count": 103,
+    "zero_axiom_row_count": 2,
     "target_neutral_axiom_count": 29,
     "bfo_bearing_axiom_count": 19,
     "cco_bearing_axiom_count": 25,
-    "mixed_bfo_cco_axiom_count": 32,
+    "mixed_bfo_cco_axiom_count": 30,
     "class_mapping_row_count": 44,
     "relation_mapping_row_count": 25,
-    "property_chain_row_count": 5,
+    "property_chain_row_count": 3,
     "property_typing_row_count": 31,
-    "explicitly_unmapped_row_count": 0
+    "explicitly_unmapped_row_count": 2
   },
   "rows": [
     {
@@ -1370,56 +1370,42 @@
         "lexical": "sosa:hasSample",
         "iri": "http://www.w3.org/ns/sosa/hasSample"
       },
-      "predicate": {
-        "lexical": "owl:propertyChainAxiom",
-        "iri": "http://www.w3.org/2002/07/owl#propertyChainAxiom"
-      },
-      "authoritative_target_lexical": "cco:represented_by o bfo:generically_depends_on",
+      "predicate": null,
+      "authoritative_target_lexical": null,
       "canonical_row_expression": {
         "canonicalization": "coms-row-expression-v1",
-        "mapping_type": "property_chain",
-        "predicate_iri": "http://www.w3.org/2002/07/owl#propertyChainAxiom",
+        "mapping_type": "explicit_blank",
+        "predicate_iri": null,
         "subject_iri": "http://www.w3.org/ns/sosa/hasSample",
-        "target": "ObjectPropertyChain(<https://www.commoncoreontologies.org/ont00001873> <http://purl.obolibrary.org/obo/BFO_0000084>)"
+        "target": null
       },
-      "source_expression_sha256": "bfd39659b1869355d5164e90202c5d221a3d6363266d39483da4b91b727a63eb",
-      "mapping_type": "property_chain",
-      "coverage_classification": "property_chain",
-      "reasoning": "",
-      "authoritative_axioms": [
-        {
-          "axiom_id": "sha256:c0432102a5bd62d16ad94c26ec3e08d19540ba218dfb1a28a6bd87cd1e4be9ac",
-          "canonical_expression": "SubObjectPropertyOf(ObjectPropertyChain(<https://www.commoncoreontologies.org/ont00001873> <http://purl.obolibrary.org/obo/BFO_0000084>) <http://www.w3.org/ns/sosa/hasSample>)",
-          "referenced_iris": [
-            "http://purl.obolibrary.org/obo/BFO_0000084",
-            "http://www.w3.org/2002/07/owl#propertyChainAxiom",
-            "http://www.w3.org/ns/sosa/hasSample",
-            "https://www.commoncoreontologies.org/ont00001873"
-          ],
-          "target_category": "mixed_bfo_cco",
-          "product_dispositions": {
-            "integrated": {
-              "status": "emitted_unchanged"
-            },
-            "alignment_core": {
-              "status": "not_applicable",
-              "reason_code": "TARGET_SPECIFIC"
-            },
-            "strict_bfo_mapping": {
-              "status": "deferred",
-              "reason_code": "NO_APPROVED_TRANSFORMATION_RULE"
-            },
-            "bfo_projection": {
-              "status": "deferred",
-              "reason_code": "NO_APPROVED_TRANSFORMATION_RULE"
-            },
-            "cco_extension": {
-              "status": "emitted_unchanged"
-            }
-          }
+      "source_expression_sha256": "78883d8f62ff3dc679b238f1a17e47db6cc0b481a2859aa729723dea670aadb6",
+      "mapping_type": "explicit_blank",
+      "coverage_classification": "explicitly_unmapped",
+      "reasoning": "Property-chain mapping deferred because an owl:propertyChainAxiom makes sosa:hasSample non-simple, which conflicts with the pinned SOSA/SSN inverse-functional declaration. The source ontology remains unchanged; the representation intent belongs in a rule, SHACL, or annotation layer rather than the OWL 2 DL mapping product.",
+      "authoritative_axioms": [],
+      "row_product_dispositions": {
+        "integrated": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "alignment_core": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "strict_bfo_mapping": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "bfo_projection": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "cco_extension": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
         }
-      ],
-      "row_product_dispositions": null
+      }
     },
     {
       "row_id": "urn:uuid:2befdb79-d016-45f8-8c35-69ee93fa731f",
@@ -2778,56 +2764,42 @@
         "lexical": "sosa:isSampleOf",
         "iri": "http://www.w3.org/ns/sosa/isSampleOf"
       },
-      "predicate": {
-        "lexical": "owl:propertyChainAxiom",
-        "iri": "http://www.w3.org/2002/07/owl#propertyChainAxiom"
-      },
-      "authoritative_target_lexical": "bfo:is_carrier_of o cco:represents",
+      "predicate": null,
+      "authoritative_target_lexical": null,
       "canonical_row_expression": {
         "canonicalization": "coms-row-expression-v1",
-        "mapping_type": "property_chain",
-        "predicate_iri": "http://www.w3.org/2002/07/owl#propertyChainAxiom",
+        "mapping_type": "explicit_blank",
+        "predicate_iri": null,
         "subject_iri": "http://www.w3.org/ns/sosa/isSampleOf",
-        "target": "ObjectPropertyChain(<http://purl.obolibrary.org/obo/BFO_0000101> <https://www.commoncoreontologies.org/ont00001938>)"
+        "target": null
       },
-      "source_expression_sha256": "b1a2c6cce4e6700710ae9ca757188aa405e374fd6751a4cfc8793c257116fb7e",
-      "mapping_type": "property_chain",
-      "coverage_classification": "property_chain",
-      "reasoning": "",
-      "authoritative_axioms": [
-        {
-          "axiom_id": "sha256:84f1b6aa230d7c28f6304184fc7fac90089a78438b92a07b92a9e45763c9b951",
-          "canonical_expression": "SubObjectPropertyOf(ObjectPropertyChain(<http://purl.obolibrary.org/obo/BFO_0000101> <https://www.commoncoreontologies.org/ont00001938>) <http://www.w3.org/ns/sosa/isSampleOf>)",
-          "referenced_iris": [
-            "http://purl.obolibrary.org/obo/BFO_0000101",
-            "http://www.w3.org/2002/07/owl#propertyChainAxiom",
-            "http://www.w3.org/ns/sosa/isSampleOf",
-            "https://www.commoncoreontologies.org/ont00001938"
-          ],
-          "target_category": "mixed_bfo_cco",
-          "product_dispositions": {
-            "integrated": {
-              "status": "emitted_unchanged"
-            },
-            "alignment_core": {
-              "status": "not_applicable",
-              "reason_code": "TARGET_SPECIFIC"
-            },
-            "strict_bfo_mapping": {
-              "status": "deferred",
-              "reason_code": "NO_APPROVED_TRANSFORMATION_RULE"
-            },
-            "bfo_projection": {
-              "status": "deferred",
-              "reason_code": "NO_APPROVED_TRANSFORMATION_RULE"
-            },
-            "cco_extension": {
-              "status": "emitted_unchanged"
-            }
-          }
+      "source_expression_sha256": "46baaa1e5b7a959dbb7cc484f1c977f95487847d7ea493abe60fd55d4df42876",
+      "mapping_type": "explicit_blank",
+      "coverage_classification": "explicitly_unmapped",
+      "reasoning": "Property-chain mapping deferred because an owl:propertyChainAxiom makes sosa:isSampleOf non-simple, which conflicts with the pinned SOSA/SSN functional declaration and the minimum-cardinality restriction on sosa:Sample. The source ontology remains unchanged; the representation intent belongs in a rule, SHACL, or annotation layer rather than the OWL 2 DL mapping product.",
+      "authoritative_axioms": [],
+      "row_product_dispositions": {
+        "integrated": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "alignment_core": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "strict_bfo_mapping": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "bfo_projection": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
+        },
+        "cco_extension": {
+          "status": "deferred",
+          "reason_code": "EXPLICITLY_UNMAPPED_SOURCE_ROW"
         }
-      ],
-      "row_product_dispositions": null
+      }
     },
     {
       "row_id": "urn:uuid:66010702-8134-4e08-a972-f0767ec8dead",
