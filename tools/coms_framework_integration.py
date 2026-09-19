@@ -84,7 +84,9 @@ class SsnWorkbookResolutionContext:
         self._rows = tuple(rows)
         self._next_row_index = 0
         self._current_row: WorkbookSourceRow | None = None
-        self._source_kind_by_row_id: dict[str, str] = {}
+        self._resolved_sources: list[
+            tuple[WorkbookSourceRow, str, str]
+        ] = []
 
     def begin_source_resolution(self, token: str) -> str:
         """Advance to the next row after verifying its source token."""
@@ -115,23 +117,49 @@ class SsnWorkbookResolutionContext:
             )
         return _diagnostic_id(self._current_row)
 
-    def retain_source_kind(self, kind: str) -> None:
+    def retain_source_entity(self, iri: str, kind: str) -> None:
         if self._current_row is None:
             raise legacy.GenerationError(
-                "COMS source kind cannot be retained before row context is established"
+                "COMS source entity cannot be retained before row context is established"
             )
         row_id = self._current_row.row_id_text
-        if row_id in self._source_kind_by_row_id:
+        if any(row.row_id_text == row_id for row, _, _ in self._resolved_sources):
             raise legacy.GenerationError(
-                f"{self.current_diagnostic_id}: source kind was already retained"
+                f"{self.current_diagnostic_id}: source entity was already retained"
             )
-        self._source_kind_by_row_id[row_id] = kind
+        self._resolved_sources.append((self._current_row, iri, kind))
 
     @property
     def source_kind_by_row_id(self) -> Mapping[str, str]:
         """Return a read-only snapshot of source kinds retained during resolution."""
 
-        return MappingProxyType(dict(self._source_kind_by_row_id))
+        return MappingProxyType({
+            row.row_id_text: kind
+            for row, _, kind in self._resolved_sources
+        })
+
+    def resolved_source_prefix(
+        self,
+        *,
+        include_current: bool,
+        failure: BaseException,
+    ) -> tuple[tuple[WorkbookSourceRow, str], ...]:
+        """Return resolved rows that reached the legacy policy point."""
+
+        resolved = self._resolved_sources
+        current_failure_note = (
+            None
+            if self._current_row is None
+            else f"Workbook source row: {self.current_diagnostic_id}"
+        )
+        if (
+            not include_current
+            and resolved
+            and resolved[-1][0] is self._current_row
+            and current_failure_note in getattr(failure, "__notes__", ())
+        ):
+            resolved = resolved[:-1]
+        return tuple((row, iri) for row, iri, _ in resolved)
 
     def assert_complete(self) -> None:
         """Require exactly one completed source-resolution call for every row."""
@@ -141,9 +169,9 @@ class SsnWorkbookResolutionContext:
                 "COMS source resolver consumed "
                 f"{self._next_row_index} of {len(self._rows)} configured workbook rows"
             )
-        if len(self._source_kind_by_row_id) != len(self._rows):
+        if len(self._resolved_sources) != len(self._rows):
             raise legacy.GenerationError(
-                "COMS source resolver did not retain one source kind per workbook row"
+                "COMS source resolver did not retain one source entity per workbook row"
             )
 
 
@@ -170,7 +198,7 @@ class SsnSourceResolverAdapter:
             diagnostic_context,
         )
         if self._row_context is not None:
-            self._row_context.retain_source_kind(kind)
+            self._row_context.retain_source_entity(str(iri), kind)
         return ResolvedSourceEntity(iri=str(iri), kind=kind)
 
 
@@ -340,39 +368,35 @@ def project_audited_workbook_rows(
     return projected_rows
 
 
-def _validate_primary_domain_range_policy_compat(
-    processed_rows: Iterable[legacy.ProcessedRow],
-) -> None:
-    """Temporarily mirror the inline primary SSN domain/range authoring rule.
-
-    This project-only compatibility helper avoids changing the provenance-bearing
-    generator before the authorized Commit 3 cutover. Commit 3 must consolidate
-    this rule into one shared project-policy authority.
-    """
-
-    first_by_key: dict[tuple[str, str], legacy.ProcessedRow] = {}
-    for item in processed_rows:
-        if item.predicate not in legacy.DOMAIN_RANGE_PREDICATES:
-            continue
-        key = (str(item.subject), item.predicate)
-        previous = first_by_key.get(key)
-        if previous is None:
-            first_by_key[key] = item
-            continue
-        axiom_name = "domain" if item.predicate == "rdfs:domain" else "range"
-        raise legacy.GenerationError(
-            f"{item.row.diagnostic_id}: duplicate {item.predicate} row for "
-            f"{item.row.subject_text}; the first {axiom_name} row is "
-            f"{previous.row.diagnostic_id}. Multiple OWL {axiom_name} axioms "
-            "are conjunctive; write alternatives with Manchester 'or' in one "
-            "target expression."
-        )
-
-
 def _framework_failure_message(error: Exception) -> str:
     parts = [f"{type(error).__name__}: {error}"]
     parts.extend(str(note) for note in getattr(error, "__notes__", ()))
     return " | ".join(parts)
+
+
+def _raise_prior_primary_domain_range_failure(
+    row_context: SsnWorkbookResolutionContext,
+    *,
+    failure: BaseException,
+    include_current: bool,
+) -> None:
+    """Preserve legacy policy precedence when a COMS batch cannot complete."""
+
+    first_by_key: dict[tuple[str, str], legacy.WorkbookRow] = {}
+    try:
+        for source_row, subject_iri in row_context.resolved_source_prefix(
+            include_current=include_current,
+            failure=failure,
+        ):
+            if source_row.predicate_text not in legacy.DOMAIN_RANGE_PREDICATES:
+                continue
+            legacy.validate_primary_domain_range_authoring_row(
+                project_workbook_source_row(source_row),
+                URIRef(subject_iri),
+                first_by_key,
+            )
+    except legacy.GenerationError as exc:
+        raise exc from None
 
 
 def _derive_primary_workbook_stats(
@@ -444,6 +468,7 @@ def process_primary_workbook_with_coms(
         PRIMARY_WORKBOOK_PROFILE,
         workbook_path=str(workbook_path),
     )
+    row_context: SsnWorkbookResolutionContext | None = None
     try:
         source_rows = read_xlsx_source_rows(
             profile,
@@ -468,12 +493,44 @@ def process_primary_workbook_with_coms(
             audited_rows,
             row_context.source_kind_by_row_id,
         )
+    except legacy.GenerationError as exc:
+        if row_context is not None:
+            _raise_prior_primary_domain_range_failure(
+                row_context,
+                failure=exc,
+                include_current=False,
+            )
+        raise
     except _EXPECTED_FRAMEWORK_FAILURES as exc:
+        if row_context is not None:
+            _raise_prior_primary_domain_range_failure(
+                row_context,
+                failure=exc,
+                include_current=isinstance(
+                    exc,
+                    (
+                        EntityResolutionError,
+                        MappingParseError,
+                        FrameworkRowIdentityError,
+                    ),
+                ),
+            )
         raise legacy.GenerationError(
             _framework_failure_message(exc)
         ) from exc
 
-    _validate_primary_domain_range_policy_compat(processed_rows)
+    property_typing_row_by_key: dict[
+        tuple[str, str],
+        legacy.WorkbookRow,
+    ] = {}
+    for item in processed_rows:
+        if item.predicate not in legacy.DOMAIN_RANGE_PREDICATES:
+            continue
+        legacy.validate_primary_domain_range_authoring_row(
+            item.row,
+            item.subject,
+            property_typing_row_by_key,
+        )
     legacy.validate_incompatible_duplicate_mappings(processed_rows)
     stats = _derive_primary_workbook_stats(
         profile,

@@ -5,17 +5,21 @@ from __future__ import annotations
 
 import builtins
 import hashlib
-import inspect
+import io
+import shutil
 import sys
 import unittest
 from collections import Counter
+from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
 
+import coms.mapping_compiler as framework_compiler
 import coms.mapping_parser as framework_parser
 import coms.mapping_predicates as framework_predicates
 import coms.mapping_record_builder as framework_record_builder
+import coms.ontology_document as framework_document
 import coms.row_identity as framework_identity
 import coms.workbook_batch as framework_batch
 import coms.workbook_mapping as framework_workbook_mapping
@@ -53,7 +57,7 @@ import generate_mapping_from_coms as legacy  # noqa: E402
 
 WORKBOOK_PATH = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
 WORKBOOK_SHA256 = "e32c6b5691bf4aa00b4ec564731e0364edc2567658bb21c46f83c1e3f0d9a4f6"
-GENERATOR_SHA256 = "047dce7ffc77bbffdd4a5a8e5549b0ed161c5b15f5ffd8ad8a36a59f7b5001c5"
+GENERATOR_SHA256 = "247e049d9f1407143de7edf6c806d8e3dd485303c10dc1c167932a45df1d893f"
 ARTIFACT_SHA256 = {
     REPO_ROOT / "SSN2BFO.ttl": "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl": (
@@ -66,7 +70,7 @@ ARTIFACT_SHA256 = {
         "2908f89648d42dc928f7225056216f1cbf3bcdc79de1bcf770b40a017a5e9bf5"
     ),
     REPO_ROOT / "reports/coms-product-dispositions.json": (
-        "8976b914a8ef4d4291a2af190f4e01970c4c6a4b073ef7544babd67647509e75"
+        "29ca8c4e519a052cf3d44635e70c6361bebc3b88dc0f0815e3047011fad6a4f8"
     ),
 }
 EXPECTED_MAPPING_TYPES = {
@@ -827,6 +831,72 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
         processed = legacy.validate_and_process_rows(rows, legacy.Resolver(), stats)
         return processed, stats
 
+    @staticmethod
+    def _main_arguments(root: Path, workbook_path: Path) -> list[str]:
+        return [
+            "--input",
+            str(workbook_path),
+            "--output",
+            str(root / "integrated.ttl"),
+            "--report",
+            str(root / "generation-report.md"),
+            "--disposition-report",
+            str(root / "product-dispositions.json"),
+            "--alignment-core-output",
+            str(root / "alignment-core.ttl"),
+            "--strict-bfo-output",
+            str(root / "strict-bfo.ttl"),
+            "--cco-extension-output",
+            str(root / "cco-extension.ttl"),
+            "--coverage-report",
+            str(root / "coverage.md"),
+            "--diff-report",
+            str(root / "comparison.md"),
+            "--tmp-dir",
+            str(root / "reasoner"),
+            "--summary-json",
+            str(root / "summary.json"),
+        ]
+
+    @staticmethod
+    def _passing_hermit_result(root: Path) -> legacy.HermitResult:
+        return legacy.HermitResult(
+            graph_path=root / "closure.ttl",
+            reasoned_path=root / "reasoned.ttl",
+            generated_triple_count=1114,
+            closure_triple_count=15904,
+            return_code=0,
+            reasoned_output_produced=True,
+            owl_nothing_count=0,
+            unsat_classes=[],
+            robot_output="",
+            robot_path="synthetic-test-robot",
+        )
+
+    def _assert_temp_product_hashes(self, root: Path) -> None:
+        expected = {
+            "integrated.ttl": ARTIFACT_SHA256[REPO_ROOT / "SSN2BFO.ttl"],
+            "alignment-core.ttl": ARTIFACT_SHA256[
+                REPO_ROOT
+                / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl"
+            ],
+            "strict-bfo.ttl": ARTIFACT_SHA256[
+                REPO_ROOT
+                / "releases/current-ssn-sosa/ssn-sosa-bfo-mapping.ttl"
+            ],
+            "cco-extension.ttl": ARTIFACT_SHA256[
+                REPO_ROOT
+                / "releases/current-ssn-sosa/ssn-sosa-cco-extension.ttl"
+            ],
+        }
+        self.assertEqual(
+            {
+                name: sha256_file(root / name)
+                for name in expected
+            },
+            expected,
+        )
+
     def test_primary_wrapper_matches_legacy_rows_stats_and_resolution_state(self) -> None:
         self.assertEqual(len(self.framework_processed), 105)
         self.assertEqual(self.framework_processed, self.legacy_processed)
@@ -867,9 +937,9 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
             mock.patch.object(legacy_identity, "build_row_audit", side_effect=forbidden),
             mock.patch.object(legacy, "Resolver", side_effect=forbidden),
             mock.patch.object(
-                integration,
-                "_validate_primary_domain_range_policy_compat",
-                wraps=integration._validate_primary_domain_range_policy_compat,
+                legacy,
+                "validate_primary_domain_range_authoring_row",
+                wraps=legacy.validate_primary_domain_range_authoring_row,
             ) as domain_policy,
             mock.patch.object(
                 legacy,
@@ -883,8 +953,248 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
             )
         self.assertEqual(len(processed), 105)
         self.assertEqual(stats, self.legacy_stats)
-        domain_policy.assert_called_once_with(processed)
+        self.assertEqual(domain_policy.call_count, 31)
         incompatible_policy.assert_called_once_with(processed)
+
+    def test_canonical_primary_main_uses_coms_front_half_and_legacy_renderers(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            resolver = CountingResolver()
+            hermit = self._passing_hermit_result(root)
+            captured: dict[str, object] = {}
+            real_wrapper = integration.process_primary_workbook_with_coms
+
+            def recording_wrapper(
+                workbook_path: Path,
+                shared_resolver: legacy.Resolver,
+            ) -> tuple[list[legacy.ProcessedRow], legacy.WorkbookStats]:
+                result = real_wrapper(workbook_path, shared_resolver)
+                captured["processed"], captured["stats"] = result
+                captured["resolver"] = shared_resolver
+                return result
+
+            forbidden = AssertionError(
+                "primary production invoked a forbidden semantic or COMS renderer authority"
+            )
+            with ExitStack() as stack:
+                resolver_type = stack.enter_context(
+                    mock.patch.object(legacy, "Resolver", return_value=resolver)
+                )
+                wrapper = stack.enter_context(mock.patch.object(
+                    integration,
+                    "process_primary_workbook_with_coms",
+                    side_effect=recording_wrapper,
+                ))
+                stack.enter_context(
+                    mock.patch.object(legacy, "read_workbook", side_effect=forbidden)
+                )
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "validate_and_process_rows",
+                    side_effect=forbidden,
+                ))
+                stack.enter_context(
+                    mock.patch.object(legacy, "ManchesterParser", side_effect=forbidden)
+                )
+                stack.enter_context(
+                    mock.patch.object(legacy, "parse_property_chain", side_effect=forbidden)
+                )
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "validate_workbook_row_ids",
+                    side_effect=forbidden,
+                ))
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "attach_canonical_identities",
+                    side_effect=forbidden,
+                ))
+                stack.enter_context(
+                    mock.patch.object(legacy, "build_row_audit", side_effect=forbidden)
+                )
+                stack.enter_context(mock.patch.object(
+                    legacy_identity,
+                    "build_row_audit",
+                    side_effect=forbidden,
+                ))
+                domain_policy = stack.enter_context(mock.patch.object(
+                    legacy,
+                    "validate_primary_domain_range_authoring_row",
+                    wraps=legacy.validate_primary_domain_range_authoring_row,
+                ))
+                incompatible_policy = stack.enter_context(mock.patch.object(
+                    legacy,
+                    "validate_incompatible_duplicate_mappings",
+                    wraps=legacy.validate_incompatible_duplicate_mappings,
+                ))
+                compiler_renderer = stack.enter_context(mock.patch.object(
+                    framework_compiler,
+                    "render_mapping_record_turtle",
+                    side_effect=forbidden,
+                ))
+                document_record_renderer = stack.enter_context(mock.patch.object(
+                    framework_document,
+                    "render_mapping_record_turtle",
+                    side_effect=forbidden,
+                ))
+                document_header_renderer = stack.enter_context(mock.patch.object(
+                    framework_document,
+                    "render_ontology_header_bytes",
+                    side_effect=forbidden,
+                ))
+                document_renderer = stack.enter_context(mock.patch.object(
+                    framework_document,
+                    "render_ontology_document",
+                    side_effect=forbidden,
+                ))
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "run_alignment_core_hermit",
+                    return_value=hermit,
+                ))
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "run_strict_bfo_hermit",
+                    return_value=hermit,
+                ))
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "run_cco_extension_hermit",
+                    return_value=hermit,
+                ))
+                stack.enter_context(mock.patch.object(
+                    legacy,
+                    "run_candidate_hermit",
+                    return_value=hermit,
+                ))
+                stack.enter_context(redirect_stdout(io.StringIO()))
+                return_code = legacy.main(
+                    self._main_arguments(root, WORKBOOK_PATH)
+                )
+
+            self.assertEqual(return_code, 0)
+            resolver_type.assert_called_once_with()
+            wrapper.assert_called_once_with(WORKBOOK_PATH, resolver)
+            self.assertEqual(domain_policy.call_count, 31)
+            incompatible_policy.assert_called_once_with(captured["processed"])
+            compiler_renderer.assert_not_called()
+            document_record_renderer.assert_not_called()
+            document_header_renderer.assert_not_called()
+            document_renderer.assert_not_called()
+
+            processed = captured["processed"]
+            stats = captured["stats"]
+            self.assertEqual(processed, self.legacy_processed)
+            self.assertEqual(stats, self.legacy_stats)
+            self.assertIs(captured["resolver"], resolver)
+            self.assertEqual(resolver.records, self.legacy_resolver.records)
+            self.assertEqual(len(resolver.records), 60)
+            self.assertEqual(
+                sum(len(record.rows) for record in resolver.records.values()),
+                265,
+            )
+            self.assertEqual(resolver.source_resolution_calls, 105)
+            self.assertEqual(resolver.entity_resolution_calls, 499)
+            self.assertEqual(sum(not item.predicate for item in processed), 2)
+            self.assertEqual(
+                sum(
+                    len(item.identity_audit.authoritative_axioms)
+                    for item in processed
+                ),
+                103,
+            )
+            self._assert_temp_product_hashes(root)
+
+    def test_nonprimary_main_retains_legacy_front_half(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            copied_workbook = root / WORKBOOK_PATH.name
+            shutil.copy2(WORKBOOK_PATH, copied_workbook)
+            self.assertNotEqual(copied_workbook.resolve(), WORKBOOK_PATH.resolve())
+
+            resolver = CountingResolver()
+            hermit = self._passing_hermit_result(root)
+            captured: dict[str, object] = {}
+            real_process = legacy.validate_and_process_rows
+
+            def recording_process(
+                rows: list[legacy.WorkbookRow],
+                shared_resolver: legacy.Resolver,
+                stats: legacy.WorkbookStats,
+            ) -> list[legacy.ProcessedRow]:
+                processed = real_process(rows, shared_resolver, stats)
+                captured["processed"] = processed
+                captured["stats"] = stats
+                captured["resolver"] = shared_resolver
+                return processed
+
+            with (
+                mock.patch.object(legacy, "Resolver", return_value=resolver),
+                mock.patch.object(
+                    integration,
+                    "process_primary_workbook_with_coms",
+                    side_effect=AssertionError(
+                        "non-primary production invoked the COMS primary wrapper"
+                    ),
+                ) as wrapper,
+                mock.patch.object(
+                    legacy,
+                    "read_workbook",
+                    wraps=legacy.read_workbook,
+                ) as read_workbook,
+                mock.patch.object(
+                    legacy,
+                    "validate_and_process_rows",
+                    side_effect=recording_process,
+                ) as process_rows,
+                mock.patch.object(
+                    legacy,
+                    "validate_primary_domain_range_authoring_row",
+                    wraps=legacy.validate_primary_domain_range_authoring_row,
+                ) as domain_policy,
+                mock.patch.object(
+                    legacy,
+                    "run_alignment_core_hermit",
+                    return_value=hermit,
+                ),
+                mock.patch.object(
+                    legacy,
+                    "run_strict_bfo_hermit",
+                    return_value=hermit,
+                ),
+                mock.patch.object(
+                    legacy,
+                    "run_cco_extension_hermit",
+                    return_value=hermit,
+                ),
+                mock.patch.object(
+                    legacy,
+                    "run_candidate_hermit",
+                    return_value=hermit,
+                ),
+                redirect_stdout(io.StringIO()),
+            ):
+                return_code = legacy.main(
+                    self._main_arguments(root, copied_workbook)
+                )
+
+            self.assertEqual(return_code, 0)
+            wrapper.assert_not_called()
+            read_workbook.assert_called_once_with(copied_workbook)
+            process_rows.assert_called_once()
+            self.assertEqual(domain_policy.call_count, 31)
+            self.assertEqual(captured["processed"], self.legacy_processed)
+            self.assertEqual(captured["stats"], self.legacy_stats)
+            self.assertIs(captured["resolver"], resolver)
+            self.assertEqual(resolver.records, self.legacy_resolver.records)
+            self.assertEqual(len(resolver.records), 60)
+            self.assertEqual(
+                sum(len(record.rows) for record in resolver.records.values()),
+                265,
+            )
+            self.assertEqual(resolver.source_resolution_calls, 105)
+            self.assertEqual(resolver.entity_resolution_calls, 499)
+            self._assert_temp_product_hashes(root)
 
     def test_rowid_preflight_fails_before_batch_or_resolution(self) -> None:
         with TemporaryDirectory() as directory:
@@ -1065,8 +1375,8 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
             forbidden = AssertionError("project authoring policy ran too early")
             with (
                 mock.patch.object(
-                    integration,
-                    "_validate_primary_domain_range_policy_compat",
+                    legacy,
+                    "validate_primary_domain_range_authoring_row",
                     side_effect=forbidden,
                 ),
                 mock.patch.object(
@@ -1092,22 +1402,41 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
         self.assertIn("Sheet1!2", message)
         self.assertIn("Sheet1!3", message)
 
-    def test_temporary_domain_range_policy_matches_legacy(self) -> None:
+    def test_shared_domain_range_policy_matches_legacy(self) -> None:
+        def expected_duplicate_message(predicate: str, axiom_name: str) -> str:
+            return (
+                "Sheet1!3 "
+                "[urn:uuid:00000000-0000-4000-8000-000000000006]: "
+                f"duplicate {predicate} row for sosa:hasFeatureOfInterest; "
+                f"the first {axiom_name} row is Sheet1!2 "
+                "[urn:uuid:00000000-0000-4000-8000-000000000005]. "
+                f"Multiple OWL {axiom_name} axioms are conjunctive; write "
+                "alternatives with Manchester 'or' in one target expression."
+            )
+
         duplicate_cases = (
             (
                 "domain",
                 "rdfs:domain",
                 "sosa:Observation",
                 "sosa:Actuation",
+                "domain",
             ),
             (
                 "range",
                 "rdfs:range",
                 "sosa:FeatureOfInterest",
                 "sosa:Platform",
+                "range",
             ),
         )
-        for name, predicate, first_target, second_target in duplicate_cases:
+        for (
+            name,
+            predicate,
+            first_target,
+            second_target,
+            axiom_name,
+        ) in duplicate_cases:
             with self.subTest(name=name), TemporaryDirectory() as directory:
                 workbook_path = Path(directory) / f"duplicate-{name}.xlsx"
                 _write_test_workbook(
@@ -1136,10 +1465,113 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
                         workbook_path,
                         legacy.Resolver(),
                     )
-                self.assertEqual(
-                    str(framework_raised.exception),
-                    str(legacy_raised.exception),
+                expected_message = expected_duplicate_message(
+                    predicate,
+                    axiom_name,
                 )
+                self.assertEqual(
+                    str(legacy_raised.exception),
+                    expected_message,
+                )
+                self.assertEqual(str(framework_raised.exception), expected_message)
+
+        overlap_cases = (
+            ("domain", "rdfs:domain", "sosa:Observation"),
+            ("range", "rdfs:range", "sosa:FeatureOfInterest"),
+        )
+        failure_cases = (
+            ("malformed-second-target", "{target} or"),
+            ("identical-authoritative-axiom", "{target}"),
+        )
+        for axiom_name, predicate, first_target in overlap_cases:
+            for failure_name, second_target_template in failure_cases:
+                second_target = second_target_template.format(target=first_target)
+                with (
+                    self.subTest(
+                        axiom=axiom_name,
+                        failure=failure_name,
+                    ),
+                    TemporaryDirectory() as directory,
+                ):
+                    workbook_path = (
+                        Path(directory)
+                        / f"duplicate-{axiom_name}-{failure_name}.xlsx"
+                    )
+                    _write_test_workbook(
+                        workbook_path,
+                        (
+                            (
+                                "sosa:hasFeatureOfInterest",
+                                predicate,
+                                first_target,
+                                "",
+                                _test_row_id(5),
+                            ),
+                            (
+                                "sosa:hasFeatureOfInterest",
+                                predicate,
+                                second_target,
+                                "",
+                                _test_row_id(6),
+                            ),
+                        ),
+                    )
+                    with self.assertRaises(legacy.GenerationError) as legacy_raised:
+                        self._legacy_process(workbook_path)
+                    with self.assertRaises(legacy.GenerationError) as framework_raised:
+                        integration.process_primary_workbook_with_coms(
+                            workbook_path,
+                            legacy.Resolver(),
+                        )
+                    expected_message = expected_duplicate_message(
+                        predicate,
+                        axiom_name,
+                    )
+                    self.assertEqual(str(legacy_raised.exception), expected_message)
+                    self.assertEqual(str(framework_raised.exception), expected_message)
+                    self.assertIsNone(framework_raised.exception.__cause__)
+
+        with TemporaryDirectory() as directory:
+            workbook_path = Path(directory) / "duplicate-before-blank-source.xlsx"
+            _write_test_workbook(
+                workbook_path,
+                (
+                    (
+                        "sosa:hasFeatureOfInterest",
+                        "rdfs:domain",
+                        "sosa:Observation",
+                        "",
+                        _test_row_id(5),
+                    ),
+                    (
+                        "sosa:hasFeatureOfInterest",
+                        "rdfs:domain",
+                        "sosa:Actuation",
+                        "",
+                        _test_row_id(6),
+                    ),
+                    (
+                        "",
+                        "rdfs:subClassOf",
+                        "sosa:Observation",
+                        "",
+                        _test_row_id(7),
+                    ),
+                ),
+            )
+            with self.assertRaises(legacy.GenerationError) as legacy_raised:
+                self._legacy_process(workbook_path)
+            with self.assertRaises(legacy.GenerationError) as framework_raised:
+                integration.process_primary_workbook_with_coms(
+                    workbook_path,
+                    legacy.Resolver(),
+                )
+            expected_message = expected_duplicate_message(
+                "rdfs:domain",
+                "domain",
+            )
+            self.assertEqual(str(legacy_raised.exception), expected_message)
+            self.assertEqual(str(framework_raised.exception), expected_message)
 
         with TemporaryDirectory() as directory:
             workbook_path = Path(directory) / "domain-and-range.xlsx"
@@ -1175,9 +1607,19 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
             self.framework_processed[0].predicate,
             legacy.DOMAIN_RANGE_PREDICATES,
         )
-        integration._validate_primary_domain_range_policy_compat(
-            [self.framework_processed[0], self.framework_processed[0]]
+        unrelated = self.framework_processed[0]
+        first_by_key: dict[tuple[str, str], legacy.WorkbookRow] = {}
+        legacy.validate_primary_domain_range_authoring_row(
+            unrelated.row,
+            unrelated.subject,
+            first_by_key,
         )
+        legacy.validate_primary_domain_range_authoring_row(
+            unrelated.row,
+            unrelated.subject,
+            first_by_key,
+        )
+        self.assertEqual(first_by_key, {})
 
     def test_existing_incompatible_mapping_policy_is_retained(self) -> None:
         with TemporaryDirectory() as directory:
@@ -1253,7 +1695,7 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
             )
         self.assertIs(propagated.exception, unexpected)
 
-    def test_wrapper_is_read_only_and_production_main_is_legacy(self) -> None:
+    def test_wrapper_is_read_only(self) -> None:
         locked_paths = (WORKBOOK_PATH, *ARTIFACT_SHA256)
         hashes_before = {
             path: sha256_file(path)
@@ -1309,13 +1751,6 @@ class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
         )
         self.assertEqual(WORKBOOK_PATH.stat().st_mtime_ns, workbook_mtime_before)
 
-        main_source = inspect.getsource(legacy.main)
-        read_index = main_source.index("rows, stats = read_workbook(input_path)")
-        process_index = main_source.index(
-            "processed = validate_and_process_rows(rows, resolver, stats)"
-        )
-        self.assertLess(read_index, process_index)
-        self.assertNotIn("process_primary_workbook_with_coms", main_source)
         self.assertEqual(
             sha256_file(Path(legacy.__file__).resolve()),
             GENERATOR_SHA256,
