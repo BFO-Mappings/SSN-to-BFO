@@ -23,6 +23,17 @@ legacy-backed, renderer migration remains out of scope, and the one-time
 provenance-report update reserved for the eventual production cutover has not
 occurred.
 
+A COMS-backed primary-workbook processing wrapper now exercises extraction,
+RowID preflight, semantic batching, compatibility projection, retained SSN
+authoring checks, and legacy `WorkbookStats` reproduction without writing
+outputs. It is verified equivalent to the legacy semantic front half, but it is
+not yet authoritative: production `main()` still uses the legacy path, and
+Commit 3 will perform the authority switch. The compatibility projection and
+the integration-local duplicate domain/range policy mirror are temporary;
+Commit 3 must consolidate the latter with the legacy inline rule into one
+shared project-policy authority. COMS renderer migration remains out of scope,
+and disposition-provenance bytes have not changed.
+
 For local framework development only, a sibling checkout may override the pin:
 
 ```bash

@@ -3,16 +3,36 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable, Mapping
+from dataclasses import replace
+from pathlib import Path
 from types import MappingProxyType
 
+from coms.adapters.xlsx import (
+    WorkbookSourceRow,
+    XlsxAdapterDependencyError,
+    XlsxAdapterError,
+    read_xlsx_source_rows,
+)
 from coms.config import HeaderBinding, WorkbookProfile
-from coms.adapters.xlsx import WorkbookSourceRow
 from coms.mapping_expression import ExpressionNode
-from coms.mapping_parser import EntityResolutionError
-from coms.row_identity import CanonicalRowAudit as FrameworkCanonicalRowAudit
-from coms.workbook_batch import AuditedWorkbookRow
-from coms.workbook_mapping import ResolvedSourceEntity
+from coms.mapping_parser import EntityResolutionError, MappingParseError
+from coms.mapping_predicates import MappingPredicateTokenError
+from coms.mapping_record_builder import MappingRecordBuildError
+from coms.row_identity import (
+    CanonicalRowAudit as FrameworkCanonicalRowAudit,
+    ComsRowIdentityError as FrameworkRowIdentityError,
+)
+from coms.workbook_batch import (
+    AuditedWorkbookRow,
+    build_governed_workbook_batch,
+    validate_workbook_source_row_ids,
+)
+from coms.workbook_mapping import (
+    ResolvedSourceEntity,
+    WorkbookMappingError,
+)
 from rdflib import URIRef
 
 import coms_row_identity as legacy_identity
@@ -38,6 +58,17 @@ PRIMARY_WORKBOOK_PROFILE = WorkbookProfile(
     ),
     row_id_column="coms:RowID",
     explicit_blank_representation="blank predicate and blank target",
+)
+
+_EXPECTED_FRAMEWORK_FAILURES = (
+    XlsxAdapterDependencyError,
+    XlsxAdapterError,
+    MappingPredicateTokenError,
+    EntityResolutionError,
+    MappingParseError,
+    MappingRecordBuildError,
+    FrameworkRowIdentityError,
+    WorkbookMappingError,
 )
 
 
@@ -307,3 +338,147 @@ def project_audited_workbook_rows(
         )
 
     return projected_rows
+
+
+def _validate_primary_domain_range_policy_compat(
+    processed_rows: Iterable[legacy.ProcessedRow],
+) -> None:
+    """Temporarily mirror the inline primary SSN domain/range authoring rule.
+
+    This project-only compatibility helper avoids changing the provenance-bearing
+    generator before the authorized Commit 3 cutover. Commit 3 must consolidate
+    this rule into one shared project-policy authority.
+    """
+
+    first_by_key: dict[tuple[str, str], legacy.ProcessedRow] = {}
+    for item in processed_rows:
+        if item.predicate not in legacy.DOMAIN_RANGE_PREDICATES:
+            continue
+        key = (str(item.subject), item.predicate)
+        previous = first_by_key.get(key)
+        if previous is None:
+            first_by_key[key] = item
+            continue
+        axiom_name = "domain" if item.predicate == "rdfs:domain" else "range"
+        raise legacy.GenerationError(
+            f"{item.row.diagnostic_id}: duplicate {item.predicate} row for "
+            f"{item.row.subject_text}; the first {axiom_name} row is "
+            f"{previous.row.diagnostic_id}. Multiple OWL {axiom_name} axioms "
+            "are conjunctive; write alternatives with Manchester 'or' in one "
+            "target expression."
+        )
+
+
+def _framework_failure_message(error: Exception) -> str:
+    parts = [f"{type(error).__name__}: {error}"]
+    parts.extend(str(note) for note in getattr(error, "__notes__", ()))
+    return " | ".join(parts)
+
+
+def _derive_primary_workbook_stats(
+    profile: WorkbookProfile,
+    source_rows: tuple[WorkbookSourceRow, ...],
+    audited_rows: tuple[AuditedWorkbookRow, ...],
+    processed_rows: list[legacy.ProcessedRow],
+) -> legacy.WorkbookStats:
+    """Reproduce legacy primary-workbook statistics from COMS batch results."""
+
+    stats = legacy.WorkbookStats()
+    stats.worksheets_read = list(profile.sheet_selectors)
+    seen_sheets = set(stats.worksheets_read)
+
+    for row in source_rows:
+        sheet = row.location.worksheet
+        if sheet not in seen_sheets:
+            stats.worksheets_read.append(sheet)
+            seen_sheets.add(sheet)
+        stats.rows_by_sheet[sheet] = max(
+            stats.rows_by_sheet[sheet],
+            row.location.row_number - 1,
+        )
+        stats.populated_rows_by_sheet[sheet] += 1
+
+    mapping_types = Counter(
+        item.governed_record.mapping_type
+        for item in audited_rows
+    )
+    stats.class_mapping_rows = mapping_types["class_mapping"]
+    stats.object_property_mapping_rows = mapping_types["object_property_mapping"]
+    stats.property_chain_rows = mapping_types["property_chain"]
+    stats.domain_rows = mapping_types["domain"]
+    stats.range_rows = mapping_types["range"]
+    stats.blank_mapping_rows = mapping_types["explicit_blank"]
+    stats.mapped_rows = (
+        stats.class_mapping_rows
+        + stats.object_property_mapping_rows
+        + stats.property_chain_rows
+    )
+    stats.governed_row_id_count = len(source_rows)
+    stats.unique_row_id_count = len({row.row_id_text for row in source_rows})
+    stats.processed_row_count = len(processed_rows)
+
+    identity_audits = tuple(
+        item.identity_audit
+        for item in processed_rows
+        if item.identity_audit is not None
+    )
+    stats.identity_audit_row_count = len(identity_audits)
+    legacy.validate_identity_audit_completeness(
+        [project_workbook_source_row(row) for row in source_rows],
+        processed_rows,
+        identity_audits,
+    )
+    stats.identity_count_reconciliation_passed = True
+    stats.identity_row_id_set_reconciliation_passed = True
+    stats.identity_location_reconciliation_passed = True
+    return stats
+
+
+def process_primary_workbook_with_coms(
+    workbook_path: Path,
+    resolver: legacy.Resolver,
+) -> tuple[list[legacy.ProcessedRow], legacy.WorkbookStats]:
+    """Process the primary SSN workbook through COMS without writing outputs."""
+
+    profile = replace(
+        PRIMARY_WORKBOOK_PROFILE,
+        workbook_path=str(workbook_path),
+    )
+    try:
+        source_rows = read_xlsx_source_rows(
+            profile,
+            base_directory=legacy.REPO_ROOT,
+        )
+        validate_workbook_source_row_ids(source_rows)
+
+        row_context = SsnWorkbookResolutionContext(source_rows)
+        audited_rows = build_governed_workbook_batch(
+            source_rows,
+            SsnSourceResolverAdapter(
+                resolver,
+                row_context=row_context,
+            ),
+            SsnTargetResolverAdapter(
+                resolver,
+                row_context=row_context,
+            ),
+        )
+        row_context.assert_complete()
+        processed_rows = project_audited_workbook_rows(
+            audited_rows,
+            row_context.source_kind_by_row_id,
+        )
+    except _EXPECTED_FRAMEWORK_FAILURES as exc:
+        raise legacy.GenerationError(
+            _framework_failure_message(exc)
+        ) from exc
+
+    _validate_primary_domain_range_policy_compat(processed_rows)
+    legacy.validate_incompatible_duplicate_mappings(processed_rows)
+    stats = _derive_primary_workbook_stats(
+        profile,
+        source_rows,
+        audited_rows,
+        processed_rows,
+    )
+    return processed_rows, stats

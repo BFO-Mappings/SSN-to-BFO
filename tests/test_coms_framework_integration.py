@@ -3,17 +3,28 @@
 
 from __future__ import annotations
 
+import builtins
 import hashlib
+import inspect
 import sys
 import unittest
 from collections import Counter
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import mock
 
 import coms.mapping_parser as framework_parser
+import coms.mapping_predicates as framework_predicates
+import coms.mapping_record_builder as framework_record_builder
 import coms.row_identity as framework_identity
 import coms.workbook_batch as framework_batch
-from coms.adapters.xlsx import WorkbookSourceRow, read_xlsx_source_rows
+import coms.workbook_mapping as framework_workbook_mapping
+from coms.adapters.xlsx import (
+    WorkbookSourceRow,
+    XlsxAdapterDependencyError,
+    XlsxAdapterError,
+    read_xlsx_source_rows,
+)
 from coms.mapping_expression import ExpressionNode
 from coms.mapping_record import GovernedMappingRecord
 from coms.mapping_parser import EntityResolutionError
@@ -42,6 +53,7 @@ import generate_mapping_from_coms as legacy  # noqa: E402
 
 WORKBOOK_PATH = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
 WORKBOOK_SHA256 = "e32c6b5691bf4aa00b4ec564731e0364edc2567658bb21c46f83c1e3f0d9a4f6"
+GENERATOR_SHA256 = "047dce7ffc77bbffdd4a5a8e5549b0ed161c5b15f5ffd8ad8a36a59f7b5001c5"
 ARTIFACT_SHA256 = {
     REPO_ROOT / "SSN2BFO.ttl": "c31997d7e7b8c5e0bffd3f23a4597ab4be80786978462fefe800c4c7a5dc0c11",
     REPO_ROOT / "releases/current-ssn-sosa/ssn-sosa-alignment-core.ttl": (
@@ -87,6 +99,53 @@ def _expression_kinds(expression: legacy.Expr | None) -> set[str]:
         kinds.update(_expression_kinds(child))
     kinds.update(_expression_kinds(expression.filler))
     return kinds
+
+
+SYNTHETIC_HEADERS = (
+    "sssom:subject_id",
+    "sssom:predicate_id",
+    "coms:Target",
+    "coms:Reasoning",
+    "coms:RowID",
+)
+
+
+def _test_row_id(number: int) -> str:
+    return f"urn:uuid:00000000-0000-4000-8000-{number:012d}"
+
+
+def _write_test_workbook(
+    path: Path,
+    sheet1_rows: tuple[tuple[str, str, str, str, str], ...],
+    sheet2_rows: tuple[tuple[str, str, str, str, str], ...] = (),
+) -> None:
+    workbook = legacy.openpyxl.Workbook()
+    sheet1 = workbook.active
+    sheet1.title = "Sheet1"
+    sheet1.append(SYNTHETIC_HEADERS)
+    for row in sheet1_rows:
+        sheet1.append(row)
+    sheet2 = workbook.create_sheet("Sheet2")
+    sheet2.append(SYNTHETIC_HEADERS)
+    for row in sheet2_rows:
+        sheet2.append(row)
+    workbook.save(path)
+    workbook.close()
+
+
+class CountingResolver(legacy.Resolver):
+    def __init__(self) -> None:
+        self.source_resolution_calls = 0
+        self.entity_resolution_calls = 0
+        super().__init__()
+
+    def resolve_source_subject(self, token: str, row_id: str) -> tuple[URIRef, str]:
+        self.source_resolution_calls += 1
+        return super().resolve_source_subject(token, row_id)
+
+    def resolve(self, token: str, expected_kind: str, row_id: str) -> legacy.Resolution:
+        self.entity_resolution_calls += 1
+        return super().resolve(token, expected_kind, row_id)
 
 
 class ComsFrameworkShadowIntegrationTests(unittest.TestCase):
@@ -740,3 +799,524 @@ class ComsCompatibilityProjectionTests(unittest.TestCase):
             "source-kind sidecar entry is missing",
         ):
             integration.project_audited_workbook_rows(self.audited_rows, {})
+
+
+class ComsPrimaryWorkbookWrapperTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        legacy_rows, cls.legacy_stats = legacy.read_workbook(WORKBOOK_PATH)
+        cls.legacy_resolver = CountingResolver()
+        cls.legacy_processed = legacy.validate_and_process_rows(
+            legacy_rows,
+            cls.legacy_resolver,
+            cls.legacy_stats,
+        )
+
+        cls.framework_resolver = CountingResolver()
+        (
+            cls.framework_processed,
+            cls.framework_stats,
+        ) = integration.process_primary_workbook_with_coms(
+            WORKBOOK_PATH,
+            cls.framework_resolver,
+        )
+
+    @staticmethod
+    def _legacy_process(path: Path) -> tuple[list[legacy.ProcessedRow], legacy.WorkbookStats]:
+        rows, stats = legacy.read_workbook(path)
+        processed = legacy.validate_and_process_rows(rows, legacy.Resolver(), stats)
+        return processed, stats
+
+    def test_primary_wrapper_matches_legacy_rows_stats_and_resolution_state(self) -> None:
+        self.assertEqual(len(self.framework_processed), 105)
+        self.assertEqual(self.framework_processed, self.legacy_processed)
+        self.assertEqual(self.framework_stats, self.legacy_stats)
+        self.assertEqual(
+            self.framework_resolver.records,
+            self.legacy_resolver.records,
+        )
+        self.assertEqual(len(self.framework_resolver.records), 60)
+        self.assertEqual(
+            sum(
+                len(record.rows)
+                for record in self.framework_resolver.records.values()
+            ),
+            265,
+        )
+        self.assertEqual(self.legacy_resolver.source_resolution_calls, 105)
+        self.assertEqual(self.framework_resolver.source_resolution_calls, 105)
+        self.assertEqual(self.legacy_resolver.entity_resolution_calls, 499)
+        self.assertEqual(self.framework_resolver.entity_resolution_calls, 499)
+        self.assertEqual(self.framework_stats.rows_by_sheet["Sheet1"], 44)
+        self.assertEqual(self.framework_stats.rows_by_sheet["Sheet2"], 61)
+        self.assertEqual(self.framework_stats.mapped_rows, 72)
+        self.assertEqual(self.framework_stats.blank_mapping_rows, 2)
+        self.assertEqual(self.framework_stats.active_axiom_rows, 103)
+
+    def test_wrapper_uses_no_legacy_generic_front_half_authorities(self) -> None:
+        resolver = legacy.Resolver()
+        forbidden = AssertionError("COMS wrapper invoked a legacy front-half authority")
+        with (
+            mock.patch.object(legacy, "read_workbook", side_effect=forbidden),
+            mock.patch.object(legacy, "validate_and_process_rows", side_effect=forbidden),
+            mock.patch.object(legacy, "ManchesterParser", side_effect=forbidden),
+            mock.patch.object(legacy, "parse_property_chain", side_effect=forbidden),
+            mock.patch.object(legacy, "validate_workbook_row_ids", side_effect=forbidden),
+            mock.patch.object(legacy, "attach_canonical_identities", side_effect=forbidden),
+            mock.patch.object(legacy, "build_row_audit", side_effect=forbidden),
+            mock.patch.object(legacy_identity, "build_row_audit", side_effect=forbidden),
+            mock.patch.object(legacy, "Resolver", side_effect=forbidden),
+            mock.patch.object(
+                integration,
+                "_validate_primary_domain_range_policy_compat",
+                wraps=integration._validate_primary_domain_range_policy_compat,
+            ) as domain_policy,
+            mock.patch.object(
+                legacy,
+                "validate_incompatible_duplicate_mappings",
+                wraps=legacy.validate_incompatible_duplicate_mappings,
+            ) as incompatible_policy,
+        ):
+            processed, stats = integration.process_primary_workbook_with_coms(
+                WORKBOOK_PATH,
+                resolver,
+            )
+        self.assertEqual(len(processed), 105)
+        self.assertEqual(stats, self.legacy_stats)
+        domain_policy.assert_called_once_with(processed)
+        incompatible_policy.assert_called_once_with(processed)
+
+    def test_rowid_preflight_fails_before_batch_or_resolution(self) -> None:
+        with TemporaryDirectory() as directory:
+            workbook_path = Path(directory) / "invalid-row-id.xlsx"
+            malformed_row_id = "not-a-canonical-row-id"
+            _write_test_workbook(
+                workbook_path,
+                ((
+                    "sosa:Observation",
+                    "rdfs:subClassOf",
+                    "cco:InformationContentEntity",
+                    "",
+                    malformed_row_id,
+                ),),
+            )
+            resolver = mock.Mock(spec=legacy.Resolver)
+            with (
+                mock.patch.object(
+                    integration,
+                    "validate_workbook_source_row_ids",
+                    wraps=integration.validate_workbook_source_row_ids,
+                ) as preflight,
+                mock.patch.object(
+                    integration,
+                    "build_governed_workbook_batch",
+                    side_effect=AssertionError("semantic batch must not run"),
+                ),
+                self.assertRaises(legacy.GenerationError) as raised,
+            ):
+                integration.process_primary_workbook_with_coms(
+                    workbook_path,
+                    resolver,
+                )
+
+        preflight.assert_called_once()
+        resolver.resolve_source_subject.assert_not_called()
+        resolver.resolve.assert_not_called()
+        self.assertIsInstance(
+            raised.exception.__cause__,
+            framework_identity.ComsRowIdentityError,
+        )
+        self.assertIn("MALFORMED_ROW_ID", str(raised.exception))
+        self.assertIn("Sheet1!2", str(raised.exception))
+        self.assertIn(malformed_row_id, str(raised.exception))
+
+    def test_unresolved_source_preserves_project_generation_error(self) -> None:
+        row_id = _test_row_id(1)
+        with TemporaryDirectory() as directory:
+            workbook_path = Path(directory) / "unresolved-source.xlsx"
+            _write_test_workbook(
+                workbook_path,
+                ((
+                    "sosa:DefinitelyMissingSource",
+                    "rdfs:subClassOf",
+                    "cco:InformationContentEntity",
+                    "",
+                    row_id,
+                ),),
+            )
+            with self.assertRaises(legacy.GenerationError) as legacy_raised:
+                self._legacy_process(workbook_path)
+            with self.assertRaises(legacy.GenerationError) as framework_raised:
+                integration.process_primary_workbook_with_coms(
+                    workbook_path,
+                    legacy.Resolver(),
+                )
+
+        self.assertEqual(
+            str(framework_raised.exception),
+            str(legacy_raised.exception),
+        )
+        self.assertIn(f"Sheet1!2 [{row_id}]", str(framework_raised.exception))
+        self.assertIn("sosa:DefinitelyMissingSource", str(framework_raised.exception))
+        self.assertIn("cannot be resolved", str(framework_raised.exception))
+
+    def test_expected_coms_row_failures_translate_with_notes(self) -> None:
+        row_id = _test_row_id(2)
+        cases = (
+            (
+                "target",
+                "sosa:Observation",
+                "rdfs:subClassOf",
+                "bfo:DefinitelyMissingTarget",
+                framework_parser.EntityResolutionError,
+                "unresolved class token",
+            ),
+            (
+                "parse",
+                "sosa:Observation",
+                "rdfs:subClassOf",
+                "(",
+                framework_parser.MappingParseError,
+                "unexpected end of expression",
+            ),
+            (
+                "build",
+                "sosa:Observation",
+                "rdfs:subPropertyOf",
+                "cco:is_about",
+                framework_record_builder.MappingRecordBuildError,
+                "requires subject kind 'object_property'",
+            ),
+            (
+                "predicate",
+                "sosa:Observation",
+                "owl:notSupported",
+                "cco:InformationContentEntity",
+                framework_predicates.MappingPredicateTokenError,
+                "unsupported mapping predicate token",
+            ),
+            (
+                "blank-source",
+                "",
+                "rdfs:subClassOf",
+                "cco:InformationContentEntity",
+                framework_workbook_mapping.WorkbookMappingError,
+                "requires nonblank subject text",
+            ),
+        )
+        for (
+            name,
+            subject,
+            predicate,
+            target,
+            expected_cause,
+            expected_fragment,
+        ) in cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                workbook_path = Path(directory) / f"{name}.xlsx"
+                _write_test_workbook(
+                    workbook_path,
+                    ((subject, predicate, target, "", row_id),),
+                )
+                with self.assertRaises(legacy.GenerationError) as raised:
+                    integration.process_primary_workbook_with_coms(
+                        workbook_path,
+                        legacy.Resolver(),
+                    )
+
+                self.assertIsInstance(raised.exception.__cause__, expected_cause)
+                message = str(raised.exception)
+                self.assertIn(expected_cause.__name__, message)
+                self.assertIn(expected_fragment, message)
+                self.assertIn(f"Workbook source row: Sheet1!2 [{row_id}]", message)
+                if name == "target":
+                    self.assertIn(target, message)
+                    self.assertIsInstance(
+                        raised.exception.__cause__.__cause__,
+                        legacy.GenerationError,
+                    )
+                if name == "predicate":
+                    self.assertIn(predicate, message)
+
+    def test_duplicate_authoritative_axiom_is_coms_owned(self) -> None:
+        first_row_id = _test_row_id(3)
+        second_row_id = _test_row_id(4)
+        with TemporaryDirectory() as directory:
+            workbook_path = Path(directory) / "duplicate-axiom.xlsx"
+            _write_test_workbook(
+                workbook_path,
+                (
+                    (
+                        "sosa:FeatureOfInterest",
+                        "rdfs:subClassOf",
+                        "bfo:MaterialEntity or bfo:Process",
+                        "",
+                        first_row_id,
+                    ),
+                    (
+                        "sosa:FeatureOfInterest",
+                        "rdfs:subClassOf",
+                        "bfo:Process or bfo:MaterialEntity",
+                        "",
+                        second_row_id,
+                    ),
+                ),
+            )
+            forbidden = AssertionError("project authoring policy ran too early")
+            with (
+                mock.patch.object(
+                    integration,
+                    "_validate_primary_domain_range_policy_compat",
+                    side_effect=forbidden,
+                ),
+                mock.patch.object(
+                    legacy,
+                    "validate_incompatible_duplicate_mappings",
+                    side_effect=forbidden,
+                ),
+                self.assertRaises(legacy.GenerationError) as raised,
+            ):
+                integration.process_primary_workbook_with_coms(
+                    workbook_path,
+                    legacy.Resolver(),
+                )
+
+        self.assertIsInstance(
+            raised.exception.__cause__,
+            framework_identity.ComsRowIdentityError,
+        )
+        message = str(raised.exception)
+        self.assertIn("DUPLICATE_AUTHORITATIVE_AXIOM", message)
+        self.assertIn(first_row_id, message)
+        self.assertIn(second_row_id, message)
+        self.assertIn("Sheet1!2", message)
+        self.assertIn("Sheet1!3", message)
+
+    def test_temporary_domain_range_policy_matches_legacy(self) -> None:
+        duplicate_cases = (
+            (
+                "domain",
+                "rdfs:domain",
+                "sosa:Observation",
+                "sosa:Actuation",
+            ),
+            (
+                "range",
+                "rdfs:range",
+                "sosa:FeatureOfInterest",
+                "sosa:Platform",
+            ),
+        )
+        for name, predicate, first_target, second_target in duplicate_cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                workbook_path = Path(directory) / f"duplicate-{name}.xlsx"
+                _write_test_workbook(
+                    workbook_path,
+                    (
+                        (
+                            "sosa:hasFeatureOfInterest",
+                            predicate,
+                            first_target,
+                            "",
+                            _test_row_id(5),
+                        ),
+                        (
+                            "sosa:hasFeatureOfInterest",
+                            predicate,
+                            second_target,
+                            "",
+                            _test_row_id(6),
+                        ),
+                    ),
+                )
+                with self.assertRaises(legacy.GenerationError) as legacy_raised:
+                    self._legacy_process(workbook_path)
+                with self.assertRaises(legacy.GenerationError) as framework_raised:
+                    integration.process_primary_workbook_with_coms(
+                        workbook_path,
+                        legacy.Resolver(),
+                    )
+                self.assertEqual(
+                    str(framework_raised.exception),
+                    str(legacy_raised.exception),
+                )
+
+        with TemporaryDirectory() as directory:
+            workbook_path = Path(directory) / "domain-and-range.xlsx"
+            _write_test_workbook(
+                workbook_path,
+                (
+                    (
+                        "sosa:hasFeatureOfInterest",
+                        "rdfs:domain",
+                        "sosa:Observation",
+                        "",
+                        _test_row_id(7),
+                    ),
+                    (
+                        "sosa:hasFeatureOfInterest",
+                        "rdfs:range",
+                        "sosa:FeatureOfInterest",
+                        "",
+                        _test_row_id(8),
+                    ),
+                ),
+            )
+            legacy_processed, legacy_stats = self._legacy_process(workbook_path)
+            framework_processed, framework_stats = (
+                integration.process_primary_workbook_with_coms(
+                    workbook_path,
+                    legacy.Resolver(),
+                )
+            )
+        self.assertEqual(framework_processed, legacy_processed)
+        self.assertEqual(framework_stats, legacy_stats)
+        self.assertNotIn(
+            self.framework_processed[0].predicate,
+            legacy.DOMAIN_RANGE_PREDICATES,
+        )
+        integration._validate_primary_domain_range_policy_compat(
+            [self.framework_processed[0], self.framework_processed[0]]
+        )
+
+    def test_existing_incompatible_mapping_policy_is_retained(self) -> None:
+        with TemporaryDirectory() as directory:
+            workbook_path = Path(directory) / "incompatible-mapping.xlsx"
+            _write_test_workbook(
+                workbook_path,
+                (
+                    (
+                        "sosa:FeatureOfInterest",
+                        "rdfs:subClassOf",
+                        "bfo:MaterialEntity",
+                        "",
+                        _test_row_id(9),
+                    ),
+                    (
+                        "sosa:FeatureOfInterest",
+                        "rdfs:subClassOf",
+                        "bfo:Process",
+                        "",
+                        _test_row_id(10),
+                    ),
+                ),
+            )
+            with self.assertRaises(legacy.GenerationError) as legacy_raised:
+                self._legacy_process(workbook_path)
+            with self.assertRaises(legacy.GenerationError) as framework_raised:
+                integration.process_primary_workbook_with_coms(
+                    workbook_path,
+                    legacy.Resolver(),
+                )
+        self.assertEqual(
+            str(framework_raised.exception),
+            str(legacy_raised.exception),
+        )
+        self.assertIn("incompatible target", str(framework_raised.exception))
+
+    def test_extraction_errors_translate_and_unexpected_failures_propagate(self) -> None:
+        resolver = mock.Mock(spec=legacy.Resolver)
+        extraction_failures = (
+            XlsxAdapterError("synthetic extraction failure"),
+            XlsxAdapterDependencyError("synthetic dependency failure"),
+        )
+        for failure in extraction_failures:
+            with (
+                self.subTest(error_type=type(failure).__name__),
+                mock.patch.object(
+                    integration,
+                    "read_xlsx_source_rows",
+                    side_effect=failure,
+                ),
+                self.assertRaises(legacy.GenerationError) as translated,
+            ):
+                integration.process_primary_workbook_with_coms(
+                    WORKBOOK_PATH,
+                    resolver,
+                )
+            self.assertIs(translated.exception.__cause__, failure)
+            self.assertIn(type(failure).__name__, str(translated.exception))
+            self.assertIn(str(failure), str(translated.exception))
+
+        unexpected = RuntimeError("synthetic programming failure")
+        with (
+            mock.patch.object(
+                integration,
+                "read_xlsx_source_rows",
+                side_effect=unexpected,
+            ),
+            self.assertRaises(RuntimeError) as propagated,
+        ):
+            integration.process_primary_workbook_with_coms(
+                WORKBOOK_PATH,
+                resolver,
+            )
+        self.assertIs(propagated.exception, unexpected)
+
+    def test_wrapper_is_read_only_and_production_main_is_legacy(self) -> None:
+        locked_paths = (WORKBOOK_PATH, *ARTIFACT_SHA256)
+        hashes_before = {
+            path: sha256_file(path)
+            for path in locked_paths
+        }
+        workbook_mtime_before = WORKBOOK_PATH.stat().st_mtime_ns
+        resolver = legacy.Resolver()
+        forbidden = AssertionError("wrapper attempted a file write")
+
+        original_builtin_open = builtins.open
+        original_path_open = Path.open
+
+        def guarded_builtin_open(
+            file: object,
+            mode: str = "r",
+            *args: object,
+            **kwargs: object,
+        ) -> object:
+            if any(flag in mode for flag in ("w", "a", "x", "+")):
+                raise forbidden
+            return original_builtin_open(file, mode, *args, **kwargs)
+
+        def guarded_path_open(
+            path: Path,
+            mode: str = "r",
+            *args: object,
+            **kwargs: object,
+        ) -> object:
+            if any(flag in mode for flag in ("w", "a", "x", "+")):
+                raise forbidden
+            return original_path_open(path, mode, *args, **kwargs)
+
+        with (
+            mock.patch.object(builtins, "open", new=guarded_builtin_open),
+            mock.patch.object(Path, "open", new=guarded_path_open),
+            mock.patch.object(Path, "write_text", side_effect=forbidden),
+            mock.patch.object(Path, "write_bytes", side_effect=forbidden),
+            mock.patch.object(
+                legacy.openpyxl.Workbook,
+                "save",
+                side_effect=forbidden,
+            ),
+        ):
+            processed, stats = integration.process_primary_workbook_with_coms(
+                WORKBOOK_PATH,
+                resolver,
+            )
+        self.assertEqual(len(processed), 105)
+        self.assertEqual(stats, self.legacy_stats)
+        self.assertEqual(
+            {path: sha256_file(path) for path in locked_paths},
+            hashes_before,
+        )
+        self.assertEqual(WORKBOOK_PATH.stat().st_mtime_ns, workbook_mtime_before)
+
+        main_source = inspect.getsource(legacy.main)
+        read_index = main_source.index("rows, stats = read_workbook(input_path)")
+        process_index = main_source.index(
+            "processed = validate_and_process_rows(rows, resolver, stats)"
+        )
+        self.assertLess(read_index, process_index)
+        self.assertNotIn("process_primary_workbook_with_coms", main_source)
+        self.assertEqual(
+            sha256_file(Path(legacy.__file__).resolve()),
+            GENERATOR_SHA256,
+        )
