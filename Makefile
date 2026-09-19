@@ -25,6 +25,7 @@ compile:
 		tools/test_instance_data.py \
 		tools/compare_mappings.py \
 		tools/coms_row_identity.py \
+		tools/coms_framework_integration.py \
 		tools/product_dispositions.py \
 		tools/modular_products.py \
 		tools/generate_mapping_from_coms.py \
@@ -78,6 +79,7 @@ compile:
 		tests/test_robot_retained_example_validation_pilot.py \
 		tests/test_robot_verify_pilot.py \
 		tests/test_coms_row_identity.py \
+		tests/test_coms_framework_integration.py \
 		tests/test_product_dispositions.py \
 		tests/test_modular_products.py \
 		tests/test_strict_bfo_mapping.py \
