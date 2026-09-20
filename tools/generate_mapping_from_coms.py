@@ -86,6 +86,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - runtime dependency guar
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+PRIMARY_WORKBOOK = REPO_ROOT / "mappings/SSN2BFO-COMS.xlsx"
 LEGACY_ONTOLOGY = REPO_ROOT / "legacy/SSN2BFO-pre-COMS.ttl"
 IDENTITY_MODULE = REPO_ROOT / "tools/coms_row_identity.py"
 DISPOSITION_MODULE = REPO_ROOT / "tools/product_dispositions.py"
@@ -848,6 +849,30 @@ def validate_workbook_row_ids(rows: list[WorkbookRow], stats: WorkbookStats) -> 
         raise GenerationError(str(ComsRowIdentityError(issues)))
 
 
+def validate_primary_domain_range_authoring_row(
+    row: WorkbookRow,
+    subject: URIRef,
+    first_by_key: dict[tuple[str, str], WorkbookRow],
+) -> None:
+    """Apply the primary SSN duplicate domain/range authoring rule to one row."""
+
+    if row.predicate_text not in DOMAIN_RANGE_PREDICATES:
+        return
+    key = (str(subject), row.predicate_text)
+    previous = first_by_key.get(key)
+    if previous is None:
+        first_by_key[key] = row
+        return
+    axiom_name = "domain" if row.predicate_text == "rdfs:domain" else "range"
+    raise GenerationError(
+        f"{row.diagnostic_id}: duplicate {row.predicate_text} row for "
+        f"{row.subject_text}; the first {axiom_name} row is "
+        f"{previous.diagnostic_id}. Multiple OWL {axiom_name} axioms "
+        "are conjunctive; write alternatives with Manchester 'or' in one "
+        "target expression."
+    )
+
+
 def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats: WorkbookStats) -> list[ProcessedRow]:
     validate_workbook_row_ids(rows, stats)
     processed: list[ProcessedRow] = []
@@ -890,17 +915,12 @@ def validate_and_process_rows(rows: list[WorkbookRow], resolver: Resolver, stats
                 f"{row.subject_text} resolves as {subject_kind}"
             )
 
-        key = (str(subject), row.predicate_text)
         if row.predicate_text in DOMAIN_RANGE_PREDICATES:
-            previous_row = property_typing_row_by_key.get(key)
-            if previous_row is not None:
-                axiom_name = "domain" if row.predicate_text == "rdfs:domain" else "range"
-                raise GenerationError(
-                    f"{row.diagnostic_id}: duplicate {row.predicate_text} row for {row.subject_text}; "
-                    f"the first {axiom_name} row is {previous_row.diagnostic_id}. Multiple OWL {axiom_name} "
-                    "axioms are conjunctive; write alternatives with Manchester 'or' in one target expression."
-                )
-            property_typing_row_by_key[key] = row
+            validate_primary_domain_range_authoring_row(
+                row,
+                subject,
+                property_typing_row_by_key,
+            )
         if row.predicate_text in CLASS_PREDICATES:
             expr = ManchesterParser(row.target_text, resolver, row.diagnostic_id).parse()
             stats.class_mapping_rows += 1
@@ -3494,8 +3514,16 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         publication_metadata = load_metadata(PUBLICATION_METADATA)
-        rows, stats = read_workbook(input_path)
-        processed = validate_and_process_rows(rows, resolver, stats)
+        if input_path.resolve() == PRIMARY_WORKBOOK.resolve():
+            from coms_framework_integration import process_primary_workbook_with_coms
+
+            processed, stats = process_primary_workbook_with_coms(
+                input_path,
+                resolver,
+            )
+        else:
+            rows, stats = read_workbook(input_path)
+            processed = validate_and_process_rows(rows, resolver, stats)
         identity_audits = [
             item.identity_audit
             for item in processed
@@ -3735,4 +3763,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # The COMS integration module imports this module by its canonical name.
+    # Keep script-mode production on this same, fully initialized module
+    # instance so project exception and compatibility types retain one identity.
+    sys.modules["generate_mapping_from_coms"] = sys.modules[__name__]
     raise SystemExit(main())
